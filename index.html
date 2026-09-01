@@ -39,30 +39,61 @@
         <select id="root-select"></select>
         <label for="chord-select">Tipo</label>
         <select id="chord-select"></select>
-        <div class="chord-readout"><span class="readout-label">SONANDO AHORA</span><strong id="chord-readout">C</strong></div>
-
-        <div class="panel-heading scale-heading"><span class="section-number">04</span><h2>Intervalo · Color</h2></div>
-        <div class="color-legend">
-          <span style="background-color: #6f9a68;" title="Raíz"><i></i> Raíz</span>
-          <span style="background-color: #ffd700;" title="3ª"><i></i> 3ª</span>
-          <span style="background-color: #c95735;" title="5ª"><i></i> 5ª</span>
-          <span style="background-color: #9c27b0;" title="7ª"><i></i> 7ª</span>
-          <span style="background-color: #bbb;" title="Escala"><i></i> Escala</span>
-        </div>
+        <div class="chord-readout"><span class="readout-label">SONANDO AHORA</span><strong id="chord-readout">C</strong><span class="accidentals" id="accidentals"></span></div>
       </aside>
 
-      <div class="fretboard-panel">
+      <div class="fretboard-section">
+        <div class="progression-header-inline"><div><p class="eyebrow">IDEA DE PROGRESIÓN</p><h3>Tu vuelta armónica</h3></div><button class="add-button" id="add-chord" type="button"><span>+</span> añadir acorde</button></div>
+        <div class="progression" id="progression" aria-label="Progresión de acordes"></div>
+
         <div class="board-toolbar"><div><span class="eyebrow board-eyebrow">MÁSTIL / GUITARRA</span><h2 id="board-title">C · C Mayor</h2></div><button class="icon-button" id="toggle-notes" type="button" aria-pressed="false" title="Mostrar u ocultar nombres de notas">Aa <span>notas</span></button></div>
+        <div id="open-strings" class="open-strings" aria-label="Cuerdas al aire"></div>
         <div id="fret-numbers" class="fret-numbers"></div>
         <div class="fretboard-wrap"><div class="fretboard" id="fretboard" aria-label="Mástil interactivo de guitarra"></div></div>
         <div class="board-footer"><span id="note-count">7 notas</span><span>·</span><span>22 trastes visibles</span><span class="hint">Haz clic en una nota para escuchar su función</span></div>
       </div>
-    </section>
 
-    <section class="progression-section">
-      <div class="progression-header"><div><p class="eyebrow">IDEA DE PROGRESIÓN</p><h2>Tu vuelta armónica</h2></div><button class="add-button" id="add-chord" type="button"><span>+</span> añadir acorde</button></div>
-      <div class="progression" id="progression" aria-label="Progresión de acordes"></div>
-      <p class="progression-note">Selecciona un acorde de la vuelta para ver qué escala puede acompañarlo.</p>
+      <aside class="legend-panel">
+        <div class="legend-heading"><span class="section-number">04</span><h2>Intervalo</h2></div>
+        <div class="legend-colors">
+          <div class="legend-item">
+            <span class="legend-dot" style="background-color: #6f9a68;"></span>
+            <span class="legend-label">Raíz</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-dot" style="background-color: #f4c430;"></span>
+            <span class="legend-label">3ª menor</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-dot" style="background-color: #ffd700;"></span>
+            <span class="legend-label">3ª mayor</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-dot" style="background-color: #c95735;"></span>
+            <span class="legend-label">5ª justa</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-dot" style="background-color: #9c27b0;"></span>
+            <span class="legend-label">7ª menor</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-dot" style="background-color: #3f51b5;"></span>
+            <span class="legend-label">7ª mayor</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-dot" style="background-color: #00bcd4;"></span>
+            <span class="legend-label">2ª / 9ª</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-dot" style="background-color: #00897b;"></span>
+            <span class="legend-label">4ª / sus4</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-dot" style="background-color: #bbb;"></span>
+            <span class="legend-label">Escala</span>
+          </div>
+        </div>
+      </aside>
     </section>
 
     <section class="next-section"><div><p class="eyebrow">PRÓXIMAMENTE</p><h2>De la base al mapa.</h2></div><p>Importar una progresión MIDI o detectar acordes con el micrófono son los siguientes pasos. Primero dejamos sólida la brújula musical.</p></section>

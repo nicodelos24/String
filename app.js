@@ -103,8 +103,8 @@ function renderFretboard() {
   const scaleNotes = new Set(selectedTonality.scaleNotes);
   const chordIntervals = new Set(chordType.intervals);
   
-  // Generar números de traste
-  const fretNumbers = `<div class="nut"></div>${Array.from({ length: 22 }, (_, i) => `<div>${i}</div>`).join('')}`;
+  // Generar números de traste (sin la columna del nut)
+  const fretNumbers = Array.from({ length: 22 }, (_, i) => `<div>${i}</div>`).join('');
   document.querySelector('#fret-numbers').innerHTML = fretNumbers;
   
   // Invertir orden de cuerdas (de más aguda a más grave)
@@ -123,18 +123,42 @@ function renderFretboard() {
       const textColor = isRoot || (inChord && intervalFromRoot !== 0) ? '#f3f0e8' : inScale ? '#1d2521' : '#999';
       return `<div class="fret">${dot}<span class="fret-note" data-note="${displayNote(pitchClass)}" data-interval="${intervalInfo.name}" style="background-color: ${bgColor}; color: ${textColor};" title="${displayNote(pitchClass)} · ${intervalInfo.name}">${showNotes ? displayNote(pitchClass) : ''}</span></div>`;
     }).join('');
-    return `<div class="string-row" style="--string-width: ${stringIndex < (instrument === 'guitar' ? 3 : 2) ? 2 : 1}px"><div class="nut" title="Cuerda ${inst.stringNames[stringIndex]}"></div>${frets}</div>`;
+    return `<div class="string-row" style="--string-width: ${stringIndex < (instrument === 'guitar' ? 3 : 2) ? 2 : 1}px">${frets}</div>`;
   }).join('');
   fretboard.innerHTML = rows;
   document.querySelector('#note-count').textContent = `${selectedTonality.scaleNotes.length} notas`;
 }
+function renderOpenStrings() {
+  const inst = instruments[instrument];
+  const scaleNotes = new Set(selectedTonality.scaleNotes);
+  const chordIntervals = new Set(chordType.intervals);
+  
+  const openStringsHtml = `<div class="open-string-label">Aire</div>` + 
+    inst.strings.slice().reverse().map((openNote, reversedIdx) => {
+      const pitchClass = openNote % 12;
+      const inScale = scaleNotes.has(pitchClass);
+      const isRoot = pitchClass === root;
+      const intervalFromRoot = (pitchClass - root + 12) % 12;
+      const inChord = chordIntervals.has(intervalFromRoot);
+      const intervalInfo = getIntervalClass(intervalFromRoot);
+      const bgColor = isRoot ? '#6f9a68' : inChord ? intervalInfo.color : inScale ? '#bbb' : 'transparent';
+      const textColor = isRoot || (inChord && intervalFromRoot !== 0) ? '#f3f0e8' : '#1d2521';
+      return `<div class="open-string-note" style="background-color: ${bgColor}; color: ${textColor};" title="${displayNote(pitchClass)} · ${intervalInfo.name}">${displayNote(pitchClass)}</div>`;
+    }).join('');
+  
+  document.querySelector('#open-strings').innerHTML = openStringsHtml;
+}
 function updateView() {
   const ton = selectedTonality;
+  const noteName = displayNote(root);
+  const accidentalText = noteLabels[notes[root]] ? `(${noteLabels[notes[root]]})` : '';
+  
   document.querySelector('#tonality-label').textContent = `${ton.key}${ton.sharps > 0 ? ` (${ton.sharps} sostenidos)` : ton.flats > 0 ? ` (${ton.flats} bemoles)` : ' (natural)'}`;
-  document.querySelector('#chord-readout').textContent = `${displayNote(root)}${chordType.suffix}`;
-  document.querySelector('#board-title').textContent = `${displayNote(root)}${chordType.suffix} · ${ton.key} Mayor`;
+  document.querySelector('#chord-readout').textContent = `${noteName}${chordType.suffix}`;
+  document.querySelector('#accidentals').textContent = accidentalText;
+  document.querySelector('#board-title').textContent = `${noteName}${chordType.suffix} · ${ton.key} Mayor`;
   document.querySelector('.board-eyebrow').textContent = `MÁSTIL / ${instruments[instrument].name.toUpperCase()}`;
-  renderFretboard(); renderProgression();
+  renderOpenStrings(); renderFretboard(); renderProgression();
 }
 function renderProgression() {
   document.querySelector('#progression').innerHTML = progression.map((item, index) => {
