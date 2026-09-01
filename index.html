@@ -25,24 +25,37 @@
 
     <section class="workspace" aria-label="Explorador de escalas">
       <aside class="control-panel">
-        <div class="panel-heading"><span class="section-number">01</span><h2>Contexto</h2></div>
-        <label for="root-select">Tonalidad</label>
-        <select id="root-select"></select>
-        <label for="chord-select">Acorde actual</label>
-        <select id="chord-select"></select>
-        <div class="chord-readout"><span class="readout-label">SONANDO AHORA</span><strong id="chord-readout">Cmaj7</strong><span id="chord-role">I · Tónica</span></div>
+        <div class="panel-heading"><span class="section-number">01</span><h2>Instrumento</h2></div>
+        <label for="instrument-select">Seleccionar</label>
+        <select id="instrument-select"></select>
 
-        <div class="panel-heading scale-heading"><span class="section-number">02</span><h2>Escala</h2></div>
-        <label for="scale-select">Explorar opción</label>
-        <select id="scale-select"></select>
-        <div class="scale-summary"><div class="scale-icon">♩</div><div><strong id="scale-name">Pentatónica mayor</strong><p id="scale-description">Sonido abierto y directo. Un gran punto de partida.</p></div></div>
-        <div class="legend"><span><i class="legend-dot root"></i> raíz</span><span><i class="legend-dot scale"></i> escala</span></div>
+        <div class="panel-heading"><span class="section-number">02</span><h2>Tonalidad</h2></div>
+        <label for="tonality-select">Clave (# / b)</label>
+        <select id="tonality-select"></select>
+        <div class="tonality-info"><span class="readout-label">CONTEXTO</span><span id="tonality-label">C (natural)</span></div>
+
+        <div class="panel-heading"><span class="section-number">03</span><h2>Acorde</h2></div>
+        <label for="root-select">Raíz</label>
+        <select id="root-select"></select>
+        <label for="chord-select">Tipo</label>
+        <select id="chord-select"></select>
+        <div class="chord-readout"><span class="readout-label">SONANDO AHORA</span><strong id="chord-readout">C</strong></div>
+
+        <div class="panel-heading scale-heading"><span class="section-number">04</span><h2>Intervalo · Color</h2></div>
+        <div class="color-legend">
+          <span style="background-color: #6f9a68;" title="Raíz"><i></i> Raíz</span>
+          <span style="background-color: #ffd700;" title="3ª"><i></i> 3ª</span>
+          <span style="background-color: #c95735;" title="5ª"><i></i> 5ª</span>
+          <span style="background-color: #9c27b0;" title="7ª"><i></i> 7ª</span>
+          <span style="background-color: #bbb;" title="Escala"><i></i> Escala</span>
+        </div>
       </aside>
 
       <div class="fretboard-panel">
-        <div class="board-toolbar"><div><span class="eyebrow">MÁSTIL / AFINACIÓN ESTÁNDAR</span><h2 id="board-title">C mayor · Pentatónica mayor</h2></div><button class="icon-button" id="toggle-notes" type="button" aria-pressed="false" title="Mostrar u ocultar nombres de notas">Aa <span>notas</span></button></div>
-        <div class="fretboard-wrap"><div class="fret-numbers" id="fret-numbers"></div><div class="fretboard" id="fretboard" aria-label="Mástil interactivo de guitarra"></div></div>
-        <div class="board-footer"><span id="note-count">5 notas</span><span>·</span><span>18 trastes visibles</span><span class="hint">Haz clic en una nota para escuchar su función</span></div>
+        <div class="board-toolbar"><div><span class="eyebrow board-eyebrow">MÁSTIL / GUITARRA</span><h2 id="board-title">C · C Mayor</h2></div><button class="icon-button" id="toggle-notes" type="button" aria-pressed="false" title="Mostrar u ocultar nombres de notas">Aa <span>notas</span></button></div>
+        <div id="fret-numbers" class="fret-numbers"></div>
+        <div class="fretboard-wrap"><div class="fretboard" id="fretboard" aria-label="Mástil interactivo de guitarra"></div></div>
+        <div class="board-footer"><span id="note-count">7 notas</span><span>·</span><span>22 trastes visibles</span><span class="hint">Haz clic en una nota para escuchar su función</span></div>
       </div>
     </section>
 
