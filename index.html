@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Explorador de escalas para guitarra">
+  <title>Traste | Explorador de escalas</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="index.html" aria-label="Traste, inicio"><span class="brand-mark">T</span><span>traste<span class="brand-dot">.</span></span></a>
+    <div class="topbar-meta"><span class="status-dot"></span> modo exploración <span class="version">MVP 01</span></div>
+  </header>
+
+  <main class="shell">
+    <section class="intro">
+      <p class="eyebrow">GUITARRA / MAPA ARMÓNICO</p>
+      <h1>Encuentra tu próximo<br><em>camino</em> para improvisar.</h1>
+      <p class="intro-copy">Elige un acorde, prueba una escala y mira cómo respira sobre el mástil.</p>
+    </section>
+
+    <section class="workspace" aria-label="Explorador de escalas">
+      <aside class="control-panel">
+        <div class="panel-heading"><span class="section-number">01</span><h2>Contexto</h2></div>
+        <label for="root-select">Tonalidad</label>
+        <select id="root-select"></select>
+        <label for="chord-select">Acorde actual</label>
+        <select id="chord-select"></select>
+        <div class="chord-readout"><span class="readout-label">SONANDO AHORA</span><strong id="chord-readout">Cmaj7</strong><span id="chord-role">I · Tónica</span></div>
+
+        <div class="panel-heading scale-heading"><span class="section-number">02</span><h2>Escala</h2></div>
+        <label for="scale-select">Explorar opción</label>
+        <select id="scale-select"></select>
+        <div class="scale-summary"><div class="scale-icon">♩</div><div><strong id="scale-name">Pentatónica mayor</strong><p id="scale-description">Sonido abierto y directo. Un gran punto de partida.</p></div></div>
+        <div class="legend"><span><i class="legend-dot root"></i> raíz</span><span><i class="legend-dot scale"></i> escala</span></div>
+      </aside>
+
+      <div class="fretboard-panel">
+        <div class="board-toolbar"><div><span class="eyebrow">MÁSTIL / AFINACIÓN ESTÁNDAR</span><h2 id="board-title">C mayor · Pentatónica mayor</h2></div><button class="icon-button" id="toggle-notes" type="button" aria-pressed="false" title="Mostrar u ocultar nombres de notas">Aa <span>notas</span></button></div>
+        <div class="fretboard-wrap"><div class="fret-numbers" id="fret-numbers"></div><div class="fretboard" id="fretboard" aria-label="Mástil interactivo de guitarra"></div></div>
+        <div class="board-footer"><span id="note-count">5 notas</span><span>·</span><span>18 trastes visibles</span><span class="hint">Haz clic en una nota para escuchar su función</span></div>
+      </div>
+    </section>
+
+    <section class="progression-section">
+      <div class="progression-header"><div><p class="eyebrow">IDEA DE PROGRESIÓN</p><h2>Tu vuelta armónica</h2></div><button class="add-button" id="add-chord" type="button"><span>+</span> añadir acorde</button></div>
+      <div class="progression" id="progression" aria-label="Progresión de acordes"></div>
+      <p class="progression-note">Selecciona un acorde de la vuelta para ver qué escala puede acompañarlo.</p>
+    </section>
+
+    <section class="next-section"><div><p class="eyebrow">PRÓXIMAMENTE</p><h2>De la base al mapa.</h2></div><p>Importar una progresión MIDI o detectar acordes con el micrófono son los siguientes pasos. Primero dejamos sólida la brújula musical.</p></section>
+  </main>
+  <footer><span>traste. explorador armónico</span><span>Hecho para estudiar, tocar y descubrir.</span></footer>
+  <script src="app.js"></script>
+</body>
+</html>
