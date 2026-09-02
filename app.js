@@ -31,6 +31,68 @@ const scales = {
   minor: { name: 'Menor natural (Eólica)', intervals: [0, 2, 3, 5, 7, 8, 10], description: 'Color menor profundo y familiar.' }
 };
 
+// Modos con sus intervalos, colores y sus grados en la escala mayor
+const modes = {
+  // Modos mayores (grados I, IV, V de la escala mayor)
+  ionian: { 
+    name: 'Jónico (I)', 
+    type: 'major',
+    degree: 0, // Grado I (tónica)
+    intervals: [0, 2, 4, 5, 7, 9, 11], 
+    color: 'rgba(63, 81, 181, 0.3)', // Azul transparente
+    description: 'Escala mayor natural'
+  },
+  lydian: { 
+    name: 'Lidio (IV)', 
+    type: 'major',
+    degree: 3, // Grado IV (subdominante)
+    intervals: [0, 2, 4, 6, 7, 9, 11], 
+    color: 'rgba(0, 188, 212, 0.3)', // Cyan transparente
+    description: 'Mayor con 4ª aumentada'
+  },
+  mixolydian: { 
+    name: 'Mixolidio (V)', 
+    type: 'major',
+    degree: 4, // Grado V (dominante)
+    intervals: [0, 2, 4, 5, 7, 9, 10], 
+    color: 'rgba(76, 175, 80, 0.3)', // Verde transparente
+    description: 'Dominante con 7ª menor'
+  },
+  // Modos menores (grados ii, iii, vi, vii de la escala mayor)
+  dorian: { 
+    name: 'Dórico (ii)', 
+    type: 'minor',
+    degree: 1, // Grado ii
+    intervals: [0, 2, 3, 5, 7, 9, 10], 
+    color: 'rgba(255, 152, 0, 0.3)', // Naranja transparente
+    description: 'Menor con 6ª mayor'
+  },
+  phrygian: { 
+    name: 'Frigio (iii)', 
+    type: 'minor',
+    degree: 2, // Grado iii
+    intervals: [0, 1, 3, 5, 7, 8, 10], 
+    color: 'rgba(244, 67, 54, 0.3)', // Rojo transparente
+    description: 'Menor con 2ª menor'
+  },
+  aeolian: { 
+    name: 'Eólico (vi)', 
+    type: 'minor',
+    degree: 5, // Grado vi (relativo menor)
+    intervals: [0, 2, 3, 5, 7, 8, 10], 
+    color: 'rgba(156, 39, 176, 0.3)', // Púrpura transparente
+    description: 'Escala menor natural'
+  },
+  locrian: { 
+    name: 'Locrio (vii°)', 
+    type: 'minor',
+    degree: 6, // Grado vii
+    intervals: [0, 1, 3, 5, 6, 8, 10], 
+    color: 'rgba(96, 125, 139, 0.3)', // Gris azulado transparente
+    description: 'Menor con 5ª disminuida'
+  }
+};
+
 const chordTypes = [
   { value: 'maj', label: 'Mayor', suffix: '', intervals: [0, 4, 7] },
   { value: 'maj7', label: 'Mayor 7', suffix: 'maj7', intervals: [0, 4, 7, 11] },
@@ -60,9 +122,10 @@ const intervalColors = {
 };
 
 let instrument = 'guitar';
-let selectedTonality = tonalities[0];
-let root = 0; // Sincronizado con tonalidad
+let selectedTonality = tonalities[0]; // Escala global base
+let root = 0; // Raíz del acorde
 let chordType = chordTypes[0];
+let selectedMode = 'ionian'; // Modo seleccionado por defecto
 let progression = [{ root: 0, type: 'maj' }, { root: 5, type: 'm7' }, { root: 7, type: '7' }, { root: 0, type: 'maj' }];
 let activeProgression = 0;
 let showNotes = false;
@@ -84,6 +147,7 @@ const chordSelect = document.querySelector('#chord-select');
 const tonalitySelect = document.querySelector('#tonality-select');
 const instrumentSelect = document.querySelector('#instrument-select');
 const fretboard = document.querySelector('#fretboard');
+const modeSelector = document.querySelector('#mode-selector');
 
 function noteName(index) { return notes[(index + 12) % 12]; }
 function displayNote(index) { const name = noteName(index); return noteLabels[name] || name; }
@@ -91,17 +155,118 @@ function getIntervalClass(interval) {
   const normalized = interval % 12;
   return intervalColors[normalized] || { name: 'Otra', color: '#bbb', rgb: [187, 187, 187] };
 }
+
+// Función para calcular las notas de un modo de manera congruente
+function getModeNotes(modeKey, rootNote) {
+  const mode = modes[modeKey];
+  if (!mode) return [];
+  
+  // Encontrar la tonalidad mayor donde esta raíz es el grado correcto
+  // Para un modo con grado X, la tónica de la escala mayor es: raíz - X
+  const majorRoot = (rootNote - mode.degree + 12) % 12;
+  
+  // Calcular las notas de la escala mayor desde esa tónica
+  const majorScale = [0, 2, 4, 5, 7, 9, 11].map(interval => (majorRoot + interval) % 12);
+  
+  // Las notas del modo son las mismas notas de la escala mayor
+  return majorScale;
+}
+
+// Función para obtener modos disponibles según el tipo de acorde
+function getAvailableModes(chordTypeValue) {
+  if (chordTypeValue.startsWith('m')) {
+    // Acorde menor - modos menores disponibles
+    return ['aeolian', 'dorian', 'phrygian', 'locrian'];
+  } else {
+    // Acorde mayor - modos mayores disponibles
+    return ['ionian', 'lydian', 'mixolydian'];
+  }
+}
+
+// Función para encontrar el modo más cercano para una raíz en una tonalidad dada
+function findClosestMode(targetRoot, majorRoot, chordTypeValue) {
+  const availableModes = getAvailableModes(chordTypeValue);
+  const majorRootIndex = majorRoot;
+  
+  // Calcular qué grado de la escala mayor es la raíz objetivo
+  const degreeFromMajor = (targetRoot - majorRootIndex + 12) % 12;
+  
+  // Encontrar el modo disponible cuyo grado más se acerque
+  let closestMode = availableModes[0];
+  let minDistance = 12;
+  
+  for (const modeKey of availableModes) {
+    const mode = modes[modeKey];
+    const distance = Math.abs(degreeFromMajor - mode.degree);
+    if (distance < minDistance) {
+      minDistance = distance;
+      closestMode = modeKey;
+    }
+  }
+  
+  return closestMode;
+}
 function populateControls() {
   instrumentSelect.innerHTML = Object.entries(instruments).map(([key, inst]) => `<option value="${key}">${inst.name}</option>`).join('');
   rootSelect.innerHTML = notes.map((note, index) => `<option value="${index}">${note}${noteLabels[note] ? ` / ${noteLabels[note]}` : ''}</option>`).join('');
   chordSelect.innerHTML = chordTypes.map(type => `<option value="${type.value}">${type.label}</option>`).join('');
   tonalitySelect.innerHTML = tonalities.map((ton, idx) => `<option value="${idx}">${ton.key}${ton.sharps > 0 ? ` (${ton.sharps}#)` : ton.flats > 0 ? ` (${ton.flats}b)` : ''}</option>`).join('');
   instrumentSelect.value = instrument; rootSelect.value = root; chordSelect.value = chordType.value; tonalitySelect.value = tonalities.indexOf(selectedTonality);
+  updateModeSelector();
+}
+
+function updateModeSelector() {
+  const availableModes = getAvailableModes(chordType.value);
+  const majorRoot = noteToIndex(selectedTonality.key);
+  
+  modeSelector.innerHTML = availableModes.map(modeKey => {
+    const mode = modes[modeKey];
+    // Calcular qué nota sería la raíz para este modo en la tonalidad actual
+    const modeRoot = (majorRoot + mode.degree) % 12;
+    const modeRootName = displayNote(modeRoot);
+    const modeRootAccidental = noteLabels[notes[modeRoot]] ? `/${noteLabels[notes[modeRoot]]}` : '';
+    
+    return `
+      <label class="mode-option">
+        <input type="radio" name="mode" value="${modeKey}" ${selectedMode === modeKey ? 'checked' : ''}>
+        <span class="mode-label">${mode.name} <small style="color: var(--muted);">(${modeRootName}${modeRootAccidental})</small></span>
+      </label>
+    `;
+  }).join('');
+  
+  // Agregar event listeners a los nuevos radio buttons
+  modeSelector.querySelectorAll('input[name="mode"]').forEach(radio => {
+    radio.addEventListener('change', (e) => {
+      selectedMode = e.target.value;
+      // Cambiar la raíz para que sea congruente con el nuevo modo
+      const selectedModeData = modes[selectedMode];
+      root = (majorRoot + selectedModeData.degree) % 12;
+      rootSelect.value = root;
+      updateView();
+    });
+  });
 }
 function renderFretboard() {
   const inst = instruments[instrument];
   const scaleNotes = new Set(selectedTonality.scaleNotes);
   const chordIntervals = new Set(chordType.intervals);
+  
+  // Calcular notas del modo seleccionado y otros modos disponibles
+  const selectedModeNotes = new Set(getModeNotes(selectedMode, root));
+  const availableModes = getAvailableModes(chordType.value);
+  const ghostModes = availableModes.filter(mode => mode !== selectedMode);
+  
+  // Crear mapa de notas fantasmas con sus colores
+  const ghostNotesMap = new Map();
+  ghostModes.forEach(modeKey => {
+    const modeNotes = getModeNotes(modeKey, root);
+    const modeColor = modes[modeKey].color;
+    modeNotes.forEach(note => {
+      if (!ghostNotesMap.has(note)) {
+        ghostNotesMap.set(note, modeColor);
+      }
+    });
+  });
   
   // Generar números de traste (sin la columna del nut)
   const fretNumbers = Array.from({ length: 22 }, (_, i) => `<div>${i}</div>`).join('');
@@ -117,21 +282,60 @@ function renderFretboard() {
       const isRoot = pitchClass === root;
       const intervalFromRoot = (pitchClass - root + 12) % 12;
       const inChord = chordIntervals.has(intervalFromRoot);
+      const inSelectedMode = selectedModeNotes.has(pitchClass);
       const dot = [3, 5, 7, 9, 15, 17, 19, 21].includes(fret + 1) ? '<span class="fret-dot"></span>' : '';
       const intervalInfo = getIntervalClass(intervalFromRoot);
-      const bgColor = isRoot ? '#6f9a68' : inChord ? intervalInfo.color : inScale ? '#bbb' : 'transparent';
-      const textColor = isRoot || (inChord && intervalFromRoot !== 0) ? '#f3f0e8' : inScale ? '#1d2521' : '#999';
+      
+      // Determinar color de fondo
+      let bgColor;
+      let textColor;
+      
+      if (isRoot) {
+        bgColor = '#6f9a68';
+        textColor = '#f3f0e8';
+      } else if (inChord) {
+        bgColor = intervalInfo.color;
+        textColor = '#f3f0e8';
+      } else if (inSelectedMode) {
+        bgColor = '#bbb';
+        textColor = '#1d2521';
+      } else if (ghostNotesMap.has(pitchClass)) {
+        // Nota fantasma de otro modo
+        bgColor = ghostNotesMap.get(pitchClass);
+        textColor = 'rgba(29, 37, 33, 0.5)';
+      } else {
+        bgColor = 'transparent';
+        textColor = '#999';
+      }
+      
       return `<div class="fret">${dot}<span class="fret-note" data-note="${displayNote(pitchClass)}" data-interval="${intervalInfo.name}" style="background-color: ${bgColor}; color: ${textColor};" title="${displayNote(pitchClass)} · ${intervalInfo.name}">${showNotes ? displayNote(pitchClass) : ''}</span></div>`;
     }).join('');
     return `<div class="string-row" style="--string-width: ${stringIndex < (instrument === 'guitar' ? 3 : 2) ? 2 : 1}px">${frets}</div>`;
   }).join('');
   fretboard.innerHTML = rows;
-  document.querySelector('#note-count').textContent = `${selectedTonality.scaleNotes.length} notas`;
+  document.querySelector('#note-count').textContent = `${selectedModeNotes.size} notas`;
 }
 function renderOpenStrings() {
   const inst = instruments[instrument];
   const scaleNotes = new Set(selectedTonality.scaleNotes);
   const chordIntervals = new Set(chordType.intervals);
+  
+  // Calcular notas del modo seleccionado y otros modos disponibles
+  const selectedModeNotes = new Set(getModeNotes(selectedMode, root));
+  const availableModes = getAvailableModes(chordType.value);
+  const ghostModes = availableModes.filter(mode => mode !== selectedMode);
+  
+  // Crear mapa de notas fantasmas con sus colores
+  const ghostNotesMap = new Map();
+  ghostModes.forEach(modeKey => {
+    const modeNotes = getModeNotes(modeKey, root);
+    const modeColor = modes[modeKey].color;
+    modeNotes.forEach(note => {
+      if (!ghostNotesMap.has(note)) {
+        ghostNotesMap.set(note, modeColor);
+      }
+    });
+  });
   
   const openStringsHtml = `<div class="open-string-label">Aire</div>` + 
     inst.strings.slice().reverse().map((openNote, reversedIdx) => {
@@ -140,9 +344,30 @@ function renderOpenStrings() {
       const isRoot = pitchClass === root;
       const intervalFromRoot = (pitchClass - root + 12) % 12;
       const inChord = chordIntervals.has(intervalFromRoot);
+      const inSelectedMode = selectedModeNotes.has(pitchClass);
       const intervalInfo = getIntervalClass(intervalFromRoot);
-      const bgColor = isRoot ? '#6f9a68' : inChord ? intervalInfo.color : inScale ? '#bbb' : 'transparent';
-      const textColor = isRoot || (inChord && intervalFromRoot !== 0) ? '#f3f0e8' : '#1d2521';
+      
+      let bgColor;
+      let textColor;
+      
+      if (isRoot) {
+        bgColor = '#6f9a68';
+        textColor = '#f3f0e8';
+      } else if (inChord) {
+        bgColor = intervalInfo.color;
+        textColor = '#f3f0e8';
+      } else if (inSelectedMode) {
+        bgColor = '#bbb';
+        textColor = '#1d2521';
+      } else if (ghostNotesMap.has(pitchClass)) {
+        // Nota fantasma de otro modo
+        bgColor = ghostNotesMap.get(pitchClass);
+        textColor = 'rgba(29, 37, 33, 0.5)';
+      } else {
+        bgColor = 'transparent';
+        textColor = '#1d2521';
+      }
+      
       return `<div class="open-string-note" style="background-color: ${bgColor}; color: ${textColor};" title="${displayNote(pitchClass)} · ${intervalInfo.name}">${displayNote(pitchClass)}</div>`;
     }).join('');
   
@@ -152,13 +377,31 @@ function updateView() {
   const ton = selectedTonality;
   const noteName = displayNote(root);
   const accidentalText = noteLabels[notes[root]] ? `(${noteLabels[notes[root]]})` : '';
+  const selectedModeData = modes[selectedMode];
   
+  // Mostrar la tonalidad global base (escala mayor)
   document.querySelector('#tonality-label').textContent = `${ton.key}${ton.sharps > 0 ? ` (${ton.sharps} sostenidos)` : ton.flats > 0 ? ` (${ton.flats} bemoles)` : ' (natural)'}`;
   document.querySelector('#chord-readout').textContent = `${noteName}${chordType.suffix}`;
   document.querySelector('#accidentals').textContent = accidentalText;
-  document.querySelector('#board-title').textContent = `${noteName}${chordType.suffix} · ${ton.key} Mayor`;
+  document.querySelector('#board-title').textContent = `${noteName}${chordType.suffix} · ${selectedModeData.name} (${ton.key} Mayor)`;
   document.querySelector('.board-eyebrow').textContent = `MÁSTIL / ${instruments[instrument].name.toUpperCase()}`;
+  updateModeLegend();
   renderOpenStrings(); renderFretboard(); renderProgression();
+}
+
+function updateModeLegend() {
+  const availableModes = getAvailableModes(chordType.value);
+  const modeLegend = document.querySelector('#mode-legend');
+  
+  modeLegend.innerHTML = availableModes.map(modeKey => {
+    const mode = modes[modeKey];
+    return `
+      <div class="legend-item">
+        <span class="legend-dot" style="background-color: ${mode.color};"></span>
+        <span class="legend-label">${mode.name}</span>
+      </div>
+    `;
+  }).join('');
 }
 function renderProgression() {
   document.querySelector('#progression').innerHTML = progression.map((item, index) => {
@@ -169,18 +412,52 @@ function renderProgression() {
 instrumentSelect.addEventListener('change', event => { instrument = event.target.value; updateView(); });
 rootSelect.addEventListener('change', event => {
   root = Number(event.target.value);
-  const matchingTonality = tonalities.find(ton => noteToIndex(ton.key) === root);
+  // Actualizar la tonalidad mayor basada en el modo seleccionado
+  const selectedModeData = modes[selectedMode];
+  const majorRoot = (root - selectedModeData.degree + 12) % 12;
+  const matchingTonality = tonalities.find(ton => noteToIndex(ton.key) === majorRoot);
   if (matchingTonality) {
     selectedTonality = matchingTonality;
     tonalitySelect.value = tonalities.indexOf(matchingTonality);
   }
+  updateModeSelector();
   updateView();
 });
-chordSelect.addEventListener('change', event => { chordType = chordTypes.find(type => type.value === event.target.value); updateView(); });
+chordSelect.addEventListener('change', event => { 
+  chordType = chordTypes.find(type => type.value === event.target.value);
+  // Actualizar el modo seleccionado basado en el nuevo tipo de acorde
+  const availableModes = getAvailableModes(chordType.value);
+  if (!availableModes.includes(selectedMode)) {
+    // Si el modo actual no es compatible, intentar mantener el modo equivalente
+    // Por ejemplo, si estaba en Dórico (menor) y pasa a mayor, intentar mantener un modo mayor
+    const currentModeType = modes[selectedMode]?.type;
+    const newType = chordType.value.startsWith('m') ? 'minor' : 'major';
+    
+    // Buscar un modo del nuevo tipo que sea similar al anterior
+    if (currentModeType !== newType) {
+      // Intentar encontrar un modo equivalente
+      selectedMode = availableModes[0]; // Por defecto al primero disponible
+    } else {
+      selectedMode = availableModes[0]; // Mantener el primero del mismo tipo
+    }
+  }
+  updateModeSelector();
+  updateView(); 
+});
 tonalitySelect.addEventListener('change', event => {
   selectedTonality = tonalities[Number(event.target.value)];
-  root = noteToIndex(selectedTonality.key);
+  const majorRoot = noteToIndex(selectedTonality.key);
+  
+  // Encontrar el modo más cercano que sea congruente con la raíz actual
+  const closestMode = findClosestMode(root, majorRoot, chordType.value);
+  selectedMode = closestMode;
+  
+  // Actualizar la raíz para que sea congruente con el nuevo modo
+  const selectedModeData = modes[selectedMode];
+  root = (majorRoot + selectedModeData.degree) % 12;
   rootSelect.value = root;
+  
+  updateModeSelector();
   updateView();
 });
 document.querySelector('#toggle-notes').addEventListener('click', event => { showNotes = !showNotes; event.currentTarget.setAttribute('aria-pressed', showNotes); renderFretboard(); });
@@ -192,4 +469,4 @@ document.querySelector('#progression').addEventListener('click', event => {
 });
 document.querySelector('#add-chord').addEventListener('click', () => { progression.push({ root, type: chordType.value }); activeProgression = progression.length - 1; renderProgression(); });
 fretboard.addEventListener('click', event => { const note = event.target.closest('.fret-note'); if (note) { document.querySelector('.hint').textContent = `${note.dataset.note}: ${note.dataset.interval}`; } });
-populateControls(); updateView();
+populateControls(); updateModeLegend(); updateView();

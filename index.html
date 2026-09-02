@@ -40,6 +40,22 @@
         <label for="chord-select">Tipo</label>
         <select id="chord-select"></select>
         <div class="chord-readout"><span class="readout-label">SONANDO AHORA</span><strong id="chord-readout">C</strong><span class="accidentals" id="accidentals"></span></div>
+
+        <div class="panel-heading"><span class="section-number">04</span><h2>Modo</h2></div>
+        <div class="mode-selector" id="mode-selector">
+          <label class="mode-option">
+            <input type="radio" name="mode" value="ionian" checked>
+            <span class="mode-label">Jónico</span>
+          </label>
+          <label class="mode-option">
+            <input type="radio" name="mode" value="lydian">
+            <span class="mode-label">Lidio</span>
+          </label>
+          <label class="mode-option">
+            <input type="radio" name="mode" value="mixolydian">
+            <span class="mode-label">Mixolidio</span>
+          </label>
+        </div>
       </aside>
 
       <div class="fretboard-section">
@@ -54,7 +70,7 @@
       </div>
 
       <aside class="legend-panel">
-        <div class="legend-heading"><span class="section-number">04</span><h2>Intervalo</h2></div>
+        <div class="legend-heading"><span class="section-number">03</span><h2>Intervalo</h2></div>
         <div class="legend-colors">
           <div class="legend-item">
             <span class="legend-dot" style="background-color: #6f9a68;"></span>
@@ -91,6 +107,38 @@
           <div class="legend-item">
             <span class="legend-dot" style="background-color: #bbb;"></span>
             <span class="legend-label">Escala</span>
+          </div>
+        </div>
+        
+        <div class="legend-heading" style="margin-top: 24px;"><span class="section-number">05</span><h2>Modos (fantasmas)</h2></div>
+        <div class="legend-colors" id="mode-legend">
+          <div class="legend-item">
+            <span class="legend-dot" style="background-color: rgba(63, 81, 181, 0.3);"></span>
+            <span class="legend-label">Jónico</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-dot" style="background-color: rgba(0, 188, 212, 0.3);"></span>
+            <span class="legend-label">Lidio</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-dot" style="background-color: rgba(76, 175, 80, 0.3);"></span>
+            <span class="legend-label">Mixolidio</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-dot" style="background-color: rgba(156, 39, 176, 0.3);"></span>
+            <span class="legend-label">Eólico</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-dot" style="background-color: rgba(255, 152, 0, 0.3);"></span>
+            <span class="legend-label">Dórico</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-dot" style="background-color: rgba(244, 67, 54, 0.3);"></span>
+            <span class="legend-label">Frigio</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-dot" style="background-color: rgba(96, 125, 139, 0.3);"></span>
+            <span class="legend-label">Locrio</span>
           </div>
         </div>
       </aside>
