@@ -14,12 +14,14 @@ const tonalities = [
   { sharps: 4, flats: 0, key: 'E', scale: 'major', scaleNotes: [4, 6, 8, 9, 11, 1, 3] },
   { sharps: 5, flats: 0, key: 'B', scale: 'major', scaleNotes: [11, 1, 3, 4, 6, 8, 10] },
   { sharps: 6, flats: 0, key: 'F#', scale: 'major', scaleNotes: [6, 8, 10, 11, 1, 3, 5] },
+  { sharps: 7, flats: 0, key: 'C#', scale: 'major', scaleNotes: [1, 3, 5, 6, 8, 10, 0] },
   { sharps: 0, flats: 1, key: 'F', scale: 'major', scaleNotes: [5, 7, 9, 10, 0, 2, 4] },
   { sharps: 0, flats: 2, key: 'Bb', scale: 'major', scaleNotes: [10, 0, 2, 3, 5, 7, 9] },
   { sharps: 0, flats: 3, key: 'Eb', scale: 'major', scaleNotes: [3, 5, 7, 8, 10, 0, 2] },
   { sharps: 0, flats: 4, key: 'Ab', scale: 'major', scaleNotes: [8, 10, 0, 1, 3, 5, 7] },
   { sharps: 0, flats: 5, key: 'Db', scale: 'major', scaleNotes: [1, 3, 5, 6, 8, 10, 0] },
   { sharps: 0, flats: 6, key: 'Gb', scale: 'major', scaleNotes: [6, 8, 10, 11, 1, 3, 5] },
+  { sharps: 0, flats: 7, key: 'Cb', scale: 'major', scaleNotes: [11, 1, 3, 4, 6, 8, 10] },
 ];
 
 const scales = {
@@ -39,7 +41,7 @@ const modes = {
     type: 'major',
     degree: 0, // Grado I (tónica) - 0 semitonos
     intervals: [0, 2, 4, 5, 7, 9, 11], 
-    color: 'rgba(63, 81, 181, 0.3)', // Azul transparente
+    color: 'rgba(63, 81, 181, 0.35)', // Azul más transparente
     description: 'Escala mayor natural'
   },
   lydian: { 
@@ -47,7 +49,7 @@ const modes = {
     type: 'major',
     degree: 5, // Grado IV (subdominante) - 5 semitonos
     intervals: [0, 2, 4, 6, 7, 9, 11], 
-    color: 'rgba(0, 188, 212, 0.3)', // Cyan transparente
+    color: 'rgba(0, 188, 212, 0.35)', // Cyan más transparente
     description: 'Mayor con 4ª aumentada'
   },
   mixolydian: { 
@@ -55,7 +57,7 @@ const modes = {
     type: 'major',
     degree: 7, // Grado V (dominante) - 7 semitonos
     intervals: [0, 2, 4, 5, 7, 9, 10], 
-    color: 'rgba(76, 175, 80, 0.3)', // Verde transparente
+    color: 'rgba(76, 175, 80, 0.35)', // Verde más transparente
     description: 'Dominante con 7ª menor'
   },
   // Modos menores (grados ii, iii, vi, vii de la escala mayor)
@@ -64,7 +66,7 @@ const modes = {
     type: 'minor',
     degree: 2, // Grado ii - 2 semitonos
     intervals: [0, 2, 3, 5, 7, 9, 10], 
-    color: 'rgba(255, 152, 0, 0.3)', // Naranja transparente
+    color: 'rgba(255, 152, 0, 0.35)', // Naranja más transparente
     description: 'Menor con 6ª mayor'
   },
   phrygian: { 
@@ -72,7 +74,7 @@ const modes = {
     type: 'minor',
     degree: 4, // Grado iii - 4 semitonos
     intervals: [0, 1, 3, 5, 7, 8, 10], 
-    color: 'rgba(244, 67, 54, 0.3)', // Rojo transparente
+    color: 'rgba(244, 67, 54, 0.35)', // Rojo más transparente
     description: 'Menor con 2ª menor'
   },
   aeolian: { 
@@ -80,7 +82,7 @@ const modes = {
     type: 'minor',
     degree: 9, // Grado vi (relativo menor) - 9 semitonos
     intervals: [0, 2, 3, 5, 7, 8, 10], 
-    color: 'rgba(156, 39, 176, 0.3)', // Púrpura transparente
+    color: 'rgba(156, 39, 176, 0.35)', // Púrpura más transparente
     description: 'Escala menor natural'
   },
   locrian: { 
@@ -88,7 +90,7 @@ const modes = {
     type: 'minor',
     degree: 11, // Grado vii - 11 semitonos
     intervals: [0, 1, 3, 5, 6, 8, 10], 
-    color: 'rgba(96, 125, 139, 0.3)', // Gris azulado transparente
+    color: 'rgba(96, 125, 139, 0.35)', // Gris azulado más transparente
     description: 'Menor con 5ª disminuida'
   }
 };
@@ -128,10 +130,10 @@ const qualities = {
 
 const intervalColors = {
   0: { name: 'Raíz', color: '#4CAF50', rgb: [76, 175, 80] }, // Verde más vibrante pero elegante
-  3: { name: '3ª menor', color: '#f4c430', rgb: [244, 196, 48] },
-  4: { name: '3ª mayor', color: '#ffd700', rgb: [255, 215, 0] },
+  3: { name: '3ª menor', color: '#D4A017', rgb: [212, 160, 23] }, // Amarillo más suave
+  4: { name: '3ª mayor', color: '#E6B800', rgb: [230, 184, 0] }, // Amarillo más suave
   6: { name: '5ª dism.', color: '#ff6b6b', rgb: [255, 107, 107] },
-  7: { name: '5ª justa', color: '#c95735', rgb: [201, 87, 53] },
+  7: { name: '5ª justa', color: '#E53935', rgb: [229, 57, 53] }, // Rojo más vibrante
   8: { name: '5ª aum.', color: '#d32f2f', rgb: [211, 47, 47] },
   9: { name: '6ª', color: '#ff9800', rgb: [255, 152, 0] },
   10: { name: '7ª menor', color: '#9c27b0', rgb: [156, 39, 176] },
@@ -164,6 +166,10 @@ function noteToIndex(noteName) {
   for (let i = 0; i < notes.length; i++) {
     if (noteLabels[notes[i]] === cleaned) return i;
   }
+  // Manejar casos especiales para notas enarmónicas extendidas
+  if (cleaned === 'Cb') return 11; // Cb = B
+  if (cleaned === 'C#') return 1;
+  if (cleaned === 'Db') return 1;
   return 0;
 }
 
@@ -174,7 +180,27 @@ const fretboard = document.querySelector('#fretboard');
 const modeSelector = document.querySelector('#mode-selector');
 
 function noteName(index) { return notes[(index + 12) % 12]; }
-function displayNote(index) { const name = noteName(index); return noteLabels[name] || name; }
+function displayNote(index) { 
+  const name = noteName(index); 
+  // Mostrar la nota según la armadura de clave actual
+  const keySignature = calculateKeySignature(selectedMode, root);
+  if (keySignature.key === 'C#' || keySignature.key === 'G' || keySignature.key === 'D' || keySignature.key === 'A' || keySignature.key === 'E' || keySignature.key === 'B' || keySignature.key === 'F#') {
+    // Preferir sostenidos para tonalidades con sostenidos
+    if (name === 'Db') return 'C#';
+    if (name === 'Eb') return 'D#';
+    if (name === 'Gb') return 'F#';
+    if (name === 'Ab') return 'G#';
+    if (name === 'Bb') return 'A#';
+  } else if (keySignature.key === 'F' || keySignature.key === 'Bb' || keySignature.key === 'Eb' || keySignature.key === 'Ab' || keySignature.key === 'Db' || keySignature.key === 'Gb' || keySignature.key === 'Cb') {
+    // Preferir bemoles para tonalidades con bemoles
+    if (name === 'C#') return 'Db';
+    if (name === 'D#') return 'Eb';
+    if (name === 'F#') return 'Gb';
+    if (name === 'G#') return 'Ab';
+    if (name === 'A#') return 'Bb';
+  }
+  return name;
+}
 function getIntervalClass(interval) {
   const normalized = interval % 12;
   return intervalColors[normalized] || { name: 'Otra', color: '#bbb', rgb: [187, 187, 187] };
@@ -249,7 +275,18 @@ function calculateKeySignature(modeKey, rootNote) {
 }
 function populateControls() {
   instrumentSelect.innerHTML = Object.entries(instruments).map(([key, inst]) => `<option value="${key}">${inst.name}</option>`).join('');
-  rootSelect.innerHTML = notes.map((note, index) => `<option value="${index}">${note}${noteLabels[note] ? ` / ${noteLabels[note]}` : ''}</option>`).join('');
+  
+  // Agregar todas las notas incluyendo enarmónicas
+  const allNotes = ['C', 'C#', 'Db', 'D', 'D#', 'Eb', 'E', 'F', 'F#', 'Gb', 'G', 'G#', 'Ab', 'A', 'A#', 'Bb', 'B'];
+  const noteIndices = {
+    'C': 0, 'C#': 1, 'Db': 1, 'D': 2, 'D#': 3, 'Eb': 3, 'E': 4, 
+    'F': 5, 'F#': 6, 'Gb': 6, 'G': 7, 'G#': 8, 'Ab': 8, 'A': 9, 'A#': 10, 'Bb': 10, 'B': 11
+  };
+  
+  rootSelect.innerHTML = allNotes.map(note => 
+    `<option value="${noteIndices[note]}">${note}</option>`
+  ).join('');
+  
   qualitySelect.innerHTML = Object.entries(qualities).map(([key, qual]) => `<option value="${key}">${qual.label}</option>`).join('');
   instrumentSelect.value = instrument; rootSelect.value = root; qualitySelect.value = quality;
   updateModeSelector();
