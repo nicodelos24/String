@@ -127,7 +127,7 @@ const qualities = {
 };
 
 const intervalColors = {
-  0: { name: 'Raíz', color: '#6f9a68', rgb: [111, 154, 104] },
+  0: { name: 'Raíz', color: '#4CAF50', rgb: [76, 175, 80] }, // Verde más vibrante pero elegante
   3: { name: '3ª menor', color: '#f4c430', rgb: [244, 196, 48] },
   4: { name: '3ª mayor', color: '#ffd700', rgb: [255, 215, 0] },
   6: { name: '5ª dism.', color: '#ff6b6b', rgb: [255, 107, 107] },
@@ -322,16 +322,19 @@ function renderFretboard() {
       const dot = [3, 5, 7, 9, 12, 15, 17, 19, 21].includes(actualFret) ? '<span class="fret-dot"></span>' : '';
       const intervalInfo = getIntervalClass(intervalFromRoot);
       
-      // Determinar color de fondo
+      // Determinar color de fondo y clase CSS
       let bgColor;
       let textColor;
+      let noteClass = 'fret-note';
       
       if (isRoot) {
-        bgColor = '#6f9a68';
+        bgColor = intervalInfo.color;
         textColor = '#f3f0e8';
+        noteClass += ' root-note';
       } else if (inChord) {
         bgColor = intervalInfo.color;
         textColor = '#f3f0e8';
+        noteClass += ' chord-note';
       } else if (inSelectedMode) {
         bgColor = '#bbb';
         textColor = '#1d2521';
@@ -339,12 +342,13 @@ function renderFretboard() {
         // Nota fantasma de otro modo
         bgColor = ghostNotesMap.get(pitchClass);
         textColor = 'rgba(29, 37, 33, 0.5)';
+        noteClass += ' ghost-note';
       } else {
         bgColor = 'transparent';
         textColor = '#999';
       }
       
-      return `<div class="fret">${dot}<span class="fret-note" data-note="${displayNote(pitchClass)}" data-interval="${intervalInfo.name}" style="background-color: ${bgColor}; color: ${textColor};" title="${displayNote(pitchClass)} · ${intervalInfo.name}">${showNotes ? displayNote(pitchClass) : ''}</span></div>`;
+      return `<div class="fret">${dot}<span class="${noteClass}" data-note="${displayNote(pitchClass)}" data-interval="${intervalInfo.name}" style="background-color: ${bgColor}; color: ${textColor};" title="${displayNote(pitchClass)} · ${intervalInfo.name}">${showNotes ? displayNote(pitchClass) : ''}</span></div>`;
     }).join('');
     return `<div class="string-row" style="--string-width: ${stringIndex < (instrument === 'guitar' ? 3 : 2) ? 2 : 1}px">${frets}</div>`;
   }).join('');
