@@ -29,33 +29,27 @@
         <label for="instrument-select">Seleccionar</label>
         <select id="instrument-select"></select>
 
-        <div class="panel-heading"><span class="section-number">02</span><h2>Tonalidad</h2></div>
-        <label for="tonality-select">Clave (# / b)</label>
-        <select id="tonality-select"></select>
-        <div class="tonality-info"><span class="readout-label">CONTEXTO</span><span id="tonality-label">C (natural)</span></div>
-
-        <div class="panel-heading"><span class="section-number">03</span><h2>Acorde</h2></div>
-        <label for="root-select">Raíz</label>
+        <div class="panel-heading"><span class="section-number">02</span><h2>Nota Base</h2></div>
+        <label for="root-select">Seleccionar nota</label>
         <select id="root-select"></select>
-        <label for="chord-select">Tipo</label>
-        <select id="chord-select"></select>
-        <div class="chord-readout"><span class="readout-label">SONANDO AHORA</span><strong id="chord-readout">C</strong><span class="accidentals" id="accidentals"></span></div>
+
+        <div class="panel-heading"><span class="section-number">03</span><h2>Calidad</h2></div>
+        <label for="quality-select">Tipo de acorde</label>
+        <select id="quality-select">
+          <option value="major">Mayor</option>
+          <option value="minor">Menor</option>
+          <option value="diminished">Disminuido</option>
+        </select>
 
         <div class="panel-heading"><span class="section-number">04</span><h2>Modo</h2></div>
         <div class="mode-selector" id="mode-selector">
-          <label class="mode-option">
-            <input type="radio" name="mode" value="ionian" checked>
-            <span class="mode-label">Jónico</span>
-          </label>
-          <label class="mode-option">
-            <input type="radio" name="mode" value="lydian">
-            <span class="mode-label">Lidio</span>
-          </label>
-          <label class="mode-option">
-            <input type="radio" name="mode" value="mixolydian">
-            <span class="mode-label">Mixolidio</span>
-          </label>
+          <!-- Los modos se cargarán dinámicamente según la calidad -->
         </div>
+
+        <div class="panel-heading"><span class="section-number">05</span><h2>Armadura</h2></div>
+        <div class="key-signature-info"><span class="readout-label">ARMADURA DE CLAVE</span><span id="key-signature-display">--</span></div>
+
+        <div class="chord-readout"><span class="readout-label">ACORDE SELECCIONADO</span><strong id="chord-readout">C</strong><span class="mode-display" id="mode-display"></span><span class="key-signature-chord" id="key-signature-chord"></span></div>
       </aside>
 
       <div class="fretboard-section">
@@ -63,7 +57,6 @@
         <div class="progression" id="progression" aria-label="Progresión de acordes"></div>
 
         <div class="board-toolbar"><div><span class="eyebrow board-eyebrow">MÁSTIL / GUITARRA</span><h2 id="board-title">C · C Mayor</h2></div><button class="icon-button" id="toggle-notes" type="button" aria-pressed="false" title="Mostrar u ocultar nombres de notas">Aa <span>notas</span></button></div>
-        <div id="open-strings" class="open-strings" aria-label="Cuerdas al aire"></div>
         <div id="fret-numbers" class="fret-numbers"></div>
         <div class="fretboard-wrap"><div class="fretboard" id="fretboard" aria-label="Mástil interactivo de guitarra"></div></div>
         <div class="board-footer"><span id="note-count">7 notas</span><span>·</span><span>22 trastes visibles</span><span class="hint">Haz clic en una nota para escuchar su función</span></div>
