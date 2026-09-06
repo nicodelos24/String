@@ -303,22 +303,23 @@ function renderFretboard() {
     });
   });
   
-  // Generar números de traste (sin la columna del nut)
-  const fretNumbers = Array.from({ length: 22 }, (_, i) => `<div>${i}</div>`).join('');
+  // Generar números de traste (1-22)
+  const fretNumbers = Array.from({ length: 22 }, (_, i) => `<div>${i + 1}</div>`).join('');
   document.querySelector('#fret-numbers').innerHTML = fretNumbers;
   
   // Invertir orden de cuerdas (de más aguda a más grave)
   const rows = inst.strings.slice().reverse().map((openNote, reversedIdx) => {
     const stringIndex = inst.strings.length - 1 - reversedIdx;
     const frets = Array.from({ length: 22 }, (_, fret) => {
-      const pitch = openNote + fret;
+      const actualFret = fret + 1; // Trastes 1-22
+      const pitch = openNote + actualFret;
       const pitchClass = pitch % 12;
       const inScale = scaleNotes.has(pitchClass);
       const isRoot = pitchClass === root;
       const intervalFromRoot = (pitchClass - root + 12) % 12;
       const inChord = chordIntervals.has(intervalFromRoot);
       const inSelectedMode = selectedModeNotes.has(pitchClass);
-      const dot = [3, 5, 7, 9, 15, 17, 19, 21].includes(fret + 1) ? '<span class="fret-dot"></span>' : '';
+      const dot = [3, 5, 7, 9, 12, 15, 17, 19, 21].includes(actualFret) ? '<span class="fret-dot"></span>' : '';
       const intervalInfo = getIntervalClass(intervalFromRoot);
       
       // Determinar color de fondo
