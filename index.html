@@ -46,9 +46,8 @@
           <!-- Los modos se cargarán dinámicamente según la calidad -->
         </div>
 
-        <div class="chord-readout"><span class="readout-label">ACORDE SELECCIONADO</span><strong id="chord-readout">C</strong><span class="mode-display" id="mode-display"></span><span class="key-signature-chord" id="key-signature-chord"></span></div>
       </aside>
-
+      
       <div class="fretboard-section">
         <div class="progression-header-inline"><div><p class="eyebrow">IDEA DE PROGRESIÓN</p><h3>Tu vuelta armónica</h3></div><button class="add-button" id="add-chord" type="button"><span>+</span> añadir acorde</button></div>
         <div class="progression" id="progression" aria-label="Progresión de acordes"></div>
@@ -60,7 +59,11 @@
       </div>
 
       <aside class="legend-panel">
-        <div class="legend-heading"><span class="section-number">01</span><h2>Armadura</h2></div>
+
+        
+        <div class="legend-heading"><span class="section-number"></span><h2>Armadura de Clave </h2></div>
+        <!-- <div class="chord-readout"><span class="readout-label">ACORDE SELECCIONADO</span><strong id="chord-readout">C</strong><span class="mode-display" id="mode-display"></span><span class="key-signature-chord" id="key-signature-chord"></span></div> -->
+        <div class="chord-readout"><span class="readout-label">ACORDE SELECCIONADO</span><strong id="chord-readout">C</strong><span class="mode-display" id="mode-display"></span><span class="key-signature-chord" id="key-signature-chord"></span></div>
         <div class="key-signature-info"><span class="readout-label">ARMADURA DE CLAVE</span><span id="key-signature-display">--</span></div>
         
         <div class="legend-heading" style="margin-top: 24px;"><span class="section-number">02</span><h2>Intervalo</h2></div>
@@ -95,7 +98,7 @@
           </div>
           <div class="legend-item">
             <span class="legend-dot" style="background-color: #00897b;"></span>
-            <span class="legend-label">4ª / sus4</span>
+            <span class="legend-label">4ª / 11ª</span>
           </div>
           <div class="legend-item">
             <span class="legend-dot" style="background-color: #bbb;"></span>
@@ -103,7 +106,7 @@
           </div>
         </div>
         
-        <div class="legend-heading" style="margin-top: 24px;"><span class="section-number">03</span><h2>Modos (fantasmas)</h2></div>
+        <div class="legend-heading" style="margin-top: 24px;"><span class="section-number">03</span><h2>Modos disponibles</h2></div>
         <div class="legend-colors" id="mode-legend">
           <div class="legend-item">
             <span class="legend-dot" style="background-color: rgba(63, 81, 181, 0.35);"></span>

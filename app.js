@@ -144,7 +144,8 @@ const intervalColors = {
 
 let instrument = 'guitar';
 let selectedTonality = tonalities[0]; // Escala global base
-let root = 0; // Raíz del acorde
+let root = 0; // Raíz del acorde (índice)
+let rootNoteName = 'C'; // Nombre específico de la nota seleccionada por el usuario
 let quality = 'major'; // Calidad seleccionada (mayor, minor, diminished)
 let selectedMode = 'ionian'; // Modo seleccionado por defecto
 let chordType = chordTypes[0]; // Tipo de acorde específico (para compatibility)
@@ -182,23 +183,11 @@ const modeSelector = document.querySelector('#mode-selector');
 function noteName(index) { return notes[(index + 12) % 12]; }
 function displayNote(index) { 
   const name = noteName(index); 
-  // Mostrar la nota según la armadura de clave actual
-  const keySignature = calculateKeySignature(selectedMode, root);
-  if (keySignature.key === 'C#' || keySignature.key === 'G' || keySignature.key === 'D' || keySignature.key === 'A' || keySignature.key === 'E' || keySignature.key === 'B' || keySignature.key === 'F#') {
-    // Preferir sostenidos para tonalidades con sostenidos
-    if (name === 'Db') return 'C#';
-    if (name === 'Eb') return 'D#';
-    if (name === 'Gb') return 'F#';
-    if (name === 'Ab') return 'G#';
-    if (name === 'Bb') return 'A#';
-  } else if (keySignature.key === 'F' || keySignature.key === 'Bb' || keySignature.key === 'Eb' || keySignature.key === 'Ab' || keySignature.key === 'Db' || keySignature.key === 'Gb' || keySignature.key === 'Cb') {
-    // Preferir bemoles para tonalidades con bemoles
-    if (name === 'C#') return 'Db';
-    if (name === 'D#') return 'Eb';
-    if (name === 'F#') return 'Gb';
-    if (name === 'G#') return 'Ab';
-    if (name === 'A#') return 'Bb';
+  // Si es la raíz, usar el nombre exacto seleccionado por el usuario
+  if (index === root && rootNoteName) {
+    return rootNoteName;
   }
+  // Para otras notas, usar el nombre estándar sin conversiones
   return name;
 }
 function getIntervalClass(interval) {
@@ -260,10 +249,37 @@ function calculateKeySignature(modeKey, rootNote) {
   // Para un modo con grado X, la tónica de la escala mayor es: raíz - X
   const majorRoot = (rootNote - mode.degree + 12) % 12;
   
-  // Buscar la tonalidad correspondiente
+  // Buscar la tonalidad correspondiente, pero respetar si el usuario seleccionó bemoles o sostenidos
   const matchingTonality = tonalities.find(ton => noteToIndex(ton.key) === majorRoot);
   
   if (matchingTonality) {
+    // Si el usuario seleccionó una nota con bemol (Db, Eb, etc.), priorizar tonalidades con bemoles
+    if (rootNoteName && (rootNoteName.includes('b') || rootNoteName === 'Cb')) {
+      const flatTonality = tonalities.find(ton => 
+        noteToIndex(ton.key) === majorRoot && ton.flats > 0
+      );
+      if (flatTonality) {
+        return {
+          sharps: flatTonality.sharps,
+          flats: flatTonality.flats,
+          key: flatTonality.key
+        };
+      }
+    }
+    // Si el usuario seleccionó una nota con sostenido (C#, F#, etc.), priorizar tonalidades con sostenidos
+    else if (rootNoteName && (rootNoteName.includes('#') || rootNoteName === 'C#')) {
+      const sharpTonality = tonalities.find(ton => 
+        noteToIndex(ton.key) === majorRoot && ton.sharps > 0
+      );
+      if (sharpTonality) {
+        return {
+          sharps: sharpTonality.sharps,
+          flats: sharpTonality.flats,
+          key: sharpTonality.key
+        };
+      }
+    }
+    
     return {
       sharps: matchingTonality.sharps,
       flats: matchingTonality.flats,
@@ -284,11 +300,18 @@ function populateControls() {
   };
   
   rootSelect.innerHTML = allNotes.map(note => 
-    `<option value="${noteIndices[note]}">${note}</option>`
+    `<option value="${noteIndices[note]}" data-note="${note}">${note}</option>`
   ).join('');
   
   qualitySelect.innerHTML = Object.entries(qualities).map(([key, qual]) => `<option value="${key}">${qual.label}</option>`).join('');
   instrumentSelect.value = instrument; rootSelect.value = root; qualitySelect.value = quality;
+  
+  // Establecer el nombre de la nota raíz seleccionada
+  const selectedOption = rootSelect.options[rootSelect.selectedIndex];
+  if (selectedOption) {
+    rootNoteName = selectedOption.dataset.note || 'C';
+  }
+  
   updateModeSelector();
 }
 
@@ -451,8 +474,6 @@ function renderOpenStrings() {
   document.querySelector('#open-strings').innerHTML = openStringsHtml;
 }
 function updateView() {
-  const noteName = displayNote(root);
-  const accidentalText = noteLabels[notes[root]] ? `(${noteLabels[notes[root]]})` : '';
   const selectedModeData = modes[selectedMode];
   
   // Calcular la armadura de clave según modo y nota
@@ -479,10 +500,10 @@ function updateView() {
       : 'Natural';
   
   document.querySelector('#key-signature-display').textContent = `${keySignature.key} Mayor · ${keySignatureText}`;
-  document.querySelector('#chord-readout').textContent = `${noteName}${chordSuffix}`;
+  document.querySelector('#chord-readout').textContent = `${rootNoteName}${chordSuffix}`;
   document.querySelector('#mode-display').textContent = selectedModeData.name;
   document.querySelector('#key-signature-chord').textContent = `Armadura: ${keySignatureText}`;
-  document.querySelector('#board-title').textContent = `${noteName}${chordSuffix} · ${selectedModeData.name}`;
+  document.querySelector('#board-title').textContent = `${rootNoteName}${chordSuffix} · ${selectedModeData.name}`;
   document.querySelector('.board-eyebrow').textContent = `MÁSTIL / ${instruments[instrument].name.toUpperCase()}`;
   
   // Actualizar el tipo de acorde para compatibility
@@ -517,6 +538,11 @@ function renderProgression() {
 instrumentSelect.addEventListener('change', event => { instrument = event.target.value; updateView(); });
 rootSelect.addEventListener('change', event => {
   root = Number(event.target.value);
+  // Actualizar el nombre de la nota raíz seleccionada
+  const selectedOption = rootSelect.options[rootSelect.selectedIndex];
+  if (selectedOption) {
+    rootNoteName = selectedOption.dataset.note || 'C';
+  }
   updateView();
 });
 qualitySelect.addEventListener('change', event => { 
