@@ -146,11 +146,11 @@ const qualities = {
 };
 
 const intervalColors = {
-  0: { name: 'Raíz', color: '#4CAF50', rgb: [76, 175, 80] }, // Verde más vibrante pero elegante
-  3: { name: '3ª menor', color: '#D4A017', rgb: [212, 160, 23] }, // Amarillo más suave
-  4: { name: '3ª mayor', color: '#E6B800', rgb: [230, 184, 0] }, // Amarillo más suave
+  0: { name: 'Raíz', color: '#E53935', rgb: [229, 57, 53] }, // Rojo más vibrante
+  3: { name: '3ª menor', color: '#4CAF50', rgb: [76, 175, 80] }, // Verde más vibrante pero elegante
+  4: { name: '3ª mayor', color: '#4CAF50', rgb: [76, 175, 80] }, // Verde más vibrante pero elegante
   6: { name: '5ª dism.', color: '#ff6b6b', rgb: [255, 107, 107] },
-  7: { name: '5ª justa', color: '#E53935', rgb: [229, 57, 53] }, // Rojo más vibrante
+  7: { name: '5ª justa', color: '#E6B800', rgb: [230, 184, 0] }, // Amarillo más suave
   8: { name: '5ª aum.', color: '#d32f2f', rgb: [211, 47, 47] },
   9: { name: '6ª', color: '#ff9800', rgb: [255, 152, 0] },
   10: { name: '7ª menor', color: '#9c27b0', rgb: [156, 39, 176] },
@@ -168,7 +168,7 @@ let selectedMode = 'ionian'; // Modo seleccionado por defecto
 let chordType = chordTypes[0]; // Tipo de acorde específico (para compatibility)
 let progression = [{ root: 0, type: 'maj' }, { root: 5, type: 'm7' }, { root: 7, type: '7' }, { root: 0, type: 'maj' }];
 let activeProgression = 0;
-let showNotes = false;
+let showNotes = 0; // 0 = sin notas, 1 = solo notas de escala, 2 = todas las notas
 
 // Inicializar el tipo de acorde según la calidad
 if (quality === 'major') chordType = chordTypes[0]; // Mayor
@@ -198,13 +198,51 @@ const fretboard = document.querySelector('#fretboard');
 const modeSelector = document.querySelector('#mode-selector');
 
 function noteName(index) { return notes[(index + 12) % 12]; }
+
+// Mapa de conversiones entre sostenidos y bemoles
+const sharpToFlat = {
+  'C#': 'Db',
+  'D#': 'Eb', 
+  'F#': 'Gb',
+  'G#': 'Ab',
+  'A#': 'Bb'
+};
+
+const flatToSharp = {
+  'Db': 'C#',
+  'Eb': 'D#',
+  'Gb': 'F#',
+  'Ab': 'G#',
+  'Bb': 'A#'
+};
+
 function displayNote(index) { 
   const name = noteName(index); 
+  
   // Si es la raíz, usar el nombre exacto seleccionado por el usuario
   if (index === root && rootNoteName) {
     return rootNoteName;
   }
-  // Para otras notas, usar el nombre estándar sin conversiones
+  
+  // Obtener la armadura de clave actual
+  const keySignature = calculateKeySignature(selectedMode, root);
+  
+  // Determinar si usar bemoles o sostenidos según la armadura
+  let useFlats = keySignature.flats > 0;
+  let useSharps = keySignature.sharps > 0;
+  
+  // Si es natural (C Mayor), usar sostenidos por defecto
+  if (keySignature.flats === 0 && keySignature.sharps === 0) {
+    useSharps = true;
+  }
+  
+  // Convertir la nota según la armadura
+  if (useFlats && sharpToFlat[name]) {
+    return sharpToFlat[name];
+  } else if (useSharps && flatToSharp[name]) {
+    return flatToSharp[name];
+  }
+  
   return name;
 }
 function getIntervalClass(interval) {
@@ -463,14 +501,15 @@ function renderFretboard() {
       if (isRoot) {
         bgColor = intervalInfo.color;
         textColor = '#f3f0e8';
-        noteClass += ' root-note';
+        noteClass += ' root-note scale-note';
       } else if (inChord) {
         bgColor = intervalInfo.color;
         textColor = '#f3f0e8';
-        noteClass += ' chord-note';
+        noteClass += ' chord-note scale-note';
       } else if (inSelectedMode) {
-        bgColor = '#bbb';
+        bgColor = intervalInfo.color;
         textColor = '#1d2521';
+        noteClass += ' scale-note';
       } else if (ghostNotesMap.has(pitchClass)) {
         // Nota fantasma de otro modo
         bgColor = ghostNotesMap.get(pitchClass);
@@ -481,7 +520,18 @@ function renderFretboard() {
         textColor = '#999';
       }
       
-      return `<div class="fret">${dot}<span class="${noteClass}" data-note="${displayNote(pitchClass)}" data-interval="${intervalInfo.name}" style="background-color: ${bgColor}; color: ${textColor};" title="${displayNote(pitchClass)} · ${intervalInfo.name}">${showNotes ? displayNote(pitchClass) : ''}</span></div>`;
+      // Determinar si mostrar el nombre de la nota según el modo
+      let showNoteName = false;
+      if (showNotes === 2) {
+        // Modo "todas": mostrar todas las notas
+        showNoteName = true;
+      } else if (showNotes === 1) {
+        // Modo "escala": mostrar solo notas de la escala seleccionada
+        showNoteName = inSelectedMode || isRoot || inChord;
+      }
+      // showNotes === 0: no mostrar ninguna nota
+      
+      return `<div class="fret">${dot}<span class="${noteClass}" data-note="${displayNote(pitchClass)}" data-interval="${intervalInfo.name}" style="background-color: ${bgColor}; color: ${textColor};" title="${displayNote(pitchClass)} · ${intervalInfo.name}">${showNoteName ? displayNote(pitchClass) : ''}</span></div>`;
     }).join('');
     return `<div class="string-row" style="--string-width: ${stringIndex < (instrument === 'guitar' ? 3 : 2) ? 2 : 1}px">${frets}</div>`;
   }).join('');
@@ -522,26 +572,42 @@ function renderOpenStrings() {
       
       let bgColor;
       let textColor;
+      let noteClass = 'open-string-note';
       
       if (isRoot) {
-        bgColor = '#6f9a68';
+        bgColor = '#E53935';
         textColor = '#f3f0e8';
+        noteClass += ' root-note scale-note';
       } else if (inChord) {
         bgColor = intervalInfo.color;
         textColor = '#f3f0e8';
+        noteClass += ' chord-note scale-note';
       } else if (inSelectedMode) {
-        bgColor = '#bbb';
+        bgColor = intervalInfo.color;
         textColor = '#1d2521';
+        noteClass += ' scale-note';
       } else if (ghostNotesMap.has(pitchClass)) {
         // Nota fantasma de otro modo
         bgColor = ghostNotesMap.get(pitchClass);
         textColor = 'rgba(29, 37, 33, 0.5)';
+        noteClass += ' ghost-note';
       } else {
         bgColor = 'transparent';
         textColor = '#1d2521';
       }
       
-      return `<div class="open-string-note" style="background-color: ${bgColor}; color: ${textColor};" title="${displayNote(pitchClass)} · ${intervalInfo.name}">${displayNote(pitchClass)}</div>`;
+      // Determinar si mostrar el nombre de la nota según el modo
+      let showNoteName = false;
+      if (showNotes === 2) {
+        // Modo "todas": mostrar todas las notas
+        showNoteName = true;
+      } else if (showNotes === 1) {
+        // Modo "escala": mostrar solo notas de la escala seleccionada
+        showNoteName = inSelectedMode || isRoot || inChord;
+      }
+      // showNotes === 0: no mostrar ninguna nota
+      
+      return `<div class="open-string-note" style="background-color: ${bgColor}; color: ${textColor};" title="${displayNote(pitchClass)} · ${intervalInfo.name}">${showNoteName ? displayNote(pitchClass) : ''}</div>`;
     }).join('');
   
   document.querySelector('#open-strings').innerHTML = openStringsHtml;
@@ -628,7 +694,25 @@ qualitySelect.addEventListener('change', event => {
   updateModeSelector();
   updateView(); 
 });
-document.querySelector('#toggle-notes').addEventListener('click', event => { showNotes = !showNotes; event.currentTarget.setAttribute('aria-pressed', showNotes); renderFretboard(); });
+document.querySelector('#toggle-notes').addEventListener('click', event => { 
+  showNotes = (showNotes + 1) % 3; // Ciclar entre 0, 1, 2
+  const button = event.currentTarget;
+  const buttonText = button.querySelector('span');
+  
+  // Actualizar el texto del botón según el modo
+  if (showNotes === 0) {
+    button.setAttribute('aria-pressed', 'false');
+    buttonText.textContent = 'notas';
+  } else if (showNotes === 1) {
+    button.setAttribute('aria-pressed', 'true');
+    buttonText.textContent = 'escala';
+  } else {
+    button.setAttribute('aria-pressed', 'true');
+    buttonText.textContent = 'todas';
+  }
+  
+  renderFretboard(); 
+});
 document.querySelector('#progression').addEventListener('click', event => {
   const remove = event.target.closest('[data-remove]');
   if (remove) { if (progression.length > 1) { progression.splice(Number(remove.dataset.remove), 1); activeProgression = Math.min(activeProgression, progression.length - 1); renderProgression(); } return; }
