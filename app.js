@@ -172,6 +172,7 @@ let showNotes = 0; // 0 = sin notas, 1 = solo notas de escala, 2 = todas las not
 let displayModeIndex = 0; // 0 = grados completos, 1 = raíz, 3ra, 5ta, 2 = raíz, 3ra, 5ta, 7ma
 const displayModes = ['full', 'triad', 'seventh'];
 const displayModeLabels = ['grados', 'triada', '7ma'];
+let ghostMode = ''; // Modo fantasma seleccionado (vacío = ninguno)
 
 // Inicializar el tipo de acorde según la calidad
 if (quality === 'major') chordType = chordTypes[0]; // Mayor
@@ -473,28 +474,46 @@ function updateModeSelector() {
       updateView();
     });
   });
+  
+  // Actualizar el selector de modo fantasma
+  updateGhostModeSelector();
+}
+
+function updateGhostModeSelector() {
+  const ghostModeSelect = document.querySelector('#ghost-mode-select');
+  if (!ghostModeSelect) return;
+  
+  const availableModes = getAvailableModes(quality);
+  
+  // Generar opciones: "Ninguna" + todos los modos disponibles excepto el seleccionado
+  const options = availableModes
+    .filter(modeKey => modeKey !== selectedMode)
+    .map(modeKey => {
+      const mode = modes[modeKey];
+      return `<option value="${modeKey}" ${ghostMode === modeKey ? 'selected' : ''}>${mode.name}</option>`;
+    }).join('');
+  
+  ghostModeSelect.innerHTML = `<option value="" ${ghostMode === '' ? 'selected' : ''}>Ninguna</option>` + options;
 }
 function renderFretboard() {
   const inst = instruments[instrument];
   const scaleNotes = new Set(selectedTonality.scaleNotes);
   const chordIntervals = new Set(chordType.intervals);
   
-  // Calcular notas del modo seleccionado y otros modos disponibles
+  // Calcular notas del modo seleccionado
   const selectedModeNotes = new Set(getModeNotes(selectedMode, root));
-  const availableModes = getAvailableModes(quality);
-  const ghostModes = availableModes.filter(mode => mode !== selectedMode);
   
-  // Crear mapa de notas fantasmas con sus colores
+  // Crear mapa de notas fantasmas con sus colores (solo si hay un modo fantasma seleccionado)
   const ghostNotesMap = new Map();
-  ghostModes.forEach(modeKey => {
-    const modeNotes = getModeNotes(modeKey, root);
-    const modeColor = modes[modeKey].color;
+  if (ghostMode && ghostMode !== selectedMode) {
+    const modeNotes = getModeNotes(ghostMode, root);
+    const modeColor = modes[ghostMode].color;
     modeNotes.forEach(note => {
       if (!ghostNotesMap.has(note)) {
         ghostNotesMap.set(note, modeColor);
       }
     });
-  });
+  }
   
   // Generar números de traste (1-22)
   const fretNumbers = Array.from({ length: 22 }, (_, i) => `<div>${i + 1}</div>`).join('');
@@ -573,22 +592,20 @@ function renderOpenStrings() {
   const scaleNotes = new Set(selectedTonality.scaleNotes);
   const chordIntervals = new Set(chordType.intervals);
   
-  // Calcular notas del modo seleccionado y otros modos disponibles
+  // Calcular notas del modo seleccionado
   const selectedModeNotes = new Set(getModeNotes(selectedMode, root));
-  const availableModes = getAvailableModes(quality);
-  const ghostModes = availableModes.filter(mode => mode !== selectedMode);
   
-  // Crear mapa de notas fantasmas con sus colores
+  // Crear mapa de notas fantasmas con sus colores (solo si hay un modo fantasma seleccionado)
   const ghostNotesMap = new Map();
-  ghostModes.forEach(modeKey => {
-    const modeNotes = getModeNotes(modeKey, root);
-    const modeColor = modes[modeKey].color;
+  if (ghostMode && ghostMode !== selectedMode) {
+    const modeNotes = getModeNotes(ghostMode, root);
+    const modeColor = modes[ghostMode].color;
     modeNotes.forEach(note => {
       if (!ghostNotesMap.has(note)) {
         ghostNotesMap.set(note, modeColor);
       }
     });
-  });
+  }
   
   const openStringsHtml = `<div class="open-string-label">Aire</div>` + 
     inst.strings.slice().reverse().map((openNote, reversedIdx) => {
@@ -729,9 +746,20 @@ qualitySelect.addEventListener('change', event => {
   if (!availableModes.includes(selectedMode)) {
     selectedMode = qualities[quality].defaultMode;
   }
+  // Resetear el modo fantasma cuando cambia la calidad
+  ghostMode = '';
   updateModeSelector();
   updateView(); 
 });
+
+// Event listener para el selector de modo fantasma
+const ghostModeSelect = document.querySelector('#ghost-mode-select');
+if (ghostModeSelect) {
+  ghostModeSelect.addEventListener('change', event => {
+    ghostMode = event.target.value;
+    renderFretboard();
+  });
+}
 
 // Event listener para el botón de ciclo de modo de visualización
 document.querySelector('#toggle-display').addEventListener('click', event => { 
