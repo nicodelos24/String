@@ -946,17 +946,64 @@ footer {
   border-radius: 50%;
   background: rgba(247, 226, 184, .55);
 }
-.octave-inlay .inlay-dot {
-  width: 12px;
-  height: 12px;
-  background: #f7e2b8;
-  box-shadow: 0 0 0 1px rgba(46, 29, 22, .18);
-}
-.inlay-double-top { top: 33.333%; }
-.inlay-double-bottom { top: 66.667%; }
+.inlay-triple-top { top: 20%; }
+.inlay-triple-bottom { top: 80%; }
 .octave-number {
   color: var(--ink);
   font-weight: 800;
   background: rgba(230, 184, 0, .25);
   border-radius: 4px;
+}
+
+.octave-inlay .inlay-dot {
+  width: 10px;
+  height: 10px;
+}
+
+/* Open strings sit outside the nut and share the fretboard's row height. */
+.fretboard-layout {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  grid-template-rows: 26px auto;
+}
+.open-strings-heading {
+  grid-column: 1;
+  grid-row: 1;
+  align-self: center;
+  text-align: center;
+  font: 9px var(--mono);
+  color: var(--muted);
+}
+.fretboard-layout > .fret-numbers {
+  grid-column: 2;
+  grid-row: 1;
+}
+.fretboard-layout > .fretboard {
+  grid-column: 2;
+  grid-row: 2;
+}
+.fretboard-layout > .open-strings {
+  grid-column: 1;
+  grid-row: 2;
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 3px 0;
+  min-height: 0;
+  border-right: 3px solid #dac6a1;
+}
+.open-string-row {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  min-height: 0;
+}
+.open-string-note {
+  width: 25px;
+  height: 25px;
+  min-height: 0;
+  padding: 0;
+  border-radius: 50%;
+  font: 10px var(--mono);
+  cursor: pointer;
 }

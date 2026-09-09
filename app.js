@@ -542,6 +542,7 @@ function getFretLabel(pitchClass, interval, inSelectedMode, inChord, showNoteNam
 }
 
 function renderFretboard() {
+  renderOpenStrings();
   const inst = instruments[instrument];
   const scaleNotes = new Set(selectedTonality.scaleNotes);
   const chordIntervals = new Set(chordType.intervals);
@@ -635,7 +636,7 @@ function renderFretboard() {
   const inlays = Array.from({ length: 22 }, (_, i) => {
     const fret = i + 1;
     const marker = fret === 12
-      ? '<span class="inlay-dot inlay-double-top"></span><span class="inlay-dot inlay-double-bottom"></span>'
+      ? '<span class="inlay-dot inlay-triple-top"></span><span class="inlay-dot"></span><span class="inlay-dot inlay-triple-bottom"></span>'
       : [3, 5, 7, 9, 15, 17, 19, 21].includes(fret) ? '<span class="inlay-dot"></span>' : '';
     return `<div class="inlay-cell ${fret === 12 ? 'octave-inlay' : ''}">${marker}</div>`;
   }).join('');
@@ -662,7 +663,7 @@ function renderOpenStrings() {
     });
   }
 
-  const openStringsHtml = `<div class="open-string-label">Aire</div>` + 
+  const openStringsHtml = 
     inst.strings.slice().reverse().map((openNote, reversedIdx) => {
       const pitchClass = openNote % 12;
       const inScale = scaleNotes.has(pitchClass);
@@ -670,7 +671,7 @@ function renderOpenStrings() {
       const intervalFromRoot = (pitchClass - root + 12) % 12;
       const inChord = chordIntervals.has(intervalFromRoot);
       const inSelectedMode = selectedModeNotes.has(pitchClass);
-      const intervalInfo = getIntervalClass(intervalFromRoot);
+      const intervalInfo = getIntervalClass(intervalFromRoot, !inSelectedMode && ghostNotesMap.has(pitchClass) ? ghostMode : selectedMode);
 
       let bgColor;
       let textColor;
@@ -717,7 +718,7 @@ function renderOpenStrings() {
       }
       // showNotes === 0: no mostrar ninguna nota
 
-      return `<div class="open-string-note" style="background-color: ${bgColor}; color: ${textColor};" title="${displayNote(pitchClass)} · ${intervalInfo.name}">${getFretLabel(pitchClass, intervalFromRoot, inSelectedMode, inChord, showNoteName)}</div>`;
+      return `<div class="open-string-row"><span class="${noteClass}" data-note="${displayNote(pitchClass)}" data-interval="${intervalInfo.name}" style="background-color: ${bgColor}; color: ${textColor};" title="${displayNote(pitchClass)} · ${intervalInfo.name}">${getFretLabel(pitchClass, intervalFromRoot, inSelectedMode, inChord, showNoteName)}</span></div>`;
     }).join('');
 
   document.querySelector('#open-strings').innerHTML = openStringsHtml;
@@ -863,4 +864,8 @@ document.querySelector('#progression').addEventListener('click', event => {
 });
 document.querySelector('#add-chord').addEventListener('click', () => { progression.push({ root, type: chordType.value }); activeProgression = progression.length - 1; renderProgression(); });
 fretboard.addEventListener('click', event => { const note = event.target.closest('.fret-note'); if (note) { document.querySelector('.hint').textContent = `${note.dataset.note}: ${note.dataset.interval}`; } });
+document.querySelector('#open-strings').addEventListener('click', event => {
+  const note = event.target.closest('.open-string-note');
+  if (note) document.querySelector('.hint').textContent = `${note.dataset.note}: ${note.dataset.interval} (cuerda al aire)`;
+});
 populateControls(); renderIntervalLegend(); updateModeLegend(); updateView();
