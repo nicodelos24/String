@@ -179,6 +179,7 @@ let selectedMode = 'ionian'; // Modo seleccionado por defecto
 let chordType = chordTypes[0]; // Tipo de acorde específico (para compatibility)
 let progression = [{ root: 0, type: 'maj' }, { root: 5, type: 'm7' }, { root: 7, type: '7' }, { root: 0, type: 'maj' }];
 let activeProgression = 0;
+let degreeDisplay = 0; // 0 = sin grados, 1 = escala, 2 = todo el mastil
 let showNotes = 0; // 0 = sin notas, 1 = solo notas de escala, 2 = todas las notas
 let displayModeIndex = 0; // 0 = grados completos, 1 = raíz, 3ra, 5ta, 2 = raíz, 3ra, 5ta, 7ma
 const displayModes = ['full', 'triad', 'seventh'];
@@ -528,6 +529,18 @@ function updateGhostModeSelector() {
   
   ghostModeSelect.innerHTML = `<option value="" ${ghostMode === '' ? 'selected' : ''}>Ninguna</option>` + options;
 }
+function getDegreeLabel(interval, modeKey = selectedMode) {
+  const normalized = ((interval % 12) + 12) % 12;
+  if (normalized === 6 && modeKey === 'lydian') return '♯4';
+  if (normalized === 8 && chordType.value === 'aug') return '♯5';
+  return ['1', '♭2', '2', '♭3', '3', '4', '♭5', '5', '♭6', '6', '♭7', '7'][normalized];
+}
+
+function getFretLabel(pitchClass, interval, inSelectedMode, inChord, showNoteName) {
+  if (degreeDisplay === 2 || (degreeDisplay === 1 && inSelectedMode)) return getDegreeLabel(interval);
+  return showNoteName ? displayNote(pitchClass) : '';
+}
+
 function renderFretboard() {
   const inst = instruments[instrument];
   const scaleNotes = new Set(selectedTonality.scaleNotes);
@@ -613,7 +626,7 @@ function renderFretboard() {
       }
       // showNotes === 0: no mostrar ninguna nota
       
-      return `<div class="fret">${dot}<span class="${noteClass}" data-note="${displayNote(pitchClass)}" data-interval="${intervalInfo.name}" style="background-color: ${bgColor}; color: ${textColor};" title="${displayNote(pitchClass)} · ${intervalInfo.name}">${showNoteName ? displayNote(pitchClass) : ''}</span></div>`;
+      return `<div class="fret">${dot}<span class="${noteClass}" data-note="${displayNote(pitchClass)}" data-interval="${intervalInfo.name}" style="background-color: ${bgColor}; color: ${textColor};" title="${displayNote(pitchClass)} · ${intervalInfo.name}">${getFretLabel(pitchClass, intervalFromRoot, inSelectedMode, inChord, showNoteName)}</span></div>`;
     }).join('');
     return `<div class="string-row" style="--string-width: ${stringIndex < (instrument === 'guitar' ? 3 : 2) ? 2 : 1}px">${frets}</div>`;
   }).join('');
@@ -695,7 +708,7 @@ function renderOpenStrings() {
       }
       // showNotes === 0: no mostrar ninguna nota
       
-      return `<div class="open-string-note" style="background-color: ${bgColor}; color: ${textColor};" title="${displayNote(pitchClass)} · ${intervalInfo.name}">${showNoteName ? displayNote(pitchClass) : ''}</div>`;
+      return `<div class="open-string-note" style="background-color: ${bgColor}; color: ${textColor};" title="${displayNote(pitchClass)} · ${intervalInfo.name}">${getFretLabel(pitchClass, intervalFromRoot, inSelectedMode, inChord, showNoteName)}</div>`;
     }).join('');
   
   document.querySelector('#open-strings').innerHTML = openStringsHtml;
@@ -804,6 +817,15 @@ document.querySelector('#toggle-display').addEventListener('click', event => {
   buttonText.textContent = displayModeLabels[displayModeIndex];
   
   renderFretboard(); 
+});
+document.querySelector('#toggle-degrees').addEventListener('click', event => {
+  degreeDisplay = (degreeDisplay + 1) % 3;
+  const button = event.currentTarget;
+  const labels = ['grados: no', 'grados: escala', 'grados: todos'];
+  button.querySelector('span').textContent = labels[degreeDisplay];
+  button.setAttribute('aria-pressed', String(degreeDisplay !== 0));
+  button.setAttribute('aria-label', labels[degreeDisplay] + '. Clic para cambiar.');
+  renderFretboard();
 });
 document.querySelector('#toggle-notes').addEventListener('click', event => { 
   showNotes = (showNotes + 1) % 3; // Ciclar entre 0, 1, 2
