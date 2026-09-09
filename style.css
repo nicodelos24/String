@@ -859,7 +859,7 @@ footer {
 }
 
 .string-row {
-  grid-template-columns: repeat(22, minmax(30px, 1fr)) !important;
+  grid-template-columns: var(--fret-columns);
 }
 
 .fret-note {
@@ -900,4 +900,63 @@ footer {
 }
 .toolbar-buttons {
   flex-wrap: wrap;
+}
+
+/* Proportional frets: shared columns keep numbers, strings and inlays aligned. */
+.fretboard-layout {
+  min-width: 660px;
+  width: 100%;
+}
+.fret-numbers,
+.string-row,
+.fret-inlays {
+  grid-template-columns: var(--fret-columns);
+}
+.fret-numbers {
+  margin-left: 4px;
+  margin-right: 4px;
+  font-size: 10px;
+}
+.fretboard {
+  width: 100%;
+  overflow: visible;
+  isolation: isolate;
+}
+.fret-note {
+  position: relative;
+  z-index: 2;
+}
+.fret-inlays {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  pointer-events: none;
+  z-index: -1;
+}
+.inlay-cell {
+  position: relative;
+}
+.inlay-dot {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 9px;
+  height: 9px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: rgba(247, 226, 184, .55);
+}
+.octave-inlay .inlay-dot {
+  width: 12px;
+  height: 12px;
+  background: #f7e2b8;
+  box-shadow: 0 0 0 1px rgba(46, 29, 22, .18);
+}
+.inlay-double-top { top: 33.333%; }
+.inlay-double-bottom { top: 66.667%; }
+.octave-number {
+  color: var(--ink);
+  font-weight: 800;
+  background: rgba(230, 184, 0, .25);
+  border-radius: 4px;
 }
