@@ -50,9 +50,10 @@
       </aside>
 
       <div class="fretboard-section">
+        
         <div class="progression-header-inline"><div><p class="eyebrow">IDEA DE PROGRESIÓN</p><h3>Tu vuelta armónica</h3></div><button class="add-button" id="add-chord" type="button"><span>+</span> añadir acorde</button></div>
         <div class="progression" id="progression" aria-label="Progresión de acordes"></div>
-
+        
         <div class="board-toolbar"><div><span class="eyebrow board-eyebrow">MÁSTIL / GUITARRA</span><h2 id="board-title">C · C Mayor</h2></div><div class="toolbar-buttons"><button class="icon-button" id="toggle-notes" type="button" aria-pressed="false" title="Ciclar entre mostrar sin notas, solo escala, o todas las notas">Aa <span>notas</span></button><button class="icon-button" id="toggle-degrees" type="button" aria-pressed="false" aria-label="Grados: no. Clic para cambiar." title="Alternar grados de la escala, grados de todo el mástil y desactivados. Se conserva la selección del control de notas.">1 <span>grados: no</span></button><button class="icon-button" id="toggle-display" type="button" aria-pressed="false" title="Ciclar entre modos de visualización">🎨 <span id="display-label">grados</span></button></div></div>
         <div class="fretboard-wrap"><div class="fretboard-layout">
           <div class="open-strings-heading">Al aire</div>
@@ -61,11 +62,18 @@
           <div class="fretboard" id="fretboard" aria-label="Mástil interactivo de guitarra"></div>
         </div></div>
         <div class="board-footer"><span id="note-count">7 notas</span><span>·</span><span>22 trastes visibles</span><span class="hint">Haz clic en una nota para escuchar su función</span></div>
+      <section class="metronome" aria-label="Metr&#243;nomo">
+            <div class="metronome-heading"><strong>Metr&#243;nomo</strong><button type="button" id="metronome-toggle" aria-pressed="false">Iniciar</button></div>
+            <label for="metronome-bpm">BPM <input id="metronome-bpm" type="number" min="30" max="240" step="1" value="100"></label>
+            <label for="metronome-beats">Pulsos por comp&#225;s <select id="metronome-beats"><option>1</option><option>2</option><option>3</option><option selected>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select></label>
+            <label for="metronome-accent" class="metronome-accent"><input id="metronome-accent" type="checkbox" checked>Acentuar primero</label>
+            <label for="metronome-volume">Volumen <input id="metronome-volume" type="range" min="0" max="100" value="35"></label>
+            <div id="metronome-pulses" aria-hidden="true"></div>
+            <span id="metronome-status" role="status">En pausa</span>
+          </section>
       </div>
-
+      
       <aside class="legend-panel">
-
-
         <div class="legend-heading"><span class="section-number"></span><h2>Armadura de Clave </h2></div>
         <!-- <div class="chord-readout"><span class="readout-label">ACORDE SELECCIONADO</span><strong id="chord-readout">C</strong><span class="mode-display" id="mode-display"></span><span class="key-signature-chord" id="key-signature-chord"></span></div> -->
         <div class="chord-readout"><span class="readout-label">ACORDE SELECCIONADO</span><strong id="chord-readout">C</strong><span class="mode-display" id="mode-display"></span><span class="key-signature-chord" id="key-signature-chord"></span></div>
@@ -126,5 +134,6 @@
   </main>
   <footer><span>traste. explorador armónico</span><span>Hecho para estudiar, tocar y descubrir.</span></footer>
   <script src="app.js"></script>
+  <script src="metronome.js"></script>
 </body>
 </html>

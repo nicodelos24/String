@@ -1007,3 +1007,28 @@ footer {
   font: 10px var(--mono);
   cursor: pointer;
 }
+
+.metronome {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 18px;
+  padding: 12px;
+  margin: 16px 0;
+  border: 1px solid var(--line);
+  background: var(--paper-light);
+  font: 11px var(--sans);
+}
+.metronome-heading, .metronome label { display: flex; align-items: center; gap: 8px; }
+.metronome input, .metronome select, .metronome button { accent-color: var(--rust); font: inherit; }
+.metronome input[type="number"] { width: 62px; }
+.metronome input[type="range"] { width: 80px; }
+.metronome input[type="number"], .metronome select, .metronome button {
+  padding: 6px; border: 1px solid var(--line); background: var(--paper); color: var(--ink);
+}
+.metronome button { cursor: pointer; min-width: 60px; }
+.metronome button[aria-pressed="true"] { background: var(--rust); color: white; }
+#metronome-pulses { display: flex; flex-wrap: wrap; gap: 5px; }
+.metronome-pulse { display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--line); font: 10px var(--mono); }
+.metronome-pulse.active { background: var(--rust); color: white; }
+#metronome-status { color: var(--muted); font-size: 10px; }
