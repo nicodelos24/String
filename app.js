@@ -151,18 +151,18 @@ const intervalColors = {
   2: { name: '2ª mayor / 9ª mayor', color: '#00BCD4' },
   3: { name: '3ª menor', color: '#66BB6A' },
   4: { name: '3ª mayor', color: '#4CAF50' },
-  5: { name: '4ª justa / 11ª', color: '#9C27B0' },
+  5: { name: '4ª justa / 11ª', color: '#00897B' },
   6: { name: '5ª disminuida', color: '#C9A227' },
   7: { name: '5ª justa', color: '#E6B800' },
   8: { name: '6ª menor / 13ª menor', color: '#EF8700' },
   9: { name: '6ª mayor / 13ª mayor', color: '#FF9800' },
-  10: { name: '7ª menor', color: '#00897B' },
-  11: { name: '7ª mayor', color: '#26A69A' },
+  10: { name: '7ª menor', color: '#9C27B0' },
+  11: { name: '7ª mayor', color: '#AB47BC' },
 };
 
 // Variantes enarmónicas: el mismo semitono puede cumplir otra función.
 const alteredIntervalColors = {
-  augmentedFourth: { name: '4ª aumentada / 11ª aumentada', color: '#AB47BC' },
+  augmentedFourth: { name: '4ª aumentada / 11ª aumentada', color: '#26A69A' },
   augmentedFifth: { name: '5ª aumentada', color: '#F0C83D' },
 };
 
