@@ -146,18 +146,29 @@ const qualities = {
 };
 
 const intervalColors = {
-  0: { name: 'Raíz', color: '#E53935', rgb: [229, 57, 53] }, // Rojo más vibrante
-  3: { name: '3ª menor', color: '#4CAF50', rgb: [76, 175, 80] }, // Verde más vibrante pero elegante
-  4: { name: '3ª mayor', color: '#4CAF50', rgb: [76, 175, 80] }, // Verde más vibrante pero elegante
-  6: { name: '5ª dism.', color: '#ff6b6b', rgb: [255, 107, 107] },
-  7: { name: '5ª justa', color: '#E6B800', rgb: [230, 184, 0] }, // Amarillo más suave
-  8: { name: '5ª aum.', color: '#d32f2f', rgb: [211, 47, 47] },
-  9: { name: '6ª', color: '#ff9800', rgb: [255, 152, 0] },
-  10: { name: '7ª menor', color: '#9c27b0', rgb: [156, 39, 176] },
-  11: { name: '7ª mayor', color: '#3f51b5', rgb: [63, 81, 181] },
-  2: { name: '2ª / 9ª', color: '#00bcd4', rgb: [0, 188, 212] },
-  5: { name: '4ª / sus4', color: '#00897b', rgb: [0, 137, 123] },
+  0: { name: 'Raíz', color: '#E53935' },
+  1: { name: '2ª menor / 9ª menor', color: '#26A6BC' },
+  2: { name: '2ª mayor / 9ª mayor', color: '#00BCD4' },
+  3: { name: '3ª menor', color: '#66BB6A' },
+  4: { name: '3ª mayor', color: '#4CAF50' },
+  5: { name: '4ª justa / 11ª', color: '#9C27B0' },
+  6: { name: '5ª disminuida', color: '#C9A227' },
+  7: { name: '5ª justa', color: '#E6B800' },
+  8: { name: '6ª menor / 13ª menor', color: '#EF8700' },
+  9: { name: '6ª mayor / 13ª mayor', color: '#FF9800' },
+  10: { name: '7ª menor', color: '#00897B' },
+  11: { name: '7ª mayor', color: '#26A69A' },
 };
+
+// Variantes enarmónicas: el mismo semitono puede cumplir otra función.
+const alteredIntervalColors = {
+  augmentedFourth: { name: '4ª aumentada / 11ª aumentada', color: '#AB47BC' },
+  augmentedFifth: { name: '5ª aumentada', color: '#F0C83D' },
+};
+
+Object.values({ ...intervalColors, ...alteredIntervalColors }).forEach(interval => {
+  interval.rgb = interval.color.match(/[a-f0-9]{2}/gi).map(value => parseInt(value, 16));
+});
 
 let instrument = 'guitar';
 let selectedTonality = tonalities[0]; // Escala global base
@@ -249,9 +260,31 @@ function displayNote(index) {
   
   return name;
 }
-function getIntervalClass(interval) {
-  const normalized = interval % 12;
-  return intervalColors[normalized] || { name: 'Otra', color: '#bbb', rgb: [187, 187, 187] };
+function getIntervalClass(interval, modeKey = selectedMode) {
+  const normalized = ((interval % 12) + 12) % 12;
+  if (normalized === 6 && modeKey === 'lydian') {
+    return alteredIntervalColors.augmentedFourth;
+  }
+  if (normalized === 8 && chordType.value === 'aug') {
+    return alteredIntervalColors.augmentedFifth;
+  }
+  return intervalColors[normalized];
+}
+
+function renderIntervalLegend() {
+  const entries = [
+    ...Object.values(intervalColors).slice(0, 6),
+    alteredIntervalColors.augmentedFourth,
+    intervalColors[6], intervalColors[7], alteredIntervalColors.augmentedFifth,
+    ...Object.values(intervalColors).slice(8),
+    { name: 'Nota de escala sin resaltar', color: '#bbb' },
+  ];
+  document.querySelector('#interval-legend').innerHTML = entries.map(interval => `
+    <div class="legend-item">
+      <span class="legend-dot" style="background-color: ${interval.color};"></span>
+      <span class="legend-label">${interval.name}</span>
+    </div>
+  `).join('');
 }
 
 // Función para determinar si un intervalo debe ser coloreado según el modo de visualización
@@ -261,11 +294,11 @@ function shouldHighlightInterval(interval, displayModeIndex) {
   
   switch (displayMode) {
     case 'triad':
-      // Solo raíz (0), 3ra menor (3), 3ra mayor (4), 5ta justa (7)
-      return [0, 3, 4, 7].includes(normalized);
+      // Intervalos de la triada actual, incluida la quinta disminuida.
+      return chordType.intervals.includes(normalized);
     case 'seventh':
       // Raíz (0), 3ra menor (3), 3ra mayor (4), 5ta justa (7), 7ma menor (10), 7ma mayor (11)
-      return [0, 3, 4, 7, 10, 11].includes(normalized);
+      return chordType.intervals.includes(normalized) || [10, 11].includes(normalized);
     case 'full':
     default:
       // Todos los intervalos
@@ -532,7 +565,7 @@ function renderFretboard() {
       const inChord = chordIntervals.has(intervalFromRoot);
       const inSelectedMode = selectedModeNotes.has(pitchClass);
       const dot = [3, 5, 7, 9, 12, 15, 17, 19, 21].includes(actualFret) ? '<span class="fret-dot"></span>' : '';
-      const intervalInfo = getIntervalClass(intervalFromRoot);
+      const intervalInfo = getIntervalClass(intervalFromRoot, !inSelectedMode && ghostNotesMap.has(pitchClass) ? ghostMode : selectedMode);
       
       // Determinar color de fondo y clase CSS
       let bgColor;
@@ -799,4 +832,4 @@ document.querySelector('#progression').addEventListener('click', event => {
 });
 document.querySelector('#add-chord').addEventListener('click', () => { progression.push({ root, type: chordType.value }); activeProgression = progression.length - 1; renderProgression(); });
 fretboard.addEventListener('click', event => { const note = event.target.closest('.fret-note'); if (note) { document.querySelector('.hint').textContent = `${note.dataset.note}: ${note.dataset.interval}`; } });
-populateControls(); updateModeLegend(); updateView();
+populateControls(); renderIntervalLegend(); updateModeLegend(); updateView();

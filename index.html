@@ -46,9 +46,9 @@
           <!-- Los modos se cargarán dinámicamente según la calidad -->
         </div>
 
-        
+
       </aside>
-      
+
       <div class="fretboard-section">
         <div class="progression-header-inline"><div><p class="eyebrow">IDEA DE PROGRESIÓN</p><h3>Tu vuelta armónica</h3></div><button class="add-button" id="add-chord" type="button"><span>+</span> añadir acorde</button></div>
         <div class="progression" id="progression" aria-label="Progresión de acordes"></div>
@@ -61,7 +61,7 @@
 
       <aside class="legend-panel">
 
-        
+
         <div class="legend-heading"><span class="section-number"></span><h2>Armadura de Clave </h2></div>
         <!-- <div class="chord-readout"><span class="readout-label">ACORDE SELECCIONADO</span><strong id="chord-readout">C</strong><span class="mode-display" id="mode-display"></span><span class="key-signature-chord" id="key-signature-chord"></span></div> -->
         <div class="chord-readout"><span class="readout-label">ACORDE SELECCIONADO</span><strong id="chord-readout">C</strong><span class="mode-display" id="mode-display"></span><span class="key-signature-chord" id="key-signature-chord"></span></div>
@@ -71,47 +71,11 @@
         <select id="ghost-mode-select">
           <option value="">Ninguna</option>
         </select>
-        
+
         <div class="legend-heading" style="margin-top: 24px;"><span class="section-number">02</span><h2>Intervalo</h2></div>
-        <div class="legend-colors">
-          <div class="legend-item">
-            <span class="legend-dot" style="background-color: #E53935;"></span>
-            <span class="legend-label">Raíz</span>
-          </div>
-          <div class="legend-item">
-            <span class="legend-dot" style="background-color: #4CAF50;"></span>
-            <span class="legend-label">3ª menor</span>
-          </div>
-          <div class="legend-item">
-            <span class="legend-dot" style="background-color: #4CAF50;"></span>
-            <span class="legend-label">3ª mayor</span>
-          </div>
-          <div class="legend-item">
-            <span class="legend-dot" style="background-color: #E6B800;"></span>
-            <span class="legend-label">5ª justa</span>
-          </div>
-          <div class="legend-item">
-            <span class="legend-dot" style="background-color: #9c27b0;"></span>
-            <span class="legend-label">7ª menor</span>
-          </div>
-          <div class="legend-item">
-            <span class="legend-dot" style="background-color: #3f51b5;"></span>
-            <span class="legend-label">7ª mayor</span>
-          </div>
-          <div class="legend-item">
-            <span class="legend-dot" style="background-color: #00bcd4;"></span>
-            <span class="legend-label">2ª / 9ª</span>
-          </div>
-          <div class="legend-item">
-            <span class="legend-dot" style="background-color: #00897b;"></span>
-            <span class="legend-label">4ª / 11ª</span>
-          </div>
-          <div class="legend-item">
-            <span class="legend-dot" style="background-color: #bbb;"></span>
-            <span class="legend-label">Escala</span>
-          </div>
-        </div>
-        
+        <div class="legend-colors" id="interval-legend"></div>
+
+
         <div class="legend-heading" style="margin-top: 24px;"><span class="section-number">03</span><h2>Modos disponibles</h2></div>
         <div class="legend-colors" id="mode-legend">
           <div class="legend-item">
