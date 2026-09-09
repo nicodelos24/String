@@ -109,7 +109,7 @@ footer {
 }
 
 .shell {
-  width: min(1240px, 89vw);
+  width: min(1440px, 95vw);
   margin: 0 auto;
 }
 
@@ -159,7 +159,7 @@ footer {
 
 .fretboard-section {
   min-width: 0;
-  padding: 20px 30px 22px;
+  padding: 20px 20px 22px;
   background: #eeeade;
   overflow-y: auto;
 }
@@ -999,8 +999,8 @@ footer {
   min-height: 0;
 }
 .open-string-note {
-  width: 25px;
-  height: 25px;
+  width: 20px;
+  height: 20px;
   min-height: 0;
   padding: 0;
   border-radius: 50%;

@@ -663,7 +663,7 @@ function renderOpenStrings() {
     });
   }
 
-  const openStringsHtml = 
+  const openStringsHtml =
     inst.strings.slice().reverse().map((openNote, reversedIdx) => {
       const pitchClass = openNote % 12;
       const inScale = scaleNotes.has(pitchClass);
