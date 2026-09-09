@@ -474,6 +474,9 @@ function populateControls() {
   qualitySelect.innerHTML = Object.entries(qualities).map(([key, qual]) => `<option value="${key}">${qual.label}</option>`).join('');
   instrumentSelect.value = instrument; rootSelect.value = root; qualitySelect.value = quality;
 
+  const savedNoteIndex = Array.from(rootSelect.options).findIndex(option => option.dataset.note === rootNoteName);
+  if (savedNoteIndex >= 0) rootSelect.selectedIndex = savedNoteIndex;
+
   // Establecer el nombre de la nota raíz seleccionada
   const selectedOption = rootSelect.options[rootSelect.selectedIndex];
   if (selectedOption) {
@@ -505,6 +508,8 @@ function updateModeSelector() {
   modeSelector.querySelectorAll('input[name="mode"]').forEach(radio => {
     radio.addEventListener('change', (e) => {
       selectedMode = e.target.value;
+      activeProgression = -1;
+      updateGhostModeSelector();
       updateView();
     });
   });
@@ -518,6 +523,8 @@ function updateGhostModeSelector() {
   if (!ghostModeSelect) return;
 
   const availableModes = getAvailableModes(quality);
+
+  if (ghostMode === selectedMode || !availableModes.includes(ghostMode)) ghostMode = '';
 
   // Generar opciones: "Ninguna" + todos los modos disponibles excepto el seleccionado
   const options = availableModes
@@ -729,11 +736,7 @@ function updateView() {
   // Calcular la armadura de clave según modo y nota
   const keySignature = calculateKeySignature(selectedMode, root);
 
-  // Determinar el tipo de acorde según la calidad
-  let chordSuffix = '';
-  if (quality === 'major') chordSuffix = '';
-  else if (quality === 'minor') chordSuffix = 'm';
-  else if (quality === 'diminished') chordSuffix = 'dim';
+  const chordSuffix = chordType.suffix;
 
   // Actualizar la tonalidad global basada en el modo seleccionado
   const majorRoot = (root - selectedModeData.degree + 12) % 12;
@@ -756,11 +759,6 @@ function updateView() {
   document.querySelector('#board-title').textContent = `${rootNoteName}${chordSuffix} · ${selectedModeData.name}`;
   document.querySelector('.board-eyebrow').textContent = `MÁSTIL / ${instruments[instrument].name.toUpperCase()}`;
 
-  // Actualizar el tipo de acorde para compatibility
-  if (quality === 'major') chordType = chordTypes[0]; // Mayor
-  else if (quality === 'minor') chordType = chordTypes[3]; // Menor
-  else if (quality === 'diminished') chordType = chordTypes[6]; // Disminuido
-
   updateModeLegend();
   renderFretboard(); renderProgression();
 }
@@ -782,11 +780,12 @@ function updateModeLegend() {
 function renderProgression() {
   document.querySelector('#progression').innerHTML = progression.map((item, index) => {
     const type = chordTypes.find(candidate => candidate.value === item.type);
-    return `<div class="progression-card ${index === activeProgression ? 'active' : ''}" data-index="${index}"><button type="button" data-remove="${index}" aria-label="Quitar acorde ${index + 1}">×</button><small>${['I', 'ii', 'iii', 'IV', 'V', 'vi', 'vii°'][index] || `#${index + 1}`}</small><strong>${displayNote(item.root)}${type ? type.suffix : ''}</strong></div>`;
+    return `<div class="progression-card ${index === activeProgression ? 'active' : ''}" data-index="${index}"><button type="button" data-remove="${index}" aria-label="Quitar acorde ${index + 1}">×</button><small>${index + 1}</small><strong>${item.rootNoteName || noteName(item.root)}${type ? type.suffix : ''}</strong></div>`;
   }).join('');
 }
 instrumentSelect.addEventListener('change', event => { instrument = event.target.value; updateView(); });
 rootSelect.addEventListener('change', event => {
+  activeProgression = -1;
   root = Number(event.target.value);
   // Actualizar el nombre de la nota raíz seleccionada
   const selectedOption = rootSelect.options[rootSelect.selectedIndex];
@@ -797,6 +796,8 @@ rootSelect.addEventListener('change', event => {
 });
 qualitySelect.addEventListener('change', event => { 
   quality = event.target.value;
+  chordType = chordTypes.find(type => type.value === ({major: 'maj', minor: 'm', diminished: 'dim'})[quality]);
+  activeProgression = -1;
   // Actualizar el modo seleccionado basado en la nueva calidad
   const availableModes = getAvailableModes(quality);
   if (!availableModes.includes(selectedMode)) {
@@ -813,6 +814,8 @@ const ghostModeSelect = document.querySelector('#ghost-mode-select');
 if (ghostModeSelect) {
   ghostModeSelect.addEventListener('change', event => {
     ghostMode = event.target.value;
+    activeProgression = -1;
+    renderProgression();
     renderFretboard();
   });
 }
@@ -856,13 +859,44 @@ document.querySelector('#toggle-notes').addEventListener('click', event => {
 
   renderFretboard(); 
 });
+function selectProgressionChord(index) {
+  const item = progression[index];
+  if (!item) return;
+  activeProgression = index;
+  root = item.root;
+  rootNoteName = item.rootNoteName || noteName(root);
+  chordType = chordTypes.find(type => type.value === item.type) || chordTypes[0];
+  quality = chordType.intervals.includes(6) ? 'diminished' : chordType.intervals.includes(3) ? 'minor' : 'major';
+  selectedMode = item.mode || (item.type === '7' ? 'mixolydian' : qualities[quality].defaultMode);
+  ghostMode = item.ghostMode || '';
+  populateControls();
+  updateView();
+}
+
+function addProgressionChord() {
+  progression.push({ root, rootNoteName, type: chordType.value, mode: selectedMode, ghostMode });
+  activeProgression = progression.length - 1;
+  renderProgression();
+}
+
+function removeProgressionChord(index) {
+  if (progression.length <= 1 || !progression[index]) return;
+  progression.splice(index, 1);
+  if (activeProgression === index) {
+    selectProgressionChord(Math.min(index, progression.length - 1));
+  } else {
+    if (activeProgression > index) activeProgression--;
+    renderProgression();
+  }
+}
+
 document.querySelector('#progression').addEventListener('click', event => {
   const remove = event.target.closest('[data-remove]');
-  if (remove) { if (progression.length > 1) { progression.splice(Number(remove.dataset.remove), 1); activeProgression = Math.min(activeProgression, progression.length - 1); renderProgression(); } return; }
+  if (remove) { removeProgressionChord(Number(remove.dataset.remove)); return; }
   const card = event.target.closest('[data-index]');
-  if (card) { activeProgression = Number(card.dataset.index); const item = progression[activeProgression]; root = item.root; chordType = chordTypes.find(type => type.value === item.type) || chordTypes[0]; populateControls(); updateView(); }
+  if (card) selectProgressionChord(Number(card.dataset.index));
 });
-document.querySelector('#add-chord').addEventListener('click', () => { progression.push({ root, type: chordType.value }); activeProgression = progression.length - 1; renderProgression(); });
+document.querySelector('#add-chord').addEventListener('click', addProgressionChord);
 fretboard.addEventListener('click', event => { const note = event.target.closest('.fret-note'); if (note) { document.querySelector('.hint').textContent = `${note.dataset.note}: ${note.dataset.interval}`; } });
 document.querySelector('#open-strings').addEventListener('click', event => {
   const note = event.target.closest('.open-string-note');
