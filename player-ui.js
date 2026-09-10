@@ -6,6 +6,7 @@
   const style = document.querySelector('#player-style');
   const percussion = document.querySelector('#player-percussion');
   const status = document.querySelector('#player-status');
+  let playbackItems = [];
   const setBusy = busy => {
     bpm.disabled = busy;
     loop.disabled = busy;
@@ -16,9 +17,15 @@
   };
   const player = new ProgressionPlayer({
     onChord: (index, name, total) => {
+      const entry = playbackItems[index];
+      if (entry) {
+        playingProgressionItem = entry.source;
+        showProgressionChord(entry.saved, progression.indexOf(entry.source));
+      }
       status.textContent = `Sonando: ${name} · acorde ${index + 1} de ${total}`;
     },
     onState: running => {
+      if (!running) {playingProgressionItem = null; renderProgression();}
       setBusy(running);
       status.textContent = running ? 'Reproduciendo…' : 'Detenido';
     }
@@ -26,7 +33,9 @@
   button.addEventListener('click', async () => {
     if (player.running || player.starting) { player.stop(); return; }
     if (!bpm.reportValidity()) return;
-    const chords = progression.map(item => {
+    window.dispatchEvent?.(new Event('traste:synth-start'));
+    playbackItems = progression.map(item => ({source:item, saved:{...item}}));
+    const chords = playbackItems.map(({saved:item}) => {
       const type = chordTypes.find(candidate => candidate.value === item.type);
       return {
         name: (item.rootNoteName || noteName(item.root)) + type.suffix,
@@ -46,4 +55,5 @@
     player.setDrumVolume(Number(event.target.value) / 100);
   });
   window.addEventListener('pagehide', () => player.stop());
+  window.addEventListener('traste:youtube-playing', () => {if(player.running || player.starting) player.stop();});
 })();

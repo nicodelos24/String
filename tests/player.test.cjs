@@ -273,3 +273,15 @@ test('MIX-01: triads and extended chords use equal squared gain with moderate tr
     assert(levels.every(value=>value>0 && value<0.32));
   }
 });
+
+test('new styles schedule distinct complete bars with cancellable percussion',async()=>{
+  for(const [style,attacks,noiseHits] of [['funk',5,14],['bossa',4,11],['reggaeton',4,12]]) {
+    const {player,buffers,oscillators}=setup();
+    await player.start(chords,{bpm:240,style});
+    assert.equal(oscillators.length,attacks*3+accompanimentStyles[style].kick.length);
+    assert.equal(buffers.length,noiseHits);
+    player.stop();
+    assert(buffers.every(source=>source.stopped));
+    assert.equal(player.voices.size,0);
+  }
+});

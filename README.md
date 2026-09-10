@@ -2,6 +2,10 @@
 
 Aplicación web para explorar escalas, modos e intervalos sobre el mástil de una guitarra o un bajo. Permite elegir una nota base y una calidad de acorde, visualizar sus relaciones musicales y armar una idea de progresión armónica.
 
+## Proyecto desarrollado con asistencia de IA
+
+Traste es un proyecto de aprendizaje y portfolio desarrollado con ayuda de inteligencia artificial para explorar ideas, implementar funciones, revisar errores, crear pruebas y documentar avances. El proceso incluye revisión del código y pruebas manuales del autor para entender lo construido y mejorar el producto a partir del uso real. La lógica musical y la síntesis de audio se ejecutan localmente en el navegador.
+
 ## Cómo ejecutarlo
 
 1. Descargá o cloná este repositorio.
@@ -24,6 +28,9 @@ Las tipografías Manrope y DM Mono se cargan desde Google Fonts y requieren cone
 - Superposición de una escala adicional mediante notas semitransparentes.
 - Controles para mostrar nombres de notas y alternar el resaltado de grados, tríada o séptima.
 - Panel de progresión para agregar, seleccionar y quitar acordes.
+- Reordenamiento de tarjetas por arrastre en escritorio y mediante flechas, también disponibles con teclado o en pantallas táctiles.
+- Seguimiento automático del acorde que suena: raíz, modo, escala adicional y mástil se actualizan con la reproducción.
+- Selección de séptimas diatónicas al elegir un modo, con nombre de modo visible en cada tarjeta.
 - Reproductor local de la progresión con BPM, volumen y repetición; un acorde cada cuatro pulsos.
 - Estilos Sin ritmo, Pop / rock, Jazz suave y Trap suave, con percusión opcional y volumen independiente.
 - Consulta del nombre y el intervalo de una nota al hacer clic sobre el mástil.
@@ -50,6 +57,22 @@ Las pentatónicas mayor y menor están disponibles en las tres calidades. La dis
 6. En **Seleccionar escala adicional**, elegí otra escala para compararla visualmente con la principal.
 7. Hacé clic en una nota para consultar su nombre e intervalo en el pie del mástil.
 8. Presioná **añadir acorde** para incorporar el acorde actual a la progresión. Podés seleccionar sus tarjetas o quitar acordes con el botón de cierre; siempre queda al menos uno.
+9. Arrastrá una tarjeta hasta otra posición o usá sus flechas para organizar la progresión. La selección y el modo guardado viajan con el acorde.
+
+## Acordes según el modo
+
+Al elegir un modo diatónico, la app propone el acorde de séptima construido sobre su raíz:
+
+| Modo elegido | Tipo guardado | Ejemplo con raíz C |
+| --- | --- | --- |
+| Jónico o lidio | Mayor con séptima mayor | Cmaj7 |
+| Mixolidio | Séptima dominante | C7 |
+| Dórico, frigio o eólico | Menor con séptima menor | Cm7 |
+| Locrio | Semidisminuido | Cm7♭5 |
+
+La raíz elegida se mantiene: C mixolidio guarda C7. Dórico y eólico comparten el acorde m7, pero tienen escalas diferentes; por eso se conserva y se muestra el modo en la tarjeta. Cambiar solo la calidad propone una tríada mayor, menor o disminuida. Las pentatónicas mantienen esa tríada según la calidad, sin deducir una séptima que no definen por sí solas. También podés pulsar el modo ya seleccionado para aplicar su séptima.
+
+Los acordes guardados anteriormente conservan su tipo. Elegir otro modo crea un borrador; **añadir acorde** lo incorpora como una tarjeta nueva.
 
 Por ejemplo, seleccioná guitarra, nota C, calidad mayor y modo jónico para explorar las notas de Do mayor. Luego comparalo con el modo lidio usando el selector de escala adicional.
 
@@ -110,6 +133,8 @@ El audio se genera localmente con Web Audio en `metronome.js` y se activa al pre
 
 Se usa un sonido sintetizado sencillo generado con Web Audio, sin cuentas, muestras descargadas ni servicios pagos. La reproducción toma una copia de la progresión: las ediciones se escuchan al detener y volver a iniciar. BPM y Repetir se configuran antes de reproducir. El metrónomo funciona por separado.
 
+Al sonar cada acorde, el mástil muestra su raíz, modo y escala adicional guardados, y la tarjeta correspondiente se marca como **sonando**. Si movés una tarjeta durante la reproducción, el seguimiento conserva la identidad del acorde; el audio mantiene el orden de la copia hasta reiniciar. Si quitás una tarjeta que todavía forma parte de esa copia, su escala se sigue mostrando al sonar aunque ya no haya una tarjeta que seleccionar. Al detener, el mástil queda en el último acorde mostrado.
+
 Los patrones son acompañamientos sintetizados simples en 4/4. **Sin ritmo** toca acordes sostenidos, **Pop / rock** usa un pulso recto, **Jazz suave** incorpora swing y **Trap suave** usa caja a medio tiempo y hi-hats rápidos. Desactivar Percusión mantiene los ataques de acordes del estilo. El timbre tiene armónicos suaves, normalización de ganancias y compresión de la mezcla; la comodidad del balance está en validación manual.
 
 No hay sincronización con el metrónomo independiente ni conexión con YouTube Music. El mástil sigue mostrando información al hacer clic sobre una nota. Ver [Ritmos y sonido](docs/RITMOS-Y-SONIDO.md) para aprender cómo funcionan los patrones y la mezcla.
@@ -133,7 +158,9 @@ La suite de Node no requiere paquetes y usa audio y DOM simulados. Hay además u
 - [Casos de prueba en Excel](docs/qa/excel/Casos_de_prueba_Traste.xlsx): casos, historial y guía para completar resultados.
 - [Bugs — edición Ritmos](docs/qa/excel/Reporte_de_bugs_Traste_Ritmos.xlsx) y [casos — edición Ritmos](docs/qa/excel/Casos_de_prueba_Traste_Ritmos.xlsx): incluyen el nuevo reporte de balance y los casos de percusión. Se conservan las planillas anteriores.
 
-La suite actual tiene **34 pruebas automatizadas**. Los estilos también se verifican con `node scripts/check-player-browser.cjs --rhythms` (y `--edge` para Edge), incluyendo renderizado OfflineAudioContext y mediciones de nivel.
+La suite actual tiene **37 pruebas automatizadas**. Los estilos también se verifican con `node scripts/check-player-browser.cjs --rhythms` (y `--edge` para Edge), incluyendo renderizado OfflineAudioContext y mediciones de nivel. El flujo de modos, reordenamiento y seguimiento del mástil se comprueba con `node scripts/check-player-browser.cjs --progression`: usa controles reales y eventos de arrastre simulados dentro del navegador.
+
+En este avance se actualizó únicamente el README como documentación. Las planillas y los documentos de QA conservan el estado de la etapa anterior; los cambios de reordenamiento, seguimiento y séptimas quedan pendientes de incorporarse allí.
 
 ## Próximos pasos recomendados
 

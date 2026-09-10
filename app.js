@@ -124,6 +124,7 @@ const chordTypes = [
   { value: 'aug', label: 'Aumentado', suffix: 'aug', intervals: [0, 4, 8] },
   { value: '7', label: 'Dominante 7', suffix: '7', intervals: [0, 4, 7, 10] },
   { value: '7sus4', label: 'Dom 7sus4', suffix: '7sus4', intervals: [0, 5, 7, 10] },
+  { value: 'm7b5', label: 'Semidisminuido', suffix: 'm7♭5', intervals: [0, 3, 6, 10] },
 ];
 
 // Calidades para el nuevo flujo de selección
@@ -179,6 +180,8 @@ let selectedMode = 'ionian'; // Modo seleccionado por defecto
 let chordType = chordTypes[0]; // Tipo de acorde específico (para compatibility)
 let progression = [{ root: 0, type: 'maj' }, { root: 5, type: 'm7' }, { root: 7, type: '7' }, { root: 0, type: 'maj' }];
 let activeProgression = 0;
+let playingProgressionItem = null;
+let draggingProgressionItem = null;
 let degreeDisplay = 0; // 0 = sin grados, 1 = escala, 2 = todo el mastil
 let showNotes = 0; // 0 = sin notas, 1 = solo notas de escala, 2 = todas las notas
 let displayModeIndex = 0; // 0 = grados completos, 1 = raíz, 3ra, 5ta, 2 = raíz, 3ra, 5ta, 7ma
@@ -486,6 +489,18 @@ function populateControls() {
   updateModeSelector();
 }
 
+function chooseMode(modeKey) {
+  if (!getAvailableModes(quality).includes(modeKey)) return;
+  selectedMode = modeKey;
+  const types = {ionian:'maj7',lydian:'maj7',mixolydian:'7',dorian:'m7',
+    phrygian:'m7',aeolian:'m7',locrian:'m7b5'};
+  const type = types[modeKey] || ({major:'maj',minor:'m',diminished:'dim'})[quality];
+  chordType = chordTypes.find(candidate => candidate.value === type);
+  activeProgression = -1;
+  updateGhostModeSelector();
+  updateView();
+}
+
 function updateModeSelector() {
   qualitySelect.innerHTML = Object.entries(qualities).map(([key, qual]) => `
     <label class="mode-option">
@@ -520,11 +535,12 @@ function updateModeSelector() {
 
   // Agregar event listeners a los nuevos radio buttons
   modeSelector.querySelectorAll('input[name="mode"]').forEach(radio => {
+    radio.addEventListener('click', (e) => {
+      // También permite aplicar la séptima al pulsar el modo ya seleccionado.
+      if (e.target.value === selectedMode) chooseMode(e.target.value);
+    });
     radio.addEventListener('change', (e) => {
-      selectedMode = e.target.value;
-      activeProgression = -1;
-      updateGhostModeSelector();
-      updateView();
+      chooseMode(e.target.value);
     });
   });
 
@@ -792,9 +808,10 @@ function updateModeLegend() {
   }).join('');
 }
 function renderProgression() {
+  if (draggingProgressionItem) return;
   document.querySelector('#progression').innerHTML = progression.map((item, index) => {
     const type = chordTypes.find(candidate => candidate.value === item.type);
-    return `<div class="progression-card ${index === activeProgression ? 'active' : ''}" data-index="${index}"><button type="button" data-remove="${index}" aria-label="Quitar acorde ${index + 1}">×</button><small>${index + 1}</small><strong>${item.rootNoteName || noteName(item.root)}${type ? type.suffix : ''}</strong></div>`;
+    return `<div class="progression-card ${index === activeProgression ? 'active' : ''} ${item === playingProgressionItem ? 'playing' : ''}" data-index="${index}" tabindex="0" role="group" aria-label="Acorde ${index + 1}. Arrastrar o usar Alt y flechas para mover."><button type="button" data-remove="${index}" aria-label="Quitar acorde ${index + 1}">×</button><small>${index + 1}${item === playingProgressionItem ? ' · sonando' : ''}</small><strong>${item.rootNoteName || noteName(item.root)}${type ? type.suffix : ''}</strong><span class="progression-mode">${modes[item.mode || defaultChordMode(item)]?.name || ''}</span><span class="drag-grip" aria-hidden="true">⠿</span></div>`;
   }).join('');
 }
 instrumentSelect.addEventListener('change', event => { instrument = event.target.value; updateView(); });
@@ -873,18 +890,37 @@ document.querySelector('#toggle-notes').addEventListener('click', event => {
 
   renderFretboard(); 
 });
-function selectProgressionChord(index) {
-  const item = progression[index];
+function defaultChordMode(item) {
+  const type = chordTypes.find(type => type.value === item.type) || chordTypes[0];
+  return type.intervals.includes(6) ? 'locrian' : item.type === '7' ? 'mixolydian'
+    : type.intervals.includes(3) ? 'aeolian' : 'ionian';
+}
+
+function showProgressionChord(item, index = -1) {
   if (!item) return;
   activeProgression = index;
   root = item.root;
   rootNoteName = item.rootNoteName || noteName(root);
   chordType = chordTypes.find(type => type.value === item.type) || chordTypes[0];
   quality = chordType.intervals.includes(6) ? 'diminished' : chordType.intervals.includes(3) ? 'minor' : 'major';
-  selectedMode = item.mode || (item.type === '7' ? 'mixolydian' : qualities[quality].defaultMode);
+  selectedMode = item.mode || defaultChordMode(item);
   ghostMode = item.ghostMode || '';
   populateControls();
   updateView();
+}
+
+function selectProgressionChord(index) {
+  showProgressionChord(progression[index], index);
+}
+
+function moveProgressionChord(from, to) {
+  if (!Number.isInteger(from) || !Number.isInteger(to) || from < 0 || to < 0
+    || from >= progression.length || to >= progression.length || from === to) return;
+  const selected = progression[activeProgression];
+  const [item] = progression.splice(from, 1);
+  progression.splice(to, 0, item);
+  activeProgression = selected ? progression.indexOf(selected) : -1;
+  renderProgression();
 }
 
 function addProgressionChord() {

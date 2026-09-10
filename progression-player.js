@@ -23,7 +23,13 @@ const accompanimentStyles = {
   jazz: {name:'Jazz suave', chords:[[0,0.9,0.85],[5/3,0.65,0.7],[3,0.8,0.8]],
     kick:[0,2], snare:[1,3], hat:[0,2/3,1,5/3,2,8/3,3,11/3]},
   trap: {name:'Trap suave', chords:[[0,3.8,0.95]],
-    kick:[0,1.75,2.5], snare:[2], hat:[0,0.25,0.5,0.75,1,1.25,1.5,1.75,2,2.25,2.5,2.75,3,3.25,3.5,3.75]}
+    kick:[0,1.75,2.5], snare:[2], hat:[0,0.25,0.5,0.75,1,1.25,1.5,1.75,2,2.25,2.5,2.75,3,3.25,3.5,3.75]},
+  funk: {name:'Funk', chords:[[0,0.4,0.9],[0.75,0.35,0.65],[1.5,0.4,0.8],[2.75,0.35,0.9],[3.5,0.4,0.7]],
+    kick:[0,1.5,2.75],snare:[1,3],hat:[0,0.25,0.5,0.75,1,1.5,2,2.25,2.5,2.75,3,3.5]},
+  bossa: {name:'Bossa suave', chords:[[0,0.8,0.7],[1.5,0.6,0.65],[2.5,0.6,0.75],[3.5,0.45,0.6]],
+    kick:[0,1.5,2,3.5],snare:[0,1.5,3],hat:[0,0.5,1,1.5,2,2.5,3,3.5]},
+  reggaeton: {name:'Reggaetón suave', chords:[[0,1.3,0.85],[1.5,0.4,0.7],[2,1.3,0.85],[3.5,0.45,0.7]],
+    kick:[0,2],snare:[0.75,1.5,2.75,3.5],hat:[0,0.5,1,1.5,2,2.5,3,3.5]}
 };
 
 function chordLevels(notes) {
@@ -152,7 +158,7 @@ class ProgressionPlayer {
     if (!this.percussion || this.style === 'none') return;
     for (const kind of ['kick','snare','hat']) {
       pattern[kind].forEach((position, index) => this.scheduleDrum(kind, time + position * beat,
-        (this.style === 'jazz' ? 0.55 : 0.85) * (kind === 'hat' && index % 2 ? 0.7 : 1)));
+        (['jazz','bossa'].includes(this.style) ? 0.55 : 0.85) * (kind === 'hat' && index % 2 ? 0.7 : 1)));
     }
   }
 

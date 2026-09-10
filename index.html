@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta name="description" content="Explorador de escalas para guitarra">
   <title>Traste | Explorador de escalas</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -51,19 +52,20 @@
         <div class="progression-header-inline"><div><p class="eyebrow">IDEA DE PROGRESIÓN</p><h3>Tu vuelta armónica</h3></div><button class="add-button" id="add-chord" type="button"><span>+</span> añadir acorde</button></div>
         <div class="progression" id="progression" aria-label="Progresión de acordes"></div>
         <section class="chord-player" aria-label="Reproductor de acordes">
-          <strong>Escuchá tu progresión</strong>
+          <div class="player-topline"><button id="player-disclosure" class="player-disclosure" type="button" aria-expanded="true" aria-controls="player-content"><strong>Escuchá tu progresión</strong><span class="disclosure-chevron" aria-hidden="true">⌄</span></button><button id="player-toggle" type="button" aria-pressed="false">Reproducir</button></div>
+          <p id="player-status" class="player-compact-status" role="status">Detenido</p>
+          <div id="player-content" class="collapsible-content"><div class="collapsible-inner">
           <div class="player-controls">
-            <button id="player-toggle" type="button" aria-pressed="false">Reproducir</button>
-            <label for="player-style">Estilo <select id="player-style"><option value="none">Sin ritmo</option><option value="pop">Pop / rock</option><option value="jazz">Jazz suave</option><option value="trap">Trap suave</option></select></label>
+            <label for="player-style">Estilo <select id="player-style"><option value="none">Sin ritmo</option><option value="pop">Pop / rock</option><option value="jazz">Jazz suave</option><option value="trap">Trap suave</option><option value="funk">Funk</option><option value="bossa">Bossa suave</option><option value="reggaeton">Reggaetón suave</option></select></label>
             <label for="player-bpm">BPM <input id="player-bpm" type="number" min="30" max="240" step="1" value="100" required></label>
             <label for="player-volume">Volumen general <input id="player-volume" type="range" min="0" max="100" value="35"></label>
             <label for="player-percussion"><input id="player-percussion" type="checkbox" checked>Percusión</label>
             <label for="player-drum-volume">Volumen percusión <input id="player-drum-volume" type="range" min="0" max="100" value="40"></label>
             <label for="player-loop"><input id="player-loop" type="checkbox" checked>Repetir</label>
           </div>
-          <p id="player-status" role="status">Detenido</p>
           <p class="player-help">Elegí el estilo antes de reproducir. Son patrones sencillos en 4/4; «Sin ritmo» toca solo acordes. Podés ajustar ambos volúmenes mientras suena.</p>
           <p class="player-help">Reproduce las tarjetas desde la primera, un acorde cada 4 pulsos. Para incorporar la nota y calidad elegidas, presioná «añadir acorde». Los cambios se escuchan al detener y volver a reproducir. El metrónomo funciona por separado.</p>
+          </div></div>
         </section>
 
         <div class="board-toolbar"><div><span class="eyebrow board-eyebrow">MÁSTIL / GUITARRA</span><h2 id="board-title">C · C Mayor</h2></div><div class="toolbar-buttons"><button class="icon-button" id="toggle-notes" type="button" aria-pressed="false" title="Ciclar entre mostrar sin notas, solo escala, o todas las notas">Aa <span>notas</span></button><button class="icon-button" id="toggle-degrees" type="button" aria-pressed="false" aria-label="Grados: no. Clic para cambiar." title="Alternar grados de la escala, grados de todo el mástil y desactivados. Se conserva la selección del control de notas.">1 <span>grados: no</span></button><button class="icon-button" id="toggle-display" type="button" aria-pressed="false" title="Ciclar entre modos de visualización">🎨 <span id="display-label">grados</span></button></div></div>
@@ -83,6 +85,24 @@
             <div id="metronome-pulses" aria-hidden="true"></div>
             <span id="metronome-status" role="status">En pausa</span>
           </section>
+        <section class="youtube-panel" aria-labelledby="youtube-heading">
+          <div class="youtube-heading"><span class="eyebrow">TOCAR SOBRE UNA CANCIÓN</span><h3 id="youtube-heading">Practicar con YouTube</h3></div>
+          <form id="youtube-form" class="youtube-form">
+            <label for="youtube-url">Enlace del video</label>
+            <div class="youtube-url-row"><input id="youtube-url" type="url" placeholder="https://www.youtube.com/watch?v=…" required><button id="youtube-load" type="submit">Cargar video</button></div>
+          </form>
+          <p id="youtube-status" role="status">Pegá un enlace para cargar el reproductor oficial. No hace falta vincular una cuenta.</p>
+          <a id="youtube-external" class="youtube-external" target="_blank" rel="noopener noreferrer" hidden>Abrir video en YouTube</a>
+          <div id="youtube-video-wrap" class="youtube-video-wrap" hidden></div>
+          <div class="youtube-cue-controls">
+            <label for="youtube-cue-time">Momento (segundos) <input id="youtube-cue-time" type="number" min="0" step="0.1" value="0" required></label>
+            <button id="youtube-use-time" type="button" disabled>Usar tiempo del video</button>
+            <button id="youtube-mark" type="button" disabled>Vincular tarjeta seleccionada</button>
+            <label for="youtube-follow"><input id="youtube-follow" type="checkbox" disabled>Seguir acordes en el mástil</label>
+          </div>
+          <p class="youtube-help">Pausá el video, seleccioná una tarjeta y guardá su momento. Repetí para los demás cambios y activá el seguimiento. Las marcas son manuales y se conservan hasta recargar o cambiar de video.</p>
+          <ol id="youtube-cues" class="youtube-cues" aria-label="Marcas de acordes"></ol>
+        </section>
       </div>
 
       <aside class="legend-panel">
@@ -146,8 +166,12 @@
   </main>
   <footer><span>traste. explorador armónico</span><span>Hecho para estudiar, tocar y descubrir.</span></footer>
   <script src="app.js"></script>
+  <script src="progression-interactions.js"></script>
   <script src="metronome.js"></script>
   <script src="progression-player.js"></script>
   <script src="player-ui.js"></script>
+  <script src="player-disclosure.js"></script>
+  <script src="song-timeline.js"></script>
+  <script src="youtube-player.js"></script>
 </body>
 </html>

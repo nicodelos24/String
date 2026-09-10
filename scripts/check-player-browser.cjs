@@ -57,6 +57,44 @@ const root = path.resolve(__dirname, '..');
     }
     const version = await send('Browser.getVersion');
     await send('Emulation.setDeviceMetricsOverride',{width:1440,height:1000,deviceScaleFactor:1,mobile:false});
+    if (process.argv.includes('--progression')) {
+      const editing = await evaluate(`(() => {
+        document.querySelector('input[name="mode"][value="mixolydian"]').click();
+        document.querySelector('#add-chord').click();
+        document.querySelector('#root-piano [data-pitch="2"]').click();
+        document.querySelector('input[name="quality"][value="minor"]').click();
+        document.querySelector('input[name="mode"][value="dorian"]').click();
+        document.querySelector('#add-chord').click();
+        for(let i=0;i<4;i++) document.querySelector('[data-remove="0"]').click();
+        const saved=progression.map(item=>({root:item.root,type:item.type,mode:item.mode}));
+        document.querySelector('#progression [data-index="1"]').dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowLeft',altKey:true,bubbles:true}));
+        const moved=progression.map(item=>item.root);
+        document.querySelector('#progression [data-index="0"]').dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',altKey:true,bubbles:true}));
+        window.boardStates=[];
+        new MutationObserver(()=>boardStates.push(document.querySelector('#board-title').textContent))
+          .observe(document.querySelector('#board-title'),{childList:true});
+        document.querySelector('#player-bpm').value='240';
+        document.querySelector('#player-loop').checked=false;
+        document.querySelector('#player-toggle').click();
+        return {saved,moved,order:progression.map(item=>item.root)};
+      })()`);
+      assert.deepEqual(editing.saved,[{root:0,type:'7',mode:'mixolydian'},{root:2,type:'m7',mode:'dorian'}]);
+      assert.deepEqual(editing.moved,[2,0]);
+      assert.deepEqual(editing.order,[0,2]);
+      for(let i=0;i<120;i++) {
+        if(await evaluate("document.querySelector('#player-status').textContent==='Detenido'")) break;
+        await delay(100);
+      }
+      const following=await evaluate(`({titles:boardStates,status:document.querySelector('#player-status').textContent,
+        active:activeProgression,mode:selectedMode,playing:playingProgressionItem})`);
+      assert(following.titles.some(title=>title.includes('C7') && title.includes('Mixolidio')));
+      assert(following.titles.some(title=>title.includes('Dm7') && title.includes('Dórico')));
+      assert.equal(following.status,'Detenido');
+      assert.equal(following.active,1);
+      assert.equal(following.playing,null);
+      console.log(JSON.stringify({browser:version.product,editing,following,result:'PASS'},null,2));
+      return; // Esta comprobación no escribe documentación ni evidencia en docs/.
+    }
     await evaluate(`
       window.trace = {notes:[], states:[]};
       const originalOscillator = AudioContext.prototype.createOscillator;
@@ -114,7 +152,7 @@ const root = path.resolve(__dirname, '..');
         };
       `);
       rhythms = [];
-      for (const style of ['pop','jazz','trap']) {
+      for (const style of ['pop','jazz','trap','funk','bossa','reggaeton']) {
         await evaluate(`
           trace.notes=[]; trace.drums=[]; trace.states=[];
           document.querySelector('#player-style').value='${style}';
@@ -129,14 +167,14 @@ const root = path.resolve(__dirname, '..');
           status:document.querySelector('#player-status').textContent,unlocked:!document.querySelector('#player-style').disabled})`);
         rhythms.push({...result,locked});
         assert.equal(result.status,'Detenido');
-        assert.equal(result.drums,style==='trap'?17:10);
-        assert.equal(result.notes,style==='pop'?8:style==='jazz'?11:6);
+        assert.equal(result.drums,({pop:10,jazz:10,trap:17,funk:14,bossa:11,reggaeton:12})[style]);
+        assert.equal(result.notes,({pop:8,jazz:11,trap:6,funk:18,bossa:16,reggaeton:14})[style]);
         assert(locked && result.unlocked);
       }
       audioLevels = await evaluate(`(async () => {
         const results=[];
         const inputs = Array.from({length:12},(_,root)=>({name:'root-'+root,notes:chordToMidi(root,[0,4,7]),style:'none'}));
-        inputs.push(...['pop','jazz','trap'].map(style=>({name:style,notes:[48,52,55,59],style})));
+        inputs.push(...['pop','jazz','trap','funk','bossa','reggaeton'].map(style=>({name:style,notes:[48,52,55,59],style})));
         for (const input of inputs) {
           const ctx = new OfflineAudioContext(1,44100*2,44100);
           const player = new ProgressionPlayer();

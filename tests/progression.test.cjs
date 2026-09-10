@@ -161,7 +161,7 @@ function setupPlayerInterface() {
   return fixture;
 }
 
-test('PLY-12: player controls pass real saved chords to audio without changing the editor', async () => {
+test('PLY-12: player controls pass saved chords to audio and follow their mode in the editor', async () => {
   const {run,element} = setupPlayerInterface();
   const before = run('JSON.stringify(progression)');
   await element('#player-toggle').handlers.click();
@@ -172,10 +172,52 @@ test('PLY-12: player controls pass real saved chords to audio without changing t
   run("testPlayer.callbacks.onChord(1, 'Fm7', 4);");
   assert.equal(element('#player-status').textContent,'Sonando: Fm7 · acorde 2 de 4');
   assert.equal(run('JSON.stringify(progression)'),before);
-  assert.equal(run('activeProgression'),0);
+  assert.equal(run('activeProgression'),1);
+  assert.equal(element('#chord-readout').textContent,'Fm7');
+  assert.equal(run('selectedMode'),'aeolian');
   await element('#player-toggle').handlers.click();
   assert.equal(element('#player-bpm').disabled,false);
   assert.equal(element('#player-status').textContent,'Detenido');
+});
+
+test('mode selection proposes the diatonic seventh and preserves mode on save', () => {
+  const {run} = setup();
+  for (const [quality,mode,type] of [['major','ionian','maj7'],['major','lydian','maj7'],['major','mixolydian','7'],['minor','dorian','m7'],['minor','aeolian','m7'],['minor','phrygian','m7'],['diminished','locrian','m7b5']]) {
+    run(`quality='${quality}'; chooseMode('${mode}'); addProgressionChord();`);
+    assert.equal(run('progression.at(-1).type'),type);
+    assert.equal(run('progression.at(-1).mode'),mode);
+    run('selectProgressionChord(progression.length-1)');
+    assert.equal(run('chordType.value'),type);
+  }
+  run("quality='minor'; chooseMode('minorPentatonic');");
+  assert.equal(run('chordType.value'),'m');
+});
+
+test('moving cards in both directions preserves selected chord and all saved settings', () => {
+  const {run} = setup();
+  run("selectProgressionChord(1); progression[1].mode='dorian'; progression[1].ghostMode='aeolian'; moveProgressionChord(1,3);");
+  assert.equal(run('activeProgression'),3);
+  assert.equal(run('progression[3].type'),'m7');
+  assert.equal(run('progression[3].mode'),'dorian');
+  assert.equal(run('progression[3].ghostMode'),'aeolian');
+  run('moveProgressionChord(3,0)');
+  assert.equal(run('activeProgression'),0);
+  run('moveProgressionChord(0,-1)');
+  assert.equal(run('progression.length'),4);
+});
+
+test('playback follows its saved snapshot after cards are moved or deleted', async () => {
+  const {run,element} = setupPlayerInterface();
+  run("progression[1].mode='dorian'; progression[1].ghostMode='aeolian';");
+  await element('#player-toggle').handlers.click();
+  run("moveProgressionChord(1,0); testPlayer.callbacks.onChord(1,'Fm7',4);");
+  assert.equal(run('activeProgression'),0);
+  assert.equal(run('selectedMode'),'dorian');
+  assert.equal(run('ghostMode'),'aeolian');
+  run("removeProgressionChord(0); testPlayer.callbacks.onChord(1,'Fm7',4);");
+  assert.equal(run('activeProgression'),-1);
+  assert.equal(element('#chord-readout').textContent,'Fm7');
+  assert.equal(run('selectedMode'),'dorian');
 });
 
 test('PLY-13: interface rejects invalid tempo, handles failure and stops on pagehide', async () => {
