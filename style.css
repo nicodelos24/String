@@ -757,8 +757,10 @@ footer {
 .inline-help summary:focus-visible { outline: 2px solid var(--rust); outline-offset: 3px; }
 .inline-help p { position: absolute; z-index: 20; top: 28px; right: 0; width: min(260px, 65vw); padding: 12px; margin: 0; background: var(--paper-light); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 6px 20px #0002; text-transform: none; letter-spacing: normal; }
 .fret-lock .inline-help p { left: 0; right: auto; }
-.fret-lock .spelling-switch { margin: 0; gap: 6px; }
-.fret-lock .lock-symbol { width: 16px; height: 16px; fill: none; stroke: var(--muted); stroke-width: 1.6; }
+.fret-lock .spelling-switch { display: inline-flex; align-items: center; position: relative; flex-shrink: 0; margin: 0; padding: 4px 0; gap: 8px; cursor: pointer; }
+.fret-lock .spelling-track { display: block; flex: 0 0 38px; }
+.fret-lock .spelling-switch input { margin: 0; }
+.fret-lock .lock-symbol { display: block; flex: 0 0 16px; width: 16px; height: 16px; fill: none; stroke: var(--muted); stroke-width: 1.6; }
 .fret-lock .spelling-switch:has(:checked) .lock-symbol { stroke: var(--rust); }
 .chord-player .preset-controls { font-size: 11px; margin: 8px 0; }
 .drag-grip { display: block; text-align: center; color: var(--muted); opacity: .55; font-size: 18px; touch-action: none; }
