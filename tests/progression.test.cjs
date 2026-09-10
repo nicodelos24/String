@@ -134,3 +134,60 @@ test('triad highlighting excludes extensions and keeps altered fifths', () => {
     }
   }
 });
+
+function setupPlayerInterface() {
+  const fixture = setup();
+  fixture.run(`
+    let testPlayer;
+    const window = {handlers: {}, addEventListener(name, fn) {this.handlers[name] = fn;}};
+    const chordToMidi = ${require('../progression-player.js').chordToMidi.toString()};
+    class ProgressionPlayer {
+      constructor(callbacks) {this.callbacks = callbacks; testPlayer = this;}
+      async start(chords, options) {
+        this.chords = chords; this.options = options; this.running = true;
+        this.callbacks.onState(true);
+      }
+      stop() {this.running = false; this.callbacks.onState(false);}
+      setVolume(value) {this.volume = value;}
+    }
+  `);
+  fixture.element('#player-bpm').value = '120';
+  fixture.element('#player-bpm').reportValidity = () => true;
+  fixture.element('#player-loop').checked = true;
+  fixture.run(fs.readFileSync(path.join(__dirname,'../player-ui.js'),'utf8'));
+  return fixture;
+}
+
+test('PLY-12: player controls pass real saved chords to audio without changing the editor', async () => {
+  const {run,element} = setupPlayerInterface();
+  const before = run('JSON.stringify(progression)');
+  await element('#player-toggle').handlers.click();
+  assert.equal(run('testPlayer.chords[1].name'),'Fm7');
+  assert.equal(run('JSON.stringify(testPlayer.chords[1].notes)'),'[53,56,60,63]');
+  assert.equal(run('testPlayer.options.bpm'),120);
+  assert.equal(element('#player-bpm').disabled,true);
+  run("testPlayer.callbacks.onChord(1, 'Fm7', 4);");
+  assert.equal(element('#player-status').textContent,'Sonando: Fm7 · acorde 2 de 4');
+  assert.equal(run('JSON.stringify(progression)'),before);
+  assert.equal(run('activeProgression'),0);
+  await element('#player-toggle').handlers.click();
+  assert.equal(element('#player-bpm').disabled,false);
+  assert.equal(element('#player-status').textContent,'Detenido');
+});
+
+test('PLY-13: interface rejects invalid tempo, handles failure and stops on pagehide', async () => {
+  const {run,element} = setupPlayerInterface();
+  element('#player-bpm').reportValidity = () => false;
+  await element('#player-toggle').handlers.click();
+  assert.equal(run('testPlayer.chords'),undefined);
+  element('#player-bpm').reportValidity = () => true;
+  await element('#player-toggle').handlers.click();
+  element('#player-volume').handlers.input({target:{value:'0'}});
+  assert.equal(run('testPlayer.volume'),0);
+  run('window.handlers.pagehide();');
+  assert.equal(run('testPlayer.running'),false);
+  run("testPlayer.start = async () => {throw new Error('Unavailable');};");
+  await element('#player-toggle').handlers.click();
+  assert.equal(element('#player-bpm').disabled,false);
+  assert(element('#player-status').textContent.includes('No se pudo iniciar'));
+});

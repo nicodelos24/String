@@ -24,6 +24,7 @@ Las tipografías Manrope y DM Mono se cargan desde Google Fonts y requieren cone
 - Superposición de una escala adicional mediante notas semitransparentes.
 - Controles para mostrar nombres de notas y alternar el resaltado de grados, tríada o séptima.
 - Panel de progresión para agregar, seleccionar y quitar acordes.
+- Reproductor local de la progresión con BPM, volumen y repetición; un acorde cada cuatro pulsos.
 - Consulta del nombre y el intervalo de una nota al hacer clic sobre el mástil.
 
 ## Modos disponibles
@@ -68,7 +69,10 @@ Proyecto-guitar-IA/
 ├── style.css       # Estilos de la interfaz
 ├── app.js          # Lógica y datos musicales
 ├── metronome.js    # Motor de audio y controles del metrónomo
+├── progression-player.js # Motor de reproducción de acordes
+├── player-ui.js    # Conexión entre reproductor y controles
 ├── tests/          # Pruebas de progresiones, lógica musical y metrónomo
+├── docs/           # Guía de aprendizaje, requisitos, casos y bugs
 ├── README.md       # Documentación
 └── version 1.0/    # Copia adicional del proyecto
 ```
@@ -95,16 +99,41 @@ El panel de metrónomo permite iniciar y pausar el pulso, ajustar el tempo entre
 
 El audio se genera localmente con Web Audio en `metronome.js` y se activa al presionar Iniciar. Por ahora es independiente de la progresión: no reproduce los acordes guardados.
 
+## Reproductor de acordes: primera etapa
+
+1. Agregá los acordes que quieras escuchar a la progresión.
+2. Elegí el tempo entre 30 y 240 BPM y activá o desactivá **Repetir**.
+3. Presioná **Reproducir**. Cada acorde ocupa cuatro pulsos; a 120 BPM dura dos segundos.
+4. Ajustá **Volumen** mientras suena. El estado muestra el nombre y la posición del acorde.
+5. Presioná **Detener** para cancelar la reproducción. Al iniciar nuevamente vuelve al primer acorde.
+
+Se usa un sonido sintetizado sencillo generado con Web Audio, sin cuentas, muestras descargadas ni servicios pagos. La reproducción toma una copia de la progresión: las ediciones se escuchan al detener y volver a iniciar. BPM y Repetir se configuran antes de reproducir. El metrónomo funciona por separado.
+
+Esta etapa todavía no incluye estilos jazz/trap, percusión, sincronización con el metrónomo ni conexión con YouTube Music. El mástil sigue mostrando información al hacer clic sobre una nota; el audio nuevo corresponde al reproductor de progresiones.
+
+## Pruebas y documentación de portfolio
+
 Pruebas de regresión (requieren Node.js):
 
 ```sh
 node --test tests/*.test.cjs
 ```
 
+La suite de Node no requiere paquetes y usa audio y DOM simulados. Hay además una comprobación con Chrome/Edge real, abriendo el archivo local: `node scripts/check-player-browser.cjs` (agregá `--edge` para Edge). El navegador se ejecuta sin ventana y silenciado; la escucha del sonido y revisión visual manual siguen pendientes.
+
+- [Guía de aprendizaje y etapas del portfolio](docs/GUIA-DEL-PROYECTO.md): cómo funciona el reproductor, decisiones y próximos pasos.
+- [Plan de pruebas y requisitos](docs/qa/PLAN-DE-PRUEBAS.md): qué se verifica y cómo se relaciona cada requisito con sus casos.
+- [Casos de prueba manuales](docs/qa/CASOS-MANUALES.md): pasos, resultados esperados y plantilla de ejecución.
+- [Registro de bugs](docs/qa/BUGS.md): defectos encontrados, soluciones y plantilla para nuevos reportes.
+- [Resultados de ejecución](docs/qa/RESULTADOS.md): evidencia resumida y comprobaciones pendientes.
+- [Reporte de bugs en Excel](docs/qa/excel/Reporte_de_bugs_Traste.xlsx): registro, fichas y plantilla editable.
+- [Casos de prueba en Excel](docs/qa/excel/Casos_de_prueba_Traste.xlsx): casos, historial y guía para completar resultados.
+
 ## Próximos pasos recomendados
 
-1. Guardar la progresión y los ajustes en el navegador para recuperarlos al recargar.
-2. Unificar la lógica de representación de las notas del mástil y las cuerdas al aire, y consolidar las reglas CSS superpuestas.
-3. Ampliar la selección de tipos de acorde: el modelo ya contiene séptimas y novenas, pero el selector de calidad crea tríadas.
-4. Incorporar pruebas en navegador para interacción con teclado, diseño móvil y audio real. Las pruebas actuales usan un DOM y un contexto de audio simulados.
-5. Añadir reproducción de notas y, posteriormente, de progresiones sincronizadas con el metrónomo.
+1. Ejecutar y documentar los casos manuales del reproductor antes de ampliar el audio.
+2. Definir y probar patrones de acompañamiento inspirados en jazz y trap, comenzando con uno sencillo.
+3. Guardar la progresión y los ajustes en el navegador.
+4. Incorporar pruebas de navegador y ejecución automática de la suite en GitHub.
+5. Ampliar los tipos de acorde disponibles y unificar la lógica de notas del mástil y las cuerdas al aire.
+6. Preparar una demo y un caso de estudio con decisiones, pruebas y límites conocidos.

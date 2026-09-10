@@ -50,6 +50,17 @@
 
         <div class="progression-header-inline"><div><p class="eyebrow">IDEA DE PROGRESIÓN</p><h3>Tu vuelta armónica</h3></div><button class="add-button" id="add-chord" type="button"><span>+</span> añadir acorde</button></div>
         <div class="progression" id="progression" aria-label="Progresión de acordes"></div>
+        <section class="chord-player" aria-label="Reproductor de acordes">
+          <strong>Escuchá tu progresión</strong>
+          <div class="player-controls">
+            <button id="player-toggle" type="button" aria-pressed="false">Reproducir</button>
+            <label for="player-bpm">BPM <input id="player-bpm" type="number" min="30" max="240" step="1" value="100" required></label>
+            <label for="player-volume">Volumen <input id="player-volume" type="range" min="0" max="100" value="35"></label>
+            <label for="player-loop"><input id="player-loop" type="checkbox" checked>Repetir</label>
+          </div>
+          <p id="player-status" role="status">Detenido</p>
+          <p class="player-help">Reproduce las tarjetas desde la primera, un acorde cada 4 pulsos. Para incorporar la nota y calidad elegidas, presioná «añadir acorde». Los cambios se escuchan al detener y volver a reproducir. El metrónomo funciona por separado.</p>
+        </section>
 
         <div class="board-toolbar"><div><span class="eyebrow board-eyebrow">MÁSTIL / GUITARRA</span><h2 id="board-title">C · C Mayor</h2></div><div class="toolbar-buttons"><button class="icon-button" id="toggle-notes" type="button" aria-pressed="false" title="Ciclar entre mostrar sin notas, solo escala, o todas las notas">Aa <span>notas</span></button><button class="icon-button" id="toggle-degrees" type="button" aria-pressed="false" aria-label="Grados: no. Clic para cambiar." title="Alternar grados de la escala, grados de todo el mástil y desactivados. Se conserva la selección del control de notas.">1 <span>grados: no</span></button><button class="icon-button" id="toggle-display" type="button" aria-pressed="false" title="Ciclar entre modos de visualización">🎨 <span id="display-label">grados</span></button></div></div>
         <div class="fretboard-wrap"><div class="fretboard-layout">
@@ -58,7 +69,7 @@
           <div id="open-strings" class="open-strings" aria-label="Cuerdas al aire"></div>
           <div class="fretboard" id="fretboard" aria-label="Mástil interactivo de guitarra"></div>
         </div></div>
-        <div class="board-footer"><span id="note-count">7 notas</span><span>·</span><span>22 trastes visibles</span><span class="hint">Haz clic en una nota para escuchar su función</span></div>
+        <div class="board-footer"><span id="note-count">7 notas</span><span>·</span><span>22 trastes visibles</span><span class="hint">Haz clic en una nota para consultar su intervalo</span></div>
       <section class="metronome" aria-label="Metr&#243;nomo">
             <div class="metronome-heading"><strong>Metr&#243;nomo</strong><button type="button" id="metronome-toggle" aria-pressed="false">Iniciar</button></div>
             <label for="metronome-bpm">BPM <input id="metronome-bpm" type="number" min="30" max="240" step="1" value="100"></label>
@@ -132,5 +143,7 @@
   <footer><span>traste. explorador armónico</span><span>Hecho para estudiar, tocar y descubrir.</span></footer>
   <script src="app.js"></script>
   <script src="metronome.js"></script>
+  <script src="progression-player.js"></script>
+  <script src="player-ui.js"></script>
 </body>
 </html>

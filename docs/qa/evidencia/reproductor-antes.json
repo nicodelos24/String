@@ -1,0 +1,29 @@
+{
+  "date": "2026-09-10T02:51:02.266Z",
+  "browser": "Chrome/152.0.7977.83",
+  "mode": "headless, file://, audio silenciado",
+  "playback": {
+    "status": "No se pudo iniciar el audio. Volvé a intentar.",
+    "button": "Reproducir",
+    "notes": [
+      {
+        "frequency": 130.8127899169922,
+        "time": 0.04
+      },
+      {
+        "frequency": 164.81378173828125,
+        "time": 0.04
+      },
+      {
+        "frequency": 195.99771118164062,
+        "time": 0.04
+      }
+    ],
+    "states": [
+      "Iniciando…",
+      "No se pudo iniciar el audio. Volvé a intentar."
+    ]
+  },
+  "diagnostic": "TypeError: Illegal invocation\n    at ProgressionPlayer.stop (file:///C:/Users/ndlsp/OneDrive/Documentos/GitHub/Proyecto-guitar-IA/progression-player.js:131:10)\n    at ProgressionPlayer.start (file:///C:/Users/ndlsp/OneDrive/Documentos/GitHub/Proyecto-guitar-IA/progression-player.js:74:48)\n    at async <anonymous>:3:12",
+  "stopped": "No se pudo iniciar el audio. Volvé a intentar."
+}
