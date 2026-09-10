@@ -193,14 +193,16 @@ const root = path.resolve(__dirname, '..');
       assert(audioLevels.every(level=>Number.isFinite(level.rms) && level.rms>0.001 && level.peak<0.95 && level.tail<0.00001));
       const chordRms = audioLevels.slice(0,12).map(level=>level.rms);
       assert(Math.max(...chordRms)/Math.min(...chordRms)<2);
-      const screenshot = await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:true});
-      fs.writeFileSync(path.join(root,`docs/qa/evidencia/ritmos-${process.argv.includes('--edge')?'edge':'chrome'}.png`),Buffer.from(screenshot.data,'base64'));
+      if (!process.argv.includes('--no-artifacts')) {
+        const screenshot = await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:true});
+        fs.writeFileSync(path.join(root,`docs/qa/evidencia/ritmos-${process.argv.includes('--edge')?'edge':'chrome'}.png`),Buffer.from(screenshot.data,'base64'));
+      }
     }
     const report = {date:new Date().toISOString(),browser:version.product,mode:'headless, file://, audio silenciado',
       playback,diagnostic,stopped,edited,rhythms,audioLevels};
     const suffix = process.argv.includes('--rhythms') ? (process.argv.includes('--edge')?'ritmos-edge':'ritmos-chrome')
       : process.argv.includes('--baseline') ? 'antes' : process.argv.includes('--edge') ? 'despues-edge' : 'despues';
-    fs.writeFileSync(path.join(root,`docs/qa/evidencia/reproductor-${suffix}.json`),JSON.stringify(report,null,2)+'\n');
+    if (!process.argv.includes('--no-artifacts')) fs.writeFileSync(path.join(root,`docs/qa/evidencia/reproductor-${suffix}.json`),JSON.stringify(report,null,2)+'\n');
     console.log(JSON.stringify(report,null,2));
     if (!process.argv.includes('--baseline')) {
       assert.equal(diagnostic,'OK');

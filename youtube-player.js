@@ -58,7 +58,7 @@
     if(!id) {status.textContent='Pegá un enlace válido a un video de YouTube.'; return;}
     const external=document.querySelector('#youtube-external');
     external.href=`https://www.youtube.com/watch?v=${id}`; external.hidden=false;
-    if(location.protocol==='file:') {status.textContent='Para conectar YouTube, abrí este proyecto con Live Server o desde http://localhost:8000. Los pasos están en el README.'; return;}
+    if(location.protocol==='file:') {status.textContent='Para conectar YouTube, ejecutá npm start y abrí http://127.0.0.1:8000. También podés usar Python o Live Server; ver README.'; return;}
     const request=++generation;
     clearTimeout(readyTimer);
     loadButton.disabled=true; ready=false; controls();
@@ -126,6 +126,6 @@
     if(ready) player.pauseVideo(); follow.checked=false; lastCue=null;
   });
   window.addEventListener('pagehide',()=>{generation++; clearInterval(timer); clearTimeout(readyTimer); if(player) player.destroy(); player=null; ready=false; controls(); loadButton.disabled=false;});
-  if(location.protocol==='file:') status.textContent='YouTube necesita Live Server o un servidor local. Ver los pasos en el README.';
+  if(location.protocol==='file:') status.textContent='Para usar YouTube, iniciá el servidor con npm start y abrí http://127.0.0.1:8000. También podés usar Python o Live Server; ver README.';
   controls();
 })();

@@ -20,6 +20,7 @@
     if (suppressClick) {event.preventDefault(); event.stopImmediatePropagation(); suppressClick=false;}
   }, true);
   list.addEventListener('pointerdown', event => {
+    if (drag) return;
     if (event.button !== 0 || event.target.closest('button')) return;
     const card = event.target.closest('.progression-card');
     if (!card || (event.pointerType === 'touch' && !event.target.closest('.drag-grip'))) return;
