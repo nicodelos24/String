@@ -97,7 +97,7 @@ footer {
 .midi-catalog-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 12px 0; }
 .midi-catalog-controls select { min-width: 0; max-width: 100%; padding: 8px; background: var(--paper); border: 1px solid var(--line); color: var(--ink); font: inherit; }
 #midi-source { color: var(--rust); }
-.fret-lock { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 8px 0 14px; }
+.fret-lock { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; margin: 0; }
 .fret-lock input { accent-color: var(--rust); }
 .fret-lock span { color: var(--muted); font-size: 9px; }
 .is-picked { outline: 3px solid var(--ink); outline-offset: 3px; }
@@ -756,12 +756,19 @@ footer {
 .inline-help summary::-webkit-details-marker { display: none; }
 .inline-help summary:focus-visible { outline: 2px solid var(--rust); outline-offset: 3px; }
 .inline-help p { position: absolute; z-index: 20; top: 28px; right: 0; width: min(260px, 65vw); padding: 12px; margin: 0; background: var(--paper-light); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 6px 20px #0002; text-transform: none; letter-spacing: normal; }
-.fret-lock .inline-help p { left: 0; right: auto; }
+.fret-lock .inline-help p { top: auto; bottom: calc(100% + 8px); left: auto; right: 0; }
 .fret-lock .spelling-switch { display: inline-flex; align-items: center; position: relative; flex-shrink: 0; margin: 0; padding: 4px 0; gap: 8px; cursor: pointer; }
 .fret-lock .spelling-track { display: block; flex: 0 0 38px; }
 .fret-lock .spelling-switch input { margin: 0; }
-.fret-lock .lock-symbol { display: block; flex: 0 0 16px; width: 16px; height: 16px; fill: none; stroke: var(--muted); stroke-width: 1.6; }
+.fret-lock .lock-symbol { display: block; order: -1; flex: 0 0 16px; width: 16px; height: 16px; fill: none; stroke: var(--muted); stroke-width: 1.6; }
 .fret-lock .spelling-switch:has(:checked) .lock-symbol { stroke: var(--rust); }
+.fret-lock .lock-symbol { transition: stroke .22s ease; }
+.fret-lock .lock-symbol path { transform-origin: 14px 9px; transform: rotate(-18deg) translateY(-1px); transition: transform .22s ease; }
+.fret-lock .spelling-switch:has(:checked) .lock-symbol path { transform: rotate(0) translateY(0); }
+.note-feedback { display: flex; align-items: center; justify-content: flex-end; gap: 12px; margin-left: auto; min-width: 0; }
+.note-feedback .hint { width: auto; margin: 0; min-width: 0; }
+@media(max-width: 900px) { .note-feedback { flex-basis: 100%; justify-content: space-between; } .note-feedback .hint { flex: 1; } }
+@media(prefers-reduced-motion: reduce) { .spelling-switch .spelling-track, .spelling-switch .spelling-track::after, .fret-lock .lock-symbol, .fret-lock .lock-symbol path { transition: none; } }
 .chord-player .preset-controls { font-size: 11px; margin: 8px 0; }
 .drag-grip { display: block; text-align: center; color: var(--muted); opacity: .55; font-size: 18px; touch-action: none; }
 .progression-card:hover .drag-grip { opacity: 1; color: var(--rust); }
@@ -884,17 +891,6 @@ footer {
     font-size: 16px;
   }
 
-  .fret-numbers,
-  .string-row,
-  .open-strings {
-    grid-template-columns: repeat(18, 44px);
-  }
-
-  .fretboard {
-    overflow-x: auto;
-    height: 300px;
-  }
-
   .board-footer {
     flex-wrap: wrap;
   }
@@ -985,6 +981,25 @@ footer {
   width: 100%;
   overflow: visible;
   isolation: isolate;
+}
+
+/* Un solo desplazamiento mantiene alineados los 22 trastes y sus números. */
+.fretboard-wrap { width: 100%; min-width: 0; overflow-x: auto; padding: 5px 0 10px; overscroll-behavior-x: contain; }
+.workspace { grid-template-columns: 220px minmax(0, 1fr) 160px; }
+.fretboard-wrap:focus-visible { outline: 2px solid var(--rust); outline-offset: 3px; }
+@media(max-width: 1100px) {
+  .workspace { grid-template-columns: 190px minmax(0,1fr); }
+  .legend-panel { grid-column: 1 / -1; }
+}
+@media(max-width: 800px) {
+  .workspace { grid-template-columns: minmax(0,1fr); }
+  .shell { width: calc(100% - 24px); }
+  .control-panel, .fretboard-section, .legend-panel { min-width: 0; }
+  .board-toolbar { flex-wrap: wrap; }
+  .toolbar-buttons { width: 100%; gap: 6px; }
+  .progression-header-inline { flex-wrap: wrap; gap: 8px; }
+  .player-controls label { max-width: 100%; flex-wrap: wrap; }
+  .song-library input, .midi-panel input[type="file"] { max-width: 100%; min-width: 0; }
 }
 .fret-note {
   position: relative;
@@ -1131,6 +1146,8 @@ footer {
 .root-piano {
   position: relative;
   display: flex;
+  width: 100%;
+  max-width: 220px;
   height: 108px;
   margin-top: 14px;
   isolation: isolate;
@@ -1214,6 +1231,7 @@ footer {
   opacity: 0;
 }
 .spelling-track {
+  transition: background-color .22s ease, border-color .22s ease;
   width: 38px;
   height: 22px;
   border: 1px solid var(--line);
@@ -1222,6 +1240,7 @@ footer {
   padding: 3px;
 }
 .spelling-track::after {
+  transition: transform .22s cubic-bezier(.2,.8,.2,1);
   content: '';
   display: block;
   width: 14px;
@@ -1366,3 +1385,17 @@ footer {
 .youtube-panel:has(.youtube-video-wrap[hidden]), .youtube-panel:has(.is-floating) { grid-template-columns: minmax(0,1fr); }
 @media(max-width:1100px) { .youtube-panel { grid-template-columns: minmax(0,1fr); } .youtube-panel > .youtube-video-wrap { grid-column: 1; grid-row: auto; } }
 @media(max-width: 600px) { .player-topline { flex-wrap: wrap; } .float-option { flex-basis: 100%; } .intro { padding-top: 20px; padding-bottom: 20px; } }
+
+@media(max-width: 1100px) {
+  .scale-summary { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; margin: 16px 0; }
+  .scale-summary > .legend-heading { grid-column: 1 / -1; margin: 0; }
+  .scale-summary .chord-readout, .scale-summary .key-signature-info { margin: 0; height: 150px; padding: 10px; }
+  .scale-summary > label, .scale-summary > select { grid-column: 1 / -1; min-width: 0; }
+  .scale-summary > label { font: 9px var(--mono); color: var(--muted); }
+  .scale-summary > select { width: 100%; padding: 8px; border: 1px solid var(--line); background: var(--paper-light); color: var(--ink); }
+}
+@media(max-width: 800px) {
+  .root-piano { margin-left: auto; margin-right: auto; }
+  .control-panel { padding: 16px; }
+  .legend-colors { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+}

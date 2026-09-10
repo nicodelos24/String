@@ -159,6 +159,19 @@ const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
     assert.equal(await evaluate('progression.length'),12);assert.equal(await evaluate("document.querySelector('#player-bpm').value"),'90');
     const screenshot=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:true});
     fs.writeFileSync(path.join(os.tmpdir(),`traste-interface-${edge?'edge':'chrome'}.png`),Buffer.from(screenshot.data,'base64'));
+    for (const width of [320,390,768,1024]) {
+      await send('Emulation.setDeviceMetricsOverride',{width,height:844,deviceScaleFactor:1,mobile:true});
+      await delay(100);
+      assert(await evaluate(`(()=>{const piano=document.querySelector('.root-piano').getBoundingClientRect();const summary=document.querySelector('.scale-summary');return piano.width<=220 && summary.previousElementSibling.matches('.board-footer') && summary.getBoundingClientRect().bottom<=document.querySelector('.chord-player').getBoundingClientRect().top;})()`));
+      for (const kind of ['guitar','bass']) {
+        const layout=await evaluate(`(()=>{instrument='${kind}';updateView();const wrap=document.querySelector('.fretboard-wrap');wrap.scrollLeft=wrap.scrollWidth;return {page:document.documentElement.scrollWidth,viewport:innerWidth,scrolled:wrap.scrollLeft,needsScroll:wrap.scrollWidth>wrap.clientWidth,rows:[...document.querySelectorAll('.string-row')].map(r=>r.querySelectorAll('.fret').length),circles:[...document.querySelectorAll('.fret-note')].every(n=>{const r=n.getBoundingClientRect();return Math.abs(r.width-r.height)<1 && r.width>=25;})};})()`);
+        assert(layout.page<=width+1,JSON.stringify({width,kind,layout}));
+        assert(!layout.needsScroll || layout.scrolled>0);
+        assert(layout.rows.length===(kind==='guitar'?6:4) && layout.rows.every(n=>n===22));
+        assert(layout.circles,JSON.stringify({width,kind,layout}));
+      }
+    }
+    await evaluate("instrument='guitar';updateView();document.querySelector('.fretboard-wrap').scrollLeft=0;");
     await send('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});
     await delay(150);
     const mobile=await evaluate(`(()=>{const r=document.querySelector('.chord-player').getBoundingClientRect();return {width:r.width,viewport:innerWidth};})()`);

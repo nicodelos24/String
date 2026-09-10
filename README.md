@@ -59,6 +59,9 @@ Las tipografías Manrope y DM Mono se cargan desde Google Fonts y requieren cone
 - Reproductor compacto de YouTube con controles independientes.
 - Biblioteca local de canciones, progresiones y ajustes de ritmo, con respaldo JSON.
 - Consulta del nombre y el intervalo de una nota al hacer clic sobre el mástil.
+- Diseño adaptable a móvil y tablet: los paneles y controles se redistribuyen según el ancho disponible. El mástil conserva sus proporciones y tamaños originales; cuando no cabe, se recorre horizontalmente junto con sus números y cuerdas al aire.
+- En móvil y tablet, el acorde seleccionado, la armadura y la escala adicional aparecen debajo del mástil, antes de los reproductores. El piano tiene un ancho limitado para evitar teclas demasiado anchas. En escritorio, el resumen vuelve a su columna lateral conservando la selección.
+- Verificación responsive automatizada en Chrome con anchos de 320, 390, 768 y 1024 píxeles: sin desbordamiento horizontal de la página y con 22 trastes por cuerda. Esta comprobación complementa la prueba manual en un teléfono real.
 
 ## Modos disponibles
 
@@ -210,7 +213,7 @@ YouTube requiere Internet y videos que permitan reproducción incrustada. Si un 
 
 El nombre une las cuerdas del instrumento con las cadenas de texto del código. Se retiraron «modo exploración» y el bloque promocional inferior. Guitarra y bajo se eligen mediante tarjetas con dibujos y botones de opción accesibles; solo puede seleccionarse un instrumento.
 
-Al pulsar el piano, un traste o una cuerda al aire se escucha una nota durante unos 0,7 segundos. En el mástil se usa su altura real (cuerda + traste); en el piano se usa una octava de referencia, más grave para el bajo. La escucha usa el volumen general del acompañamiento y la nueva nota libera la anterior.
+Al pulsar el piano se conserva la nota suave de unos 0,7 segundos. Los trastes y las cuerdas al aire usan una cuerda pulsada sintetizada para guitarra y un ataque brillante y breve tipo slap para bajo, con una duración máxima de 1,1 segundos. Son aproximaciones sintetizadas, no grabaciones de instrumentos reales. En el mástil se usa su altura real (cuerda + traste); en el piano se usa una octava de referencia, más grave para el bajo. La escucha usa el volumen general del acompañamiento y la nueva nota libera la anterior, incluidos todos sus armónicos. Las notas tienen una compensación de volumen por instrumento: mayor para el bajo y más moderada para guitarra y piano, sin modificar el volumen de las pistas de acompañamiento.
 
 Al minimizar YouTube, **Video flotante al minimizar** conserva el mismo reproductor en una esquina de la página. **Restaurar video** devuelve el panel a su tamaño normal. Si desactivas esa opción y minimizas, el video se pausa al ocultarlo; no sigue reproduciéndose en segundo plano. La ventana flotante pertenece a la página, no es una ventana independiente del sistema. Mantiene al menos 200 × 200 píxeles para los controles oficiales.
 

@@ -55,14 +55,13 @@
         <div class="progression-header-inline"><div><p class="eyebrow">IDEA DE PROGRESIÓN</p><h3>Tu vuelta armónica</h3></div><details class="inline-help"><summary aria-label="Ayuda de las tarjetas">?</summary><p>Arrastra para ordenar. Doble clic para duplicar. Clic derecho o × para eliminar. Alt + flechas mueve una tarjeta con el teclado. Se conserva al menos una tarjeta.</p></details><button class="add-button" id="add-chord" type="button"><span>+</span> añadir acorde</button></div>
         <div class="progression" id="progression" aria-label="Progresión de acordes"></div>
     <div class="board-toolbar"><div><span class="eyebrow board-eyebrow">MÁSTIL / GUITARRA</span><h2 id="board-title">C · C Mayor</h2></div><div class="toolbar-buttons"><button class="icon-button" id="toggle-notes" type="button" aria-pressed="true" title="Ciclar entre mostrar sin notas, solo escala, o todas las notas">Aa <span>escala</span></button><button class="icon-button" id="toggle-degrees" type="button" aria-pressed="false" aria-label="Grados: no. Clic para cambiar." title="Alternar grados de la escala, grados de todo el mástil y desactivados. Se conserva la selección del control de notas.">1 <span>grados: no</span></button><button class="icon-button" id="toggle-display" type="button" aria-pressed="false" title="Ciclar entre modos de visualización">🎨 <span id="display-label">tríada</span></button></div></div>
-        <div class="fret-lock"><label class="spelling-switch" aria-label="Mantener escala al tocar el mástil"><input id="fret-scale-lock" type="checkbox" role="switch" aria-label="Mantener escala al tocar el mástil"><span class="spelling-track" aria-hidden="true"></span><svg class="lock-symbol" viewBox="0 0 20 20" aria-hidden="true"><rect x="4" y="9" width="12" height="9" rx="2"/><path d="M6 9V6a4 4 0 0 1 8 0v3"/></svg></label><details class="inline-help"><summary aria-label="Ayuda del bloqueo de escala">?</summary><p>Activado: pulsar el mástil escucha y marca la nota sin cambiar la escala. Desactivado: cambia la raíz. El piano sigue cambiando la raíz en ambos casos.</p></details></div>
-        <div class="fretboard-wrap"><div class="fretboard-layout">
+        <div class="fretboard-wrap" tabindex="0" role="region" aria-label="Mástil: desplaza horizontalmente para recorrer los trastes"><div class="fretboard-layout">
           <div class="open-strings-heading">Al aire</div>
           <div id="fret-numbers" class="fret-numbers"></div>
           <div id="open-strings" class="open-strings" aria-label="Cuerdas al aire"></div>
           <div class="fretboard" id="fretboard" aria-label="Mástil interactivo de guitarra"></div>
         </div></div>
-        <div class="board-footer"><span id="note-count">7 notas</span><span>·</span><span>22 trastes visibles</span><span class="hint">Haz clic en una nota para consultar su intervalo</span></div>
+        <div class="board-footer"><span id="note-count">7 notas</span><span>·</span><span>22 trastes · desliza para recorrer</span><div class="note-feedback"><span class="hint">Haz clic en una nota para consultar su intervalo</span><div class="fret-lock"><label class="spelling-switch" aria-label="Mantener escala al tocar el mástil"><input id="fret-scale-lock" type="checkbox" role="switch" aria-label="Mantener escala al tocar el mástil"><span class="spelling-track" aria-hidden="true"></span><svg class="lock-symbol" viewBox="0 0 20 20" aria-hidden="true"><rect x="4" y="9" width="12" height="9" rx="2"/><path d="M6 9V6a4 4 0 0 1 8 0v3"/></svg></label><details class="inline-help"><summary aria-label="Ayuda del bloqueo de escala">?</summary><p>Activado: pulsar el mástil escucha y marca la nota sin cambiar la escala. Desactivado: cambia la raíz. El piano sigue cambiando la raíz en ambos casos.</p></details></div></div></div>
 
         <div>
           <p>
@@ -130,6 +129,7 @@
       </div>
 
       <aside class="legend-panel">
+        <div class="scale-summary">
         <div class="legend-heading"><span class="section-number"></span><h2>Armadura de Clave </h2></div>
         <!-- <div class="chord-readout"><span class="readout-label">ACORDE SELECCIONADO</span><strong id="chord-readout">C</strong><span class="mode-display" id="mode-display"></span><span class="key-signature-chord" id="key-signature-chord"></span></div> -->
         <div class="chord-readout"><span class="readout-label">ACORDE SELECCIONADO</span><strong id="chord-readout">C</strong><span class="mode-display" id="mode-display"></span><span class="key-signature-chord" id="key-signature-chord"></span></div>
@@ -140,6 +140,7 @@
           <option value="">Ninguna</option>
         </select>
 
+        </div>
         <div class="legend-heading" style="margin-top: 24px;"><span class="section-number">02</span><h2>Intervalo</h2></div>
         <div class="legend-colors" id="interval-legend"></div>
 
@@ -190,6 +191,7 @@
   </main>
   <footer><span>string. cuerdas y código · explorador armónico</span><span>Hecho para estudiar, tocar y descubrir.</span></footer>
   <script src="app.js"></script>
+  <script src="responsive-layout.js"></script>
   <script src="progression-interactions.js"></script>
   <script src="metronome.js"></script>
   <script src="progression-player.js"></script>
