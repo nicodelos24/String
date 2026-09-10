@@ -149,11 +149,14 @@ function setupPlayerInterface() {
       }
       stop() {this.running = false; this.callbacks.onState(false);}
       setVolume(value) {this.volume = value;}
+      setDrumVolume(value) {this.drumVolume = value;}
     }
   `);
   fixture.element('#player-bpm').value = '120';
   fixture.element('#player-bpm').reportValidity = () => true;
   fixture.element('#player-loop').checked = true;
+  fixture.element('#player-style').value = 'none';
+  fixture.element('#player-percussion').checked = true;
   fixture.run(fs.readFileSync(path.join(__dirname,'../player-ui.js'),'utf8'));
   return fixture;
 }
@@ -190,4 +193,20 @@ test('PLY-13: interface rejects invalid tempo, handles failure and stops on page
   await element('#player-toggle').handlers.click();
   assert.equal(element('#player-bpm').disabled,false);
   assert(element('#player-status').textContent.includes('No se pudo iniciar'));
+});
+
+test('RIT-06: style and percussion controls reach the player and lock only during playback', async () => {
+  const {run,element} = setupPlayerInterface();
+  element('#player-style').value = 'jazz';
+  element('#player-percussion').checked = false;
+  await element('#player-toggle').handlers.click();
+  assert.equal(run('testPlayer.options.style'),'jazz');
+  assert.equal(run('testPlayer.options.percussion'),false);
+  assert.equal(element('#player-style').disabled,true);
+  assert.equal(element('#player-percussion').disabled,true);
+  element('#player-drum-volume').handlers.input({target:{value:'25'}});
+  assert.equal(run('testPlayer.drumVolume'),0.25);
+  await element('#player-toggle').handlers.click();
+  assert.equal(element('#player-style').disabled,false);
+  assert.equal(element('#player-percussion').disabled,false);
 });

@@ -25,6 +25,7 @@ Las tipografías Manrope y DM Mono se cargan desde Google Fonts y requieren cone
 - Controles para mostrar nombres de notas y alternar el resaltado de grados, tríada o séptima.
 - Panel de progresión para agregar, seleccionar y quitar acordes.
 - Reproductor local de la progresión con BPM, volumen y repetición; un acorde cada cuatro pulsos.
+- Estilos Sin ritmo, Pop / rock, Jazz suave y Trap suave, con percusión opcional y volumen independiente.
 - Consulta del nombre y el intervalo de una nota al hacer clic sobre el mástil.
 
 ## Modos disponibles
@@ -99,17 +100,19 @@ El panel de metrónomo permite iniciar y pausar el pulso, ajustar el tempo entre
 
 El audio se genera localmente con Web Audio en `metronome.js` y se activa al presionar Iniciar. Por ahora es independiente de la progresión: no reproduce los acordes guardados.
 
-## Reproductor de acordes: primera etapa
+## Reproductor de acordes y ritmos
 
 1. Agregá los acordes que quieras escuchar a la progresión.
-2. Elegí el tempo entre 30 y 240 BPM y activá o desactivá **Repetir**.
+2. Elegí el **Estilo**, el tempo entre 30 y 240 BPM y las opciones **Repetir** y **Percusión** antes de iniciar.
 3. Presioná **Reproducir**. Cada acorde ocupa cuatro pulsos; a 120 BPM dura dos segundos.
-4. Ajustá **Volumen** mientras suena. El estado muestra el nombre y la posición del acorde.
+4. Ajustá **Volumen general** y **Volumen percusión** mientras suena. El estado muestra el nombre y la posición del acorde.
 5. Presioná **Detener** para cancelar la reproducción. Al iniciar nuevamente vuelve al primer acorde.
 
 Se usa un sonido sintetizado sencillo generado con Web Audio, sin cuentas, muestras descargadas ni servicios pagos. La reproducción toma una copia de la progresión: las ediciones se escuchan al detener y volver a iniciar. BPM y Repetir se configuran antes de reproducir. El metrónomo funciona por separado.
 
-Esta etapa todavía no incluye estilos jazz/trap, percusión, sincronización con el metrónomo ni conexión con YouTube Music. El mástil sigue mostrando información al hacer clic sobre una nota; el audio nuevo corresponde al reproductor de progresiones.
+Los patrones son acompañamientos sintetizados simples en 4/4. **Sin ritmo** toca acordes sostenidos, **Pop / rock** usa un pulso recto, **Jazz suave** incorpora swing y **Trap suave** usa caja a medio tiempo y hi-hats rápidos. Desactivar Percusión mantiene los ataques de acordes del estilo. El timbre tiene armónicos suaves, normalización de ganancias y compresión de la mezcla; la comodidad del balance está en validación manual.
+
+No hay sincronización con el metrónomo independiente ni conexión con YouTube Music. El mástil sigue mostrando información al hacer clic sobre una nota. Ver [Ritmos y sonido](docs/RITMOS-Y-SONIDO.md) para aprender cómo funcionan los patrones y la mezcla.
 
 ## Pruebas y documentación de portfolio
 
@@ -128,11 +131,14 @@ La suite de Node no requiere paquetes y usa audio y DOM simulados. Hay además u
 - [Resultados de ejecución](docs/qa/RESULTADOS.md): evidencia resumida y comprobaciones pendientes.
 - [Reporte de bugs en Excel](docs/qa/excel/Reporte_de_bugs_Traste.xlsx): registro, fichas y plantilla editable.
 - [Casos de prueba en Excel](docs/qa/excel/Casos_de_prueba_Traste.xlsx): casos, historial y guía para completar resultados.
+- [Bugs — edición Ritmos](docs/qa/excel/Reporte_de_bugs_Traste_Ritmos.xlsx) y [casos — edición Ritmos](docs/qa/excel/Casos_de_prueba_Traste_Ritmos.xlsx): incluyen el nuevo reporte de balance y los casos de percusión. Se conservan las planillas anteriores.
+
+La suite actual tiene **34 pruebas automatizadas**. Los estilos también se verifican con `node scripts/check-player-browser.cjs --rhythms` (y `--edge` para Edge), incluyendo renderizado OfflineAudioContext y mediciones de nivel.
 
 ## Próximos pasos recomendados
 
 1. Ejecutar y documentar los casos manuales del reproductor antes de ampliar el audio.
-2. Definir y probar patrones de acompañamiento inspirados en jazz y trap, comenzando con uno sencillo.
+2. Ejecutar MAN-14 a MAN-18 para evaluar los estilos y el balance con escucha real.
 3. Guardar la progresión y los ajustes en el navegador.
 4. Incorporar pruebas de navegador y ejecución automática de la suite en GitHub.
 5. Ampliar los tipos de acorde disponibles y unificar la lógica de notas del mástil y las cuerdas al aire.

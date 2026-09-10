@@ -3,16 +3,24 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
 const path = require('node:path');
-const {ProgressionPlayer, chordToMidi, midiToFrequency} = require('../progression-player.js');
+const {ProgressionPlayer, chordToMidi, midiToFrequency, accompanimentStyles, chordLevels} = require('../progression-player.js');
 
 const chords = [{name: 'C', notes: [48,52,55]}, {name: 'Fm7', notes: [53,56,60,63]}];
 function setup() {
-  const oscillators = [], gains = [], heard = [], states = [];
+  const oscillators = [], gains = [], heard = [], states = [], buffers = [];
   const timers = new Set();
   const context = {
-    currentTime: 0, state: 'running', destination: {}, async resume() {},
+    currentTime: 0, state: 'running', destination: {}, sampleRate:44100, async resume() {},
+    createPeriodicWave() {return {};},
+    createDynamicsCompressor() {return {threshold:{},knee:{},ratio:{},attack:{},release:{},connect(){}};},
+    createBiquadFilter() {return {frequency:{},Q:{},connect(){},disconnect(){}};},
+    createBuffer(channels,length) {return {getChannelData:()=>new Float32Array(length)};},
+    createBufferSource() {
+      const node = {connect(){},disconnect(){},start(time){this.time=time;},stop(){this.stopped=true;}};
+      buffers.push(node); return node;
+    },
     createOscillator() {
-      const node = {frequency: {}, connect() {}, disconnect() {},
+      const node = {frequency: {setValueAtTime(){},exponentialRampToValueAtTime(){}}, setPeriodicWave() {}, connect() {}, disconnect() {},
         start(time) {this.time = time;}, stop(time) {this.stopTime = time; this.stopped = true;}};
       oscillators.push(node);
       return node;
@@ -32,7 +40,7 @@ function setup() {
   const player = new ProgressionPlayer({createContext: () => context,
     setTimer: fn => {timers.add(fn); return fn;}, clearTimer: fn => timers.delete(fn),
     onChord: (...args) => heard.push(args), onState: state => states.push(state)});
-  return {player, context, oscillators, gains, heard, states, timers};
+  return {player, context, oscillators, gains, heard, states, timers, buffers};
 }
 
 test('PLY-01: known pitches and chord extensions have the intended register', () => {
@@ -190,9 +198,78 @@ test('PLY-15: chord envelope sustains its level until the final release', async 
   await player.start(chords,{bpm:120});
   const envelope = gains[1].gain.events;
   const sustain = envelope.find(event => event.kind === 'set' && event.time > 0.1);
-  assert(Math.abs(sustain.time - 1.86) < 1e-9);
-  assert(Math.abs(sustain.value - (0.7 / 3 * 0.65)) < 1e-9);
+  assert(Math.abs(sustain.time - 1.44) < 1e-9);
+  assert(Math.abs(sustain.value - chordLevels(chords[0].notes)[0] * 0.65) < 1e-9);
   assert.equal(envelope.at(-1).kind,'exponential');
   assert.equal(envelope.at(-1).value,0.0001);
   player.stop();
+});
+
+test('RIT-01: pop backbeat, jazz swing and trap half-time have distinct beat positions', () => {
+  assert.deepEqual(accompanimentStyles.pop.snare,[1,3]);
+  assert.deepEqual(accompanimentStyles.trap.snare,[2]);
+  assert.equal(accompanimentStyles.jazz.hat[1],2/3);
+  assert.equal(accompanimentStyles.trap.hat.length,16);
+  for (const pattern of Object.values(accompanimentStyles)) {
+    for (const kind of ['kick','snare','hat']) assert(pattern[kind].every(beat=>beat>=0 && beat<4));
+    assert(pattern.chords.every(([beat,duration])=>beat>=0 && duration>0 && beat+duration<=4));
+  }
+});
+
+test('RIT-02: chord and drum attacks share the same BPM clock', async () => {
+  const {player,context} = setup();
+  const hits = [], drums = [];
+  player.scheduleChord = (chord,time,duration) => hits.push({time,duration});
+  player.scheduleDrum = (kind,time) => drums.push({kind,time});
+  await player.start(chords,{bpm:120,style:'pop'});
+  assert.deepEqual(hits,[{time:0.04,duration:0.9},{time:1.04,duration:0.9}]);
+  assert.deepEqual(drums.filter(hit=>hit.kind==='snare').map(hit=>hit.time),[0.54,1.54]);
+  context.currentTime=2; player.tick();
+  assert.deepEqual(hits.slice(2),[{time:2.04,duration:0.9},{time:3.04,duration:0.9}]);
+  context.currentTime=4; player.tick();
+  assert.equal(hits[4].time,4.04);
+  assert.deepEqual(drums.filter(hit=>hit.kind==='snare').slice(-2).map(hit=>hit.time),[4.54,5.54]);
+  player.stop();
+});
+
+test('RIT-03: disabling percussion preserves rhythmic chords; stop cancels drum sources', async () => {
+  const {player,buffers,oscillators} = setup();
+  await player.start(chords,{style:'pop',percussion:false});
+  assert.equal(oscillators.length,6);
+  assert.equal(buffers.length,0);
+  player.stop();
+  await player.start(chords,{style:'trap'});
+  assert.equal(buffers.length,17);
+  player.stop();
+  assert(buffers.every(source=>source.stopped));
+  assert.equal(player.voices.size,0);
+  assert.equal(player.queue.length,0);
+});
+
+test('RIT-04: percussion volume is bounded and independent of general volume', async () => {
+  const {player} = setup();
+  await player.start(chords,{style:'jazz'});
+  player.setDrumVolume(0);
+  assert.equal(player.drumBus.gain.value,0);
+  assert.equal(player.master.gain.value,0.35);
+  assert.equal(player.setDrumVolume(9),1);
+  assert.equal(player.setDrumVolume(-2),0);
+  assert.equal(player.setDrumVolume(''),0);
+  assert.equal(player.setDrumVolume(NaN),0);
+  player.stop();
+});
+
+test('RIT-05: unknown styles fail before starting audio', async () => {
+  const {player,oscillators} = setup();
+  await assert.rejects(player.start(chords,{style:'unknown'}));
+  assert.equal(oscillators.length,0);
+});
+
+test('MIX-01: triads and extended chords use equal squared gain with moderate treble compensation', () => {
+  for (const notes of [[48,52,55],[53,56,60,63],[48,52,55,59,62],[72,76,79]]) {
+    const levels = chordLevels(notes);
+    assert(Math.abs(levels.reduce((sum,value)=>sum+value*value,0)-0.32**2)<1e-9);
+    assert(levels[0]>=levels.at(-1));
+    assert(levels.every(value=>value>0 && value<0.32));
+  }
 });

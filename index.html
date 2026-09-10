@@ -54,11 +54,15 @@
           <strong>Escuchá tu progresión</strong>
           <div class="player-controls">
             <button id="player-toggle" type="button" aria-pressed="false">Reproducir</button>
+            <label for="player-style">Estilo <select id="player-style"><option value="none">Sin ritmo</option><option value="pop">Pop / rock</option><option value="jazz">Jazz suave</option><option value="trap">Trap suave</option></select></label>
             <label for="player-bpm">BPM <input id="player-bpm" type="number" min="30" max="240" step="1" value="100" required></label>
-            <label for="player-volume">Volumen <input id="player-volume" type="range" min="0" max="100" value="35"></label>
+            <label for="player-volume">Volumen general <input id="player-volume" type="range" min="0" max="100" value="35"></label>
+            <label for="player-percussion"><input id="player-percussion" type="checkbox" checked>Percusión</label>
+            <label for="player-drum-volume">Volumen percusión <input id="player-drum-volume" type="range" min="0" max="100" value="40"></label>
             <label for="player-loop"><input id="player-loop" type="checkbox" checked>Repetir</label>
           </div>
           <p id="player-status" role="status">Detenido</p>
+          <p class="player-help">Elegí el estilo antes de reproducir. Son patrones sencillos en 4/4; «Sin ritmo» toca solo acordes. Podés ajustar ambos volúmenes mientras suena.</p>
           <p class="player-help">Reproduce las tarjetas desde la primera, un acorde cada 4 pulsos. Para incorporar la nota y calidad elegidas, presioná «añadir acorde». Los cambios se escuchan al detener y volver a reproducir. El metrónomo funciona por separado.</p>
         </section>
 

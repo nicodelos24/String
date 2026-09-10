@@ -59,3 +59,28 @@ Falta escuchar el volumen y la calidad del sonido, comprobar la comodidad de la 
 - [Casos de prueba](excel/Casos_de_prueba_Traste.xlsx): casos, ejecuciones y cobertura automatizada.
 
 Se generaron con `python scripts/generate-qa-excel.py` (requiere `openpyxl`) y se reabrieron para validar hojas, tablas y contenido. No se comprobó su apariencia dentro de Microsoft Excel. Guardar las ejecuciones personales en una copia: regenerar reemplaza los archivos de ejemplo.
+
+## Etapa de ritmos y balance — 2026-09-10
+
+### Lo que confirmó el usuario
+
+- EXP-002-A: ahora se reproduce sonido. Aprobación limitada a ese comportamiento; no se extiende a todos los casos manuales.
+- EXP-002-B: algunas notas suenan más fuertes que otras. Resultado fallido para el balance, registrado como BUG-008. El usuario no identificó todavía las notas, BPM ni salida de audio exactos.
+- Los estilos y el nuevo timbre se implementaron después de ese comentario: su aceptación manual está pendiente.
+
+### Verificación automatizada
+
+- Suite Node: **34 pruebas aprobadas, 0 fallidas**. Se sumaron RIT-01 a RIT-06 y MIX-01 a las 27 anteriores.
+- Chrome 152 y Edge 152: repetición y detención del flujo base, reproducción de una progresión distinta y ejecución de los tres estilos nuevos con Web Audio real.
+- OfflineAudioContext: 12 tríadas mayores en distintas raíces y tres patrones renderizados. Se midieron RMS y picos, y silencio después de la finalización.
+- Los valores corresponden a 240 BPM y volumen general 35%, en la ventana medida. No prueban todos los instrumentos de salida ni sustituyen la escucha del usuario.
+- Captura de escritorio revisada: los nuevos controles se muestran completos. Revisión móvil y de teclado sigue pendiente.
+
+Evidencia: [Chrome](evidencia/reproductor-ritmos-chrome.json), [Edge](evidencia/reproductor-ritmos-edge.json), [captura de escritorio](evidencia/ritmos-chrome.png).
+
+### Planillas de esta etapa
+
+- [Bugs — edición Ritmos](excel/Reporte_de_bugs_Traste_Ritmos.xlsx): agrega BUG-008.
+- [Casos — edición Ritmos](excel/Casos_de_prueba_Traste_Ritmos.xlsx): agrega MAN-14 a MAN-18, el reporte manual y las comprobaciones automatizadas.
+
+Generación: `python scripts/generate-qa-excel.py --rhythms`. Se crean archivos con sufijo `_Ritmos`, conservando los Excel anteriores. Las siguientes ejecuciones del generador reemplazan solo esa edición; guardar las anotaciones personales en una copia.

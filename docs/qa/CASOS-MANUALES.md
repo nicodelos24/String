@@ -21,6 +21,11 @@ Los casos formales siguen **pendientes de ejecución manual**. Hay un reporte ex
 | MAN-11 | Abrir a 360 px de ancho y en escritorio. Recorrer reproductor y mástil. | Los controles se acomodan y siguen siendo utilizables. El desplazamiento horizontal del mástil no impide acceder al reproductor. |
 | MAN-12 | Con el reproductor detenido: cambiar instrumento, raíz, modo, grados y notas; editar progresión; iniciar y detener el metrónomo. | Las funciones anteriores siguen disponibles. Ningún error nuevo en consola. |
 | MAN-13 | Cambio raíz y calidad, leo la ayuda y presiono añadir acorde. Detengo y vuelvo a reproducir. | Se reproducen las tarjetas desde la primera y se incluye el acorde añadido. Cambiar solo el selector no reemplaza la progresión guardada. |
+| MAN-14 | Con la misma progresión y BPM, pruebo Sin ritmo, Pop / rock, Jazz suave y Trap suave, deteniendo antes de cambiar. | Sin ritmo toca acordes sin batería. Pop tiene pulso recto; Jazz tiene swing; Trap tiene hi-hats más rápidos y caja a medio tiempo. Cambia el acompañamiento, no la identidad de los acordes. |
+| MAN-15 | Elijo Pop / rock y desactivo Percusión antes de reproducir. Después repito con Percusión activada. | Sin percusión quedan los ataques rítmicos de los acordes. Al activarla se agregan bombo, caja y hi-hat. |
+| MAN-16 | Reproduzco Trap suave. Bajo Volumen percusión a cero y lo vuelvo a subir. Después bajo Volumen general a cero. | El primer control silencia solo la batería; los acordes continúan. El volumen general silencia toda la mezcla. No se reinicia la secuencia. |
+| MAN-17 | Reproduzco cada estilo con Repetir activado, dejo pasar una vuelta y presiono Detener. | La percusión sigue el compás de los acordes, vuelve con la progresión y no quedan golpes pendientes después de Detener. |
+| MAN-18 | Con Sin ritmo y el mismo volumen, comparo acordes de distintas raíces y los acordes con séptima guardados. Anoto los acordes o notas que sobresalen, BPM, navegador y auriculares o altavoces. | El balance resulta cómodo y no percibo distorsión. Si alguna nota sobresale, registro cuál y con qué configuración para reabrir la investigación de BUG-008. |
 
 ## Plantilla de ejecución
 

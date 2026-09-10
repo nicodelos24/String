@@ -7,6 +7,7 @@ las ejecuciones personales con otro nombre antes de volver a usar este script.
 from pathlib import Path
 import re
 import json
+import sys
 from datetime import datetime, timedelta, timezone
 from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
@@ -21,6 +22,7 @@ OUT = QA / 'excel'
 OUT.mkdir(exist_ok=True)
 NAVY, TEAL, LIGHT, GRAY = '17324D', '167D8D', 'EAF3F5', '536475'
 TODAY = datetime.now(timezone(timedelta(hours=-3))).date().isoformat()
+SUFFIX = '_Ritmos' if '--rhythms' in sys.argv else ''
 
 
 def workbook(title):
@@ -126,6 +128,7 @@ bug_meta = [
     ('BUG-005','Solo suena un acorde y aparece un error','Alta','Alta','Pendiente de verificación','Reporte del usuario + Chrome real', 'Corregido; comprobación automatizada en navegador. Revalidación manual pendiente.'),
     ('BUG-006','El acorde se escucha muy suave','Media','Media','Pendiente de verificación','Reporte del usuario', 'Se ajustó el sonido. Falta escuchar si el volumen resulta adecuado.'),
     ('BUG-007','No queda claro qué acorde reproduce el botón','Baja','Media','Pendiente de verificación','Reporte del usuario', 'Se aclaró la ayuda. Es una confusión de uso, sin fallo de notas confirmado por separado.'),
+    ('BUG-008','Algunas notas suenan más fuertes que otras','Media','Media','Pendiente de verificación','Reporte manual del 2026-09-10', 'Balance ajustado. Falta revalidar con escucha; no se afirma que todas las notas suenen idénticas.'),
 ]
 bug_details = [
     ('1. Elijo A como raíz.\n2. Elijo pentatónica menor.\n3. Reviso la armadura.', 'Espero ver Do mayor como referencia, sin alteraciones.', 'En la revisión anterior se encontró que se mostraba La mayor.', 'Versión anterior a la corrección; navegador no registrado.'),
@@ -135,6 +138,7 @@ bug_details = [
     ('1. Abro index.html con doble clic.\n2. Dejo varias tarjetas.\n3. Activo Repetir.\n4. Presiono Reproducir.\n5. Espero el siguiente acorde.', 'Espero escuchar los acordes en orden y que vuelvan a empezar cuando termina la vuelta.', 'Escucho un acorde suave una sola vez. Aparece: No se pudo iniciar el audio. Volvé a intentar.', 'Usuario: archivo local, Chrome o Edge; versión por confirmar. Reproducción técnica: Chrome 152, headless, file://.'),
     ('1. Dejo el volumen inicial.\n2. Presiono Reproducir.\n3. Escucho el nivel y cuánto dura el acorde.', 'Espero escuchar el acorde durante el compás y poder regular el volumen.', 'El acorde se escucha muy suave. Todavía tengo que volver a probarlo con la corrección.', 'Reporte del usuario. Altavoces/auriculares y volumen del sistema por confirmar.'),
     ('1. Cambio la nota o calidad en el selector.\n2. No uso añadir acorde.\n3. Presiono Reproducir.', 'Al usarlo pensé que escucharía la selección. La función definida reproduce las tarjetas guardadas desde la primera.', 'Reporté que no cambiaba el acorde. El fallo de reproducción también impedía avanzar. Falta comprobar si la nueva ayuda se entiende.', 'Reporte del usuario; secuencia exacta de selección por confirmar.'),
+    ('1. Reproduzco los acordes.\n2. Escucho el balance entre las notas.\n3. Para la nueva prueba anoto qué acorde o nota sobresale.', 'Espero un balance cómodo entre notas, sin diferencias molestas.', 'Ahora se reproduce sonido. Suena lindo, pero hay notas que se escuchan muy fuertes y otras no tanto.', 'Reporte exploratorio del usuario; raíces, BPM y salida de audio por confirmar.'),
 ]
 
 bugs = workbook('Traste — Reporte de bugs')
@@ -153,7 +157,7 @@ for number, (meta, details) in enumerate(zip(bug_meta,bug_details),1):
     for label, value in re.findall(r'- \*\*([^*]+):\*\* (.+)',source_section):
         if label in ['Causa','Análisis','Solución','Solución aplicada','Evidencia','Regresión','Caso vinculado']:
             technical.append((label,value))
-    rows = [('ID',identifier),('Título',title),('Origen',origin),('Fecha del reporte',TODAY if number>=5 else 'Registro retrospectivo; fecha original no registrada'),
+    rows = [('ID',identifier),('Título',title),('Origen',origin),('Fecha de actualización',TODAY),
         ('Estado',state),('Severidad',severity),('Prioridad',priority),('Entorno',environment),
         ('Precondiciones','Tengo la página abierta. Para audio, dejo el metrónomo detenido.'),('Pasos',steps),
         ('Resultado esperado',expected),('Resultado observado',observed),('Frecuencia','Por confirmar; no se registró un número de intentos del usuario.'),
@@ -162,8 +166,8 @@ for number, (meta, details) in enumerate(zip(bug_meta,bug_details),1):
     summary.cell(number+4,1).hyperlink = f"#'{identifier}'!A1"
     summary.cell(number+4,1).font = Font(color=TEAL,underline='single')
 grid(bugs,'Plantilla','Mi próximo reporte','Duplico esta hoja para reportar un problema nuevo. Completo lo que realmente observé.', ['Campo','Detalle'],
-    [(field,value) for field,value in [('ID','BUG-008'),('Título',''),('Fecha',''),('Entorno',''),('Precondiciones',''),('Pasos','1.\n2.\n3.'),('Resultado esperado',''),('Resultado observado',''),('Severidad',''),('Prioridad',''),('Estado','Abierto'),('Evidencia',''),('Caso relacionado',''),('Resultado de la nueva prueba','Pendiente')]], [28,115])
-bugs.save(OUT/'Reporte_de_bugs_Traste.xlsx')
+    [(field,value) for field,value in [('ID','BUG-009'),('Título',''),('Fecha',''),('Entorno',''),('Precondiciones',''),('Pasos','1.\n2.\n3.'),('Resultado esperado',''),('Resultado observado',''),('Severidad',''),('Prioridad',''),('Estado','Abierto'),('Evidencia',''),('Caso relacionado',''),('Resultado de la nueva prueba','Pendiente')]], [28,115])
+bugs.save(OUT/f'Reporte_de_bugs_Traste{SUFFIX}.xlsx')
 
 
 cases_book = workbook('Traste — Casos de prueba')
@@ -172,9 +176,11 @@ manual_text = (QA/'CASOS-MANUALES.md').read_text(encoding='utf-8').split('## Pla
 source_rows = [line.strip('| ').split(' | ') for line in manual_text.splitlines() if line.startswith('| MAN-')]
 titles = ['Reproducir la progresión inicial','Comprobar duración a 120 BPM','Terminar una vuelta y repetir','Detener y volver a iniciar',
           'Validar límites de BPM','Cambiar volumen durante el acorde','Editar tarjetas mientras suena','Recuperarse de un error de audio',
-          'Salir de la página y volver','Usar los controles con teclado','Usar la app en móvil y escritorio','Revisar funciones anteriores','Añadir un acorde elegido al reproductor']
+          'Salir de la página y volver','Usar los controles con teclado','Usar la app en móvil y escritorio','Revisar funciones anteriores','Añadir un acorde elegido al reproductor',
+          'Comparar estilos','Desactivar percusión','Regular la mezcla','Repetir y detener con batería','Comparar balance de notas']
 auto = ['PLY-01/02/12 + navegador','PLY-02','PLY-02/03 + navegador','PLY-04/05/11/14 + navegador','PLY-06/13',
-        'PLY-08/15 (sin escucha)','PLY-07/12','PLY-10/13','PLY-09/13 (parcial)','Pendiente','Pendiente','Suite anterior (parcial)','Navegador: progresión distinta (parcial)']
+        'PLY-08/15 (sin escucha)','PLY-07/12','PLY-10/13','PLY-09/13 (parcial)','Pendiente','Pendiente','Suite anterior (parcial)','Navegador: progresión distinta (parcial)',
+        'RIT-01/02/06 + navegador','RIT-03','RIT-04','RIT-03 + motor base (parcial)','MIX-01 + OfflineAudioContext; escucha pendiente']
 rows = []
 for i,(identifier,steps,expected) in enumerate(source_rows):
     # Numerar los pasos facilita repetir el caso sin adoptar un tono artificial.
@@ -189,10 +195,20 @@ choices(case_sheet,'I',['Pendiente','Aprobado','Fallido','Bloqueado'])
 color_status(case_sheet,'I')
 
 execution_rows = [[
-    'EXP-001','Exploratoria; no fue una ejecución formal de MAN-01',TODAY,'Manual: reporte del usuario',
+    'EXP-001','Exploratoria; no fue una ejecución formal de MAN-01','2026-09-09','Manual: reporte del usuario',
     'Doble clic en index.html. Chrome o Edge; versión exacta por confirmar.',
     'Presiono Reproducir y suena un acorde suave una vez; no avanza ni repite y aparece un error. También reporté que no cambia al elegir otro acorde.',
     'Fallido','BUG-005 / BUG-006 / BUG-007','Reporte escrito en la conversación. Sin captura ni grabación adjunta.'
+],[
+    'EXP-002-A','Solo inicio de sonido; confirmación parcial','2026-09-10','Manual: reporte del usuario',
+    'Mismo proyecto. Navegador y configuración exactos por confirmar.',
+    'Ahora el sonido se reproduce. No confirmé por separado todos los casos de repetición, detención ni los nuevos estilos.',
+    'Aprobado','BUG-005 (solo inicio de audio)','Reporte escrito del usuario; sin grabación.'
+],[
+    'EXP-002-B','Balance entre notas','2026-09-10','Manual: reporte del usuario',
+    'Raíces, BPM y dispositivo de salida por confirmar.',
+    'Suena lindo pero algunas notas se escuchan muy fuertes y otras no tanto. Falta probar el ajuste nuevo.',
+    'Fallido','BUG-008','Reporte escrito del usuario; sin grabación.'
 ]]
 for filename,label in [('reproductor-antes.json','Antes de la corrección'),('reproductor-despues.json','Después, Chrome'),('reproductor-despues-edge.json','Después, Edge')]:
     evidence = QA/'evidencia'/filename
@@ -202,6 +218,15 @@ for filename,label in [('reproductor-antes.json','Antes de la corrección'),('re
     execution_rows.append([f'AUT-{len(execution_rows):03d}','MAN-01/03/04: parte automatizada',data['date'],'Automatizada: navegador real',
         data['browser']+'; '+data['mode'],label+': '+('avanza, repite y se detiene; sin escucha humana.' if passed else 'solo se programa el primer acorde y se registra Illegal invocation.'),
         'Aprobado' if passed else 'Fallido','BUG-005','../evidencia/'+filename])
+for filename in ['reproductor-ritmos-chrome.json','reproductor-ritmos-edge.json']:
+    evidence = QA/'evidencia'/filename
+    if not evidence.exists(): continue
+    data = json.loads(evidence.read_text(encoding='utf-8'))
+    passed = len(data.get('rhythms',[])) == 3 and all(item['status']=='Detenido' for item in data['rhythms'])
+    execution_rows.append([f'RIT-AUT-{len(execution_rows)}','MAN-14/17/18: parte automatizada',data['date'],
+        'Automatizada: navegador y audio offline',data['browser'],
+        'Tres estilos generan percusión y acordes. Se midieron 12 raíces y 3 patrones. Sin escucha humana.',
+        'Aprobado' if passed else 'Fallido','BUG-008: medición técnica, no aceptación auditiva','../evidencia/'+filename])
 for identifier,*_ in source_rows:
     execution_rows.append(['',identifier,'','Manual','','','Pendiente','',''])
 execution = grid(cases_book,'Ejecuciones','Historial de ejecuciones','Conservo el reporte inicial y separo las comprobaciones automáticas. Completo las filas manuales al probar la corrección.',
@@ -214,18 +239,19 @@ for row in range(5,execution.max_row+1):
         execution.cell(row,9).hyperlink = value
         execution.cell(row,9).font = Font(color=TEAL,underline='single')
 
-grid(cases_book,'Cobertura','Qué prueban las automatizaciones','27 pruebas de Node aprobadas. Las comprobaciones de navegador se ejecutan con otro comando y no cuentan dentro de esas 27.',
+grid(cases_book,'Cobertura','Qué prueban las automatizaciones','34 pruebas de Node aprobadas. Las comprobaciones de navegador se ejecutan con otro comando y no cuentan dentro de esas 34.',
     ['Grupo','Comando / archivo','Qué comprueba','Límite'],[
         ['Metrónomo','tests/metronome.test.cjs','Tempo, acento, detención e inicio cancelado.','Audio simulado.'],
         ['Progresión y controles','tests/progression.test.cjs','Selección, escritura, armadura, tríadas y conexión de controles.','DOM simulado.'],
         ['Motor del reproductor','tests/player.test.cjs','Notas, tiempos, repetición, volumen, limpieza y contexto de temporizadores.','No verifica la percepción del volumen.'],
-        ['Suite Node','node --test tests/*.test.cjs','27 aprobadas, 0 fallidas.','No equivale a 100% de cobertura ni reemplaza las pruebas manuales.'],
+        ['Suite Node','node --test tests/*.test.cjs','34 aprobadas, 0 fallidas.','No equivale a 100% de cobertura ni reemplaza las pruebas manuales.'],
+        ['Ritmos y mezcla','RIT-01 a RIT-06; MIX-01','Patrones, tempo, percusión independiente y normalización de ganancias.','Aceptación de estilo y sonoridad pendiente.'],
         ['Chrome/Edge real','node scripts/check-player-browser.cjs [--edge]','Archivo local, cambio de acordes, repetición, detención y secuencia distinta.','Headless y audio silenciado: no es una escucha manual.'],
     ],[27,65,72,68])
-cases_book.save(OUT/'Casos_de_prueba_Traste.xlsx')
+cases_book.save(OUT/f'Casos_de_prueba_Traste{SUFFIX}.xlsx')
 
 # Verificación estructural: abrir de nuevo cada archivo, revisar contenido y reglas.
-for filename in ['Reporte_de_bugs_Traste.xlsx','Casos_de_prueba_Traste.xlsx']:
+for filename in [f'Reporte_de_bugs_Traste{SUFFIX}.xlsx',f'Casos_de_prueba_Traste{SUFFIX}.xlsx']:
     output = OUT/filename
     reopened = load_workbook(output)
     assert len(reopened.sheetnames) >= 4

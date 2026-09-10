@@ -81,7 +81,25 @@ Este registro distingue defectos encontrados de funciones pendientes. Los primer
 
 ## Funciones pendientes, no bugs
 
-Estilos jazz/trap, guardado local, sincronización con metrónomo, reproducción de notas individuales, integración externa y automatización de navegador. Ver [guía del proyecto](../GUIA-DEL-PROYECTO.md). Se convertirían en defectos si incumplieran requisitos aceptados de una versión que afirmara incluirlas.
+Guardado local, sincronización con el metrónomo independiente, reproducción de notas individuales e integración externa. Los patrones básicos de estilos ya están implementados y pendientes de escucha manual. Ver [guía del proyecto](../GUIA-DEL-PROYECTO.md).
+
+## BUG-008 — Algunas notas del acorde se escuchan más fuertes que otras
+
+- **Severidad:** media; afecta la comodidad al escuchar el acompañamiento.
+- **Prioridad:** media.
+- **Origen:** prueba exploratoria del usuario del 2026-09-10.
+- **Pasos reportados:** reproduzco los acordes y escucho el resultado. Las notas exactas, el tempo y el dispositivo de salida no se especificaron.
+- **Esperado:** escuchar los acordes con un balance cómodo, sin notas que sobresalgan demasiado.
+- **Observado por el usuario:** «Suena lindo pero hay notas que se escuchan muy fuertes y otras no tanto». También confirma que ahora se reproduce sonido.
+- **Análisis:** asignar la misma ganancia no garantiza igual sonoridad percibida. Influyen la altura, los armónicos, la cantidad de notas y la salida de audio. No se confirmó una única causa acústica en el equipo del usuario.
+- **Solución aplicada:** timbre con fundamental predominante y armónicos suaves; compensación moderada de agudos, normalización por energía y compresión suave de la mezcla.
+- **Estado:** ajuste implementado; pendiente de revalidación auditiva del usuario. No se presenta como un balance perfecto.
+- **Regresión:** MIX-01 y mediciones OfflineAudioContext en el script de navegador.
+- **Caso vinculado:** MAN-18.
+
+### Seguimiento de la prueba exploratoria anterior
+
+El 2026-09-10 el usuario confirmó que el sonido ahora se reproduce. Esto aporta una confirmación manual del inicio de audio de BUG-005, pero no confirma por separado repetición, detención ni todos los casos MAN. El volumen y balance siguen bajo revisión mediante BUG-006 y BUG-008. Los estilos recién agregados todavía no fueron probados manualmente por el usuario.
 
 ## Plantilla para nuevos defectos
 

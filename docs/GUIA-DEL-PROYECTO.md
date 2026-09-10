@@ -8,10 +8,10 @@ Construir una herramienta para estudiar escalas y practicar sobre progresiones, 
 
 | Etapa | Entregable | Qué aprender | Estado |
 | --- | --- | --- | --- |
-| 1 | Reproductor local: acordes, BPM, volumen, repetición | Web Audio, asincronía, separación entre lógica e interfaz, pruebas con dobles | Implementado; escucha y revisión visual pendientes |
-| 2 | Primera ejecución manual y corrección de defectos encontrados | Casos de prueba, evidencia, severidad, regresión | Próxima actividad |
-| 3 | Patrón de acompañamiento inspirado en jazz | Eventos rítmicos, voicings, swing, pruebas de tiempos | Propuesto |
-| 4 | Patrón inspirado en trap | Bajo, percusión, subdivisiones y mezcla | Propuesto |
+| 1 | Reproductor local: acordes, BPM, volumen, repetición | Web Audio, asincronía, separación entre lógica e interfaz, pruebas con dobles | Implementado; usuario confirma inicio de audio; aceptación completa pendiente |
+| 2 | Primera ejecución manual y corrección de defectos encontrados | Casos de prueba, evidencia, severidad, regresión | Reportes exploratorios registrados; casos formales pendientes |
+| 3 | Patrones Pop / rock y Jazz suave | Eventos rítmicos, swing, pruebas de tiempos | Implementados; aceptación manual pendiente |
+| 4 | Patrón Trap suave y mezcla | Percusión, subdivisiones y normalización de niveles | Implementado sin bajo; aceptación manual pendiente |
 | 5 | Guardado de progresiones y ajustes | Almacenamiento local, validación y recuperación de datos | Pendiente |
 | 6 | Pruebas de navegador y ejecución automática en GitHub | E2E y CI | Comprobación básica de audio en Chrome/Edge incorporada tras BUG-005; ampliar pruebas y agregar CI sigue pendiente |
 | 7 | Demo publicada y caso de estudio | Presentación del trabajo y decisiones técnicas | Pendiente |
@@ -25,14 +25,16 @@ Cada etapa debe poder demostrarse antes de comenzar la siguiente. Los estilos se
 3. `chordToMidi()` coloca las notas en un registro ascendente. Por ejemplo, Do mayor es `[48, 52, 55]`. Una novena se coloca encima de la séptima.
 4. `midiToFrequency()` convierte cada número MIDI a una frecuencia. Se usa MIDI como numeración; no se genera un archivo MIDI.
 5. `ProgressionPlayer` programa osciladores de Web Audio. Un oscilador produce un tono; varias notas simultáneas forman el acorde. Una envolvente de volumen suaviza el inicio y el final.
-6. El motor revisa el reloj de audio cada 25 ms y programa hasta 100 ms por adelantado. El temporizador despierta al motor; los sonidos se programan con `AudioContext.currentTime`.
+6. El motor revisa el reloj de audio cada 25 ms. Cuando faltan menos de 100 ms para el próximo compás, programa sus ataques de acordes y percusión con `AudioContext.currentTime`.
 7. Los callbacks `onChord` y `onState` actualizan el texto y los controles. El motor no consulta el HTML.
 
 Con 120 BPM, un pulso dura `60 / 120 = 0,5 segundos`. Cada acorde ocupa cuatro pulsos: dos segundos. Detener cancela el sonido y el temporizador; la próxima ejecución empieza por el primer acorde.
 
 El motor copia la progresión para que editarla durante la reproducción no altere los eventos en curso. Un contador de ejecución evita un inicio tardío si se presiona Detener mientras se activa el audio.
 
-### Límites de esta etapa
+### Límites de la primera etapa (histórico)
+
+La segunda etapa agrega ritmos y mejora la síntesis. Ver [Ritmos y sonido](RITMOS-Y-SONIDO.md) para el funcionamiento actual.
 
 - Sonido sintetizado sencillo, sin muestras de guitarra, piano o instrumentos reales.
 - Cuatro pulsos por acorde; todavía no hay patrones de estilo, percusión ni duraciones individuales.
@@ -63,4 +65,4 @@ Antes de agregar un embed, probar disponibilidad del video, errores y comportami
 
 Ejecutar MAN-01 a MAN-04 de [los casos manuales](qa/CASOS-MANUALES.md), registrar resultados y anotar cómo suena el timbre. Después, explicar con tus palabras por qué a 120 BPM cada acorde dura dos segundos y por qué Detener debe cancelar también los sonidos programados.
 
-Con esa base validada, el siguiente cambio musical puede ser un patrón inspirado en jazz con dos ataques por compás. Conviene definir primero los tiempos esperados y luego escribir las pruebas del patrón.
+Los patrones ya están implementados. El siguiente ejercicio es ejecutar MAN-14 a MAN-18 y anotar qué estilo y notas escuchaste. Conviene mantener la misma progresión y el mismo volumen al comparar, para cambiar una sola variable por vez.

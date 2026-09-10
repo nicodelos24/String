@@ -102,9 +102,66 @@ const root = path.resolve(__dirname, '..');
       edited = await evaluate(`({notes:trace.notes, states:trace.states,
         status:document.querySelector('#player-status').textContent})`);
     }
+    let rhythms, audioLevels;
+    if (process.argv.includes('--rhythms')) {
+      await evaluate(`
+        const originalBufferSource = AudioContext.prototype.createBufferSource;
+        AudioContext.prototype.createBufferSource = function() {
+          const node = originalBufferSource.call(this);
+          const start = node.start.bind(node);
+          node.start = time => {trace.drums.push(time); return start(time);};
+          return node;
+        };
+      `);
+      rhythms = [];
+      for (const style of ['pop','jazz','trap']) {
+        await evaluate(`
+          trace.notes=[]; trace.drums=[]; trace.states=[];
+          document.querySelector('#player-style').value='${style}';
+          document.querySelector('#player-toggle').click();
+        `);
+        const locked = await evaluate("document.querySelector('#player-style').disabled");
+        for (let i=0;i<100;i++) {
+          if (await evaluate("document.querySelector('#player-status').textContent === 'Detenido'")) break;
+          await delay(100);
+        }
+        const result = await evaluate(`({style:'${style}',notes:trace.notes.length,drums:trace.drums.length,
+          status:document.querySelector('#player-status').textContent,unlocked:!document.querySelector('#player-style').disabled})`);
+        rhythms.push({...result,locked});
+        assert.equal(result.status,'Detenido');
+        assert.equal(result.drums,style==='trap'?17:10);
+        assert.equal(result.notes,style==='pop'?8:style==='jazz'?11:6);
+        assert(locked && result.unlocked);
+      }
+      audioLevels = await evaluate(`(async () => {
+        const results=[];
+        const inputs = Array.from({length:12},(_,root)=>({name:'root-'+root,notes:chordToMidi(root,[0,4,7]),style:'none'}));
+        inputs.push(...['pop','jazz','trap'].map(style=>({name:style,notes:[48,52,55,59],style})));
+        for (const input of inputs) {
+          const ctx = new OfflineAudioContext(1,44100*2,44100);
+          const player = new ProgressionPlayer();
+          player.context=ctx; player.duration=1; player.style=input.style; player.percussion=true;
+          player.connectOutput(); player.master.gain.value=0.35;
+          player.scheduleBar(input,0.04);
+          const buffer=await ctx.startRendering();
+          const samples=buffer.getChannelData(0);
+          let peak=0,energy=0;
+          for(let i=4410;i<35280;i++){peak=Math.max(peak,Math.abs(samples[i]));energy+=samples[i]*samples[i];}
+          let tail=0; for(let i=57330;i<samples.length;i++) tail=Math.max(tail,Math.abs(samples[i]));
+          results.push({name:input.name,peak,rms:Math.sqrt(energy/(35280-4410)),tail});
+        }
+        return results;
+      })()`);
+      assert(audioLevels.every(level=>Number.isFinite(level.rms) && level.rms>0.001 && level.peak<0.95 && level.tail<0.00001));
+      const chordRms = audioLevels.slice(0,12).map(level=>level.rms);
+      assert(Math.max(...chordRms)/Math.min(...chordRms)<2);
+      const screenshot = await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:true});
+      fs.writeFileSync(path.join(root,`docs/qa/evidencia/ritmos-${process.argv.includes('--edge')?'edge':'chrome'}.png`),Buffer.from(screenshot.data,'base64'));
+    }
     const report = {date:new Date().toISOString(),browser:version.product,mode:'headless, file://, audio silenciado',
-      playback,diagnostic,stopped,edited};
-    const suffix = process.argv.includes('--baseline') ? 'antes' : process.argv.includes('--edge') ? 'despues-edge' : 'despues';
+      playback,diagnostic,stopped,edited,rhythms,audioLevels};
+    const suffix = process.argv.includes('--rhythms') ? (process.argv.includes('--edge')?'ritmos-edge':'ritmos-chrome')
+      : process.argv.includes('--baseline') ? 'antes' : process.argv.includes('--edge') ? 'despues-edge' : 'despues';
     fs.writeFileSync(path.join(root,`docs/qa/evidencia/reproductor-${suffix}.json`),JSON.stringify(report,null,2)+'\n');
     console.log(JSON.stringify(report,null,2));
     if (!process.argv.includes('--baseline')) {

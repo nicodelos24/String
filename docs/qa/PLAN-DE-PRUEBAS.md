@@ -31,8 +31,15 @@ Tras el reporte BUG-005 se agregó `scripts/check-player-browser.cjs`, que abre 
 | REP-07 | Mostrar un error recuperable si falla el audio; detener al abandonar la página | PLY-10, PLY-13 | MAN-08, MAN-09 |
 | REP-08 | Tras una demora no lanzar muchos acordes juntos | PLY-09 | MAN-09 |
 | REP-09 | Controles con etiquetas, foco visible y acceso por teclado | Pendiente de pruebas de navegador | MAN-10, MAN-11 |
+| RIT-REQ-01 | Sin ritmo, Pop / rock, Jazz suave y Trap suave mantienen cuatro pulsos por tarjeta y las notas guardadas | RIT-01/02/06; navegador | MAN-14 |
+| RIT-REQ-02 | Desactivar Percusión conserva los ataques rítmicos de los acordes | RIT-03 | MAN-15 |
+| RIT-REQ-03 | Volumen percusión independiente y ajustable durante la ejecución | RIT-04/06 | MAN-16 |
+| RIT-REQ-04 | Detener cancela acordes y fuentes de percusión pendientes | RIT-03; pruebas base del motor | MAN-17 |
+| MIX-REQ-01 | Ganancias normalizadas entre acordes y ausencia de saturación en ejemplos medidos | MIX-01; OfflineAudioContext | MAN-18 |
 
 Los identificadores PLY están en los nombres de las pruebas. Los requisitos describen comportamiento verificable; los próximos estilos musicales se definirán en requisitos nuevos.
+
+La etapa de ritmos usa identificadores RIT y MIX. Se verifica con `node scripts/check-player-browser.cjs --rhythms` y opcionalmente `--edge`. El análisis de RMS y pico no sustituye la aceptación auditiva del balance ni certifica todo el rango posible de notas y volúmenes.
 
 ## Ejecución registrada
 
