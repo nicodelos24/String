@@ -457,20 +457,22 @@ function calculateKeySignature(modeKey, rootNote) {
 
   return { sharps: 0, flats: 0, key: 'C' };
 }
+let pianoUseFlats = false;
+
 function renderRootPiano() {
+  if (noteLabels[notes[root]]) pianoUseFlats = rootNoteName.includes('b');
+  document.querySelector('#selected-root-note').textContent = rootNoteName.replace('#', '♯').replace('b', '♭');
   const whiteKeys = [0, 2, 4, 5, 7, 9, 11];
   const blackKeys = [[1, 1], [3, 2], [6, 4], [8, 5], [10, 6]];
   const key = (pitch, black, position) => {
     const name = notes[pitch];
     const flat = noteLabels[name];
-    return `<button type="button" class="piano-key ${black ? 'piano-black' : 'piano-white'}" data-pitch="${pitch}" aria-pressed="${root === pitch}" aria-label="${flat ? name + ' / ' + flat : name}" style="--key-position: ${position}"><span>${name}</span>${flat ? '<small>' + flat + '</small>' : ''}</button>`;
+    const label = (pianoUseFlats && flat ? flat : name).replace('#', '♯').replace('b', '♭');
+    return `<button type="button" class="piano-key ${black ? 'piano-black' : 'piano-white'}" data-pitch="${pitch}" aria-pressed="${root === pitch}" aria-label="${label}" style="--key-position: ${position}"><span>${label}</span></button>`;
   };
   document.querySelector('#root-piano').innerHTML = whiteKeys.map((pitch, i) => key(pitch, false, i)).join('')
     + blackKeys.map(([pitch, position]) => key(pitch, true, position)).join('');
-  const spelling = document.querySelector('#root-spelling');
-  const flat = noteLabels[notes[root]];
-  spelling.hidden = !flat;
-  spelling.textContent = flat ? 'Usar ' + (rootNoteName === flat ? notes[root] : flat) : '';
+  document.querySelector('#root-spelling').checked = pianoUseFlats;
 }
 
 function choosePianoRoot(pitch, spelling = notes[pitch]) {
@@ -487,12 +489,14 @@ document.querySelector('#root-piano').addEventListener('click', event => {
   const key = event.target.closest('[data-pitch]');
   if (!key) return;
   const pitch = Number(key.dataset.pitch);
-  choosePianoRoot(pitch, rootNoteName.includes('b') ? noteLabels[notes[pitch]] || notes[pitch] : notes[pitch]);
+  choosePianoRoot(pitch, pianoUseFlats ? noteLabels[notes[pitch]] || notes[pitch] : notes[pitch]);
   document.querySelector('#root-piano').querySelector('[data-pitch="' + pitch + '"]').focus();
 });
-document.querySelector('#root-spelling').addEventListener('click', () => {
-  const flat = noteLabels[notes[root]];
-  if (flat) choosePianoRoot(root, rootNoteName === flat ? notes[root] : flat);
+document.querySelector('#root-spelling').addEventListener('change', event => {
+  pianoUseFlats = event.target.checked;
+  const spelling = pianoUseFlats ? noteLabels[notes[root]] || notes[root] : notes[root];
+  if (spelling !== rootNoteName) choosePianoRoot(root, spelling);
+  else renderRootPiano();
 });
 
 function populateControls() {

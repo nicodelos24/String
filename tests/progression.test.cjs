@@ -92,3 +92,21 @@ test('changing quality detaches the draft without modifying saved chords', () =>
   assert.equal(run('chordType.value'),'dim');
   assert.equal(run('JSON.stringify(progression)'),before);
 });
+
+test('piano accidental switch updates black keys and keeps preference across natural notes', () => {
+  const {run,element} = setup();
+  element('#root-spelling').handlers.change({target:{checked:true}});
+  assert(element('#root-piano').innerHTML.includes('D♭'));
+  assert(!element('#root-piano').innerHTML.includes('C♯'));
+  run("choosePianoRoot(2, 'D');");
+  assert.equal(element('#root-spelling').checked,true);
+  run("choosePianoRoot(1, 'Db'); addProgressionChord();");
+  const saved = run('activeProgression');
+  element('#root-spelling').handlers.change({target:{checked:false}});
+  assert.equal(run('rootNoteName'),'C#');
+  assert.equal(run('progression[' + saved + '].rootNoteName'),'Db');
+  assert(element('#root-piano').innerHTML.includes('C♯'));
+  run('selectProgressionChord(' + saved + ')');
+  assert.equal(element('#root-spelling').checked,true);
+  assert.equal(element('#selected-root-note').textContent,'D♭');
+});

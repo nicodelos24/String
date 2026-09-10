@@ -31,8 +31,9 @@
 
         <div class="panel-heading"><span class="section-number">02</span><h2>Nota Base</h2></div>
         <select id="root-select" hidden aria-label="Nota base"></select>
+          <div class="note-controls-row"><div class="selected-root"><strong id="selected-root-note" role="status" aria-label="Nota seleccionada">C</strong></div><label class="spelling-switch"><span aria-hidden="true">&#9839;</span><input id="root-spelling" type="checkbox" role="switch" aria-label="Usar bemoles en el piano"><span class="spelling-track" aria-hidden="true"></span><span aria-hidden="true">&#9837;</span></label></div>
           <div id="root-piano" class="root-piano" role="group" aria-label="Piano: seleccionar nota base"></div>
-          <button id="root-spelling" class="root-spelling" type="button" hidden></button>
+
 
         <div class="panel-heading"><span class="section-number">03</span><h2>Calidad</h2></div>
         <div id="quality-select" class="mode-options-row quality-options" role="group" aria-label="Tipo de acorde"></div>
@@ -46,10 +47,10 @@
       </aside>
 
       <div class="fretboard-section">
-        
+
         <div class="progression-header-inline"><div><p class="eyebrow">IDEA DE PROGRESIÓN</p><h3>Tu vuelta armónica</h3></div><button class="add-button" id="add-chord" type="button"><span>+</span> añadir acorde</button></div>
         <div class="progression" id="progression" aria-label="Progresión de acordes"></div>
-        
+
         <div class="board-toolbar"><div><span class="eyebrow board-eyebrow">MÁSTIL / GUITARRA</span><h2 id="board-title">C · C Mayor</h2></div><div class="toolbar-buttons"><button class="icon-button" id="toggle-notes" type="button" aria-pressed="false" title="Ciclar entre mostrar sin notas, solo escala, o todas las notas">Aa <span>notas</span></button><button class="icon-button" id="toggle-degrees" type="button" aria-pressed="false" aria-label="Grados: no. Clic para cambiar." title="Alternar grados de la escala, grados de todo el mástil y desactivados. Se conserva la selección del control de notas.">1 <span>grados: no</span></button><button class="icon-button" id="toggle-display" type="button" aria-pressed="false" title="Ciclar entre modos de visualización">🎨 <span id="display-label">grados</span></button></div></div>
         <div class="fretboard-wrap"><div class="fretboard-layout">
           <div class="open-strings-heading">Al aire</div>
@@ -68,7 +69,7 @@
             <span id="metronome-status" role="status">En pausa</span>
           </section>
       </div>
-      
+
       <aside class="legend-panel">
         <div class="legend-heading"><span class="section-number"></span><h2>Armadura de Clave </h2></div>
         <!-- <div class="chord-readout"><span class="readout-label">ACORDE SELECCIONADO</span><strong id="chord-readout">C</strong><span class="mode-display" id="mode-display"></span><span class="key-signature-chord" id="key-signature-chord"></span></div> -->
