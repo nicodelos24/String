@@ -87,21 +87,27 @@
           </section>
         <section class="youtube-panel" aria-labelledby="youtube-heading">
           <div class="youtube-heading"><span class="eyebrow">TOCAR SOBRE UNA CANCIÓN</span><h3 id="youtube-heading">Practicar con YouTube</h3></div>
+          <div class="youtube-layout"><div class="youtube-media">
           <form id="youtube-form" class="youtube-form">
             <label for="youtube-url">Enlace del video</label>
             <div class="youtube-url-row"><input id="youtube-url" type="url" placeholder="https://www.youtube.com/watch?v=…" required><button id="youtube-load" type="submit">Cargar video</button></div>
           </form>
-          <p id="youtube-status" role="status">Pegá un enlace para cargar el reproductor oficial. No hace falta vincular una cuenta.</p>
+          <p id="youtube-status" role="status">Pega un enlace para cargar el video. No necesitas vincular una cuenta.</p>
           <a id="youtube-external" class="youtube-external" target="_blank" rel="noopener noreferrer" hidden>Abrir video en YouTube</a>
           <div id="youtube-video-wrap" class="youtube-video-wrap" hidden></div>
+          </div><div class="youtube-sync">
+          <label class="youtube-record"><input id="youtube-record" type="checkbox" disabled>Registrar cambios mientras escucho</label>
+          <p class="youtube-help">Activa el registro y pulsa las tarjetas al escuchar cada cambio de acorde. El tiempo se guarda sin pausar el video. Desactiva el registro para seguir las marcas.</p>
+          <button id="youtube-mark-now" type="button" disabled>Marcar acorde seleccionado ahora</button>
           <div class="youtube-cue-controls">
             <label for="youtube-cue-time">Momento (segundos) <input id="youtube-cue-time" type="number" min="0" step="0.1" value="0" required></label>
             <button id="youtube-use-time" type="button" disabled>Usar tiempo del video</button>
             <button id="youtube-mark" type="button" disabled>Vincular tarjeta seleccionada</button>
             <label for="youtube-follow"><input id="youtube-follow" type="checkbox" disabled>Seguir acordes en el mástil</label>
           </div>
-          <p class="youtube-help">Pausá el video, seleccioná una tarjeta y guardá su momento. Repetí para los demás cambios y activá el seguimiento. Las marcas son manuales y se conservan hasta recargar o cambiar de video.</p>
+          <p class="youtube-help">También puedes guardar un segundo exacto con los controles anteriores. Las marcas se conservan hasta recargar la página o cambiar de video.</p>
           <ol id="youtube-cues" class="youtube-cues" aria-label="Marcas de acordes"></ol>
+          </div></div>
         </section>
       </div>
 

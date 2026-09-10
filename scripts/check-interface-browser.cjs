@@ -24,8 +24,13 @@ const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
   const pending=new Map();
   try {
     const portFile=path.join(profile,'DevToolsActivePort');
-    for(let i=0;i<300 && !fs.existsSync(portFile);i++) await delay(100);
-    const port=fs.readFileSync(portFile,'utf8').split('\n')[0];
+    let port;
+    for(let i=0;i<300;i++) {
+      try {const value=fs.readFileSync(portFile,'utf8').split('\n')[0].trim();if(/^\d+$/.test(value)) {port=value;break;}}
+      catch(error) {if(!['ENOENT','EBUSY','EACCES'].includes(error.code)) throw error;}
+      await delay(100);
+    }
+    assert(port,'El navegador no publicó su puerto de depuración.');
     const targets=await(await fetch(`http://127.0.0.1:${port}/json/list`)).json();
     socket=new WebSocket(targets.find(target=>target.type==='page').webSocketDebuggerUrl);
     await new Promise((resolve,reject)=>{socket.onopen=resolve;socket.onerror=reject;});
@@ -43,6 +48,7 @@ const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
         }
         getCurrentTime(){return this.time;}
         getDuration(){return 180;}
+        getPlayerState(){return this.paused ? 2 : (this.state ?? 1);}
         seekTo(time){this.time=time;}
         pauseVideo(){this.paused=true;}
         destroy(){this.frame.remove();}
@@ -86,6 +92,16 @@ const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
       assert.equal(await evaluate("document.querySelector('#youtube-cue-time').value"),'12.0');
       await evaluate(`document.querySelector('#youtube-cues [data-remove-cue="10"]').click();`);
       assert.equal(await evaluate("document.querySelectorAll('#youtube-cues li').length"),1);
+      await evaluate(`document.querySelector('#youtube-record').click();testYoutube.time=20;document.querySelector('.progression-card[data-index="1"]').click();`);
+      assert.equal(await evaluate("document.querySelectorAll('#youtube-cues li').length"),2);
+      assert.equal(await evaluate("document.querySelector('#youtube-follow').checked"),false);
+      assert.equal(await evaluate('Boolean(testYoutube.paused)'),false);
+      await evaluate(`testYoutube.time=30;document.querySelector('.progression-card[data-index="0"]').click();document.querySelector('#youtube-record').click();testYoutube.time=22;`);
+      await delay(150);assert.equal(await evaluate('root'),0);
+      await evaluate('testYoutube.time=32');await delay(150);assert.equal(await evaluate('root'),5);
+      await evaluate(`testYoutube.state=0;testYoutube.options.events.onStateChange({data:0});`);
+      await delay(150);assert.equal(await evaluate('playingProgressionItem'),null);
+      await evaluate('testYoutube.state=1');
       await evaluate(`document.querySelector('#player-toggle').click();`);await delay(150);
       assert.equal(await evaluate('testYoutube.paused'),true);
       assert.equal(await evaluate("document.querySelector('#youtube-follow').checked"),false);
@@ -100,6 +116,7 @@ const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
     await delay(150);
     const mobile=await evaluate(`(()=>{const r=document.querySelector('.chord-player').getBoundingClientRect();return {width:r.width,viewport:innerWidth};})()`);
     assert(mobile.width<=390);
+    assert(await evaluate(`(()=>{const r=document.querySelector('#youtube-video-wrap').getBoundingClientRect();return r.width>=200 && r.height>=200 && r.right<=innerWidth;})()`));
     const screenshotMobile=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:true});
     fs.writeFileSync(path.join(os.tmpdir(),`traste-interface-mobile-${edge?'edge':'chrome'}.png`),Buffer.from(screenshotMobile.data,'base64'));
     console.log(JSON.stringify({browser:(await send('Browser.getVersion')).product,dimensions,collapsed,mobile,youtube:live?'API real':'Doble controlado',connection,result:(!live || connection.ready)?'PASS':'CONEXIÓN EXTERNA NO CONFIRMADA'},null,2));

@@ -173,17 +173,23 @@ No hay sincronización con el metrónomo independiente ni conexión con YouTube 
 
 Esta primera integración usa la [IFrame Player API oficial](https://developers.google.com/youtube/iframe_api_reference). El reproductor queda visible con los controles de YouTube; permite consultar su tiempo para seguir las marcas. No requiere clave de API ni vincular una cuenta. No detecta acordes automáticamente ni modifica el tempo de una canción.
 
-1. Abrí la app por HTTP con Live Server o con el comando de la sección inicial.
-2. Pegá el enlace de un video en **Practicar con YouTube** y presioná **Cargar video**. Se aceptan enlaces de YouTube, youtu.be y enlaces a videos de music.youtube.com; eso no conecta una biblioteca de YouTube Music.
-3. Reproducí y pausá el video en el primer cambio de acorde. Dejá **Seguir acordes** desactivado mientras preparás las marcas.
-4. Seleccioná la tarjeta correspondiente. Presioná **Usar tiempo del video**, o escribí los segundos, y luego **Vincular tarjeta seleccionada**.
-5. Repetí para cada cambio. Podés usar el mismo acorde varias veces. Una marca en el mismo instante reemplaza la anterior.
-6. Activá **Seguir acordes en el mástil** y reproducí el video. El mástil cambia al cruzar cada marca y responde también al adelantar o retroceder. Antes de la primera marca no se impone un acorde; la última se mantiene hasta el final.
-7. Pulsá una marca para saltar a ese momento, o su × para quitarla.
+1. Abre la aplicación con `npm start`, Python o Live Server.
+2. Pega el enlace en **Practicar con YouTube** y pulsa **Cargar video**. Se aceptan enlaces de YouTube, youtu.be y videos de music.youtube.com; esto no conecta una biblioteca de YouTube Music.
+3. Reproduce el video y activa **Registrar cambios mientras escucho**.
+4. Pulsa la tarjeta correspondiente cada vez que escuches un cambio. Se guarda el tiempo actual sin pausar el video. Puedes repetir tarjetas; una marca en el mismo instante reemplaza la anterior. También puedes seleccionar un acorde con el teclado y pulsar **Marcar acorde seleccionado ahora**.
+5. Desactiva el registro: el seguimiento se activa si hay marcas. Retrocede en el video para practicar; el mástil sigue las marcas usando el reloj del video, incluso después de adelantar o retroceder.
+6. Para ajustar un momento manualmente, desactiva el seguimiento, selecciona una tarjeta e introduce los segundos antes de pulsar **Vincular tarjeta seleccionada**. Para mover una marca, elimina la anterior y guarda otra en el tiempo correcto.
+7. Pulsa una marca para saltar a ese momento, o su × para quitarla. Antes de la primera marca no se impone un acorde; la última permanece hasta que termina el video.
+
+El video y el enlace ocupan una columna compacta junto a los controles de sincronización. En pantallas pequeñas se apilan. El reproductor conserva un mínimo de 200 píxeles por dimensión, según los requisitos de la API oficial.
+
+El registro y el seguimiento son modos excluyentes: así el seguimiento no cambia la selección mientras se registran acordes. La precisión depende del momento en que pulses la tarjeta; no hay reconocimiento automático de acordes ni ajuste por BPM. El seguimiento consulta el reloj del video cada 100 ms, por lo que no pretende una precisión de audio profesional.
+
+Seleccionar una tarjeta con el mouse o con Enter/Espacio fuera del registro desactiva el seguimiento para permitir explorar ese acorde sin que el reloj vuelva a cambiarlo. Puedes reactivar **Seguir acordes** cuando quieras regresar a la canción. Durante el registro, Enter/Espacio también guarda el momento del acorde.
 
 Cada marca conserva una copia del acorde y su modo. Reordenar las tarjetas no cambia los tiempos de la canción. Las marcas permanecen en memoria hasta recargar o cargar un video diferente; el mismo video conserva sus marcas al volver a cargarlo. Todavía no hay exportación ni guardado permanente.
 
-Al reproducir YouTube se detiene el sintetizador; al iniciar la progresión sintetizada se pausa YouTube y se desactiva su seguimiento, para que ambas fuentes no compitan por el mástil. El metrónomo conserva su control independiente.
+Marcar acordes no pausa YouTube. Al reproducir YouTube o activar su registro/seguimiento se detiene el sintetizador. Solo al pulsar **Reproducir** en el reproductor de acordes se pausa el video y se desactivan su registro y seguimiento: esa acción cambia la fuente de audio. El metrónomo conserva su control independiente y no se sincroniza con el video. Al terminar el video se limpia el indicador de acorde en reproducción.
 
 La carga necesita Internet y un video que permita reproducción incrustada. Hay mensajes para enlaces inválidos, falta de conexión y videos restringidos; también un enlace para abrir el video en YouTube. La página carga la API externa al solicitar un video. El uso de HTTP y del origen del sitio sigue la [configuración del reproductor oficial](https://developers.google.com/youtube/player_parameters).
 
