@@ -137,11 +137,6 @@ const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
     assert.equal(await evaluate('root'),2);
     await evaluate("document.querySelector('#midi-play').click();document.querySelector('#midi-add').click();");
     assert.equal(await evaluate('progression.length'),6);
-    await evaluate("document.querySelector('#midi-catalog').value='0';document.querySelector('#midi-catalog-load').click();");
-    for(let i=0;i<100;i++){if(await evaluate("!document.querySelector('#midi-play').disabled"))break;await delay(50);}
-    assert.equal(await evaluate("document.querySelector('#midi-play').disabled"),false);
-    assert.equal(await evaluate("document.querySelectorAll('#midi-preview li').length"),142);
-    assert.equal(await evaluate("document.querySelector('#midi-credit').hidden"),false);
     await evaluate("selectedMode='dorian';displayModeIndex=3;updateView();document.querySelector('#fretboard [data-midi=\"66\"]').click();");
     assert.equal(await evaluate('root'),6);assert.equal(await evaluate('selectedMode'),'dorian');
     assert.equal(await evaluate("document.querySelector('#display-label').textContent"),'Acorde');
@@ -157,6 +152,7 @@ const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
     await evaluate("document.querySelector('#root-piano [data-pitch=\"9\"]').click();");assert.equal(await evaluate('root'),9);
     await evaluate("document.querySelector('#progression-preset').value='blues';document.querySelector('#apply-preset').click();");
     assert.equal(await evaluate('progression.length'),12);assert.equal(await evaluate("document.querySelector('#player-bpm').value"),'90');
+    assert(await evaluate(`(()=>{const original=progression.map(chord=>({...chord}));const result=appendMidiChords(Array.from({length:300},()=>({root:0,type:chordTypes[0].value})));if(!result)return false;document.querySelector('#song-title').value='MIDI largo';document.querySelector('#song-save').click();const saved=JSON.parse(localStorage.getItem('traste.songs.v1')).songs.some(song=>song.title==='MIDI largo' && song.chords.length===312);progression=original;updateView();return saved;})()`));
     const screenshot=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:true});
     fs.writeFileSync(path.join(os.tmpdir(),`traste-interface-${edge?'edge':'chrome'}.png`),Buffer.from(screenshot.data,'base64'));
     for (const width of [320,390,768,1024]) {

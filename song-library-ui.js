@@ -6,7 +6,7 @@
   function validate(song) {
     if(!song || typeof song.id!=='string' || song.id.length>100 || !song.id || typeof song.title!=='string' || !song.title.trim() || song.title.length>100 ||
       typeof song.video!=='string' || (song.video && !youtubeVideoId(song.video)) ||
-      !Array.isArray(song.chords) || !song.chords.length || song.chords.length>256) throw new Error('Canción no válida.');
+      !Array.isArray(song.chords) || !song.chords.length || song.chords.length>4096) throw new Error('Canción no válida.');
     const chords=song.chords.map(chord=>{
       if(!chord || !Number.isInteger(chord.root) || chord.root<0 || chord.root>11 || !chordTypes.some(type=>type.value===chord.type) ||
         (chord.mode!==undefined && !Object.hasOwn(modes,chord.mode)) ||

@@ -52,7 +52,7 @@ function readMidiChords(buffer,types) {
     }
     if(match)chords.push({...match,tick,time:timeAt(tick)});else skipped++;
   }
-  if(chords.length>256)throw new Error('Se reconocieron más de 256 acordes. Importa un fragmento más corto.');
+  if(chords.length>4096)throw new Error('Se reconocieron más de 4096 acordes. Importa un fragmento más corto.');
   const timedNotes=notes.filter(note=>note.end>note.tick).map(note=>({midi:note.midi,velocity:note.velocity,time:timeAt(note.tick),duration:timeAt(note.end)-timeAt(note.tick)})).sort((a,b)=>a.time-b.time);
   const duration=timedNotes.reduce((end,note)=>Math.max(end,note.time+note.duration),timeAt(lastTick));
   return {chords,skipped,notes:timedNotes,duration};

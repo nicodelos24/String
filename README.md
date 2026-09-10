@@ -193,7 +193,7 @@ YouTube usa la [IFrame Player API oficial](https://developers.google.com/youtube
 5. Selecciona una canción de la biblioteca y pulsa **Abrir** para recuperar sus tarjetas y ajustes. Esto reemplaza la progresión que estás editando y detiene el sintetizador; guarda primero los cambios que quieras conservar. El video asociado se carga sin reproducción automática.
 6. Usa **Actualizar canción abierta** para guardar cambios sobre la canción que abriste o acabas de guardar. **Guardar como nueva** crea otra copia. Cambiar la selección de la lista no abre ni modifica una canción por sí solo.
 
-Cada canción contiene un identificador, nombre, enlace opcional, copia de los acordes (incluidos sus modos) y configuración del acompañamiento. La biblioteca guarda hasta 200 canciones, con hasta 256 acordes cada una. No guarda archivos de audio ni descarga videos: los ritmos se generan nuevamente al reproducir. La asociación canción–progresión no implica sincronización temporal ni detección automática de acordes.
+Cada canción contiene un identificador, nombre, enlace opcional, copia de los acordes (incluidos sus modos) y configuración del acompañamiento. La biblioteca guarda hasta 200 canciones, con hasta 4096 acordes cada una. No guarda archivos de audio ni descarga videos: los ritmos se generan nuevamente al reproducir. La asociación canción–progresión no implica sincronización temporal ni detección automática de acordes.
 
 ### Dónde quedan los datos y cómo respaldarlos
 
@@ -274,22 +274,11 @@ En este avance se actualizó únicamente el README como documentación. Las plan
 
 Al recargar, YouTube, Acompañamiento, Mis canciones e Importar acordes MIDI aparecen plegados. Abre cada encabezado para acceder a sus controles. El mástil empieza resaltando la tríada y mostrando los nombres de las notas de la escala. La S del logo usa cursiva.
 
-Un doble clic sobre una tarjeta crea una copia independiente justo después, incluidos el tipo de acorde, nombre de nota y modos. El clic derecho elimina la tarjeta; se conserva al menos una. El botón × continúa disponible. El arrastre sigue reordenando sin duplicar. Las copias permiten repetir compases; el acompañamiento conserva cuatro pulsos por tarjeta. Se pueden duplicar hasta alcanzar 256 tarjetas.
+Un doble clic sobre una tarjeta crea una copia independiente justo después, incluidos el tipo de acorde, nombre de nota y modos. El clic derecho elimina la tarjeta; se conserva al menos una. El botón × continúa disponible. El arrastre sigue reordenando sin duplicar. Las copias permiten repetir compases; el acompañamiento conserva cuatro pulsos por tarjeta. Se pueden duplicar hasta alcanzar 4096 tarjetas.
 
-## Catálogo MIDI integrado
+## Importación MIDI local
 
-Abre **Importar acordes MIDI**, elige una obra en **O elige del catálogo incluido** y pulsa **Cargar del catálogo**. Usa después los mismos controles de reproducción, vista previa e importación a tarjetas. La importación de tus propios archivos sigue disponible.
-
-Los archivos están incluidos en `assets/midi/`, sin modificaciones, y se sirven desde el mismo servidor local. No se necesita una API, cuenta ni conexión a Mutopia para reproducirlos una vez descargado el proyecto. Abre String con `npm start` o Python; la carga del catálogo no funciona mediante doble clic en index.html.
-
-| Obra | Edición y fuente | Licencia indicada por Mutopia |
-| --- | --- | --- |
-| J. S. Bach, Preludio en mi menor, BWV 533 | Pierre Pouillon · [Mutopia 1843](https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=1843) | Public Domain |
-| J. S. Bach, Preludio en re menor, BWV 999, guitarra/laúd | Jakob Bagterp · [Mutopia 60](https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=60) | Public Domain |
-
-Archivos originales: [BWV 533](https://www.mutopiaproject.org/ftp/BachJS/BWV533/BWV533/BWV533.mid) y [BWV 999](https://www.mutopiaproject.org/ftp/BachJS/BWV999/Bach_Prelude_BWV999/Bach_Prelude_BWV999.mid). El catálogo muestra los créditos y el enlace de la edición al cargar cada obra.
-
-El importador actual reconoce 142 acordes en bloque en BWV 533 y uno en BWV 999. La segunda obra contiene arpegios: esto limita el reconocimiento, no la reproducción de sus notas. El catálogo no añade transcripciones automáticas ni convierte los arpegios en acordes. Para ampliar la selección, se deben comprobar tanto la licencia de la edición como la compatibilidad con el importador.
+El catálogo incluido se retiró de la interfaz. Puedes importar tus propios archivos MIDI de hasta 2 MB y trabajar con progresiones de hasta 4096 acordes, también al guardarlas en Mis canciones. Los archivos musicales de ejemplo que permanecen en `assets/midi/` conservan sus créditos en midi-catalog.js (metadatos utilizados solo en pruebas) y se utilizan en pruebas; la página ya no los carga como catálogo.
 
 ## Elegir la raíz desde el mástil y estudiar acordes del modo
 
@@ -308,7 +297,7 @@ Las pentatónicas tienen cinco notas, por lo que estas dos vistas no se ofrecen 
 
 **Mantener escala al tocar el mástil** está desactivado inicialmente. Al activarlo, pulsar un traste o una cuerda al aire reproduce la nota y la marca con un contorno, sin cambiar raíz, modo ni acorde del editor. El piano sigue cambiando la raíz, incluso con el bloqueo activo. El interruptor limita los clics del mástil; no detiene el seguimiento de una reproducción.
 
-Al añadir los acordes de un MIDI, las cuatro tarjetas de ejemplo se sustituyen si siguen siendo la progresión inicial intacta. Si ya añadiste, duplicaste, moviste o eliminaste tarjetas, o abriste una canción, se conservan y el MIDI se añade al final. Importar otro MIDI después también añade sus acordes. El límite sigue siendo de 256 tarjetas.
+Al añadir los acordes de un MIDI, las cuatro tarjetas de ejemplo se sustituyen si siguen siendo la progresión inicial intacta. Si ya añadiste, duplicaste, moviste o eliminaste tarjetas, o abriste una canción, se conservan y el MIDI se añade al final. Importar otro MIDI después también añade sus acordes. El límite sigue siendo de 4096 tarjetas.
 
 El selector **Plantillas** ofrece:
 

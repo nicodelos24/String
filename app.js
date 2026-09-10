@@ -948,7 +948,7 @@ function moveProgressionChord(from, to) {
 }
 
 function duplicateProgressionChord(index) {
-  if (!Number.isInteger(index) || !progression[index] || progression.length >= 256 || draggingProgressionItem) return;
+  if (!Number.isInteger(index) || !progression[index] || progression.length >= 4096 || draggingProgressionItem) return;
   progression.splice(index + 1, 0, {...progression[index]});
   progressionEdited=true;
   selectProgressionChord(index + 1);
@@ -998,7 +998,7 @@ function selectFretNote(note) {
 function appendMidiChords(chords) {
   if(!chords.length || draggingProgressionItem)return false;
   const replace=!progressionEdited && progression===initialProgression && JSON.stringify(progression)===initialProgressionSnapshot;
-  if((replace?0:progression.length)+chords.length>256)return false;
+  if((replace?0:progression.length)+chords.length>4096)return false;
   const first=replace?0:progression.length;
   if(replace)progression=[];
   progression.push(...chords.map(item=>({...item})));

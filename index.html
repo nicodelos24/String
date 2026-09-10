@@ -119,8 +119,6 @@
         <details class="midi-panel"><summary>Importar acordes MIDI <span>· experimental</span></summary>
           <p>Escucha las notas del archivo con su tempo y sigue los acordes reconocidos en el mástil. La detección funciona con notas que empiezan juntas; no interpreta arpegios. El sonido es sintetizado, sin los instrumentos ni la percusión originales.</p>
           <label for="midi-file">Archivo MIDI</label><input id="midi-file" type="file" accept=".mid,.midi,audio/midi">
-          <div class="midi-catalog-controls"><label for="midi-catalog">O elige del catálogo incluido</label><select id="midi-catalog"></select><button id="midi-catalog-load" type="button">Cargar del catálogo</button></div>
-          <p id="midi-credit" hidden></p><a id="midi-source" hidden target="_blank" rel="noopener noreferrer">Ver edición y licencia en Mutopia</a>
           <p class="player-help">Las obras con arpegios pueden tener pocos acordes reconocidos; puedes escuchar todas sus notas.</p>
           <p id="midi-status" role="status">Selecciona un archivo para analizarlo localmente.</p><ol id="midi-preview"></ol>
           <button id="midi-play" type="button" disabled>Reproducir MIDI</button><span id="midi-time" role="timer">0:00</span>
@@ -205,7 +203,6 @@
   <script src="instrument-picker.js"></script>
   <script src="midi-import.js"></script>
   <script src="midi-player.js"></script>
-  <script src="midi-catalog.js"></script>
   <script src="midi-ui.js"></script>
   <script src="progression-presets.js"></script>
 </body>

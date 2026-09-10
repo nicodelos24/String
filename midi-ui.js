@@ -16,9 +16,8 @@
   window.addEventListener('traste:load-song',()=>engine.stop());
   window.addEventListener('traste:progression-start',()=>engine.stop());
   window.addEventListener('pagehide',()=>{engine.stop();engine.context?.close();});
-  async function loadFile(file,entry=null) {
+  async function loadFile(file) {
     const request=++generation;engine.stop();imported=null;play.disabled=true;clock.textContent='0:00';pending=[];preview.replaceChildren();add.disabled=true;
-    const credit=document.querySelector('#midi-credit'),source=document.querySelector('#midi-source');credit.hidden=true;source.hidden=true;
     if(!file)return;
     status.textContent='Cargando MIDI…';
     try {
@@ -28,26 +27,14 @@
       for(const item of pending){const row=document.createElement('li');row.textContent=noteName(item.root)+chordTypes.find(type=>type.value===item.type).suffix;preview.append(row);}
       add.disabled=!pending.length;
       status.textContent=`${pending.length} acordes reconocidos; ${result.skipped} grupos omitidos. Revisa posibles ambigüedades: las inversiones pueden tener más de un nombre.`;
-      if(entry){credit.textContent=entry.credit;credit.hidden=false;source.href=entry.source;source.hidden=false;}
     } catch(error) {if(request===generation)status.textContent=error.message;}
   }
   input.addEventListener('change',()=>loadFile(input.files[0]));
-  const catalog=document.querySelector('#midi-catalog');
-  midiCatalog.forEach((entry,index)=>catalog.add(new Option(entry.title,String(index))));
-  document.querySelector('#midi-catalog-load').addEventListener('click',()=>{
-    const entry=midiCatalog[Number(catalog.value)];if(!entry)return;
-    input.value='';
-    loadFile({size:0,arrayBuffer:async()=>{
-      if(location.protocol==='file:')throw new Error('Para cargar el catálogo, abre la aplicación con npm start en http://127.0.0.1:8000.');
-      const response=await fetch(entry.file);if(!response.ok)throw new Error('No se pudo cargar este MIDI del catálogo.');
-      return response.arrayBuffer();
-    }},entry);
-  });
   add.addEventListener('click',()=>{
     if(!pending.length || draggingProgressionItem)return;
     window.dispatchEvent(new Event('traste:load-song'));
     const result=appendMidiChords(pending);
-    if(!result){status.textContent='La progresión resultante supera 256 acordes. Reduce las tarjetas antes de añadir.';return;}
+    if(!result){status.textContent='La progresión resultante supera 4096 acordes. Reduce las tarjetas antes de añadir.';return;}
     pending=[];add.disabled=true;status.textContent=result.replaced?'La progresión inicial se sustituyó por los acordes del MIDI. Puedes guardarla en Mis canciones.':'Acordes añadidos al final de tu progresión. Puedes guardarla en Mis canciones.';
   });
 })();

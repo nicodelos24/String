@@ -1,6 +1,14 @@
 const {test}=require('node:test');const assert=require('node:assert/strict');
 const {readMidiChords}=require('../midi-import.js');
 const types=[{value:'maj',intervals:[0,4,7]},{value:'m',intervals:[0,3,7]},{value:'7',intervals:[0,4,7,10]}];
+test('imports all chords beyond the old 256 limit',()=>{
+  const events=[];
+  for(let i=0;i<300;i++)events.push(i?96:0,0x90,60,90,0,0x90,64,90,0,0x90,67,90,1,0x80,60,0,0,0x80,64,0,0,0x80,67,0);
+  events.push(0,255,47,0);
+  const result=readMidiChords(midi([events]),types);
+  assert.equal(result.chords.length,300);assert.equal(result.notes.length,900);
+  assert(result.chords.at(-1).time>result.chords[0].time);
+});
 const chunk=(name,data)=>[...Buffer.from(name),0,0,data.length>>8,data.length&255,...data];
 function midi(tracks){return Uint8Array.from([...chunk('MThd',[0,tracks.length>1?1:0,0,tracks.length,0,96]),...tracks.flatMap(data=>chunk('MTrk',data))]).buffer;}
 test('MIDI recognizes simultaneous inverted chords and ignores percussion / velocity-zero notes',()=>{
