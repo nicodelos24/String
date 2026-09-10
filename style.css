@@ -1032,3 +1032,34 @@ footer {
 .metronome-pulse { display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--line); font: 10px var(--mono); }
 .metronome-pulse.active { background: var(--rust); color: white; }
 #metronome-status { color: var(--muted); font-size: 10px; }
+
+.mode-group-title {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--muted);
+  font: 10px var(--sans);
+}
+.mode-options-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.control-panel .mode-options-row .mode-option {
+  display: flex;
+  flex: 1 1 48px;
+  min-width: 0;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  margin: 0;
+  padding: 8px 3px;
+  text-align: center;
+}
+.mode-options-row .mode-label {
+  font-size: 10px;
+  overflow-wrap: anywhere;
+}
+.mode-group + .mode-group { margin-top: 6px; }
+
+.quality-options { margin-top: 12px; }

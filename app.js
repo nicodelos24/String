@@ -471,8 +471,8 @@ function populateControls() {
     `<option value="${noteIndices[note]}" data-note="${note}">${note}</option>`
   ).join('');
 
-  qualitySelect.innerHTML = Object.entries(qualities).map(([key, qual]) => `<option value="${key}">${qual.label}</option>`).join('');
-  instrumentSelect.value = instrument; rootSelect.value = root; qualitySelect.value = quality;
+
+  instrumentSelect.value = instrument; rootSelect.value = root;
 
   const savedNoteIndex = Array.from(rootSelect.options).findIndex(option => option.dataset.note === rootNoteName);
   if (savedNoteIndex >= 0) rootSelect.selectedIndex = savedNoteIndex;
@@ -487,6 +487,12 @@ function populateControls() {
 }
 
 function updateModeSelector() {
+  qualitySelect.innerHTML = Object.entries(qualities).map(([key, qual]) => `
+    <label class="mode-option">
+      <input type="radio" name="quality" value="${key}" ${quality === key ? 'checked' : ''}>
+      <span class="mode-label">${qual.label}</span>
+    </label>
+  `).join('');
   const availableModes = getAvailableModes(quality);
 
   // Si el modo actual no está disponible, cambiar al modo por defecto de la calidad
@@ -494,15 +500,23 @@ function updateModeSelector() {
     selectedMode = qualities[quality].defaultMode;
   }
 
-  modeSelector.innerHTML = availableModes.map(modeKey => {
-    const mode = modes[modeKey];
-    return `
-      <label class="mode-option">
-        <input type="radio" name="mode" value="${modeKey}" ${selectedMode === modeKey ? 'checked' : ''}>
-        <span class="mode-label">${mode.name}</span>
-      </label>
-    `;
-  }).join('');
+  const groups = [
+    { label: 'Modos', keys: availableModes.filter(key => modes[key].type !== 'both') },
+    { label: 'Pentatónicas', keys: availableModes.filter(key => modes[key].type === 'both') }
+  ];
+  modeSelector.innerHTML = groups.map(group => `
+    <div class="mode-group" role="group" aria-label="${group.label}">
+      <span class="mode-group-title">${group.label}</span>
+      <div class="mode-options-row">
+        ${group.keys.map(modeKey => `
+          <label class="mode-option">
+            <input type="radio" name="mode" value="${modeKey}" ${selectedMode === modeKey ? 'checked' : ''}>
+            <span class="mode-label">${modes[modeKey].name}</span>
+          </label>
+        `).join('')}
+      </div>
+    </div>
+  `).join('');
 
   // Agregar event listeners a los nuevos radio buttons
   modeSelector.querySelectorAll('input[name="mode"]').forEach(radio => {
