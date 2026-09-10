@@ -1,4 +1,4 @@
-// UI real con CDP. YouTube usa un doble salvo al pasar --live-youtube.
+// UI real con CDP. Bloquea la red de YouTube salvo con --live-youtube; no afirma reproducci?n.
 const fs=require('node:fs'), os=require('node:os'), path=require('node:path'), http=require('node:http');
 const {spawn}=require('node:child_process');
 const assert=require('node:assert/strict');
@@ -39,24 +39,10 @@ const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
     const send=(method,params={})=>new Promise((resolve,reject)=>{const request=++id;const timer=setTimeout(()=>{pending.delete(request);reject(new Error('Timeout '+method));},20000);pending.set(request,{resolve,reject,timer});socket.send(JSON.stringify({id:request,method,params}));});
     const evaluate=async expression=>{const result=await send('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true,userGesture:true});if(result.exceptionDetails)throw new Error(JSON.stringify(result.exceptionDetails));return result.result.value;};
     await send('Page.enable');
-    if(!live) await send('Page.addScriptToEvaluateOnNewDocument',{source:`
-      window.YT={Player:class {
-        constructor(host,options) {
-          this.options=options; this.time=0; window.testYoutube=this;
-          const frame=document.createElement('iframe');frame.title='Doble de YouTube';host.replaceWith(frame);
-          this.frame=frame;setTimeout(()=>options.events.onReady(),0);
-        }
-        getCurrentTime(){return this.time;}
-        getDuration(){return 180;}
-        getPlayerState(){return this.paused ? 2 : (this.state ?? 1);}
-        seekTo(time){this.time=time;}
-        pauseVideo(){this.paused=true;}
-        destroy(){this.frame.remove();}
-      }};
-    `});
+    if(!live) {await send('Network.enable');await send('Network.setBlockedURLs',{urls:['*youtube.com/*','*googlevideo.com/*']});}
     await send('Emulation.setDeviceMetricsOverride',{width:1440,height:1000,deviceScaleFactor:1,mobile:false});
     await send('Page.navigate',{url:address});
-    for(let i=0;i<100;i++) {if(await evaluate("typeof SongTimeline!=='undefined' && document.readyState==='complete'")) break;await delay(100);}
+    for(let i=0;i<100;i++) {if(await evaluate("typeof SongLibrary!=='undefined' && document.readyState==='complete'")) break;await delay(100);}
     const dimensions=await evaluate(`(()=>{
       const sizes=[];
       for(const [pitch,name,mode] of [[0,'C','ionian'],[6,'F#','lydian'],[1,'Db','minorPentatonic']]){
@@ -81,35 +67,29 @@ const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
     await delay(250);
     assert.equal(await evaluate('progression[0].root'),5);
     await evaluate(`document.querySelector('#youtube-url').value='https://www.youtube.com/watch?v=M7lc1UVf-VE';document.querySelector('#youtube-form').requestSubmit();`);
-    for(let i=0;i<220;i++) {if(await evaluate("!document.querySelector('#youtube-mark').disabled")) break;await delay(100);}
-    const connection=await evaluate(`({status:document.querySelector('#youtube-status').textContent,ready:!document.querySelector('#youtube-mark').disabled,iframe:document.querySelector('#youtube-video-wrap iframe')?.src})`);
-    if(!live) {
-      assert.equal(connection.ready,true);
-      await evaluate(`selectProgressionChord(0);document.querySelector('#youtube-cue-time').value='0';document.querySelector('#youtube-mark').click();selectProgressionChord(1);document.querySelector('#youtube-cue-time').value='10';document.querySelector('#youtube-mark').click();document.querySelector('#youtube-follow').click();testYoutube.time=12;`);
-      await delay(150);assert.equal(await evaluate('root'),0);
-      await evaluate('testYoutube.time=3');await delay(150);assert.equal(await evaluate('root'),5);
-      await evaluate(`testYoutube.seekTo(12);document.querySelector('#youtube-use-time').click();`);
-      assert.equal(await evaluate("document.querySelector('#youtube-cue-time').value"),'12.0');
-      await evaluate(`document.querySelector('#youtube-cues [data-remove-cue="10"]').click();`);
-      assert.equal(await evaluate("document.querySelectorAll('#youtube-cues li').length"),1);
-      await evaluate(`document.querySelector('#youtube-record').click();testYoutube.time=20;document.querySelector('.progression-card[data-index="1"]').click();`);
-      assert.equal(await evaluate("document.querySelectorAll('#youtube-cues li').length"),2);
-      assert.equal(await evaluate("document.querySelector('#youtube-follow').checked"),false);
-      assert.equal(await evaluate('Boolean(testYoutube.paused)'),false);
-      await evaluate(`testYoutube.time=30;document.querySelector('.progression-card[data-index="0"]').click();document.querySelector('#youtube-record').click();testYoutube.time=22;`);
-      await delay(150);assert.equal(await evaluate('root'),0);
-      await evaluate('testYoutube.time=32');await delay(150);assert.equal(await evaluate('root'),5);
-      await evaluate(`testYoutube.state=0;testYoutube.options.events.onStateChange({data:0});`);
-      await delay(150);assert.equal(await evaluate('playingProgressionItem'),null);
-      await evaluate('testYoutube.state=1');
-      await evaluate(`document.querySelector('#player-toggle').click();`);await delay(150);
-      assert.equal(await evaluate('testYoutube.paused'),true);
-      assert.equal(await evaluate("document.querySelector('#youtube-follow').checked"),false);
-      await evaluate(`testYoutube.options.events.onStateChange({data:1});`);
-      assert.equal(await evaluate("document.querySelector('#player-toggle').textContent"),'Reproducir');
-      await evaluate(`testYoutube.options.events.onError({data:150});`);
-      assert((await evaluate("document.querySelector('#youtube-status').textContent")).includes('no permite'));
-    }
+    const connection=await evaluate("({iframe:document.querySelector('#youtube-video-wrap iframe')?.src})");
+    assert(connection.iframe.includes('/embed/M7lc1UVf-VE'));
+    assert.equal(await evaluate("document.querySelector('#youtube-follow')"),null);
+    await evaluate("document.querySelector('#song-title').value='Práctica de prueba';document.querySelector('#player-style').value='bossa';document.querySelector('#player-bpm').value='85';document.querySelector('#song-save').click();");
+    assert.equal(await evaluate("document.querySelectorAll('#song-list option').length"),2);
+    await evaluate("progression[0].root=9;document.querySelector('#song-open').click();");
+    assert.equal(await evaluate('progression[0].root'),5);
+    await send('Page.reload');await delay(1000);
+    assert.equal(await evaluate("document.querySelectorAll('#song-list option').length"),2);
+    await evaluate("document.querySelector('#song-list').selectedIndex=1;document.querySelector('#song-open').click();");
+    assert.equal(await evaluate('progression[0].root'),5);
+    assert.equal(await evaluate("document.querySelector('#player-style').value"),'bossa');
+    assert.equal(await evaluate("document.querySelector('#player-bpm').value"),'85');
+    await evaluate("document.querySelector('#player-toggle').click();");await delay(150);
+    assert.equal(await evaluate("document.querySelector('#player-toggle').textContent"),'Detener');
+    await evaluate("document.querySelector('#youtube-form').requestSubmit();");
+    assert.equal(await evaluate("document.querySelector('#player-toggle').textContent"),'Detener');
+    await evaluate("document.querySelector('#player-toggle').click();");
+    await evaluate(`(()=>{const input=document.querySelector('#song-import'),transfer=new DataTransfer();transfer.items.add(new File([localStorage.getItem('traste.songs.v1')],'backup.json',{type:'application/json'}));input.files=transfer.files;input.dispatchEvent(new Event('change'));})()`);
+    await delay(150);assert.equal(await evaluate("document.querySelectorAll('#song-list option').length"),3);
+    await evaluate(`(()=>{const data=JSON.parse(localStorage.getItem('traste.songs.v1'));data.songs[0].chords[0].rootNoteName='<img src=x onerror=alert(1)>';const input=document.querySelector('#song-import'),transfer=new DataTransfer();transfer.items.add(new File([JSON.stringify(data)],'invalid.json'));input.files=transfer.files;input.dispatchEvent(new Event('change'));})()`);
+    await delay(150);assert.equal(await evaluate("document.querySelectorAll('#song-list option').length"),3);
+    assert((await evaluate("document.querySelector('#song-status').textContent")).startsWith('No se importó'));
     const screenshot=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:true});
     fs.writeFileSync(path.join(os.tmpdir(),`traste-interface-${edge?'edge':'chrome'}.png`),Buffer.from(screenshot.data,'base64'));
     await send('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});
@@ -119,8 +99,8 @@ const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
     assert(await evaluate(`(()=>{const r=document.querySelector('#youtube-video-wrap').getBoundingClientRect();return r.width>=200 && r.height>=200 && r.right<=innerWidth;})()`));
     const screenshotMobile=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:true});
     fs.writeFileSync(path.join(os.tmpdir(),`traste-interface-mobile-${edge?'edge':'chrome'}.png`),Buffer.from(screenshotMobile.data,'base64'));
-    console.log(JSON.stringify({browser:(await send('Browser.getVersion')).product,dimensions,collapsed,mobile,youtube:live?'API real':'Doble controlado',connection,result:(!live || connection.ready)?'PASS':'CONEXIÓN EXTERNA NO CONFIRMADA'},null,2));
-    if(live && !connection.ready) process.exitCode=2;
+    console.log(JSON.stringify({browser:(await send('Browser.getVersion')).product,dimensions,collapsed,mobile,youtube:live?'Iframe externo; reproducción manual pendiente':'Iframe con red bloqueada',connection,result:'PASS'},null,2));
+
   } finally {
     for(const task of pending.values())clearTimeout(task.timer);
     socket?.close();browser.kill();server.closeAllConnections();server.close();

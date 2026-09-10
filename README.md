@@ -56,7 +56,8 @@ Las tipografías Manrope y DM Mono se cargan desde Google Fonts y requieren cone
 - Estilos Sin ritmo, Pop / rock, Jazz suave, Trap suave, Funk, Bossa suave y Reggaetón suave, con percusión opcional y volumen independiente.
 - Panel «Escuchá tu progresión» plegable con animación; Reproducir/Detener queda visible.
 - Recuadros de acorde y armadura con altura fija para evitar saltos durante el estudio.
-- Reproductor oficial de YouTube con marcas manuales para sincronizar el mástil con una canción.
+- Reproductor compacto de YouTube con controles independientes.
+- Biblioteca local de canciones, progresiones y ajustes de ritmo, con respaldo JSON.
 - Consulta del nombre y el intervalo de una nota al hacer clic sobre el mástil.
 
 ## Modos disponibles
@@ -121,8 +122,10 @@ Proyecto-guitar-IA/
 ├── player-ui.js    # Conexión entre reproductor y controles
 ├── progression-interactions.js # Arrastre animado y controles de teclado
 ├── player-disclosure.js # Panel de audio plegable
-├── song-timeline.js # Enlaces de YouTube y marcas de tiempo
-├── youtube-player.js # Reproductor oficial y seguimiento de marcas
+├── youtube-url.js # Validación de enlaces de YouTube
+├── youtube-player.js # Carga del video, sin sincronización
+├── song-library.js # Biblioteca versionada y almacenamiento local
+├── song-library-ui.js # Guardar, abrir y respaldar canciones
 ├── tests/          # Pruebas de progresiones, lógica musical y metrónomo
 ├── docs/           # Guía de aprendizaje, requisitos, casos y bugs
 ├── README.md       # Documentación
@@ -169,29 +172,34 @@ Los patrones son acompañamientos sintetizados simples en 4/4. **Sin ritmo** toc
 
 No hay sincronización con el metrónomo independiente ni conexión con YouTube Music. El mástil sigue mostrando información al hacer clic sobre una nota. Ver [Ritmos y sonido](docs/RITMOS-Y-SONIDO.md) para aprender cómo funcionan los patrones y la mezcla.
 
-## Canciones de YouTube y marcas de acordes
+## Canciones guardadas y YouTube
 
-Esta primera integración usa la [IFrame Player API oficial](https://developers.google.com/youtube/iframe_api_reference). El reproductor queda visible con los controles de YouTube; permite consultar su tiempo para seguir las marcas. No requiere clave de API ni vincular una cuenta. No detecta acordes automáticamente ni modifica el tempo de una canción.
+YouTube solo carga un [reproductor incrustado oficial](https://developers.google.com/youtube/player_parameters). El video usa sus propios controles: se retiraron las marcas de tiempo, el seguimiento del video y las pausas automáticas. El audio sintetizado y el metrónomo son independientes. Si se inician varias fuentes, pueden sonar a la vez; cada una se detiene desde sus controles.
 
-1. Abre la aplicación con `npm start`, Python o Live Server.
-2. Pega el enlace en **Practicar con YouTube** y pulsa **Cargar video**. Se aceptan enlaces de YouTube, youtu.be y videos de music.youtube.com; esto no conecta una biblioteca de YouTube Music.
-3. Reproduce el video y activa **Registrar cambios mientras escucho**.
-4. Pulsa la tarjeta correspondiente cada vez que escuches un cambio. Se guarda el tiempo actual sin pausar el video. Puedes repetir tarjetas; una marca en el mismo instante reemplaza la anterior. También puedes seleccionar un acorde con el teclado y pulsar **Marcar acorde seleccionado ahora**.
-5. Desactiva el registro: el seguimiento se activa si hay marcas. Retrocede en el video para practicar; el mástil sigue las marcas usando el reloj del video, incluso después de adelantar o retroceder.
-6. Para ajustar un momento manualmente, desactiva el seguimiento, selecciona una tarjeta e introduce los segundos antes de pulsar **Vincular tarjeta seleccionada**. Para mover una marca, elimina la anterior y guarda otra en el tiempo correcto.
-7. Pulsa una marca para saltar a ese momento, o su × para quitarla. Antes de la primera marca no se impone un acorde; la última permanece hasta que termina el video.
+### Guardar una práctica
 
-El video y el enlace ocupan una columna compacta junto a los controles de sincronización. En pantallas pequeñas se apilan. El reproductor conserva un mínimo de 200 píxeles por dimensión, según los requisitos de la API oficial.
+1. Abre la aplicación con Node o Python en **http://127.0.0.1:8000**.
+2. Prepara las tarjetas y ajusta el estilo, BPM, percusión, repetición y volúmenes.
+3. Si quieres asociar un video, pega su enlace en YouTube. Puedes dejar el campo vacío para guardar solo el acompañamiento local. El enlace del campo es el que se guarda.
+4. Escribe un nombre en **Mis canciones** y pulsa **Guardar como nueva**.
+5. Selecciona una canción de la biblioteca y pulsa **Abrir** para recuperar sus tarjetas y ajustes. Esto reemplaza la progresión que estás editando y detiene el sintetizador; guarda primero los cambios que quieras conservar. El video asociado se carga sin reproducción automática.
+6. Usa **Actualizar canción abierta** para guardar cambios sobre la canción que abriste o acabas de guardar. **Guardar como nueva** crea otra copia. Cambiar la selección de la lista no abre ni modifica una canción por sí solo.
 
-El registro y el seguimiento son modos excluyentes: así el seguimiento no cambia la selección mientras se registran acordes. La precisión depende del momento en que pulses la tarjeta; no hay reconocimiento automático de acordes ni ajuste por BPM. El seguimiento consulta el reloj del video cada 100 ms, por lo que no pretende una precisión de audio profesional.
+Cada canción contiene un identificador, nombre, enlace opcional, copia de los acordes (incluidos sus modos) y configuración del acompañamiento. La biblioteca guarda hasta 200 canciones, con hasta 256 acordes cada una. No guarda archivos de audio ni descarga videos: los ritmos se generan nuevamente al reproducir. La asociación canción–progresión no implica sincronización temporal ni detección automática de acordes.
 
-Seleccionar una tarjeta con el mouse o con Enter/Espacio fuera del registro desactiva el seguimiento para permitir explorar ese acorde sin que el reloj vuelva a cambiarlo. Puedes reactivar **Seguir acordes** cuando quieras regresar a la canción. Durante el registro, Enter/Espacio también guarda el momento del acorde.
+### Dónde quedan los datos y cómo respaldarlos
 
-Cada marca conserva una copia del acorde y su modo. Reordenar las tarjetas no cambia los tiempos de la canción. Las marcas permanecen en memoria hasta recargar o cargar un video diferente; el mismo video conserva sus marcas al volver a cargarlo. Todavía no hay exportación ni guardado permanente.
+Se usa [localStorage](https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage), almacenamiento del navegador que conserva datos entre sesiones. No necesita una base de datos remota, cuenta ni servidor de pago. Node/Python solo sirve los archivos de la aplicación; la biblioteca no se guarda en el servidor ni en el repositorio.
 
-Marcar acordes no pausa YouTube. Al reproducir YouTube o activar su registro/seguimiento se detiene el sintetizador. Solo al pulsar **Reproducir** en el reproductor de acordes se pausa el video y se desactivan su registro y seguimiento: esa acción cambia la fuente de audio. El metrónomo conserva su control independiente y no se sincroniza con el video. Al terminar el video se limpia el indicador de acorde en reproducción.
+Usa siempre el mismo navegador, perfil y dirección. Chrome y Edge tienen bibliotecas separadas; localhost y 127.0.0.1 también, al igual que puertos diferentes. El modo privado, borrar los datos del sitio o las restricciones de almacenamiento pueden hacer que los datos desaparezcan o no se puedan guardar. Abrir index.html con doble clic no ofrece garantías de persistencia entre navegadores.
 
-La carga necesita Internet y un video que permita reproducción incrustada. Hay mensajes para enlaces inválidos, falta de conexión y videos restringidos; también un enlace para abrir el video en YouTube. La página carga la API externa al solicitar un video. El uso de HTTP y del origen del sitio sigue la [configuración del reproductor oficial](https://developers.google.com/youtube/player_parameters).
+**Exportar respaldo** descarga un archivo traste-canciones.json. **Importar respaldo** lo valida y añade las canciones como copias sin sobrescribir las existentes. Se admiten archivos de hasta 2 MB. Exporta periódicamente y antes de cambiar de navegador o dirección. La aplicación informa los errores de formato o almacenamiento en lugar de presentar el guardado como exitoso.
+
+### Próximos pasos
+
+Esta etapa permite aprender persistencia, validación, separación entre datos e interfaz y pruebas de recuperación sin contratar servicios. El siguiente paso puede ser organizar la biblioteca con búsqueda y etiquetas. Si luego necesitamos cuentas o sincronización automática entre equipos, podremos incorporar un backend y evaluar sus límites de uso gratuito en ese momento. La versión del formato JSON permite preparar futuras migraciones.
+
+YouTube requiere Internet y videos que permitan reproducción incrustada. Si un video está restringido, usa **Abrir video en YouTube**. La página no consulta el estado interno del video ni afirma que haya comenzado a reproducirse.
 
 ## Pruebas y documentación de portfolio
 
@@ -214,7 +222,7 @@ La suite de Node no requiere paquetes y usa audio y DOM simulados. Hay además u
 
 La suite actual tiene **42 pruebas automatizadas**. Los estilos también se verifican con `node scripts/check-player-browser.cjs --rhythms` (y `--edge` para Edge), incluyendo renderizado OfflineAudioContext y mediciones de nivel. Agregar `--no-artifacts` evita reemplazar los registros anteriores de docs/. El flujo de modos y seguimiento del mástil se comprueba con `node scripts/check-player-browser.cjs --progression`, que reordena mediante eventos de teclado.
 
-`node scripts/check-interface-browser.cjs` verifica arrastre con eventos reales de mouse en Chrome, plegado, dimensiones estables, ancho móvil y sincronización con un doble de YouTube. Agregar `--edge` ejecuta la comprobación en Edge. Con `--live-youtube` se verifica la conexión a la API real desde un servidor temporal. La conexión real respondió y creó el iframe; la reproducción y aceptación con la canción elegida por el usuario siguen pendientes. Se revisaron capturas de escritorio y móvil; no se afirma una escucha humana en los tests headless.
+`node scripts/check-interface-browser.cjs` verifica arrastre, plegado, dimensiones, vista móvil, carga del iframe y guardado/apertura de canciones después de recargar. Bloquea la red de YouTube para que la prueba no dependa del servicio externo. Con `--edge` usa Edge; `--live-youtube` permite cargar el iframe externo, pero no demuestra reproducción ni escucha humana. Las pruebas unitarias cubren persistencia, actualización, respaldo, importación y errores de almacenamiento.
 
 En este avance se actualizó únicamente el README como documentación. Las planillas y los documentos de QA conservan el estado de etapas anteriores; los cambios de interfaz, variantes rítmicas y YouTube quedan pendientes de incorporarse allí.
 
@@ -222,7 +230,7 @@ En este avance se actualizó únicamente el README como documentación. Las plan
 
 1. Ejecutar y documentar los casos manuales del reproductor antes de ampliar el audio.
 2. Ejecutar MAN-14 a MAN-18 para evaluar los estilos y el balance con escucha real.
-3. Guardar la progresión y los ajustes en el navegador.
+3. Probar la biblioteca con canciones propias y respaldos; después añadir búsqueda y etiquetas si resultan necesarias.
 4. Incorporar pruebas de navegador y ejecución automática de la suite en GitHub.
 5. Ampliar los tipos de acorde disponibles y unificar la lógica de notas del mástil y las cuerdas al aire.
 6. Preparar una demo y un caso de estudio con decisiones, pruebas y límites conocidos.

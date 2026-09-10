@@ -33,7 +33,6 @@
   button.addEventListener('click', async () => {
     if (player.running || player.starting) { player.stop(); return; }
     if (!bpm.reportValidity()) return;
-    window.dispatchEvent?.(new Event('traste:synth-start'));
     playbackItems = progression.map(item => ({source:item, saved:{...item}}));
     const chords = playbackItems.map(({saved:item}) => {
       const type = chordTypes.find(candidate => candidate.value === item.type);
@@ -55,5 +54,5 @@
     player.setDrumVolume(Number(event.target.value) / 100);
   });
   window.addEventListener('pagehide', () => player.stop());
-  window.addEventListener('traste:youtube-playing', () => {if(player.running || player.starting) player.stop();});
+  window.addEventListener('traste:load-song', () => player.stop());
 })();

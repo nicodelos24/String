@@ -95,18 +95,17 @@
           <p id="youtube-status" role="status">Pega un enlace para cargar el video. No necesitas vincular una cuenta.</p>
           <a id="youtube-external" class="youtube-external" target="_blank" rel="noopener noreferrer" hidden>Abrir video en YouTube</a>
           <div id="youtube-video-wrap" class="youtube-video-wrap" hidden></div>
-          </div><div class="youtube-sync">
-          <label class="youtube-record"><input id="youtube-record" type="checkbox" disabled>Registrar cambios mientras escucho</label>
-          <p class="youtube-help">Activa el registro y pulsa las tarjetas al escuchar cada cambio de acorde. El tiempo se guarda sin pausar el video. Desactiva el registro para seguir las marcas.</p>
-          <button id="youtube-mark-now" type="button" disabled>Marcar acorde seleccionado ahora</button>
-          <div class="youtube-cue-controls">
-            <label for="youtube-cue-time">Momento (segundos) <input id="youtube-cue-time" type="number" min="0" step="0.1" value="0" required></label>
-            <button id="youtube-use-time" type="button" disabled>Usar tiempo del video</button>
-            <button id="youtube-mark" type="button" disabled>Vincular tarjeta seleccionada</button>
-            <label for="youtube-follow"><input id="youtube-follow" type="checkbox" disabled>Seguir acordes en el mástil</label>
-          </div>
-          <p class="youtube-help">También puedes guardar un segundo exacto con los controles anteriores. Las marcas se conservan hasta recargar la página o cambiar de video.</p>
-          <ol id="youtube-cues" class="youtube-cues" aria-label="Marcas de acordes"></ol>
+          </div><div class="song-library">
+          <h3>Mis canciones</h3>
+          <label for="song-title">Nombre de la canción o práctica</label>
+          <input id="song-title" maxlength="100" placeholder="Por ejemplo: Blues en La">
+          <div class="song-actions"><button id="song-save" type="button">Guardar como nueva</button><button id="song-update" type="button" disabled>Actualizar canción abierta</button></div>
+          <label for="song-list">Biblioteca guardada</label>
+          <select id="song-list"><option value="">Selecciona una canción</option></select>
+          <div class="song-actions"><button id="song-open" type="button">Abrir</button><button id="song-delete" type="button">Eliminar</button><button id="song-export" type="button">Exportar respaldo</button></div>
+          <label for="song-import">Importar respaldo (.json)</label><input id="song-import" type="file" accept=".json,application/json">
+          <p id="song-status" role="status">Guarda las tarjetas actuales, el enlace opcional y los ajustes del acompañamiento.</p>
+          <p class="youtube-help">Abrir reemplaza las tarjetas actuales: guarda primero tus cambios. Los datos quedan en este navegador; exporta un respaldo para conservarlos. El video y los ritmos se controlan por separado.</p>
           </div></div>
         </section>
       </div>
@@ -177,7 +176,9 @@
   <script src="progression-player.js"></script>
   <script src="player-ui.js"></script>
   <script src="player-disclosure.js"></script>
-  <script src="song-timeline.js"></script>
+  <script src="youtube-url.js"></script>
   <script src="youtube-player.js"></script>
+  <script src="song-library.js"></script>
+  <script src="song-library-ui.js"></script>
 </body>
 </html>
