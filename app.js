@@ -296,7 +296,7 @@ function shouldHighlightInterval(interval, displayModeIndex) {
   switch (displayMode) {
     case 'triad':
       // Intervalos de la triada actual, incluida la quinta disminuida.
-      return chordType.intervals.includes(normalized);
+      return chordType.intervals.slice(0, 3).includes(normalized);
     case 'seventh':
       // Raíz (0), 3ra menor (3), 3ra mayor (4), 5ta justa (7), 7ma menor (10), 7ma mayor (11)
       return chordType.intervals.includes(normalized) || [10, 11].includes(normalized);
@@ -371,51 +371,9 @@ function calculateKeySignature(modeKey, rootNote) {
   const mode = modes[modeKey];
   if (!mode) return { sharps: 0, flats: 0, key: 'C' };
 
-  // Para pentatónicas (type: 'both'), usar la tonalidad mayor de la raíz directamente
-  if (mode.type === 'both') {
-    const matchingTonality = tonalities.find(ton => noteToIndex(ton.key) === rootNote);
-
-    if (matchingTonality) {
-      // Si el usuario seleccionó una nota con bemol (Db, Eb, etc.), priorizar tonalidades con bemoles
-      if (rootNoteName && (rootNoteName.includes('b') || rootNoteName === 'Cb')) {
-        const flatTonality = tonalities.find(ton => 
-          noteToIndex(ton.key) === rootNote && ton.flats > 0
-        );
-        if (flatTonality) {
-          return {
-            sharps: flatTonality.sharps,
-            flats: flatTonality.flats,
-            key: flatTonality.key
-          };
-        }
-      }
-      // Si el usuario seleccionó una nota con sostenido (C#, F#, etc.), priorizar tonalidades con sostenidos
-      else if (rootNoteName && (rootNoteName.includes('#') || rootNoteName === 'C#')) {
-        const sharpTonality = tonalities.find(ton => 
-          noteToIndex(ton.key) === rootNote && ton.sharps > 0
-        );
-        if (sharpTonality) {
-          return {
-            sharps: sharpTonality.sharps,
-            flats: sharpTonality.flats,
-            key: sharpTonality.key
-          };
-        }
-      }
-
-      return {
-        sharps: matchingTonality.sharps,
-        flats: matchingTonality.flats,
-        key: matchingTonality.key
-      };
-    }
-
-    return { sharps: 0, flats: 0, key: 'C' };
-  }
-
-  // Encontrar la tonalidad mayor donde esta raíz es el grado correcto
-  // Para un modo con grado X, la tónica de la escala mayor es: raíz - X
-  const majorRoot = (rootNote - mode.degree + 12) % 12;
+  // La pentatónica menor usa como referencia su relativa mayor.
+  const degree = modeKey === 'minorPentatonic' ? 9 : mode.degree;
+  const majorRoot = (rootNote - degree + 12) % 12;
 
   // Buscar la tonalidad correspondiente, pero respetar si el usuario seleccionó bemoles o sostenidos
   const matchingTonality = tonalities.find(ton => noteToIndex(ton.key) === majorRoot);
@@ -796,8 +754,7 @@ function updateView() {
   const chordSuffix = chordType.suffix;
 
   // Actualizar la tonalidad global basada en el modo seleccionado
-  const majorRoot = (root - selectedModeData.degree + 12) % 12;
-  const matchingTonality = tonalities.find(ton => noteToIndex(ton.key) === majorRoot);
+  const matchingTonality = tonalities.find(ton => ton.key === keySignature.key);
   if (matchingTonality) {
     selectedTonality = matchingTonality;
   }

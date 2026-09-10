@@ -110,3 +110,27 @@ test('piano accidental switch updates black keys and keeps preference across nat
   assert.equal(element('#root-spelling').checked,true);
   assert.equal(element('#selected-root-note').textContent,'D♭');
 });
+
+test('pentatonic signatures use the appropriate major reference', () => {
+  const {run,element} = setup();
+  for (const [pitch, name, mode, key] of [[9,'A','minorPentatonic','C'],[0,'C','minorPentatonic','Eb'],[4,'E','minorPentatonic','G'],[6,'F#','minorPentatonic','A'],[1,'Db','majorPentatonic','Db']]) {
+    run(`root = ${pitch}; rootNoteName = '${name}'; selectedMode = '${mode}'; updateView();`);
+    assert.equal(run('calculateKeySignature(selectedMode, root).key'), key);
+    assert.equal(run('selectedTonality.key'), key);
+    assert(element('#key-signature-display').textContent.startsWith(key + ' Mayor'));
+    const intervals = mode === 'minorPentatonic' ? [0,3,5,7,10] : [0,2,4,7,9];
+    assert.equal(run('JSON.stringify(getModeNotes(selectedMode, root))'), JSON.stringify(intervals.map(i=>(pitch+i)%12)));
+  }
+});
+
+test('triad highlighting excludes extensions and keeps altered fifths', () => {
+  const {run} = setup();
+  for (const [type, triad, excluded] of [['maj7',[0,4,7],[11]],['m7',[0,3,7],[10]],['7',[0,4,7],[10]],['maj9',[0,4,7],[11,2]],['dim7',[0,3,6],[9]],['aug',[0,4,8],[]]]) {
+    run(`chordType = chordTypes.find(type => type.value === '${type}');`);
+    for (const interval of triad) assert.equal(run(`shouldHighlightInterval(${interval}, 1)`),true);
+    for (const interval of excluded) {
+      assert.equal(run(`shouldHighlightInterval(${interval}, 1)`),false);
+      assert.equal(run(`shouldHighlightInterval(${interval}, 0)`),true);
+    }
+  }
+});

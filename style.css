@@ -632,7 +632,7 @@ footer {
 }
 
 .fret-note:hover {
-  transformm: scale(1.15);
+  transform: scale(1.15);
 }
 
 .board-footer {

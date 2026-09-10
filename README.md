@@ -1,4 +1,4 @@
-﻿# Traste · Explorador de escalas
+# Traste · Explorador de escalas
 
 Aplicación web para explorar escalas, modos e intervalos sobre el mástil de una guitarra o un bajo. Permite elegir una nota base y una calidad de acorde, visualizar sus relaciones musicales y armar una idea de progresión armónica.
 
@@ -16,7 +16,7 @@ Las tipografías Manrope y DM Mono se cargan desde Google Fonts y requieren cone
 - Mástil interactivo con 22 trastes.
 - Guitarra de seis cuerdas en afinación estándar: E–A–D–G–B–E, de grave a agudo.
 - Bajo de cuatro cuerdas en afinación estándar: E–A–D–G, de grave a agudo.
-- Selección de nota base, con opciones de sostenidos y bemoles.
+- Selección de nota base mediante un teclado, con opciones de sostenidos y bemoles.
 - Selección de acorde mayor, menor y disminuido.
 - Visualización de modos y escalas pentatónicas.
 - Colores para identificar los intervalos respecto de la raíz.
@@ -67,6 +67,8 @@ Proyecto-guitar-IA/
 ├── index.html      # Página principal
 ├── style.css       # Estilos de la interfaz
 ├── app.js          # Lógica y datos musicales
+├── metronome.js    # Motor de audio y controles del metrónomo
+├── tests/          # Pruebas de progresiones, lógica musical y metrónomo
 ├── README.md       # Documentación
 └── version 1.0/    # Copia adicional del proyecto
 ```
@@ -79,7 +81,7 @@ El proyecto se presenta como un MVP de exploración visual. Las selecciones y la
 
 Al hacer clic en una nota se muestra información textual; todavía no se reproduce sonido. La importación de progresiones MIDI y la detección de acordes con micrófono aparecen en la interfaz como funciones futuras.
 
-Algunas funciones musicales requieren ajustes: seleccionar una tarjeta de la progresión no sincroniza su calidad con el selector, y los números romanos de las tarjetas se asignan por posición, no por un análisis armónico. Para las pentatónicas, la armadura mostrada se calcula a partir de la tonalidad mayor de la raíz, incluida la pentatónica menor.
+Seleccionar una tarjeta restaura la raíz, la calidad y el tipo de acorde; los acordes añadidos también conservan su escritura, modo y escala adicional. Los números de las tarjetas indican su posición, sin análisis armónico. El resaltado de tríada muestra los tres primeros componentes del acorde y excluye séptimas y novenas. La armadura de la pentatónica mayor usa la tonalidad mayor de su raíz; la pentatónica menor usa su relativa mayor como referencia (por ejemplo, La pentatónica menor muestra Do mayor).
 
 ## Desarrollo
 
@@ -98,3 +100,11 @@ Pruebas de regresión (requieren Node.js):
 ```sh
 node --test tests/*.test.cjs
 ```
+
+## Próximos pasos recomendados
+
+1. Guardar la progresión y los ajustes en el navegador para recuperarlos al recargar.
+2. Unificar la lógica de representación de las notas del mástil y las cuerdas al aire, y consolidar las reglas CSS superpuestas.
+3. Ampliar la selección de tipos de acorde: el modelo ya contiene séptimas y novenas, pero el selector de calidad crea tríadas.
+4. Incorporar pruebas en navegador para interacción con teclado, diseño móvil y audio real. Las pruebas actuales usan un DOM y un contexto de audio simulados.
+5. Añadir reproducción de notas y, posteriormente, de progresiones sincronizadas con el metrónomo.
