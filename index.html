@@ -30,8 +30,9 @@
         <select id="instrument-select"></select>
 
         <div class="panel-heading"><span class="section-number">02</span><h2>Nota Base</h2></div>
-        <label for="root-select">Seleccionar nota</label>
-        <select id="root-select"></select>
+        <select id="root-select" hidden aria-label="Nota base"></select>
+          <div id="root-piano" class="root-piano" role="group" aria-label="Piano: seleccionar nota base"></div>
+          <button id="root-spelling" class="root-spelling" type="button" hidden></button>
 
         <div class="panel-heading"><span class="section-number">03</span><h2>Calidad</h2></div>
         <div id="quality-select" class="mode-options-row quality-options" role="group" aria-label="Tipo de acorde"></div>

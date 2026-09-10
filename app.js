@@ -457,6 +457,44 @@ function calculateKeySignature(modeKey, rootNote) {
 
   return { sharps: 0, flats: 0, key: 'C' };
 }
+function renderRootPiano() {
+  const whiteKeys = [0, 2, 4, 5, 7, 9, 11];
+  const blackKeys = [[1, 1], [3, 2], [6, 4], [8, 5], [10, 6]];
+  const key = (pitch, black, position) => {
+    const name = notes[pitch];
+    const flat = noteLabels[name];
+    return `<button type="button" class="piano-key ${black ? 'piano-black' : 'piano-white'}" data-pitch="${pitch}" aria-pressed="${root === pitch}" aria-label="${flat ? name + ' / ' + flat : name}" style="--key-position: ${position}"><span>${name}</span>${flat ? '<small>' + flat + '</small>' : ''}</button>`;
+  };
+  document.querySelector('#root-piano').innerHTML = whiteKeys.map((pitch, i) => key(pitch, false, i)).join('')
+    + blackKeys.map(([pitch, position]) => key(pitch, true, position)).join('');
+  const spelling = document.querySelector('#root-spelling');
+  const flat = noteLabels[notes[root]];
+  spelling.hidden = !flat;
+  spelling.textContent = flat ? 'Usar ' + (rootNoteName === flat ? notes[root] : flat) : '';
+}
+
+function choosePianoRoot(pitch, spelling = notes[pitch]) {
+  if (!Number.isInteger(pitch) || pitch < 0 || pitch > 11) return;
+  root = pitch;
+  rootNoteName = spelling;
+  activeProgression = -1;
+  const index = Array.from(rootSelect.options).findIndex(option => option.dataset.note === spelling);
+  if (index >= 0) rootSelect.selectedIndex = index;
+  updateView();
+}
+
+document.querySelector('#root-piano').addEventListener('click', event => {
+  const key = event.target.closest('[data-pitch]');
+  if (!key) return;
+  const pitch = Number(key.dataset.pitch);
+  choosePianoRoot(pitch, rootNoteName.includes('b') ? noteLabels[notes[pitch]] || notes[pitch] : notes[pitch]);
+  document.querySelector('#root-piano').querySelector('[data-pitch="' + pitch + '"]').focus();
+});
+document.querySelector('#root-spelling').addEventListener('click', () => {
+  const flat = noteLabels[notes[root]];
+  if (flat) choosePianoRoot(root, rootNoteName === flat ? notes[root] : flat);
+});
+
 function populateControls() {
   instrumentSelect.innerHTML = Object.entries(instruments).map(([key, inst]) => `<option value="${key}">${inst.name}</option>`).join('');
 
@@ -745,6 +783,7 @@ function renderOpenStrings() {
   document.querySelector('#open-strings').innerHTML = openStringsHtml;
 }
 function updateView() {
+  renderRootPiano();
   const selectedModeData = modes[selectedMode];
 
   // Calcular la armadura de clave según modo y nota
