@@ -59,6 +59,10 @@ const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
       selectProgressionChord(0);return sizes;
     })()`);
     assert(dimensions.every(size=>JSON.stringify(size)===JSON.stringify(dimensions[0])));
+    assert.equal(await evaluate("document.querySelector('#player-disclosure').getAttribute('aria-expanded')"),'false');
+    assert.equal(await evaluate("document.querySelectorAll('details[open]').length"),0);
+    assert.equal(await evaluate('showNotes===1 && displayModeIndex===1'),true);
+    await evaluate("document.querySelector('#player-disclosure').click();document.querySelector('#youtube-disclosure').click();");await delay(350);
     const beforeHeight=await evaluate("document.querySelector('.chord-player').getBoundingClientRect().height");
     await evaluate("document.querySelector('#player-disclosure').click()");await delay(350);
     const collapsed=await evaluate(`({height:document.querySelector('.chord-player').getBoundingClientRect().height,inert:document.querySelector('#player-content').inert,toggle:document.querySelector('#player-toggle').getBoundingClientRect().height})`);
@@ -72,6 +76,15 @@ const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
     await send('Input.dispatchMouseEvent',{type:'mouseReleased',button:'left',clickCount:1,x:rects[0].x-25,y:rects[0].y});
     await delay(250);
     assert.equal(await evaluate('progression[0].root'),5);
+    const cardPoint=await evaluate("(()=>{const r=document.querySelector('.progression-card').getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2};})()");
+    for(const clickCount of [1,2]) {
+      await send('Input.dispatchMouseEvent',{type:'mousePressed',button:'left',buttons:1,clickCount,...cardPoint});
+      await send('Input.dispatchMouseEvent',{type:'mouseReleased',button:'left',clickCount,...cardPoint});
+    }
+    assert.equal(await evaluate('progression.length'),5);
+    assert.equal(await evaluate('progression[0]!==progression[1] && progression[1].root===5'),true);
+    await evaluate("document.querySelector('.progression-card[data-index=\"1\"]').dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,cancelable:true}));");
+    assert.equal(await evaluate('progression.length'),4);
     await evaluate(`document.querySelector('#youtube-url').value='https://www.youtube.com/watch?v=M7lc1UVf-VE';document.querySelector('#youtube-form').requestSubmit();`);
     for(let i=0;i<200;i++){if(await evaluate("!document.querySelector('#youtube-toggle').disabled"))break;await delay(100);}
     if(!live) {
@@ -124,6 +137,26 @@ const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
     assert.equal(await evaluate('root'),2);
     await evaluate("document.querySelector('#midi-play').click();document.querySelector('#midi-add').click();");
     assert.equal(await evaluate('progression.length'),6);
+    await evaluate("document.querySelector('#midi-catalog').value='0';document.querySelector('#midi-catalog-load').click();");
+    for(let i=0;i<100;i++){if(await evaluate("!document.querySelector('#midi-play').disabled"))break;await delay(50);}
+    assert.equal(await evaluate("document.querySelector('#midi-play').disabled"),false);
+    assert.equal(await evaluate("document.querySelectorAll('#midi-preview li').length"),142);
+    assert.equal(await evaluate("document.querySelector('#midi-credit').hidden"),false);
+    await evaluate("selectedMode='dorian';displayModeIndex=3;updateView();document.querySelector('#fretboard [data-midi=\"66\"]').click();");
+    assert.equal(await evaluate('root'),6);assert.equal(await evaluate('selectedMode'),'dorian');
+    assert.equal(await evaluate("document.querySelector('#display-label').textContent"),'Acorde');
+    assert.equal(await evaluate("document.querySelector('#player-content').contains(document.querySelector('#progression-preset'))"),true);
+    for(const modeIndex of [3,4]) {
+      const colors=await evaluate(`(()=>{root=2;selectedMode='dorian';displayModeIndex=${modeIndex};updateView();const pitches=${modeIndex===3?'[2,5,9]':'[2,5,9,0]'};return [...document.querySelectorAll('#fretboard [data-midi],#open-strings [data-midi]')].filter(n=>pitches.includes(Number(n.dataset.midi)%12)).map(n=>n.style.backgroundColor);})()`);
+      assert(colors.length>0);assert(colors.every(color=>color==='rgb(0, 188, 212)'));
+    }
+    await evaluate("root=6;displayModeIndex=3;updateView();");
+    await evaluate("document.querySelector('#fret-scale-lock').checked=true;document.querySelector('#fretboard [data-midi=\"67\"]').click();");
+    assert.equal(await evaluate('root'),6);assert.equal(await evaluate('selectedFretMidi'),67);
+    assert.equal(await evaluate("document.querySelectorAll('.is-picked').length"),1);
+    await evaluate("document.querySelector('#root-piano [data-pitch=\"9\"]').click();");assert.equal(await evaluate('root'),9);
+    await evaluate("document.querySelector('#progression-preset').value='blues';document.querySelector('#apply-preset').click();");
+    assert.equal(await evaluate('progression.length'),12);assert.equal(await evaluate("document.querySelector('#player-bpm').value"),'90');
     const screenshot=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:true});
     fs.writeFileSync(path.join(os.tmpdir(),`traste-interface-${edge?'edge':'chrome'}.png`),Buffer.from(screenshot.data,'base64'));
     await send('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});

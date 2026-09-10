@@ -179,14 +179,18 @@ let quality = 'major'; // Calidad seleccionada (mayor, minor, diminished)
 let selectedMode = 'ionian'; // Modo seleccionado por defecto
 let chordType = chordTypes[0]; // Tipo de acorde específico (para compatibility)
 let progression = [{ root: 0, type: 'maj' }, { root: 5, type: 'm7' }, { root: 7, type: '7' }, { root: 0, type: 'maj' }];
+const initialProgression=progression;
+const initialProgressionSnapshot=JSON.stringify(progression);
+let progressionEdited=false;
+let selectedFretMidi=null;
 let activeProgression = 0;
 let playingProgressionItem = null;
 let draggingProgressionItem = null;
 let degreeDisplay = 0; // 0 = sin grados, 1 = escala, 2 = todo el mastil
-let showNotes = 0; // 0 = sin notas, 1 = solo notas de escala, 2 = todas las notas
-let displayModeIndex = 0; // 0 = grados completos, 1 = raíz, 3ra, 5ta, 2 = raíz, 3ra, 5ta, 7ma
-const displayModes = ['full', 'triad', 'seventh'];
-const displayModeLabels = ['grados', 'triada', '7ma'];
+let showNotes = 1; // 0 = sin notas, 1 = solo notas de escala, 2 = todas las notas
+let displayModeIndex = 1; // 0 = grados completos, 1 = raíz, 3ra, 5ta, 2 = raíz, 3ra, 5ta, 7ma
+const displayModes = ['full', 'triad', 'seventh', 'modeChord', 'modeSeventh'];
+const displayModeLabels = ['grados', 'tríada', '7ma', 'Acorde', 'Acorde 7ma'];
 let ghostMode = ''; // Modo fantasma seleccionado (vacío = ninguno)
 
 // Inicializar el tipo de acorde según la calidad
@@ -297,6 +301,13 @@ function shouldHighlightInterval(interval, displayModeIndex) {
   const displayMode = displayModes[displayModeIndex];
 
   switch (displayMode) {
+    case 'modeChord':
+    case 'modeSeventh': {
+      const intervals=modes[selectedMode].intervals;
+      if(intervals.length!==7)return false;
+      const degrees=displayMode==='modeChord'?[0,2,4]:[0,2,4,6];
+      return degrees.some(degree=>intervals[degree]===normalized);
+    }
     case 'triad':
       // Intervalos de la triada actual, incluida la quinta disminuida.
       return chordType.intervals.slice(0, 3).includes(normalized);
@@ -645,7 +656,7 @@ function renderFretboard() {
         bgColor = '#bbb';
         textColor = '#666';
         noteClass += ' scale-note';
-      } else if (ghostNotesMap.has(pitchClass)) {
+      } else if (ghostNotesMap.has(pitchClass) && displayModeIndex < 3) {
         // Nota fantasma de otro modo
         bgColor = ghostNotesMap.get(pitchClass);
         textColor = 'rgba(29, 37, 33, 0.5)';
@@ -653,6 +664,11 @@ function renderFretboard() {
       } else {
         bgColor = 'transparent';
         textColor = '#999';
+      }
+
+      if (displayModeIndex >= 3 && shouldHighlight) {
+        bgColor = intervalColors[modes[selectedMode].degree].color;
+        textColor = '#1d2521';
       }
 
       // Determinar si mostrar el nombre de la nota según el modo
@@ -734,13 +750,18 @@ function renderOpenStrings() {
         bgColor = '#bbb';
         textColor = '#666';
         noteClass += ' scale-note';
-      } else if (ghostNotesMap.has(pitchClass)) {
+      } else if (ghostNotesMap.has(pitchClass) && displayModeIndex < 3) {
         // Nota fantasma de otro modo
         bgColor = ghostNotesMap.get(pitchClass);
         textColor = 'rgba(29, 37, 33, 0.5)';
         noteClass += ' ghost-note';
       } else {
         bgColor = 'transparent';
+        textColor = '#1d2521';
+      }
+
+      if (displayModeIndex >= 3 && shouldHighlight) {
+        bgColor = intervalColors[modes[selectedMode].degree].color;
         textColor = '#1d2521';
       }
 
@@ -761,6 +782,8 @@ function renderOpenStrings() {
   document.querySelector('#open-strings').innerHTML = openStringsHtml;
 }
 function updateView() {
+  if(displayModeIndex>=3 && modes[selectedMode].intervals.length!==7)displayModeIndex=1;
+  document.querySelector('#display-label').textContent=displayModeLabels[displayModeIndex];
   renderRootPiano();
   const selectedModeData = modes[selectedMode];
 
@@ -853,7 +876,7 @@ if (ghostModeSelect) {
 
 // Event listener para el botón de ciclo de modo de visualización
 document.querySelector('#toggle-display').addEventListener('click', event => { 
-  displayModeIndex = (displayModeIndex + 1) % displayModes.length; // Ciclar entre 0, 1, 2
+  displayModeIndex = (displayModeIndex + 1) % (modes[selectedMode].intervals.length===7 ? displayModes.length : 3);
   const button = event.currentTarget;
   const buttonText = button.querySelector('#display-label');
 
@@ -917,13 +940,22 @@ function moveProgressionChord(from, to) {
   if (!Number.isInteger(from) || !Number.isInteger(to) || from < 0 || to < 0
     || from >= progression.length || to >= progression.length || from === to) return;
   const selected = progression[activeProgression];
+  progressionEdited=true;
   const [item] = progression.splice(from, 1);
   progression.splice(to, 0, item);
   activeProgression = selected ? progression.indexOf(selected) : -1;
   renderProgression();
 }
 
+function duplicateProgressionChord(index) {
+  if (!Number.isInteger(index) || !progression[index] || progression.length >= 256 || draggingProgressionItem) return;
+  progression.splice(index + 1, 0, {...progression[index]});
+  progressionEdited=true;
+  selectProgressionChord(index + 1);
+}
+
 function addProgressionChord() {
+  progressionEdited=true;
   progression.push({ root, rootNoteName, type: chordType.value, mode: selectedMode, ghostMode });
   activeProgression = progression.length - 1;
   renderProgression();
@@ -931,6 +963,7 @@ function addProgressionChord() {
 
 function removeProgressionChord(index) {
   if (progression.length <= 1 || !progression[index]) return;
+  progressionEdited=true;
   progression.splice(index, 1);
   if (activeProgression === index) {
     selectProgressionChord(Math.min(index, progression.length - 1));
@@ -947,9 +980,34 @@ document.querySelector('#progression').addEventListener('click', event => {
   if (card) selectProgressionChord(Number(card.dataset.index));
 });
 document.querySelector('#add-chord').addEventListener('click', addProgressionChord);
-fretboard.addEventListener('click', event => { const note = event.target.closest('.fret-note'); if (note) { document.querySelector('.hint').textContent = `${note.dataset.note}: ${note.dataset.interval}`; } });
+function selectFretNote(note) {
+  if(!note)return;
+  const pitch=Number(note.dataset.midi)%12;
+  if(!Number.isInteger(pitch))return;
+  selectedFretMidi=Number(note.dataset.midi);
+  if(document.querySelector('#fret-scale-lock').checked) {
+    document.querySelectorAll('.is-picked').forEach(item=>item.classList.remove('is-picked'));
+    note.classList?.add('is-picked');
+    document.querySelector('.hint').textContent=`Nota seleccionada: ${displayNote(pitch)} · ${note.dataset.interval || ''}. Escala fija.`;
+    return;
+  }
+  choosePianoRoot(pitch,pianoUseFlats ? noteLabels[notes[pitch]] || notes[pitch] : notes[pitch]);
+  document.querySelector('.hint').textContent=`Nota base: ${rootNoteName}. El modo seleccionado se conserva.`;
+}
+
+function appendMidiChords(chords) {
+  if(!chords.length || draggingProgressionItem)return false;
+  const replace=!progressionEdited && progression===initialProgression && JSON.stringify(progression)===initialProgressionSnapshot;
+  if((replace?0:progression.length)+chords.length>256)return false;
+  const first=replace?0:progression.length;
+  if(replace)progression=[];
+  progression.push(...chords.map(item=>({...item})));
+  progressionEdited=true;selectProgressionChord(first);
+  return {replaced:replace};
+}
+fretboard.addEventListener('click', event => selectFretNote(event.target.closest('.fret-note')));
 document.querySelector('#open-strings').addEventListener('click', event => {
   const note = event.target.closest('.open-string-note');
-  if (note) document.querySelector('.hint').textContent = `${note.dataset.note}: ${note.dataset.interval} (cuerda al aire)`;
+  selectFretNote(note);
 });
 populateControls(); renderIntervalLegend(); updateModeLegend(); updateView();

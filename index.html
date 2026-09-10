@@ -52,9 +52,10 @@
         
 
 
-        <div class="progression-header-inline"><div><p class="eyebrow">IDEA DE PROGRESIÓN</p><h3>Tu vuelta armónica</h3></div><button class="add-button" id="add-chord" type="button"><span>+</span> añadir acorde</button></div>
+        <div class="progression-header-inline"><div><p class="eyebrow">IDEA DE PROGRESIÓN</p><h3>Tu vuelta armónica</h3></div><details class="inline-help"><summary aria-label="Ayuda de las tarjetas">?</summary><p>Arrastra para ordenar. Doble clic para duplicar. Clic derecho o × para eliminar. Alt + flechas mueve una tarjeta con el teclado. Se conserva al menos una tarjeta.</p></details><button class="add-button" id="add-chord" type="button"><span>+</span> añadir acorde</button></div>
         <div class="progression" id="progression" aria-label="Progresión de acordes"></div>
-    <div class="board-toolbar"><div><span class="eyebrow board-eyebrow">MÁSTIL / GUITARRA</span><h2 id="board-title">C · C Mayor</h2></div><div class="toolbar-buttons"><button class="icon-button" id="toggle-notes" type="button" aria-pressed="false" title="Ciclar entre mostrar sin notas, solo escala, o todas las notas">Aa <span>notas</span></button><button class="icon-button" id="toggle-degrees" type="button" aria-pressed="false" aria-label="Grados: no. Clic para cambiar." title="Alternar grados de la escala, grados de todo el mástil y desactivados. Se conserva la selección del control de notas.">1 <span>grados: no</span></button><button class="icon-button" id="toggle-display" type="button" aria-pressed="false" title="Ciclar entre modos de visualización">🎨 <span id="display-label">grados</span></button></div></div>
+    <div class="board-toolbar"><div><span class="eyebrow board-eyebrow">MÁSTIL / GUITARRA</span><h2 id="board-title">C · C Mayor</h2></div><div class="toolbar-buttons"><button class="icon-button" id="toggle-notes" type="button" aria-pressed="true" title="Ciclar entre mostrar sin notas, solo escala, o todas las notas">Aa <span>escala</span></button><button class="icon-button" id="toggle-degrees" type="button" aria-pressed="false" aria-label="Grados: no. Clic para cambiar." title="Alternar grados de la escala, grados de todo el mástil y desactivados. Se conserva la selección del control de notas.">1 <span>grados: no</span></button><button class="icon-button" id="toggle-display" type="button" aria-pressed="false" title="Ciclar entre modos de visualización">🎨 <span id="display-label">tríada</span></button></div></div>
+        <div class="fret-lock"><label class="spelling-switch" aria-label="Mantener escala al tocar el mástil"><input id="fret-scale-lock" type="checkbox" role="switch" aria-label="Mantener escala al tocar el mástil"><span class="spelling-track" aria-hidden="true"></span><svg class="lock-symbol" viewBox="0 0 20 20" aria-hidden="true"><rect x="4" y="9" width="12" height="9" rx="2"/><path d="M6 9V6a4 4 0 0 1 8 0v3"/></svg></label><details class="inline-help"><summary aria-label="Ayuda del bloqueo de escala">?</summary><p>Activado: pulsar el mástil escucha y marca la nota sin cambiar la escala. Desactivado: cambia la raíz. El piano sigue cambiando la raíz en ambos casos.</p></details></div>
         <div class="fretboard-wrap"><div class="fretboard-layout">
           <div class="open-strings-heading">Al aire</div>
           <div id="fret-numbers" class="fret-numbers"></div>
@@ -70,9 +71,11 @@
         </div>
 
 <section class="chord-player" aria-label="Reproductor de acordes">
-          <div class="player-topline"><button id="player-disclosure" class="player-disclosure" type="button" aria-expanded="true" aria-controls="player-content"><strong>Acompañamiento</strong><span class="disclosure-chevron" aria-hidden="true">⌄</span></button><button id="player-toggle" type="button" aria-pressed="false">Reproducir</button></div>
+          <div class="player-topline"><button id="player-disclosure" class="player-disclosure" type="button" aria-expanded="false" aria-controls="player-content"><strong>Acompañamiento</strong><span class="disclosure-chevron" aria-hidden="true">⌄</span></button><button id="player-toggle" type="button" aria-pressed="false">Reproducir</button></div>
           <p id="player-status" class="player-compact-status" role="status">Detenido</p>
-          <div id="player-content" class="collapsible-content"><div class="collapsible-inner">
+          <div id="player-content" class="collapsible-content is-collapsed" inert><div class="collapsible-inner">
+        <div class="preset-controls"><label for="progression-preset">Plantillas</label><select id="progression-preset"><option value="jazz">Jazz · ii–V–I en Do</option><option value="blues">Blues · 12 compases en La</option><option value="turnaround">Jazz · I–vi–ii–V en Do</option></select><button id="apply-preset" type="button">Usar</button></div>
+<p id="preset-status" class="sr-only" role="status"></p>
           <div class="player-controls">
             <label for="player-style">Estilo <select id="player-style"><option value="none">Sin ritmo</option><option value="pop">Pop / rock</option><option value="jazz">Jazz suave</option><option value="trap">Trap suave</option><option value="funk">Funk</option><option value="bossa">Bossa suave</option><option value="reggaeton">Reggaetón suave</option></select></label>
             <label for="player-bpm">BPM <input id="player-bpm" type="number" min="30" max="240" step="1" value="100" required></label>
@@ -85,9 +88,9 @@
         </section>
 
         <section class="youtube-panel transport-panel" aria-label="YouTube">
-          <div class="player-topline"><button id="youtube-disclosure" class="player-disclosure" aria-expanded="true" aria-controls="youtube-content" type="button"><strong>YouTube</strong><span class="disclosure-chevron" aria-hidden="true">⌄</span></button><button id="youtube-toggle" type="button" disabled>Reproducir</button><label class="float-option"><input id="youtube-float" type="checkbox" checked>Video flotante al minimizar</label></div>
+          <div class="player-topline"><button id="youtube-disclosure" class="player-disclosure" aria-expanded="false" aria-controls="youtube-content" type="button"><strong>YouTube</strong><span class="disclosure-chevron" aria-hidden="true">⌄</span></button><button id="youtube-toggle" type="button" disabled>Reproducir</button><label class="float-option"><input id="youtube-float" type="checkbox" checked>Video flotante al minimizar</label></div>
           <div class="video-transport"><span id="youtube-time">0:00 / 0:00</span><input id="youtube-seek" type="range" min="0" max="0" step="1" value="0" aria-label="Posición del video" disabled></div>
-          <div id="youtube-content" class="collapsible-content"><div class="collapsible-inner">
+          <div id="youtube-content" class="collapsible-content is-collapsed" inert><div class="collapsible-inner">
             <form id="youtube-form" class="youtube-form"><label for="youtube-url" class="sr-only">Enlace de YouTube</label><div class="youtube-url-row"><input id="youtube-url" type="url" placeholder="Pega el enlace de YouTube" required><button id="youtube-load" type="submit">Cargar video</button></div></form>
             <div id="youtube-video-wrap" class="youtube-video-wrap" hidden></div>
           </div></div>
@@ -103,7 +106,7 @@
             <div id="metronome-pulses" aria-hidden="true"></div>
             <span id="metronome-status" role="status">En pausa</span>
           </section>
-        <details class="library-panel" open><summary>Mis canciones <span>Guardar · abrir · respaldar</span></summary><div class="song-library">
+        <details class="library-panel"><summary>Mis canciones <span>Guardar · abrir · respaldar</span></summary><div class="song-library">
           <label for="song-title">Nombre de la canción o práctica</label>
           <input id="song-title" maxlength="100" placeholder="Por ejemplo: Blues en La">
           <div class="song-actions"><button id="song-save" type="button">Guardar como nueva</button><button id="song-update" type="button" disabled>Actualizar canción abierta</button></div>
@@ -117,6 +120,9 @@
         <details class="midi-panel"><summary>Importar acordes MIDI <span>· experimental</span></summary>
           <p>Escucha las notas del archivo con su tempo y sigue los acordes reconocidos en el mástil. La detección funciona con notas que empiezan juntas; no interpreta arpegios. El sonido es sintetizado, sin los instrumentos ni la percusión originales.</p>
           <label for="midi-file">Archivo MIDI</label><input id="midi-file" type="file" accept=".mid,.midi,audio/midi">
+          <div class="midi-catalog-controls"><label for="midi-catalog">O elige del catálogo incluido</label><select id="midi-catalog"></select><button id="midi-catalog-load" type="button">Cargar del catálogo</button></div>
+          <p id="midi-credit" hidden></p><a id="midi-source" hidden target="_blank" rel="noopener noreferrer">Ver edición y licencia en Mutopia</a>
+          <p class="player-help">Las obras con arpegios pueden tener pocos acordes reconocidos; puedes escuchar todas sus notas.</p>
           <p id="midi-status" role="status">Selecciona un archivo para analizarlo localmente.</p><ol id="midi-preview"></ol>
           <button id="midi-play" type="button" disabled>Reproducir MIDI</button><span id="midi-time" role="timer">0:00</span>
           <button id="midi-add" type="button" disabled>Añadir acordes a la progresión</button>
@@ -197,6 +203,8 @@
   <script src="instrument-picker.js"></script>
   <script src="midi-import.js"></script>
   <script src="midi-player.js"></script>
+  <script src="midi-catalog.js"></script>
   <script src="midi-ui.js"></script>
+  <script src="progression-presets.js"></script>
 </body>
 </html>

@@ -252,7 +252,7 @@ La suite de Node no requiere paquetes y usa audio y DOM simulados. Hay además u
 - [Casos de prueba en Excel](docs/qa/excel/Casos_de_prueba_Traste.xlsx): casos, historial y guía para completar resultados.
 - [Bugs — edición Ritmos](docs/qa/excel/Reporte_de_bugs_Traste_Ritmos.xlsx) y [casos — edición Ritmos](docs/qa/excel/Casos_de_prueba_Traste_Ritmos.xlsx): incluyen el nuevo reporte de balance y los casos de percusión. Se conservan las planillas anteriores.
 
-La suite actual tiene **50 pruebas automatizadas**. Los estilos también se verifican con `node scripts/check-player-browser.cjs --rhythms` (y `--edge` para Edge), incluyendo renderizado OfflineAudioContext y mediciones de nivel. Agregar `--no-artifacts` evita reemplazar los registros anteriores de docs/. El flujo de modos y seguimiento del mástil se comprueba con `node scripts/check-player-browser.cjs --progression`, que reordena mediante eventos de teclado.
+La suite actual tiene **57 pruebas automatizadas**. Los estilos también se verifican con `node scripts/check-player-browser.cjs --rhythms` (y `--edge` para Edge), incluyendo renderizado OfflineAudioContext y mediciones de nivel. Agregar `--no-artifacts` evita reemplazar los registros anteriores de docs/. El flujo de modos y seguimiento del mástil se comprueba con `node scripts/check-player-browser.cjs --progression`, que reordena mediante eventos de teclado.
 
 `node scripts/check-interface-browser.cjs` verifica arrastre, plegado, ventana flotante, controles de YouTube con un doble de la API, dimensiones, biblioteca y restauración tras recargar. También comprueba las frecuencias de las notas al pulsar el piano y las cuerdas del bajo, e importa/reproduce un MIDI de prueba siguiendo sus acordes en el mástil. Con `--edge` usa Edge; `--live-youtube` habilita la API real, pero no demuestra escucha humana. Las pruebas unitarias cubren persistencia, validación, errores, tiempos MIDI con cambios de tempo, notas y cancelación de audio.
 
@@ -266,3 +266,65 @@ En este avance se actualizó únicamente el README como documentación. Las plan
 4. Incorporar pruebas de navegador y ejecución automática de la suite en GitHub.
 5. Ampliar los tipos de acorde disponibles y unificar la lógica de notas del mástil y las cuerdas al aire.
 6. Preparar una demo y un caso de estudio con decisiones, pruebas y límites conocidos.
+
+## Ajustes iniciales y edición rápida
+
+Al recargar, YouTube, Acompañamiento, Mis canciones e Importar acordes MIDI aparecen plegados. Abre cada encabezado para acceder a sus controles. El mástil empieza resaltando la tríada y mostrando los nombres de las notas de la escala. La S del logo usa cursiva.
+
+Un doble clic sobre una tarjeta crea una copia independiente justo después, incluidos el tipo de acorde, nombre de nota y modos. El clic derecho elimina la tarjeta; se conserva al menos una. El botón × continúa disponible. El arrastre sigue reordenando sin duplicar. Las copias permiten repetir compases; el acompañamiento conserva cuatro pulsos por tarjeta. Se pueden duplicar hasta alcanzar 256 tarjetas.
+
+## Catálogo MIDI integrado
+
+Abre **Importar acordes MIDI**, elige una obra en **O elige del catálogo incluido** y pulsa **Cargar del catálogo**. Usa después los mismos controles de reproducción, vista previa e importación a tarjetas. La importación de tus propios archivos sigue disponible.
+
+Los archivos están incluidos en `assets/midi/`, sin modificaciones, y se sirven desde el mismo servidor local. No se necesita una API, cuenta ni conexión a Mutopia para reproducirlos una vez descargado el proyecto. Abre String con `npm start` o Python; la carga del catálogo no funciona mediante doble clic en index.html.
+
+| Obra | Edición y fuente | Licencia indicada por Mutopia |
+| --- | --- | --- |
+| J. S. Bach, Preludio en mi menor, BWV 533 | Pierre Pouillon · [Mutopia 1843](https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=1843) | Public Domain |
+| J. S. Bach, Preludio en re menor, BWV 999, guitarra/laúd | Jakob Bagterp · [Mutopia 60](https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=60) | Public Domain |
+
+Archivos originales: [BWV 533](https://www.mutopiaproject.org/ftp/BachJS/BWV533/BWV533/BWV533.mid) y [BWV 999](https://www.mutopiaproject.org/ftp/BachJS/BWV999/Bach_Prelude_BWV999/Bach_Prelude_BWV999.mid). El catálogo muestra los créditos y el enlace de la edición al cargar cada obra.
+
+El importador actual reconoce 142 acordes en bloque en BWV 533 y uno en BWV 999. La segunda obra contiene arpegios: esto limita el reconocimiento, no la reproducción de sus notas. El catálogo no añade transcripciones automáticas ni convierte los arpegios en acordes. Para ampliar la selección, se deben comprobar tanto la licencia de la edición como la compatibilidad con el importador.
+
+## Elegir la raíz desde el mástil y estudiar acordes del modo
+
+Al pulsar una nota de un traste o una cuerda al aire, se escucha su altura y se selecciona su clase de nota como nueva raíz, igual que en el piano. Se conserva el modo y no se modifican las tarjetas ya guardadas. Si está activo un seguimiento de audio, este puede volver a mostrar el acorde reproducido.
+
+El botón de visualización recorre **grados → tríada → 7ma → Acorde → Acorde 7ma**. Las vistas anteriores siguen disponibles; las dos nuevas se calculan desde el modo de siete notas, independientemente del tipo de acorde elegido.
+
+- **Acorde:** grados 1, 3 y 5 del modo.
+- **Acorde 7ma:** grados 1, 3, 5 y 7 del modo.
+
+Por ejemplo, en Do jónico se colorean Do–Mi–Sol y se añade Si en la segunda vista. En Do dórico son Do–Mi♭–Sol y Si♭; en Do locrio, Do–Mi♭–Sol♭ y Si♭. En estas dos vistas, todas las notas del acorde usan el color del grado del modo respecto de su escala mayor de referencia (I jónico, II dórico, III frigio, IV lidio, V mixolidio, VI eólico, VII locrio). La séptima usa el mismo color. Las notas restantes de la escala quedan grises y la escala adicional no introduce colores ajenos al acorde en estas vistas.
+
+Las pentatónicas tienen cinco notas, por lo que estas dos vistas no se ofrecen al seleccionarlas. Si se cambia a una pentatónica desde una de ellas, se vuelve a **tríada**.
+
+## Escala fija, importación y plantillas
+
+**Mantener escala al tocar el mástil** está desactivado inicialmente. Al activarlo, pulsar un traste o una cuerda al aire reproduce la nota y la marca con un contorno, sin cambiar raíz, modo ni acorde del editor. El piano sigue cambiando la raíz, incluso con el bloqueo activo. El interruptor limita los clics del mástil; no detiene el seguimiento de una reproducción.
+
+Al añadir los acordes de un MIDI, las cuatro tarjetas de ejemplo se sustituyen si siguen siendo la progresión inicial intacta. Si ya añadiste, duplicaste, moviste o eliminaste tarjetas, o abriste una canción, se conservan y el MIDI se añade al final. Importar otro MIDI después también añade sus acordes. El límite sigue siendo de 256 tarjetas.
+
+El selector **Plantillas** ofrece:
+
+| Plantilla | Acordes por compás | BPM | Ritmo |
+| --- | --- | --- | --- |
+| Jazz ii–V–I en Do | Dm7 · G7 · Cmaj7 · Cmaj7 | 100 | Jazz suave |
+| Jazz I–vi–ii–V en Do | Cmaj7 · Am7 · Dm7 · G7 | 110 | Jazz suave |
+| Blues de 12 compases en La | A7 · A7 · A7 · A7 · D7 · D7 · A7 · A7 · E7 · D7 · A7 · E7 | 90 | Jazz suave |
+
+**Usar plantilla** reemplaza las tarjetas actuales, detiene el audio MIDI/acompañamiento y activa percusión y repetición. No inicia audio ni modifica YouTube o los volúmenes. Cada tarjeta dura cuatro pulsos. El blues usa el patrón con swing ya disponible de Jazz suave; no se añadió un motor de blues distinto.
+
+Las plantillas son puntos de partida editables. Guarda los cambios previos antes de aplicarlas y usa **Guardar como nueva** para conservar la nueva práctica sin sobrescribir otra canción abierta.
+
+## Interfaz compacta de acompañamiento y ayuda
+
+Las plantillas están dentro del panel plegable **Acompañamiento**. El selector y **Usar** reemplazan la explicación permanente; aplicar una plantilla sigue sustituyendo las tarjetas y ajustando el ritmo.
+
+La ayuda de las tarjetas está en el círculo **?** junto al encabezado de la progresión. Se abre con clic o con Enter/Espacio y se cierra de la misma forma. Los nombres de modo en las tarjetas usan letra más pequeña y discreta.
+
+El bloqueo del mástil utiliza el mismo interruptor deslizante que las alteraciones del piano, acompañado de un candado y su propio **?**. Activado, tocar el mástil escucha y marca la nota, manteniendo raíz y escala; el piano conserva su selección independiente.
+
+En **Acorde** y **Acorde 7ma**, el color representa el grado del modo, no el intervalo individual de cada nota. Por ejemplo, Re dórico resalta Re–Fa–La con el color del grado II; al incluir séptima, Do usa ese mismo color. Las vistas anteriores mantienen sus colores por intervalo.

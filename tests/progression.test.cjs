@@ -23,12 +23,60 @@ function setup() {
     });
     return elements.get(key);
   }
-  const ctx = vm.createContext({document:{querySelector:element}});
+  const ctx = vm.createContext({document:{querySelector:element,querySelectorAll:()=>[]}});
   vm.runInContext(fs.readFileSync(path.join(__dirname,'../app.js'),'utf8'),ctx);
   const run = code => vm.runInContext(code,ctx);
   const change = (key,value) => element(key).handlers.change({target:{value}});
   return {run,change,element};
 }
+
+test('defaults show scale names and triads; duplicated chords are independent complete copies',()=>{
+  const {run}=setup();
+  assert.equal(run('showNotes'),1);assert.equal(run('displayModeIndex'),1);
+  run("progression=[{root:2,type:'m7',mode:'dorian',ghostMode:'aeolian',rootNoteName:'D'}];duplicateProgressionChord(0)");
+  assert.equal(run('progression.length'),2);assert.equal(run('activeProgression'),1);
+  assert.equal(run('progression[0]===progression[1]'),false);
+  assert.equal(run('JSON.stringify(progression[0])'),run('JSON.stringify(progression[1])'));
+  run("progression[1].mode='phrygian';removeProgressionChord(1);removeProgressionChord(0)");
+  assert.equal(run('progression.length'),1);assert.equal(run('progression[0].mode'),'dorian');
+});
+
+test('modal chord views highlight only degrees 1-3-5 and 1-3-5-7 of each mode',()=>{
+  const {run}=setup();
+  for(const [mode,triad,seventh] of [
+    ['ionian',[0,4,7],11],['lydian',[0,4,7],11],['mixolydian',[0,4,7],10],
+    ['dorian',[0,3,7],10],['aeolian',[0,3,7],10],['phrygian',[0,3,7],10],['locrian',[0,3,6],10]]) {
+    run(`selectedMode='${mode}';chordType=chordTypes.find(type=>type.value==='aug')`);
+    for(let interval=0;interval<12;interval++) {
+      assert.equal(run(`shouldHighlightInterval(${interval},3)`),triad.includes(interval));
+      assert.equal(run(`shouldHighlightInterval(${interval},4)`),[...triad,seventh].includes(interval));
+    }
+  }
+  run("selectedMode='majorPentatonic';displayModeIndex=4;updateView()");assert.equal(run('displayModeIndex'),1);
+});
+
+test('fret selection changes the root and keeps the mode and saved progression independent',()=>{
+  const {run}=setup();
+  run("selectedMode='dorian';selectFretNote({dataset:{midi:'66'}})");
+  assert.equal(run('root'),6);assert.equal(run('selectedMode'),'dorian');assert.equal(run('activeProgression'),-1);
+  assert.equal(run('progression[0].root'),0);
+});
+
+test('fret scale lock selects a pitch without changing the scale and does not affect the piano',()=>{
+  const {run,element}=setup();element('#fret-scale-lock').checked=true;
+  run("selectFretNote({dataset:{midi:'66',interval:'4ta aumentada'}})");
+  assert.equal(run('root'),0);assert.equal(run('selectedFretMidi'),66);
+  run('choosePianoRoot(9)');assert.equal(run('root'),9);
+  element('#fret-scale-lock').checked=false;
+  run("selectFretNote({dataset:{midi:'62'}})");assert.equal(run('root'),2);
+});
+
+test('MIDI replaces untouched starter chords but preserves edited or loaded progressions',()=>{
+  const a=setup();a.run("appendMidiChords([{root:2,type:'m7'}])");assert.equal(a.run('progression.length'),1);assert.equal(a.run('progression[0].root'),2);
+  a.run("appendMidiChords([{root:7,type:'7'}])");assert.equal(a.run('progression.length'),2);
+  const b=setup();b.run("duplicateProgressionChord(0);removeProgressionChord(1);appendMidiChords([{root:2,type:'m7'}])");assert.equal(b.run('progression.length'),5);
+  const c=setup();c.run("progression=progression.map(item=>({...item}));appendMidiChords([{root:2,type:'m7'}])");assert.equal(c.run('progression.length'),5);
+});
 
 test('E major and C minor remain independent after repeated selection and adding', () => {
   const {run,change,element} = setup();

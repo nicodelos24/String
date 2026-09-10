@@ -2,6 +2,7 @@
 (() => {
   const list = document.querySelector('#progression');
   let drag = null, suppressClick = false;
+  let lastClick=null;
   const cards = () => [...list.querySelectorAll('.progression-card')];
   const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const positions = () => new Map(cards().map(card => [card, card.getBoundingClientRect().left]));
@@ -18,7 +19,26 @@
   list.addEventListener('dragstart', event => event.preventDefault());
   list.addEventListener('click', event => {
     if (suppressClick) {event.preventDefault(); event.stopImmediatePropagation(); suppressClick=false;}
+    else if(event.detail>0 && !event.target.closest('button')) {
+      const card=event.target.closest('.progression-card');
+      if(!card)return;
+      const index=Number(card.dataset.index),source=progression[index],now=performance.now();
+      // La selección reconstruye las tarjetas: reconocer el segundo clic por el acorde, no por el nodo DOM.
+      if(lastClick?.source===source && now-lastClick.time<400) {
+        event.preventDefault();event.stopImmediatePropagation();lastClick=null;
+        duplicateProgressionChord(index);
+        list.querySelector(`[data-index="${index+1}"]`)?.focus();
+      } else lastClick={source,time:now};
+    }
   }, true);
+  list.addEventListener('contextmenu',event=>{
+    const card=event.target.closest('.progression-card');
+    if(!card || event.target.closest('button'))return;
+    event.preventDefault();lastClick=null;
+    if(draggingProgressionItem)return;
+    const index=Number(card.dataset.index);removeProgressionChord(index);
+    list.querySelector(`[data-index="${Math.min(index,progression.length-1)}"]`)?.focus();
+  });
   list.addEventListener('pointerdown', event => {
     if (drag) return;
     if (event.button !== 0 || event.target.closest('button')) return;
@@ -32,6 +52,7 @@
     if (!drag.started) {
       if (Math.hypot(event.clientX-drag.x,event.clientY-drag.y)<7) return;
       drag.started=true;
+      lastClick=null;
       draggingProgressionItem=drag.source;
       const rect=drag.card.getBoundingClientRect();
       drag.offsetX=drag.x-rect.left; drag.offsetY=drag.y-rect.top;
