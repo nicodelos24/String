@@ -1130,7 +1130,7 @@ footer {
   background: #f1e8dc;
 }
 .selected-root span { color: var(--ink); font: 11px var(--sans); }
-.selected-root strong { color: var(--ink); font: 22px Georgia, serif; }
+.selected-root strong { color: var(--ink); font: 27.8px Georgia, serif; }
 
 .control-panel .spelling-switch {
   display: flex;
