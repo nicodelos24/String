@@ -33,6 +33,7 @@
   button.addEventListener('click', async () => {
     if (player.running || player.starting) { player.stop(); return; }
     if (!bpm.reportValidity()) return;
+    window.dispatchEvent?.(new Event('traste:progression-start'));
     playbackItems = progression.map(item => ({source:item, saved:{...item}}));
     const chords = playbackItems.map(({saved:item}) => {
       const type = chordTypes.find(candidate => candidate.value === item.type);

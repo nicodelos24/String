@@ -65,7 +65,7 @@
   }));
   $('song-export').addEventListener('click',()=>run(()=>{
     const url=URL.createObjectURL(new Blob([library.export()],{type:'application/json'}));
-    const link=document.createElement('a');link.href=url;link.download='traste-canciones.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+    const link=document.createElement('a');link.href=url;link.download='string-canciones.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
     status.textContent='Respaldo preparado para descargar.';
   }));
   $('song-import').addEventListener('change',async event=>{

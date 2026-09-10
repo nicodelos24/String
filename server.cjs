@@ -59,7 +59,7 @@ if (require.main === module) {
     process.exitCode = 1;
   });
   server.listen(8000, '127.0.0.1', () => {
-    console.log('Traste: http://127.0.0.1:8000\nDejá esta terminal abierta. Para detener: Ctrl+C.');
+    console.log('String: http://127.0.0.1:8000\nMantén esta terminal abierta. Para detener: Ctrl+C.');
   });
 }
 

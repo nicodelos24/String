@@ -39,7 +39,13 @@ const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
     const send=(method,params={})=>new Promise((resolve,reject)=>{const request=++id;const timer=setTimeout(()=>{pending.delete(request);reject(new Error('Timeout '+method));},20000);pending.set(request,{resolve,reject,timer});socket.send(JSON.stringify({id:request,method,params}));});
     const evaluate=async expression=>{const result=await send('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true,userGesture:true});if(result.exceptionDetails)throw new Error(JSON.stringify(result.exceptionDetails));return result.result.value;};
     await send('Page.enable');
+    await send('Page.addScriptToEvaluateOnNewDocument',{source:`window.previewFrequencies=[];const original=AudioContext.prototype.createOscillator;AudioContext.prototype.createOscillator=function(){const osc=original.call(this),start=osc.start;osc.start=function(...args){window.previewFrequencies.push(osc.frequency.value);return start.apply(this,args);};return osc;};`});
     if(!live) {await send('Network.enable');await send('Network.setBlockedURLs',{urls:['*youtube.com/*','*googlevideo.com/*']});}
+    if(!live) await send('Page.addScriptToEvaluateOnNewDocument',{source:`window.YT={Player:class {
+      constructor(host,options){this.options=options;this.time=0;this.state=2;window.testYoutube=this;this.frame=document.createElement('iframe');this.frame.src='https://www.youtube.com/embed/'+options.videoId;host.replaceWith(this.frame);setTimeout(()=>options.events.onReady(),0);}
+      getCurrentTime(){return this.time;}getDuration(){return 180;}getPlayerState(){return this.state;}
+      pauseVideo(){this.state=2;}playVideo(){this.state=1;}seekTo(time){this.time=time;}destroy(){this.frame.remove();}
+    }};`});
     await send('Emulation.setDeviceMetricsOverride',{width:1440,height:1000,deviceScaleFactor:1,mobile:false});
     await send('Page.navigate',{url:address});
     for(let i=0;i<100;i++) {if(await evaluate("typeof SongLibrary!=='undefined' && document.readyState==='complete'")) break;await delay(100);}
@@ -67,6 +73,16 @@ const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
     await delay(250);
     assert.equal(await evaluate('progression[0].root'),5);
     await evaluate(`document.querySelector('#youtube-url').value='https://www.youtube.com/watch?v=M7lc1UVf-VE';document.querySelector('#youtube-form').requestSubmit();`);
+    for(let i=0;i<200;i++){if(await evaluate("!document.querySelector('#youtube-toggle').disabled"))break;await delay(100);}
+    if(!live) {
+      await evaluate("document.querySelector('#youtube-toggle').click();document.querySelector('#youtube-disclosure').click();");
+      assert.equal(await evaluate('testYoutube.state'),1);
+      assert.equal(await evaluate("document.querySelector('#youtube-video-wrap').classList.contains('is-floating')"),true);
+      await evaluate("document.querySelector('#youtube-seek').value='45';document.querySelector('#youtube-seek').dispatchEvent(new Event('change'));document.querySelector('#youtube-toggle').click();");
+      assert.equal(await evaluate('testYoutube.time'),45);assert.equal(await evaluate('testYoutube.state'),2);
+      await evaluate("document.querySelector('.video-restore').click();");
+      assert.equal(await evaluate("document.querySelector('#youtube-video-wrap').classList.contains('is-floating')"),false);
+    }
     const connection=await evaluate("({iframe:document.querySelector('#youtube-video-wrap iframe')?.src})");
     assert(connection.iframe.includes('/embed/M7lc1UVf-VE'));
     assert.equal(await evaluate("document.querySelector('#youtube-follow')"),null);
@@ -77,6 +93,7 @@ const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
     await send('Page.reload');await delay(1000);
     assert.equal(await evaluate("document.querySelectorAll('#song-list option').length"),2);
     await evaluate("document.querySelector('#song-list').selectedIndex=1;document.querySelector('#song-open').click();");
+    await delay(100);
     assert.equal(await evaluate('progression[0].root'),5);
     assert.equal(await evaluate("document.querySelector('#player-style').value"),'bossa');
     assert.equal(await evaluate("document.querySelector('#player-bpm').value"),'85');
@@ -90,6 +107,23 @@ const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
     await evaluate(`(()=>{const data=JSON.parse(localStorage.getItem('traste.songs.v1'));data.songs[0].chords[0].rootNoteName='<img src=x onerror=alert(1)>';const input=document.querySelector('#song-import'),transfer=new DataTransfer();transfer.items.add(new File([JSON.stringify(data)],'invalid.json'));input.files=transfer.files;input.dispatchEvent(new Event('change'));})()`);
     await delay(150);assert.equal(await evaluate("document.querySelectorAll('#song-list option').length"),3);
     assert((await evaluate("document.querySelector('#song-status').textContent")).startsWith('No se importó'));
+    await evaluate("document.querySelector('#root-piano [data-pitch=\"9\"]').click();");await delay(100);
+    assert(Math.abs((await evaluate('previewFrequencies.at(-1)'))-440)<0.001);
+    await evaluate("document.querySelector('#instrument-picker [value=\"bass\"]').click();document.querySelector('#open-strings .open-string-row:last-child [data-midi]').click();");await delay(100);
+    assert.equal(await evaluate("document.querySelectorAll('#open-strings .open-string-row').length"),4);
+    assert(Math.abs((await evaluate('previewFrequencies.at(-1)'))-41.20344)<0.001);
+    await evaluate("document.querySelector('#instrument-picker [value=\"guitar\"]').click();");
+    const track=[0,144,60,100,0,64,100,0,67,100,96,128,60,0,0,64,0,0,67,0,0,144,62,100,0,65,100,0,69,100,96,128,62,0,0,65,0,0,69,0,0,255,47,0];
+    const midi=[77,84,104,100,0,0,0,6,0,0,0,1,0,96,77,84,114,107,0,0,0,track.length,...track];
+    await evaluate(`(()=>{const transfer=new DataTransfer();transfer.items.add(new File([new Uint8Array(${JSON.stringify(midi)})],'chords.mid'));const input=document.querySelector('#midi-file');input.files=transfer.files;input.dispatchEvent(new Event('change'));})()`);
+    await delay(150);assert.equal(await evaluate("document.querySelectorAll('#midi-preview li').length"),2);
+    await evaluate("document.querySelector('#midi-play').click();");
+    for(let i=0;i<160;i++){if(await evaluate('root===0'))break;await delay(25);}
+    assert.equal(await evaluate('root'),0,await evaluate("document.querySelector('#midi-status').textContent+' / '+document.querySelector('#midi-play').textContent"));
+    for(let i=0;i<100;i++){if(await evaluate('root===2'))break;await delay(25);}
+    assert.equal(await evaluate('root'),2);
+    await evaluate("document.querySelector('#midi-play').click();document.querySelector('#midi-add').click();");
+    assert.equal(await evaluate('progression.length'),6);
     const screenshot=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:true});
     fs.writeFileSync(path.join(os.tmpdir(),`traste-interface-${edge?'edge':'chrome'}.png`),Buffer.from(screenshot.data,'base64'));
     await send('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});

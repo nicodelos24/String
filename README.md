@@ -1,10 +1,10 @@
-# Traste · Explorador de escalas
+# String · Explorador de escalas
 
 Aplicación web para explorar escalas, modos e intervalos sobre el mástil de una guitarra o un bajo. Permite elegir una nota base y una calidad de acorde, visualizar sus relaciones musicales y armar una idea de progresión armónica.
 
 ## Proyecto desarrollado con asistencia de IA
 
-Traste es un proyecto de aprendizaje y portfolio desarrollado con ayuda de inteligencia artificial para explorar ideas, implementar funciones, revisar errores, crear pruebas y documentar avances. El proceso incluye revisión del código y pruebas manuales del autor para entender lo construido y mejorar el producto a partir del uso real. La lógica musical y la síntesis de audio se ejecutan localmente en el navegador.
+String (antes Traste) es un proyecto de aprendizaje y portfolio desarrollado con ayuda de inteligencia artificial para explorar ideas, implementar funciones, revisar errores, crear pruebas y documentar avances. El proceso incluye revisión del código y pruebas manuales del autor para entender lo construido y mejorar el producto a partir del uso real. La lógica musical y la síntesis de audio se ejecutan localmente en el navegador.
 
 ## Cómo ejecutarlo
 
@@ -28,7 +28,7 @@ También podés ejecutar `node server.cjs` directamente, por ejemplo si PowerShe
 python -m http.server 8000 --bind 127.0.0.1
 ```
 
-Después abrí [Traste en el servidor local](http://127.0.0.1:8000). La terminal debe permanecer abierta mientras lo usás. No se instala ninguna dependencia del proyecto.
+Después abrí [String en el servidor local](http://127.0.0.1:8000). La terminal debe permanecer abierta mientras lo usás. No se instala ninguna dependencia del proyecto.
 
 Para detener el servidor, presioná `Ctrl+C` en esa terminal. Ambos comandos usan el puerto 8000: ejecutá uno a la vez. También podés usar Live Server. Si solo querés explorar escalas y reproducir acordes locales, sigue funcionando abrir `index.html` con doble clic.
 
@@ -123,7 +123,12 @@ Proyecto-guitar-IA/
 ├── progression-interactions.js # Arrastre animado y controles de teclado
 ├── player-disclosure.js # Panel de audio plegable
 ├── youtube-url.js # Validación de enlaces de YouTube
-├── youtube-player.js # Carga del video, sin sincronización
+├── youtube-player.js # Controles de video y ventana flotante
+├── note-preview.js # Escucha breve de notas
+├── instrument-picker.js # Selector visual de guitarra/bajo
+├── midi-import.js # Lectura SMF y reconocimiento de acordes en bloque
+├── midi-player.js # Reproducción MIDI con reloj de audio
+├── midi-ui.js # Vista previa, seguimiento e importación a tarjetas
 ├── song-library.js # Biblioteca versionada y almacenamiento local
 ├── song-library-ui.js # Guardar, abrir y respaldar canciones
 ├── tests/          # Pruebas de progresiones, lógica musical y metrónomo
@@ -138,7 +143,7 @@ La aplicación principal se ejecuta desde los archivos de la raíz.
 
 El proyecto se presenta como un MVP de exploración visual. Las selecciones y la progresión se mantienen en memoria y se reinician al recargar la página.
 
-Al hacer clic en una nota se muestra información textual; todavía no se reproduce sonido. La importación de progresiones MIDI y la detección de acordes con micrófono aparecen en la interfaz como funciones futuras.
+Al pulsar una nota se muestra su intervalo y se escucha brevemente su altura. La importación y reproducción de MIDI está disponible como función experimental; el reconocimiento con micrófono queda para una etapa posterior.
 
 Seleccionar una tarjeta restaura la raíz, la calidad y el tipo de acorde; los acordes añadidos también conservan su escritura, modo y escala adicional. Los números de las tarjetas indican su posición, sin análisis armónico. El resaltado de tríada muestra los tres primeros componentes del acorde y excluye séptimas y novenas. La armadura de la pentatónica mayor usa la tonalidad mayor de su raíz; la pentatónica menor usa su relativa mayor como referencia (por ejemplo, La pentatónica menor muestra Do mayor).
 
@@ -174,7 +179,7 @@ No hay sincronización con el metrónomo independiente ni conexión con YouTube 
 
 ## Canciones guardadas y YouTube
 
-YouTube solo carga un [reproductor incrustado oficial](https://developers.google.com/youtube/player_parameters). El video usa sus propios controles: se retiraron las marcas de tiempo, el seguimiento del video y las pausas automáticas. El audio sintetizado y el metrónomo son independientes. Si se inician varias fuentes, pueden sonar a la vez; cada una se detiene desde sus controles.
+YouTube usa la [IFrame Player API oficial](https://developers.google.com/youtube/iframe_api_reference) para reproducir/pausar y mostrar tiempo y barra de posición. Sus controles y los del acompañamiento están arriba del espacio de trabajo, en paneles compactos y plegables. No hay marcas ni sincronización automática con la progresión. YouTube y el metrónomo se controlan de forma independiente.
 
 ### Guardar una práctica
 
@@ -193,13 +198,40 @@ Se usa [localStorage](https://developer.mozilla.org/en-US/docs/Web/API/Window/lo
 
 Usa siempre el mismo navegador, perfil y dirección. Chrome y Edge tienen bibliotecas separadas; localhost y 127.0.0.1 también, al igual que puertos diferentes. El modo privado, borrar los datos del sitio o las restricciones de almacenamiento pueden hacer que los datos desaparezcan o no se puedan guardar. Abrir index.html con doble clic no ofrece garantías de persistencia entre navegadores.
 
-**Exportar respaldo** descarga un archivo traste-canciones.json. **Importar respaldo** lo valida y añade las canciones como copias sin sobrescribir las existentes. Se admiten archivos de hasta 2 MB. Exporta periódicamente y antes de cambiar de navegador o dirección. La aplicación informa los errores de formato o almacenamiento en lugar de presentar el guardado como exitoso.
+**Exportar respaldo** descarga un archivo string-canciones.json. **Importar respaldo** lo valida y añade las canciones como copias sin sobrescribir las existentes. Se admiten archivos de hasta 2 MB. Exporta periódicamente y antes de cambiar de navegador o dirección. La aplicación informa los errores de formato o almacenamiento en lugar de presentar el guardado como exitoso.
 
 ### Próximos pasos
 
 Esta etapa permite aprender persistencia, validación, separación entre datos e interfaz y pruebas de recuperación sin contratar servicios. El siguiente paso puede ser organizar la biblioteca con búsqueda y etiquetas. Si luego necesitamos cuentas o sincronización automática entre equipos, podremos incorporar un backend y evaluar sus límites de uso gratuito en ese momento. La versión del formato JSON permite preparar futuras migraciones.
 
-YouTube requiere Internet y videos que permitan reproducción incrustada. Si un video está restringido, usa **Abrir video en YouTube**. La página no consulta el estado interno del video ni afirma que haya comenzado a reproducirse.
+YouTube requiere Internet y videos que permitan reproducción incrustada. Si un video está restringido, usa **Abrir video en YouTube**. La barra y el botón de pausa se habilitan cuando responde la API. Si falla, queda disponible el enlace externo.
+
+## Espacio de trabajo String
+
+El nombre une las cuerdas del instrumento con las cadenas de texto del código. Se retiraron «modo exploración» y el bloque promocional inferior. Guitarra y bajo se eligen mediante tarjetas con dibujos y botones de opción accesibles; solo puede seleccionarse un instrumento.
+
+Al pulsar el piano, un traste o una cuerda al aire se escucha una nota durante unos 0,7 segundos. En el mástil se usa su altura real (cuerda + traste); en el piano se usa una octava de referencia, más grave para el bajo. La escucha usa el volumen general del acompañamiento y la nueva nota libera la anterior.
+
+Al minimizar YouTube, **Video flotante al minimizar** conserva el mismo reproductor en una esquina de la página. **Restaurar video** devuelve el panel a su tamaño normal. Si desactivas esa opción y minimizas, el video se pausa al ocultarlo; no sigue reproduciéndose en segundo plano. La ventana flotante pertenece a la página, no es una ventana independiente del sistema. Mantiene al menos 200 × 200 píxeles para los controles oficiales.
+
+La biblioteca ahora está separada del video. Guarda el enlace del campo superior junto con las tarjetas y ajustes actuales, como antes. La clave interna de almacenamiento sigue siendo `traste.songs.v1` para conservar las canciones existentes; los respaldos antiguos continúan siendo compatibles. El nuevo nombre de descarga es `string-canciones.json`.
+
+## Importación y escucha MIDI · experimental
+
+1. Abre **Importar acordes MIDI** debajo de la biblioteca y selecciona un archivo .mid o .midi.
+2. Revisa los acordes reconocidos y los grupos omitidos.
+3. Pulsa **Reproducir MIDI**: suenan las notas importadas y el mástil sigue los acordes reconocidos. El indicador resalta el acorde actual en la vista previa. **Detener MIDI** corta las notas pendientes; al reproducir otra vez comienza desde el principio.
+4. Usa **Añadir acordes a la progresión** si quieres editar sus tarjetas y guardarlas con el video.
+
+Se admiten archivos Standard MIDI File de formato 0 o 1 con división PPQ, hasta 2 MB. Las notas conservan su altura, velocidad, inicio y duración; se aplican los cambios de tempo (120 BPM si no se especifica ninguno). El reloj del AudioContext sirve tanto para programar notas como para actualizar el acorde; la interfaz se consulta cada 25 ms y puede retrasarse si el navegador limita la pestaña.
+
+El reconocimiento compara las notas que empiezan en el mismo tick con los tipos de acorde disponibles. Admite inversiones, pero un conjunto de notas puede tener varios nombres: revisa la propuesta. No deduce arpegios ni añade notas sostenidas desde instantes anteriores; mantiene el último acorde reconocido hasta el siguiente. La reproducción sí incluye notas melódicas aunque no formen un acorde reconocido.
+
+El timbre es un sintetizador sencillo, con hasta 64 voces simultáneas. Esta etapa omite el canal de percusión, programas de instrumentos, pedal sustain y pitch bend. No pretende sonar igual que un reproductor General MIDI. Las notas sin cierre se liberan al final de su pista o tras un pulso, lo que ocurra después. Archivos más complejos pueden requerir otra etapa del importador.
+
+La reproducción MIDI y el acompañamiento se detienen mutuamente para no competir por el mástil. YouTube conserva sus controles independientes. Añadir las tarjetas no conserva la duración MIDI en el acompañamiento: este sigue usando cuatro pulsos por acorde. La biblioteca guarda las tarjetas importadas, no el archivo MIDI ni su pista temporal; para volver a escuchar el original tras recargar debes seleccionarlo de nuevo.
+
+La detección con micrófono queda para una etapa posterior, según la prioridad elegida de empezar por MIDI.
 
 ## Pruebas y documentación de portfolio
 
@@ -220,9 +252,9 @@ La suite de Node no requiere paquetes y usa audio y DOM simulados. Hay además u
 - [Casos de prueba en Excel](docs/qa/excel/Casos_de_prueba_Traste.xlsx): casos, historial y guía para completar resultados.
 - [Bugs — edición Ritmos](docs/qa/excel/Reporte_de_bugs_Traste_Ritmos.xlsx) y [casos — edición Ritmos](docs/qa/excel/Casos_de_prueba_Traste_Ritmos.xlsx): incluyen el nuevo reporte de balance y los casos de percusión. Se conservan las planillas anteriores.
 
-La suite actual tiene **42 pruebas automatizadas**. Los estilos también se verifican con `node scripts/check-player-browser.cjs --rhythms` (y `--edge` para Edge), incluyendo renderizado OfflineAudioContext y mediciones de nivel. Agregar `--no-artifacts` evita reemplazar los registros anteriores de docs/. El flujo de modos y seguimiento del mástil se comprueba con `node scripts/check-player-browser.cjs --progression`, que reordena mediante eventos de teclado.
+La suite actual tiene **50 pruebas automatizadas**. Los estilos también se verifican con `node scripts/check-player-browser.cjs --rhythms` (y `--edge` para Edge), incluyendo renderizado OfflineAudioContext y mediciones de nivel. Agregar `--no-artifacts` evita reemplazar los registros anteriores de docs/. El flujo de modos y seguimiento del mástil se comprueba con `node scripts/check-player-browser.cjs --progression`, que reordena mediante eventos de teclado.
 
-`node scripts/check-interface-browser.cjs` verifica arrastre, plegado, dimensiones, vista móvil, carga del iframe y guardado/apertura de canciones después de recargar. Bloquea la red de YouTube para que la prueba no dependa del servicio externo. Con `--edge` usa Edge; `--live-youtube` permite cargar el iframe externo, pero no demuestra reproducción ni escucha humana. Las pruebas unitarias cubren persistencia, actualización, respaldo, importación y errores de almacenamiento.
+`node scripts/check-interface-browser.cjs` verifica arrastre, plegado, ventana flotante, controles de YouTube con un doble de la API, dimensiones, biblioteca y restauración tras recargar. También comprueba las frecuencias de las notas al pulsar el piano y las cuerdas del bajo, e importa/reproduce un MIDI de prueba siguiendo sus acordes en el mástil. Con `--edge` usa Edge; `--live-youtube` habilita la API real, pero no demuestra escucha humana. Las pruebas unitarias cubren persistencia, validación, errores, tiempos MIDI con cambios de tempo, notas y cancelación de audio.
 
 En este avance se actualizó únicamente el README como documentación. Las planillas y los documentos de QA conservan el estado de etapas anteriores; los cambios de interfaz, variantes rítmicas y YouTube quedan pendientes de incorporarse allí.
 
