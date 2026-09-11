@@ -189,7 +189,7 @@ YouTube usa la [IFrame Player API oficial](https://developers.google.com/youtube
 1. Abre la aplicación con Node o Python en **http://127.0.0.1:8000**.
 2. Prepara las tarjetas y ajusta el estilo, BPM, percusión, repetición y volúmenes.
 3. Si quieres asociar un video, pega su enlace en YouTube. Puedes dejar el campo vacío para guardar solo el acompañamiento local. El enlace del campo es el que se guarda.
-4. Escribe un nombre en **Mis canciones** y pulsa **Guardar como nueva**.
+4. Escribe un nombre en **Mis progresiones** y pulsa **Guardar como nueva**.
 5. Selecciona una canción de la biblioteca y pulsa **Abrir** para recuperar sus tarjetas y ajustes. Esto reemplaza la progresión que estás editando y detiene el sintetizador; guarda primero los cambios que quieras conservar. El video asociado se carga sin reproducción automática.
 6. Usa **Actualizar canción abierta** para guardar cambios sobre la canción que abriste o acabas de guardar. **Guardar como nueva** crea otra copia. Cambiar la selección de la lista no abre ni modifica una canción por sí solo.
 
@@ -272,7 +272,7 @@ En este avance se actualizó únicamente el README como documentación. Las plan
 
 ## Ajustes iniciales y edición rápida
 
-Al recargar, YouTube, Acompañamiento, Mis canciones e Importar acordes MIDI aparecen plegados. Abre cada encabezado para acceder a sus controles. El mástil empieza resaltando la tríada y mostrando los nombres de las notas de la escala. La S del logo usa cursiva.
+Al recargar, YouTube, Acompañamiento, Mis progresiones e Importar acordes MIDI aparecen plegados. Abre cada encabezado para acceder a sus controles. El mástil empieza resaltando la tríada y mostrando los nombres de las notas de la escala. La S del logo usa cursiva.
 
 Un doble clic sobre una tarjeta crea una copia independiente justo después, incluidos el tipo de acorde, nombre de nota y modos. El clic derecho elimina la tarjeta; se conserva al menos una. El botón × continúa disponible. El arrastre sigue reordenando sin duplicar. Las copias permiten repetir compases; el acompañamiento conserva cuatro pulsos por tarjeta. Se pueden duplicar hasta alcanzar 4096 tarjetas.
 
@@ -288,7 +288,7 @@ Al reproducir un MIDI, sus acordes se añaden a la progresión si aún no los a�
 
 Las tarjetas se distribuyen en filas, con desplazamiento vertical dentro de un panel de altura limitada. **Seguir acorde MIDI** desplaza ese panel cuando el acorde actual queda fuera de vista; puedes desactivarlo para explorar libremente. El seguimiento no desplaza toda la página. El arrastre permite reorganizar las tarjetas entre filas.
 
-El catálogo incluido se retiró de la interfaz. Puedes importar tus propios archivos MIDI de hasta 2 MB y trabajar con progresiones de hasta 4096 acordes, también al guardarlas en Mis canciones. Los archivos musicales de ejemplo que permanecen en `assets/midi/` conservan sus créditos en midi-catalog.js (metadatos utilizados solo en pruebas) y se utilizan en pruebas; la página ya no los carga como catálogo.
+El catálogo incluido se retiró de la interfaz. Puedes importar tus propios archivos MIDI de hasta 2 MB y trabajar con progresiones de hasta 4096 acordes, también al guardarlas en Mis progresiones. Los archivos musicales de ejemplo que permanecen en `assets/midi/` conservan sus créditos en midi-catalog.js (metadatos utilizados solo en pruebas) y se utilizan en pruebas; la página ya no los carga como catálogo.
 
 ## Elegir la raíz desde el mástil y estudiar acordes del modo
 
@@ -330,3 +330,7 @@ La ayuda de las tarjetas está en el círculo **?** junto al encabezado de la pr
 El bloqueo del mástil utiliza el mismo interruptor deslizante que las alteraciones del piano, acompañado de un candado y su propio **?**. Activado, tocar el mástil escucha y marca la nota, manteniendo raíz y escala; el piano conserva su selección independiente.
 
 En **Acorde** y **Acorde 7ma**, el color representa el grado del modo, no el intervalo individual de cada nota. Por ejemplo, Re dórico resalta Re–Fa–La con el color del grado II; al incluir séptima, Do usa ese mismo color. Las vistas anteriores mantienen sus colores por intervalo.
+
+## Revisión y evolución
+
+Consulta [la revisión técnica](docs/REVISION-TECNICA.md) para ver los problemas corregidos, la deuda técnica y la propuesta de secciones, repeticiones y seguimiento de YouTube. Las explicaciones de uso se agrupan en botones de ayuda «?», mientras que los resultados y errores permanecen visibles. El cambio de nombre a Mis progresiones mantiene los datos guardados anteriormente.

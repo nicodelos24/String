@@ -52,6 +52,6 @@
     window.dispatchEvent(new Event('traste:load-song'));
     const result=addCards();
     if(!result){status.textContent='La progresión resultante supera 4096 acordes. Reduce las tarjetas antes de añadir.';return;}
-    pending=[];add.disabled=true;status.textContent='Acordes añadidos y vinculados a la reproducción MIDI. Puedes guardarlos en Mis canciones.';
+    pending=[];add.disabled=true;status.textContent='Acordes añadidos y vinculados a la reproducción MIDI. Puedes guardarlos en Mis progresiones.';
   });
 })();

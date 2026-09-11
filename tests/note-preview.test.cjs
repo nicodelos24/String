@@ -1,5 +1,9 @@
 const {test}=require('node:test');const assert=require('node:assert/strict');
 const {NotePreview}=require('../note-preview.js');
+test('muted and invalid preview volume never starts an audio context',async()=>{
+  const preview=new NotePreview(()=>{throw new Error('Unexpected audio');});
+  for(const volume of [0,-1,NaN,Infinity])await preview.play(60,volume);
+});
 test('string previews use harmonic voices and stop every partial when switching back to piano',async()=>{
   const oscillators=[];
   const parameter=()=>({setValueAtTime(){},linearRampToValueAtTime(){},exponentialRampToValueAtTime(){},cancelScheduledValues(){},setTargetAtTime(){}});

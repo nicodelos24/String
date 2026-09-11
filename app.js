@@ -955,6 +955,7 @@ function duplicateProgressionChord(index) {
 }
 
 function addProgressionChord() {
+  if(draggingProgressionItem || progression.length>=4096)return;
   progressionEdited=true;
   progression.push({ root, rootNoteName, type: chordType.value, mode: selectedMode, ghostMode });
   activeProgression = progression.length - 1;

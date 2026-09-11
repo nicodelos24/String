@@ -8,6 +8,7 @@ class NotePreview {
   async play(midi,volume=0.35,timbre='piano') {
     if(!Number.isInteger(midi) || midi<0 || midi>127) return;
     this.stop();const sequence=this.sequence;
+    if(!Number.isFinite(volume) || volume<=0)return;
     this.context ||= this.createContext();
     await this.context.resume();
     if(sequence!==this.sequence) return;

@@ -285,6 +285,12 @@ test('PLY-13: interface rejects invalid tempo, handles failure and stops on page
   assert(element('#player-status').textContent.includes('No se pudo iniciar'));
 });
 
+test('manual addition respects the same limit as saved progressions',()=>{
+  const {run}=setup();
+  run('progression=Array.from({length:4096},()=>({root:0,type:"maj"}));addProgressionChord();');
+  assert.equal(run('progression.length'),4096);
+});
+
 test('RIT-06: style and percussion controls reach the player and lock only during playback', async () => {
   const {run,element} = setupPlayerInterface();
   element('#player-style').value = 'jazz';

@@ -64,18 +64,14 @@
         </div></div>
         <div class="board-footer"><span id="note-count">7 notas</span><span>·</span><span>22 trastes · desliza para recorrer</span><div class="note-feedback"><span class="hint">Haz clic en una nota para consultar su intervalo</span><div class="fret-lock"><label class="spelling-switch" aria-label="Mantener escala al tocar el mástil"><input id="fret-scale-lock" type="checkbox" role="switch" aria-label="Mantener escala al tocar el mástil"><span class="spelling-track" aria-hidden="true"></span><svg class="lock-symbol" viewBox="0 0 20 20" aria-hidden="true"><rect x="4" y="9" width="12" height="9" rx="2"/><path d="M6 9V6a4 4 0 0 1 8 0v3"/></svg></label><details class="inline-help"><summary aria-label="Ayuda del bloqueo de escala">?</summary><p>Activado: pulsar el mástil escucha y marca la nota sin cambiar la escala. Desactivado: cambia la raíz. El piano sigue cambiando la raíz en ambos casos.</p></details></div></div></div>
 
-        <div>
-          <p>
 
-          </p>
-        </div>
 
 <section class="chord-player" aria-label="Reproductor de acordes">
           <div class="player-topline"><button id="player-disclosure" class="player-disclosure" type="button" aria-expanded="false" aria-controls="player-content"><strong>Acompañamiento</strong><span class="disclosure-chevron" aria-hidden="true">⌄</span></button><button id="player-toggle" type="button" aria-pressed="false">Reproducir</button></div>
           <p id="player-status" class="player-compact-status" role="status">Detenido</p>
           <div id="player-content" class="collapsible-content is-collapsed" inert><div class="collapsible-inner">
         <div class="accompaniment-block"><h4>Progresiones de partida</h4><div class="preset-controls"><label for="progression-preset">Plantillas</label><select id="progression-preset"><option value="jazz">Jazz · ii–V–I en Do</option><option value="blues">Blues · 12 compases en La</option><option value="turnaround">Jazz · I–vi–ii–V en Do</option><option value="pop">Pop · I–V–vi–IV en Do</option><option value="ballad">Balada · vi–IV–I–V en Do</option><option value="reggae">Reggae · I–IV–V–IV en Sol</option><option value="disco">Disco · i–iv en La menor</option></select><button id="apply-preset" type="button">Usar</button></div>
-<p id="preset-status" class="sr-only" role="status"></p><p class="player-help">Usar una plantilla reemplaza las tarjetas actuales y ajusta el ritmo y el tempo.</p></div><div class="accompaniment-block"><h4>Ritmo y mezcla</h4>
+<p id="preset-status" class="sr-only" role="status"></p><details class="inline-help contextual-help"><summary aria-label="Más información">?</summary><p>Usar una plantilla reemplaza las tarjetas actuales y ajusta el ritmo y el tempo.</p></details></div><div class="accompaniment-block"><h4>Ritmo y mezcla</h4>
           <div class="player-controls">
             <label for="player-style">Estilo <select id="player-style"><option value="none">Sin ritmo</option><option value="pop">Pop / rock</option><option value="jazz">Jazz suave</option><option value="trap">Trap suave</option><option value="funk">Funk</option><option value="bossa">Bossa suave</option><option value="reggaeton">Reggaetón suave</option><option value="reggae">Reggae</option><option value="disco">Disco</option><option value="ballad">Balada</option></select></label>
             <label for="player-bpm">BPM <input id="player-bpm" type="number" min="30" max="240" step="1" value="100" required></label>
@@ -84,11 +80,11 @@
             <label for="player-drum-volume">Volumen percusión <input id="player-drum-volume" type="range" min="0" max="100" value="40"></label>
             <label for="player-loop"><input id="player-loop" type="checkbox" checked>Repetir</label>
           </div>
-          <p class="player-help">Un acorde cada cuatro pulsos. Los cambios de estilo se aplican al volver a reproducir.</p></div>
+          <details class="inline-help contextual-help"><summary aria-label="Más información">?</summary><p>Un acorde cada cuatro pulsos. Los cambios de estilo se aplican al volver a reproducir.</p></details></div>
         <details class="midi-panel"><summary>Importar acordes MIDI <span>· experimental</span></summary>
-          <p>Escucha las notas del archivo con su tempo y sigue los acordes reconocidos en el mástil. La detección funciona con notas que empiezan juntas; no interpreta arpegios. El sonido es sintetizado, sin los instrumentos ni la percusión originales.</p>
+          <details class="inline-help contextual-help"><summary aria-label="Ayuda de importación MIDI">?</summary><p>Escucha las notas del archivo con su tempo y sigue los acordes reconocidos en el mástil. La detección funciona con notas que empiezan juntas; no interpreta arpegios. El sonido es sintetizado, sin los instrumentos ni la percusión originales.</p></details>
           <label for="midi-file">Archivo MIDI</label><input id="midi-file" type="file" accept=".mid,.midi,audio/midi">
-          <p class="player-help">Las obras con arpegios pueden tener pocos acordes reconocidos; puedes escuchar todas sus notas.</p>
+          <details class="inline-help contextual-help"><summary aria-label="Más información">?</summary><p>Las obras con arpegios pueden tener pocos acordes reconocidos; puedes escuchar todas sus notas.</p></details>
           <p id="midi-status" role="status">Selecciona un archivo para analizarlo localmente.</p><ol id="midi-preview"></ol>
           <button id="midi-play" type="button" disabled>Reproducir MIDI</button><span id="midi-time" role="timer">0:00</span>
           <button id="midi-add" type="button" disabled>Añadir acordes a la progresión</button>
@@ -115,16 +111,16 @@
             <div id="metronome-pulses" aria-hidden="true"></div>
             <span id="metronome-status" role="status">En pausa</span>
           </section>
-        <details class="library-panel"><summary>Mis canciones <span>Guardar · abrir · respaldar</span></summary><div class="song-library">
-          <label for="song-title">Nombre de la canción o práctica</label>
+        <details class="library-panel"><summary>Mis progresiones <span>Guardar · abrir · respaldar</span></summary><div class="song-library">
+          <label for="song-title">Nombre de la progresión</label>
           <input id="song-title" maxlength="100" placeholder="Por ejemplo: Blues en La">
-          <div class="song-actions"><button id="song-save" type="button">Guardar como nueva</button><button id="song-update" type="button" disabled>Actualizar canción abierta</button></div>
+          <div class="song-actions"><button id="song-save" type="button">Guardar nueva</button><button id="song-update" type="button" disabled>Actualizar</button></div>
           <label for="song-list">Biblioteca guardada</label>
-          <select id="song-list"><option value="">Selecciona una canción</option></select>
+          <select id="song-list"><option value="">Selecciona una progresión</option></select>
           <div class="song-actions"><button id="song-open" type="button">Abrir</button><button id="song-delete" type="button">Eliminar</button><button id="song-export" type="button">Exportar respaldo</button></div>
           <label for="song-import">Importar respaldo (.json)</label><input id="song-import" type="file" accept=".json,application/json">
           <p id="song-status" role="status">Guarda las tarjetas actuales, el enlace opcional y los ajustes del acompañamiento.</p>
-          <p class="youtube-help">Abrir reemplaza las tarjetas actuales: guarda primero tus cambios. Los datos quedan en este navegador; exporta un respaldo para conservarlos. El video y los ritmos se controlan por separado.</p>
+          <details class="inline-help contextual-help"><summary aria-label="Más información">?</summary><p>Abrir reemplaza las tarjetas actuales: guarda primero tus cambios. Los datos quedan en este navegador; exporta un respaldo para conservarlos. El video y los ritmos se controlan por separado.</p></details>
 </div></details>
 
       </div>

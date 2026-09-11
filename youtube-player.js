@@ -53,7 +53,7 @@
       const restore=document.createElement('button');restore.className='video-restore';restore.textContent='↗ Restaurar video';restore.type='button';restore.onclick=()=>{disclosure.setAttribute('aria-expanded','true');layout();disclosure.focus();};wrap.append(restore);
       timeout=setTimeout(()=>{if(request===generation && !ready){$('youtube-load').disabled=false;status.textContent='YouTube no respondió. Puedes volver a cargar o abrir el enlace externo.';}},15000);
       player=new YT.Player(host,{width:'100%',height:'220',videoId:id,playerVars:{origin:location.origin,playsinline:1,autoplay:0,rel:0},events:{
-        onReady:()=>{if(request!==generation)return;clearTimeout(timeout);ready=true;$('youtube-load').disabled=false;layout();tick();poll=setInterval(tick,250);status.textContent='Controla el video aquí o desde YouTube. Guarda su enlace con tu progresión en Mis canciones.';},
+        onReady:()=>{if(request!==generation)return;clearTimeout(timeout);ready=true;$('youtube-load').disabled=false;layout();tick();poll=setInterval(tick,250);status.textContent='Controla el video aquí o desde YouTube. Guarda su enlace con tu progresión en Mis progresiones.';},
         onStateChange:()=>{if(request===generation)tick();},
         onError:()=>{if(request!==generation)return;ready=false;clearTimeout(timeout);clearInterval(poll);toggle.disabled=true;seek.disabled=true;$('youtube-load').disabled=false;status.textContent='Este video no se pudo reproducir aquí. Prueba otro enlace o ábrelo en YouTube.';}
       }});layout();

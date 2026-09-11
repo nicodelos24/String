@@ -47,6 +47,8 @@ const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
       pauseVideo(){this.state=2;}playVideo(){this.state=1;}seekTo(time){this.time=time;}destroy(){this.frame.remove();}
     }};`});
     await send('Emulation.setDeviceMetricsOverride',{width:1440,height:1000,deviceScaleFactor:1,mobile:false});
+    // Las medidas de distribución no deben depender del tiempo de una animación.
+    await send('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
     await send('Page.navigate',{url:address});
     for(let i=0;i<100;i++) {if(await evaluate("typeof SongLibrary!=='undefined' && document.readyState==='complete'")) break;await delay(100);}
     const dimensions=await evaluate(`(()=>{
