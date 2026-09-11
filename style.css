@@ -1466,3 +1466,25 @@ footer {
 .chord-player .midi-panel input[type="file"] { display: block; width: 100%; max-width: 100%; box-sizing: border-box; margin: 8px 0; }
 .chord-player .midi-panel button { margin: 4px 4px 4px 0; border-radius: 5px; }
 @media(max-width: 480px) { .preset-controls > label { flex-basis: 100%; } .preset-controls select { flex: 1 1 140px; } }
+
+.sections-panel { width: fit-content; max-width: 100%; margin: 8px 0; padding: 8px 12px; border-radius: 18px; box-shadow: 0 2px 8px #0000000a; }
+.sections-panel[open] { width: 100%; border-radius: 12px; }
+.sections-panel > summary { font-size: 11px; }
+.section-editor { padding: 8px 0; }
+.section-editor > summary { cursor: pointer; color: var(--rust); }
+.sections-panel #section-list li { padding: 5px 8px; font-size: 11px; }
+#theme-toggle { margin-left: auto; padding: 7px 12px; border: 1px solid var(--line); border-radius: 20px; background: var(--paper-light); color: var(--ink); cursor: pointer; font: 11px var(--sans); }
+html[data-theme="dark"] { color-scheme: dark; --ink: #eeeae1; --muted: #b1b8af; --paper: #171d1a; --paper-light: #222a25; --line: #465048; --rust: #ed9978; --rust-dark: #da835f; }
+html[data-theme="dark"] body::before { opacity: .08; }
+html[data-theme="dark"] .fretboard-section { background: #1c241f; }
+html[data-theme="dark"] .chord-readout,
+html[data-theme="dark"] .selected-root,
+html[data-theme="dark"] .chord-player .preset-controls,
+html[data-theme="dark"] #section-list li,
+html[data-theme="dark"] .progression-disclosure:hover { background: #30372d; }
+html[data-theme="dark"] .progression-card.active { background: #303b33; }
+html[data-theme="dark"] .progression-card.playing { background: #45372c; }
+/* La paleta musical y las teclas mantienen sus colores originales. */
+html[data-theme="dark"] .fretboard-layout,
+html[data-theme="dark"] .root-piano { color-scheme: light; --ink: #1d2521; --muted: #78807b; --paper: #f3f0e8; --paper-light: #faf9f5; --line: #d9d5ca; --rust: #c95735; --rust-dark: #a94227; }
+html[data-theme="dark"] .fret-numbers, html[data-theme="dark"] .open-strings-heading { color: #d7dcd2; }

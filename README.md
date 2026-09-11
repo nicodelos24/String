@@ -280,7 +280,11 @@ Un doble clic sobre una tarjeta crea una copia independiente justo después, inc
 
 ### Secciones del tema
 
-Las secciones están ahora dentro de **Acompañamiento**. Los botones Intro, Verso, Estribillo y Parte A/B rellenan el nombre; puedes personalizarlo. La cabecera conserva el selector **Progresión / MIDI** y el botón de reproducción y detención de la fuente elegida incluso al plegar. Cambiar de fuente detiene la reproducción anterior; plegar el panel no la detiene. MIDI se habilita al cargar un archivo y muestra su tiempo junto al botón.
+**Ubicación actual:** junto a **Tu vuelta armónica**, la burbuja **Secciones del tema** se expande sin tapar el mástil. **Crear sección** permanece plegado dentro del panel para ahorrar espacio; la lista mantiene sus acciones de ordenar y quitar.
+
+El botón **Modo oscuro / Modo claro** de la cabecera cambia la interfaz y conserva la preferencia en este navegador. El tema inicial es claro. Los colores de las notas, las escalas, la madera del mástil y las teclas del piano se mantienen.
+
+Los botones Intro, Verso, Estribillo y Parte A/B rellenan el nombre; puedes personalizarlo. La cabecera de Acompañamiento conserva el selector **Progresión / MIDI** y el botón de reproducción y detención de la fuente elegida incluso al plegar. Cambiar de fuente detiene la reproducción anterior; plegar el panel no la detiene. MIDI se habilita al cargar un archivo y muestra su tiempo junto al botón.
 
 Los paneles y las ayudas tienen transiciones cancelables y respetan la preferencia de movimiento reducido. Las flechas de los paneles aparecen a la izquierda del título.
 

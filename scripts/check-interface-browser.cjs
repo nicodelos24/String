@@ -165,11 +165,13 @@ const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
     assert.equal(await evaluate('StringSections.playback().length'),8);
     assert.equal(await evaluate('StringSections.serialize()[0].name'),'Verso');
     await evaluate('StringSections.load([]);');
-    assert(await evaluate(`(()=>{const content=document.querySelector('#player-content');return content.contains(document.querySelector('.sections-panel')) && !content.contains(document.querySelector('#midi-play')) && !content.contains(document.querySelector('#player-toggle'));})()`));
+    assert(await evaluate(`(()=>{const content=document.querySelector('#player-content');return !content.contains(document.querySelector('.sections-panel')) && !content.contains(document.querySelector('#midi-play')) && !content.contains(document.querySelector('#player-toggle'));})()`));
     await evaluate("document.querySelector('#player-disclosure').setAttribute('aria-expanded','false');document.querySelector('#player-content').classList.add('is-collapsed');document.querySelector('#player-content').inert=true;document.querySelector('[data-source=midi]').click();");
     assert(await evaluate("document.querySelector('#midi-play').getBoundingClientRect().height>0 && document.querySelector('#progression-transport').hidden"));
     await evaluate("document.querySelector('[data-source=progression]').click();");
     assert(await evaluate("document.querySelector('#player-toggle').getBoundingClientRect().height>0 && document.querySelector('#midi-transport').hidden"));
+    assert(await evaluate(`(()=>{const colors=()=>[...document.querySelectorAll('.fret-note')].map(n=>[getComputedStyle(n).backgroundColor,getComputedStyle(n).color]);const before=JSON.stringify(colors());document.querySelector('#theme-toggle').click();return document.documentElement.dataset.theme==='dark' && JSON.stringify(colors())===before && localStorage.getItem('string.theme')==='dark';})()`));
+    await evaluate("document.querySelector('#theme-toggle').click();");
     const screenshot=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:true});
     fs.writeFileSync(path.join(os.tmpdir(),`traste-interface-${edge?'edge':'chrome'}.png`),Buffer.from(screenshot.data,'base64'));
     for (const width of [320,390,768,1024]) {
