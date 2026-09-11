@@ -247,8 +247,8 @@ function displayNote(index) {
     return rootNoteName;
   }
 
-  // Obtener la armadura de clave actual
-  const keySignature = calculateKeySignature(selectedMode, root);
+  // Obtener la armadura de clave actual; con la vista pentatónica se usa la referencia de la pentatónica
+  const keySignature = calculateKeySignature(viewMode(), root);
 
   // Determinar si usar bemoles o sostenidos según la armadura
   let useFlats = keySignature.flats > 0;
@@ -297,6 +297,7 @@ function renderIntervalLegend() {
 
 // Función para determinar si un intervalo debe ser coloreado según el modo de visualización
 function shouldHighlightInterval(interval, displayModeIndex) {
+  if(pentatonicView)return modes[pentatonicMode()].intervals.includes(interval%12);
   const normalized = interval % 12;
   const displayMode = displayModes[displayModeIndex];
 
@@ -503,6 +504,9 @@ function populateControls() {
 function chooseMode(modeKey) {
   if (!getAvailableModes(quality).includes(modeKey)) return;
   selectedMode = modeKey;
+  // Elegir una pentatónica activa la vista; elegir un modo vuelve a la vista normal.
+  const pentatonicChoice=modeKey==='majorPentatonic'||modeKey==='minorPentatonic';
+  pentatonicView=pentatonicChoice;document.querySelector('#pentatonic-view').checked=pentatonicChoice;
   const types = {ionian:'maj7',lydian:'maj7',mixolydian:'7',dorian:'m7',
     phrygian:'m7',aeolian:'m7',locrian:'m7b5'};
   const type = types[modeKey] || ({major:'maj',minor:'m',diminished:'dim'})[quality];
@@ -589,6 +593,11 @@ function getFretLabel(pitchClass, interval, inSelectedMode, inChord, showNoteNam
   return showNoteName ? displayNote(pitchClass) : '';
 }
 
+let pentatonicView=false;
+function pentatonicMode(){return chordType.intervals.includes(3)?'minorPentatonic':'majorPentatonic';}
+// El modo efectivo: si la vista pentatónica está activa, siempre se muestra la pentatónica del acorde actual.
+function viewMode(){return pentatonicView?pentatonicMode():selectedMode;}
+document.querySelector('#pentatonic-view').addEventListener('change',event=>{pentatonicView=event.target.checked;updateView();});
 function renderFretboard() {
   renderOpenStrings();
   const inst = instruments[instrument];
@@ -596,11 +605,11 @@ function renderFretboard() {
   const chordIntervals = new Set(chordType.intervals);
 
   // Calcular notas del modo seleccionado
-  const selectedModeNotes = new Set(getModeNotes(selectedMode, root));
+  const selectedModeNotes = new Set(getModeNotes(pentatonicView?pentatonicMode():selectedMode, root));
 
   // Crear mapa de notas fantasmas con sus colores (solo si hay un modo fantasma seleccionado)
   const ghostNotesMap = new Map();
-  if (ghostMode && ghostMode !== selectedMode) {
+  if (!pentatonicView && ghostMode && ghostMode !== selectedMode) {
     const modeNotes = getModeNotes(ghostMode, root);
     const modeColor = modes[ghostMode].color;
     modeNotes.forEach(note => {
@@ -666,7 +675,7 @@ function renderFretboard() {
         textColor = '#999';
       }
 
-      if (displayModeIndex >= 3 && shouldHighlight) {
+      if (!pentatonicView && displayModeIndex >= 3 && shouldHighlight) {
         bgColor = intervalColors[modes[selectedMode].degree].color;
         textColor = '#1d2521';
       }
@@ -702,11 +711,11 @@ function renderOpenStrings() {
   const chordIntervals = new Set(chordType.intervals);
 
   // Calcular notas del modo seleccionado
-  const selectedModeNotes = new Set(getModeNotes(selectedMode, root));
+  const selectedModeNotes = new Set(getModeNotes(pentatonicView?pentatonicMode():selectedMode, root));
 
   // Crear mapa de notas fantasmas con sus colores (solo si hay un modo fantasma seleccionado)
   const ghostNotesMap = new Map();
-  if (ghostMode && ghostMode !== selectedMode) {
+  if (!pentatonicView && ghostMode && ghostMode !== selectedMode) {
     const modeNotes = getModeNotes(ghostMode, root);
     const modeColor = modes[ghostMode].color;
     modeNotes.forEach(note => {
@@ -760,7 +769,7 @@ function renderOpenStrings() {
         textColor = '#1d2521';
       }
 
-      if (displayModeIndex >= 3 && shouldHighlight) {
+      if (!pentatonicView && displayModeIndex >= 3 && shouldHighlight) {
         bgColor = intervalColors[modes[selectedMode].degree].color;
         textColor = '#1d2521';
       }
@@ -782,13 +791,14 @@ function renderOpenStrings() {
   document.querySelector('#open-strings').innerHTML = openStringsHtml;
 }
 function updateView() {
-  if(displayModeIndex>=3 && modes[selectedMode].intervals.length!==7)displayModeIndex=1;
+  const mode = viewMode();
+  if(displayModeIndex>=3 && modes[mode].intervals.length!==7)displayModeIndex=1;
   document.querySelector('#display-label').textContent=displayModeLabels[displayModeIndex];
   renderRootPiano();
-  const selectedModeData = modes[selectedMode];
+  const selectedModeData = modes[mode];
 
-  // Calcular la armadura de clave según modo y nota
-  const keySignature = calculateKeySignature(selectedMode, root);
+  // Calcular la armadura de clave según el modo efectivo (la pentatónica tiene su propia referencia)
+  const keySignature = calculateKeySignature(mode, root);
 
   const chordSuffix = chordType.suffix;
 
@@ -876,7 +886,7 @@ if (ghostModeSelect) {
 
 // Event listener para el botón de ciclo de modo de visualización
 document.querySelector('#toggle-display').addEventListener('click', event => { 
-  displayModeIndex = (displayModeIndex + 1) % (modes[selectedMode].intervals.length===7 ? displayModes.length : 3);
+  displayModeIndex = (displayModeIndex + 1) % (modes[viewMode()].intervals.length===7 ? displayModes.length : 3);
   const button = event.currentTarget;
   const buttonText = button.querySelector('#display-label');
 

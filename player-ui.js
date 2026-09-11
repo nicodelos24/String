@@ -7,12 +7,15 @@
   const percussion = document.querySelector('#player-percussion');
   const status = document.querySelector('#player-status');
   let playbackItems = [];
+  const icon = playing => `<svg viewBox="0 0 24 24" aria-hidden="true">${playing ? '<path d="M6 5h4v14H6zM14 5h4v14h-4z"/>' : '<path d="M8 5v14l11-7z"/>'}</svg>`;
   const setBusy = busy => {
     bpm.disabled = busy;
     loop.disabled = busy;
     style.disabled = busy;
     percussion.disabled = busy;
-    button.textContent = busy ? 'Detener' : 'Reproducir';
+    button.innerHTML = icon(busy);
+    button.setAttribute('aria-label', busy ? 'Detener' : 'Reproducir');
+    button.title = busy ? 'Detener' : 'Reproducir';
     button.setAttribute('aria-pressed', String(busy));
   };
   const player = new ProgressionPlayer({

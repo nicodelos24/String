@@ -6,6 +6,7 @@
   content.after(wrap);
   let player=null,ready=false,generation=0,poll=null,timeout=null,apiPromise=null;
   const label=seconds=>`${Math.floor(seconds/60)}:${String(Math.floor(seconds%60)).padStart(2,'0')}`;
+  const setIcon=ticking=>{toggle.innerHTML=ticking?'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>':'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>';toggle.setAttribute('aria-label',ticking?'Pausar':'Reproducir');toggle.title=ticking?'Pausar':'Reproducir';};
   function layout() {
     const collapsed=disclosure.getAttribute('aria-expanded')==='false';
     content.classList.toggle('is-collapsed',collapsed); content.inert=collapsed;
@@ -32,7 +33,7 @@
     const time=player.getCurrentTime() || 0,duration=player.getDuration() || 0;
     $('youtube-time').textContent=`${label(time)} / ${label(duration)}`;
     seek.max=String(duration);seek.disabled=duration<=0; if(document.activeElement!==seek) seek.value=String(time);
-    toggle.textContent=player.getPlayerState()===1?'Pausar':'Reproducir';
+    setIcon(player.getPlayerState()===1);
   }
   async function load(value) {
     const id=value?youtubeVideoId(value):null;
@@ -41,7 +42,7 @@
     clearInterval(poll);clearTimeout(timeout);ready=false;toggle.disabled=true;seek.disabled=true;
     $('youtube-load').disabled=false;
     if(player) player.destroy();player=null;wrap.replaceChildren();wrap.hidden=true;
-    $('youtube-url').value=value;seek.value='0';seek.max='0';$('youtube-time').textContent='0:00 / 0:00';toggle.textContent='Reproducir';
+    $('youtube-url').value=value;seek.value='0';seek.max='0';$('youtube-time').textContent='0:00 / 0:00';setIcon(false);
     const external=$('youtube-external');external.hidden=!id;
     if(!id) {status.textContent='Carga una canción para practicar.';return;}
     external.href=`https://www.youtube.com/watch?v=${id}`;

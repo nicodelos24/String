@@ -171,6 +171,25 @@ test('pentatonic signatures use the appropriate major reference', () => {
   }
 });
 
+test('pentatonic view follows each chord quality across the progression and updates title and signature', () => {
+  const {run,element} = setup();
+  run("progression=[{root:0,type:'maj',mode:'ionian',rootNoteName:'C'},{root:9,type:'m',mode:'aeolian',rootNoteName:'A'}];showProgressionChord(progression[0],0);");
+  element('#pentatonic-view').handlers.change({target:{checked:true}});
+  assert.equal(run('pentatonicView'),true);
+  assert.equal(run('viewMode()'),'majorPentatonic');
+  assert.equal(run('JSON.stringify(getModeNotes(viewMode(),root))'),'[0,2,4,7,9]');
+  assert(element('#board-title').textContent.endsWith('· Pentatónica mayor'));
+  assert(element('#key-signature-display').textContent.startsWith('C Mayor'));
+  run("showProgressionChord(progression[1],1);");
+  assert.equal(run('viewMode()'),'minorPentatonic');
+  assert.equal(run('JSON.stringify(getModeNotes(viewMode(),root))'),'[9,0,2,4,7]');
+  assert(element('#board-title').textContent.endsWith('· Pentatónica menor'));
+  assert(element('#key-signature-display').textContent.startsWith('C Mayor'));
+  run("chooseMode('aeolian');");
+  assert.equal(run('pentatonicView'),false);
+  assert.equal(run('viewMode()'),'aeolian');
+});
+
 test('triad highlighting excludes extensions and keeps altered fifths', () => {
   const {run} = setup();
   for (const [type, triad, excluded] of [['maj7',[0,4,7],[11]],['m7',[0,3,7],[10]],['7',[0,4,7],[10]],['maj9',[0,4,7],[11,2]],['dim7',[0,3,6],[9]],['aug',[0,4,8],[]]]) {

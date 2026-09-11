@@ -117,7 +117,7 @@ const root = path.resolve(__dirname, '..');
       await delay(100);
     }
     const playback = await evaluate(`({status:document.querySelector('#player-status').textContent,
-      button:document.querySelector('#player-toggle').textContent, notes:trace.notes, states:trace.states})`);
+      button:document.querySelector('#player-toggle').getAttribute('aria-label'), notes:trace.notes, states:trace.states})`);
     const diagnostic = await evaluate(`(async () => {
       const probe = new ProgressionPlayer();
       try {await probe.start([{name:'C',notes:[48,52,55]}],{bpm:240}); probe.stop(); return 'OK';}
