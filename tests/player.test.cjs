@@ -275,7 +275,7 @@ test('MIX-01: triads and extended chords use equal squared gain with moderate tr
 });
 
 test('new styles schedule distinct complete bars with cancellable percussion',async()=>{
-  for(const [style,attacks,noiseHits] of [['funk',5,14],['bossa',4,11],['reggaeton',4,12]]) {
+  for(const [style,attacks,noiseHits] of [['funk',5,14],['bossa',4,11],['reggaeton',4,12],['reggae',4,5],['disco',4,6],['ballad',1,5]]) {
     const {player,buffers,oscillators}=setup();
     await player.start(chords,{bpm:240,style});
     assert.equal(oscillators.length,attacks*3+accompanimentStyles[style].kick.length);

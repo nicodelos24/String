@@ -278,6 +278,16 @@ Un doble clic sobre una tarjeta crea una copia independiente justo después, inc
 
 ## Importación MIDI local
 
+La importación, la vista previa, **Añadir acordes** y **Reproducir MIDI** están dentro de **Acompañamiento → Importar acordes MIDI**. El mismo panel agrupa las plantillas y los controles de ritmo y mezcla. El botón superior reproduce las tarjetas con el ritmo elegido; **Reproducir MIDI** conserva los tiempos del archivo. Ambos reproductores se detienen mutuamente.
+
+Se añaden patrones simplificados de **reggae**, **disco** y **balada**, todos en cuatro pulsos, y plantillas editables de pop (I–V–vi–IV), balada (vi–IV–I–V), reggae (I–IV–V–IV) y disco (i–iv). Usar una plantilla sustituye las tarjetas y establece su ritmo y tempo inicial; puedes cambiarlos después.
+
+La flecha junto a **Seguir acorde MIDI** permite desplegar las tarjetas en filas (vista predeterminada) o recogerlas en una sola fila horizontal, con una transición suave que respeta la preferencia de movimiento reducido. Ambas vistas conservan el orden, el arrastre y el seguimiento MIDI; cambiar la vista no modifica los acordes.
+
+Al reproducir un MIDI, sus acordes se añaden a la progresión si aún no los añadiste. Las tarjetas vinculadas se resaltan al sonar, siguiendo los tiempos originales. Moverlas conserva el vínculo; eliminar una evita su resaltado, aunque su nota sigue sonando en el MIDI. El vínculo dura mientras ese archivo está cargado: la biblioteca sigue guardando las tarjetas, no el archivo ni sus tiempos.
+
+Las tarjetas se distribuyen en filas, con desplazamiento vertical dentro de un panel de altura limitada. **Seguir acorde MIDI** desplaza ese panel cuando el acorde actual queda fuera de vista; puedes desactivarlo para explorar libremente. El seguimiento no desplaza toda la página. El arrastre permite reorganizar las tarjetas entre filas.
+
 El catálogo incluido se retiró de la interfaz. Puedes importar tus propios archivos MIDI de hasta 2 MB y trabajar con progresiones de hasta 4096 acordes, también al guardarlas en Mis canciones. Los archivos musicales de ejemplo que permanecen en `assets/midi/` conservan sus créditos en midi-catalog.js (metadatos utilizados solo en pruebas) y se utilizan en pruebas; la página ya no los carga como catálogo.
 
 ## Elegir la raíz desde el mástil y estudiar acordes del modo

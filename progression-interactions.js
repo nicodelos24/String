@@ -2,16 +2,28 @@
 (() => {
   const list = document.querySelector('#progression');
   let drag = null, suppressClick = false;
+  document.querySelector('#progression-view').addEventListener('click',event=>{
+    if(drag) finish({pointerId:drag.id},true);
+    list.getAnimations().forEach(animation=>animation.cancel());
+    const before=list.getBoundingClientRect().height;
+    const collapsed=list.classList.toggle('single-row');
+    const button=event.currentTarget;
+    button.setAttribute('aria-expanded',String(!collapsed));
+    button.title=collapsed?'Desplegar acordes en filas':'Mostrar acordes en una fila';
+    button.setAttribute('aria-label',button.title);
+    list.scrollTop=0;list.scrollLeft=0;
+    if(!reducedMotion())list.animate([{height:before+'px',opacity:.65},{height:list.getBoundingClientRect().height+'px',opacity:1}],{duration:260,easing:'cubic-bezier(.2,.8,.2,1)'});
+  });
   let lastClick=null;
   const cards = () => [...list.querySelectorAll('.progression-card')];
   const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const positions = () => new Map(cards().map(card => [card, card.getBoundingClientRect().left]));
+  const positions = () => new Map(cards().map(card => [card, card.getBoundingClientRect()]));
   function animateShift(before) {
     if (reducedMotion()) return;
     cards().forEach(card => {
-      const dx = before.get(card) - card.getBoundingClientRect().left;
-      if (Number.isFinite(dx) && Math.abs(dx) > 1 && card !== drag?.card) {
-        card.animate([{transform:`translateX(${dx}px)`},{transform:'translateX(0)'}],
+      const rect=card.getBoundingClientRect(),dx=before.get(card).left-rect.left,dy=before.get(card).top-rect.top;
+      if (Number.isFinite(dx) && Math.hypot(dx,dy) > 1 && card !== drag?.card) {
+        card.animate([{transform:`translate(${dx}px,${dy}px)`},{transform:'translate(0,0)'}],
           {duration:180,easing:'cubic-bezier(.2,.7,.2,1)'});
       }
     });
@@ -71,11 +83,15 @@
     drag.ghost.style.left=(event.clientX-drag.offsetX)+'px';
     drag.ghost.style.top=(event.clientY-drag.offsetY)+'px';
     const bounds=list.getBoundingClientRect();
-    if(event.clientX<bounds.left+30) list.scrollLeft-=18;
-    if(event.clientX>bounds.right-30) list.scrollLeft+=18;
+    if(event.clientY<bounds.top+30) list.scrollTop-=18;
+    if(event.clientY>bounds.bottom-30) list.scrollTop+=18;
+    if(list.classList.contains('single-row')) {
+      if(event.clientX<bounds.left+30)list.scrollLeft-=18;
+      if(event.clientX>bounds.right-30)list.scrollLeft+=18;
+    }
     cards().forEach(card=>card.getAnimations().forEach(animation=>animation.cancel()));
     const before=positions();
-    const target=cards().find(card=>card!==drag.card && event.clientX < card.getBoundingClientRect().left+card.offsetWidth/2);
+    const target=cards().find(card=>{const rect=card.getBoundingClientRect();return card!==drag.card && (list.classList.contains('single-row')?event.clientX<rect.left+rect.width/2:(event.clientY<rect.top || (event.clientY<=rect.bottom && event.clientX<rect.left+rect.width/2)));});
     list.insertBefore(drag.card,target || null);
     animateShift(before);
   }, {passive:false});

@@ -718,12 +718,24 @@ footer {
 }
 
 .progression {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  max-height: 310px;
+  overflow-y: auto;
+  align-content: start;
   gap: 8px;
   margin-bottom: 14px;
-  overflow-x: auto;
+  overflow-x: hidden;
   padding-bottom: 4px;
 }
+.follow-midi { display: flex; gap: 6px; align-items: center; margin: 8px 0; font: 11px var(--mono); color: var(--muted); }
+.follow-midi input { accent-color: var(--rust); }
+.progression-view-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin: 8px 0; font: 11px var(--mono); color: var(--muted); }
+.progression-disclosure { display: grid; place-items: center; width: 32px; height: 32px; padding: 0; border: 1px solid var(--line); border-radius: 8px; background: var(--paper-light); cursor: pointer; }
+.progression-disclosure:hover { background: #f1e8dc; }
+.progression-disclosure:focus-visible { outline: 2px solid var(--rust); outline-offset: 2px; }
+.progression.single-row { display: flex; overflow-x: auto; overflow-y: hidden; }
+.progression-card strong { overflow-wrap: anywhere; }
 
 .progression-card {
   min-width: 100px;
@@ -747,7 +759,7 @@ footer {
 
 .progression-card { position: relative; flex: 0 0 126px; cursor: grab; user-select: none; touch-action: pan-y; transition: border-color .18s, background-color .18s, box-shadow .18s; }
 .progression-card:active { cursor: grabbing; }
-.progression-card.playing { box-shadow: inset 0 -3px 0 var(--rust); }
+.progression-card.playing { background: #f8dfce; border-color: var(--rust); box-shadow: inset 0 -4px 0 var(--rust); }
 .progression-card:focus-visible { outline: 2px solid var(--rust); outline-offset: 2px; }
 .progression-mode { display: block; margin-top: 4px; min-height: 18px; font: 9px/1.35 var(--mono); color: var(--muted); }
 
@@ -1289,8 +1301,9 @@ footer {
 
 .player-topline { display: flex; align-items: center; gap: 12px; }
 .player-disclosure { flex: 1; display: flex; justify-content: space-between; align-items: center; gap: 12px; background: none; border: 0; color: var(--ink); font: inherit; text-align: left; cursor: pointer; padding: 6px 0; }
-.disclosure-chevron { font: 22px var(--sans); color: var(--rust); transition: transform .25s; }
-.player-disclosure[aria-expanded="false"] .disclosure-chevron { transform: rotate(-90deg); }
+.disclosure-chevron { display: inline-grid; place-items: center; flex: 0 0 24px; width: 24px; height: 24px; font-size: 0; color: var(--rust); transition: transform .25s ease; }
+.disclosure-chevron::before { content: ''; width: 7px; height: 7px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: translateY(-2px) rotate(45deg); }
+[aria-expanded="false"] > .disclosure-chevron { transform: rotate(-90deg); }
 .player-topline > #player-toggle { min-width: 96px; padding: 8px; border: 1px solid var(--line); background: var(--paper); color: var(--ink); font: inherit; cursor: pointer; }
 .player-topline > #player-toggle[aria-pressed="true"] { background: var(--rust); color: white; }
 .player-compact-status { margin: 5px 0 0; font: 10px var(--mono); color: var(--muted); }
@@ -1360,6 +1373,11 @@ footer {
 .is-floating .video-restore { display: block; position: absolute; top: 0; left: 0; width: 100%; height: 32px; }
 .library-panel, .midi-panel { border: 1px solid var(--line); border-radius: 10px; padding: 14px; background: var(--paper-light); margin-top: 18px; font: 12px/1.6 var(--sans); }
 .library-panel summary, .midi-panel summary { cursor: pointer; font-weight: 700; }
+.library-panel > summary, .midi-panel > summary { display: flex; align-items: center; gap: 8px; list-style: none; }
+.library-panel > summary::-webkit-details-marker, .midi-panel > summary::-webkit-details-marker { display: none; }
+.library-panel > summary::before, .midi-panel > summary::before { content: ''; flex: 0 0 7px; width: 7px; height: 7px; margin: 0 7px; border-right: 2px solid var(--rust); border-bottom: 2px solid var(--rust); transform: rotate(-45deg); transition: transform .25s ease; }
+.library-panel[open] > summary::before, .midi-panel[open] > summary::before { transform: translateY(-2px) rotate(45deg); }
+@media(prefers-reduced-motion: reduce) { .library-panel > summary::before, .midi-panel > summary::before { transition: none; } }
 .library-panel summary span { font-weight: 400; color: var(--muted); margin-left: 12px; }
 .song-library { margin-top: 14px; }
 .song-library button, .song-library input, .song-library select, .midi-panel button { font: inherit; border: 1px solid var(--line); background: var(--paper); color: var(--ink); padding: 8px; }
@@ -1399,3 +1417,17 @@ footer {
   .control-panel { padding: 16px; }
   .legend-colors { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 }
+
+.accompaniment-block { padding: 14px 0; border-top: 1px solid var(--line); }
+.accompaniment-block h4 { margin: 0 0 12px; font: 600 12px var(--sans); color: var(--ink); }
+.chord-player .preset-controls { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: center; gap: 8px; margin: 0; }
+.preset-controls > label { grid-column: 1 / -1; font: 10px var(--mono); color: var(--muted); }
+.preset-controls select, .preset-controls button { min-width: 0; max-width: 100%; padding: 8px; border: 1px solid var(--line); border-radius: 5px; background: var(--paper-light); color: var(--ink); font: inherit; }
+.preset-controls button { cursor: pointer; }
+.chord-player .player-controls { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
+.chord-player .player-controls label { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-width: 0; margin: 0; }
+.chord-player .player-controls input:not([type="checkbox"]), .chord-player .player-controls select { width: 100%; min-width: 0; box-sizing: border-box; }
+.chord-player .midi-panel { margin: 0; padding: 14px 0 0; border: 0; border-top: 1px solid var(--line); box-shadow: none; background: transparent; }
+.chord-player .midi-panel input[type="file"] { display: block; width: 100%; max-width: 100%; box-sizing: border-box; margin: 8px 0; }
+.chord-player .midi-panel button { margin: 4px 4px 4px 0; border-radius: 5px; }
+@media(max-width: 480px) { .chord-player .player-controls { grid-template-columns: minmax(0,1fr); } }

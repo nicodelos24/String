@@ -53,6 +53,7 @@
 
 
         <div class="progression-header-inline"><div><p class="eyebrow">IDEA DE PROGRESIÓN</p><h3>Tu vuelta armónica</h3></div><details class="inline-help"><summary aria-label="Ayuda de las tarjetas">?</summary><p>Arrastra para ordenar. Doble clic para duplicar. Clic derecho o × para eliminar. Alt + flechas mueve una tarjeta con el teclado. Se conserva al menos una tarjeta.</p></details><button class="add-button" id="add-chord" type="button"><span>+</span> añadir acorde</button></div>
+        <div class="progression-view-controls"><button id="progression-view" class="progression-disclosure" type="button" aria-expanded="true" aria-controls="progression" aria-label="Mostrar acordes en una fila" title="Mostrar acordes en una fila"><span class="disclosure-chevron" aria-hidden="true"></span></button><label class="follow-midi"><input id="follow-midi" type="checkbox" checked> Seguir acorde MIDI</label></div>
         <div class="progression" id="progression" aria-label="Progresión de acordes"></div>
     <div class="board-toolbar"><div><span class="eyebrow board-eyebrow">MÁSTIL / GUITARRA</span><h2 id="board-title">C · C Mayor</h2></div><div class="toolbar-buttons"><button class="icon-button" id="toggle-notes" type="button" aria-pressed="true" title="Ciclar entre mostrar sin notas, solo escala, o todas las notas">Aa <span>escala</span></button><button class="icon-button" id="toggle-degrees" type="button" aria-pressed="false" aria-label="Grados: no. Clic para cambiar." title="Alternar grados de la escala, grados de todo el mástil y desactivados. Se conserva la selección del control de notas.">1 <span>grados: no</span></button><button class="icon-button" id="toggle-display" type="button" aria-pressed="false" title="Ciclar entre modos de visualización">🎨 <span id="display-label">tríada</span></button></div></div>
         <div class="fretboard-wrap" tabindex="0" role="region" aria-label="Mástil: desplaza horizontalmente para recorrer los trastes"><div class="fretboard-layout">
@@ -73,17 +74,26 @@
           <div class="player-topline"><button id="player-disclosure" class="player-disclosure" type="button" aria-expanded="false" aria-controls="player-content"><strong>Acompañamiento</strong><span class="disclosure-chevron" aria-hidden="true">⌄</span></button><button id="player-toggle" type="button" aria-pressed="false">Reproducir</button></div>
           <p id="player-status" class="player-compact-status" role="status">Detenido</p>
           <div id="player-content" class="collapsible-content is-collapsed" inert><div class="collapsible-inner">
-        <div class="preset-controls"><label for="progression-preset">Plantillas</label><select id="progression-preset"><option value="jazz">Jazz · ii–V–I en Do</option><option value="blues">Blues · 12 compases en La</option><option value="turnaround">Jazz · I–vi–ii–V en Do</option></select><button id="apply-preset" type="button">Usar</button></div>
-<p id="preset-status" class="sr-only" role="status"></p>
+        <div class="accompaniment-block"><h4>Progresiones de partida</h4><div class="preset-controls"><label for="progression-preset">Plantillas</label><select id="progression-preset"><option value="jazz">Jazz · ii–V–I en Do</option><option value="blues">Blues · 12 compases en La</option><option value="turnaround">Jazz · I–vi–ii–V en Do</option><option value="pop">Pop · I–V–vi–IV en Do</option><option value="ballad">Balada · vi–IV–I–V en Do</option><option value="reggae">Reggae · I–IV–V–IV en Sol</option><option value="disco">Disco · i–iv en La menor</option></select><button id="apply-preset" type="button">Usar</button></div>
+<p id="preset-status" class="sr-only" role="status"></p><p class="player-help">Usar una plantilla reemplaza las tarjetas actuales y ajusta el ritmo y el tempo.</p></div><div class="accompaniment-block"><h4>Ritmo y mezcla</h4>
           <div class="player-controls">
-            <label for="player-style">Estilo <select id="player-style"><option value="none">Sin ritmo</option><option value="pop">Pop / rock</option><option value="jazz">Jazz suave</option><option value="trap">Trap suave</option><option value="funk">Funk</option><option value="bossa">Bossa suave</option><option value="reggaeton">Reggaetón suave</option></select></label>
+            <label for="player-style">Estilo <select id="player-style"><option value="none">Sin ritmo</option><option value="pop">Pop / rock</option><option value="jazz">Jazz suave</option><option value="trap">Trap suave</option><option value="funk">Funk</option><option value="bossa">Bossa suave</option><option value="reggaeton">Reggaetón suave</option><option value="reggae">Reggae</option><option value="disco">Disco</option><option value="ballad">Balada</option></select></label>
             <label for="player-bpm">BPM <input id="player-bpm" type="number" min="30" max="240" step="1" value="100" required></label>
             <label for="player-volume">Volumen general <input id="player-volume" type="range" min="0" max="100" value="35"></label>
             <label for="player-percussion"><input id="player-percussion" type="checkbox" checked>Percusión</label>
             <label for="player-drum-volume">Volumen percusión <input id="player-drum-volume" type="range" min="0" max="100" value="40"></label>
             <label for="player-loop"><input id="player-loop" type="checkbox" checked>Repetir</label>
           </div>
-          <p class="player-help">Un acorde cada cuatro pulsos. Los cambios de estilo se aplican al volver a reproducir.</p></div></div>
+          <p class="player-help">Un acorde cada cuatro pulsos. Los cambios de estilo se aplican al volver a reproducir.</p></div>
+        <details class="midi-panel"><summary>Importar acordes MIDI <span>· experimental</span></summary>
+          <p>Escucha las notas del archivo con su tempo y sigue los acordes reconocidos en el mástil. La detección funciona con notas que empiezan juntas; no interpreta arpegios. El sonido es sintetizado, sin los instrumentos ni la percusión originales.</p>
+          <label for="midi-file">Archivo MIDI</label><input id="midi-file" type="file" accept=".mid,.midi,audio/midi">
+          <p class="player-help">Las obras con arpegios pueden tener pocos acordes reconocidos; puedes escuchar todas sus notas.</p>
+          <p id="midi-status" role="status">Selecciona un archivo para analizarlo localmente.</p><ol id="midi-preview"></ol>
+          <button id="midi-play" type="button" disabled>Reproducir MIDI</button><span id="midi-time" role="timer">0:00</span>
+          <button id="midi-add" type="button" disabled>Añadir acordes a la progresión</button>
+        </details>
+</div></div>
         </section>
 
         <section class="youtube-panel transport-panel" aria-label="YouTube">
@@ -116,14 +126,7 @@
           <p id="song-status" role="status">Guarda las tarjetas actuales, el enlace opcional y los ajustes del acompañamiento.</p>
           <p class="youtube-help">Abrir reemplaza las tarjetas actuales: guarda primero tus cambios. Los datos quedan en este navegador; exporta un respaldo para conservarlos. El video y los ritmos se controlan por separado.</p>
 </div></details>
-        <details class="midi-panel"><summary>Importar acordes MIDI <span>· experimental</span></summary>
-          <p>Escucha las notas del archivo con su tempo y sigue los acordes reconocidos en el mástil. La detección funciona con notas que empiezan juntas; no interpreta arpegios. El sonido es sintetizado, sin los instrumentos ni la percusión originales.</p>
-          <label for="midi-file">Archivo MIDI</label><input id="midi-file" type="file" accept=".mid,.midi,audio/midi">
-          <p class="player-help">Las obras con arpegios pueden tener pocos acordes reconocidos; puedes escuchar todas sus notas.</p>
-          <p id="midi-status" role="status">Selecciona un archivo para analizarlo localmente.</p><ol id="midi-preview"></ol>
-          <button id="midi-play" type="button" disabled>Reproducir MIDI</button><span id="midi-time" role="timer">0:00</span>
-          <button id="midi-add" type="button" disabled>Añadir acordes a la progresión</button>
-        </details>
+
       </div>
 
       <aside class="legend-panel">

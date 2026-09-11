@@ -17,6 +17,9 @@ function chordToMidi(root, intervals) {
 // Posiciones en negras, dentro de un compás de cuatro pulsos.
 // Cada ataque de acorde define [pulso, duración en pulsos, intensidad].
 const accompanimentStyles = {
+  reggae: {name:'Reggae',chords:[[0.5,0.3,0.85],[1.5,0.3,0.8],[2.5,0.3,0.85],[3.5,0.3,0.8]],kick:[2],snare:[2],hat:[0.5,1.5,2.5,3.5]},
+  disco: {name:'Disco',chords:[[0,0.65,0.8],[1.5,0.4,0.7],[2,0.65,0.85],[3.5,0.4,0.7]],kick:[0,1,2,3],snare:[1,3],hat:[0.5,1.5,2.5,3.5]},
+  ballad: {name:'Balada',chords:[[0,3.8,0.8]],kick:[0,2.5],snare:[2],hat:[0,1,2,3]},
   none: {name:'Sin ritmo', chords:[[0,4,1]], kick:[], snare:[], hat:[]},
   pop: {name:'Pop / rock', chords:[[0,1.8,1],[2,1.8,0.9]],
     kick:[0,2], snare:[1,3], hat:[0,0.5,1,1.5,2,2.5,3,3.5]},

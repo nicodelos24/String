@@ -66,7 +66,7 @@ const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
     const beforeHeight=await evaluate("document.querySelector('.chord-player').getBoundingClientRect().height");
     await evaluate("document.querySelector('#player-disclosure').click()");await delay(350);
     const collapsed=await evaluate(`({height:document.querySelector('.chord-player').getBoundingClientRect().height,inert:document.querySelector('#player-content').inert,toggle:document.querySelector('#player-toggle').getBoundingClientRect().height})`);
-    assert(collapsed.height<beforeHeight && collapsed.inert && collapsed.toggle>0);
+    assert(collapsed.height<beforeHeight && collapsed.inert && collapsed.toggle>0,JSON.stringify({beforeHeight,collapsed}));
     await evaluate("document.querySelector('#player-disclosure').click()");await delay(350);
     assert.equal(await evaluate("document.querySelectorAll('[data-move]').length"),0);
     const rects=await evaluate(`(()=>{document.querySelector('#progression').scrollIntoView({block:'center'});return [...document.querySelectorAll('.progression-card')].map(card=>{const r=card.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2};});})()`);
@@ -135,12 +135,16 @@ const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
     assert.equal(await evaluate('root'),0,await evaluate("document.querySelector('#midi-status').textContent+' / '+document.querySelector('#midi-play').textContent"));
     for(let i=0;i<100;i++){if(await evaluate('root===2'))break;await delay(25);}
     assert.equal(await evaluate('root'),2);
+    assert.equal(await evaluate("document.querySelector('#progression .playing').dataset.index"),'5');
+    assert.equal(await evaluate("document.querySelector('#progression .playing strong').textContent"),'Dm');
     await evaluate("document.querySelector('#midi-play').click();document.querySelector('#midi-add').click();");
     assert.equal(await evaluate('progression.length'),6);
+    assert.equal(await evaluate("document.querySelectorAll('#progression .playing').length"),0);
     await evaluate("selectedMode='dorian';displayModeIndex=3;updateView();document.querySelector('#fretboard [data-midi=\"66\"]').click();");
     assert.equal(await evaluate('root'),6);assert.equal(await evaluate('selectedMode'),'dorian');
     assert.equal(await evaluate("document.querySelector('#display-label').textContent"),'Acorde');
     assert.equal(await evaluate("document.querySelector('#player-content').contains(document.querySelector('#progression-preset'))"),true);
+    assert.equal(await evaluate("document.querySelector('#player-content').contains(document.querySelector('#midi-file'))"),true);
     for(const modeIndex of [3,4]) {
       const colors=await evaluate(`(()=>{root=2;selectedMode='dorian';displayModeIndex=${modeIndex};updateView();const pitches=${modeIndex===3?'[2,5,9]':'[2,5,9,0]'};return [...document.querySelectorAll('#fretboard [data-midi],#open-strings [data-midi]')].filter(n=>pitches.includes(Number(n.dataset.midi)%12)).map(n=>n.style.backgroundColor);})()`);
       assert(colors.length>0);assert(colors.every(color=>color==='rgb(0, 188, 212)'));
@@ -153,6 +157,7 @@ const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
     await evaluate("document.querySelector('#progression-preset').value='blues';document.querySelector('#apply-preset').click();");
     assert.equal(await evaluate('progression.length'),12);assert.equal(await evaluate("document.querySelector('#player-bpm').value"),'90');
     assert(await evaluate(`(()=>{const original=progression.map(chord=>({...chord}));const result=appendMidiChords(Array.from({length:300},()=>({root:0,type:chordTypes[0].value})));if(!result)return false;document.querySelector('#song-title').value='MIDI largo';document.querySelector('#song-save').click();const saved=JSON.parse(localStorage.getItem('traste.songs.v1')).songs.some(song=>song.title==='MIDI largo' && song.chords.length===312);progression=original;updateView();return saved;})()`));
+    assert(await evaluate(`(()=>{const before=JSON.stringify(progression),view=document.querySelector('#progression-view'),list=document.querySelector('#progression');view.click();const horizontal=getComputedStyle(list).display==='flex' && list.scrollWidth>list.clientWidth;view.click();return horizontal && getComputedStyle(list).display==='grid' && JSON.stringify(progression)===before;})()`));
     const screenshot=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:true});
     fs.writeFileSync(path.join(os.tmpdir(),`traste-interface-${edge?'edge':'chrome'}.png`),Buffer.from(screenshot.data,'base64'));
     for (const width of [320,390,768,1024]) {
