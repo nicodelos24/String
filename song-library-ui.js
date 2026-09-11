@@ -22,7 +22,7 @@
       else if(typeof value!=='number' || !Number.isInteger(value) || value<Number(control.min) || value>Number(control.max)) throw new Error('Valor fuera de rango.');
       settings[id]=value;
     }
-    return {id:song.id,title:song.title.trim(),video:song.video,chords,settings};
+    return {id:song.id,title:song.title.trim(),video:song.video,chords,settings,sections:validateSections(song.sections,chords.length)};
   }
   // El acceso puede fallar si el usuario bloquea el almacenamiento.
   const library=new SongLibrary({getItem:key=>localStorage.getItem(key),setItem:(key,value)=>localStorage.setItem(key,value)},validate);
@@ -37,7 +37,7 @@
   function snapshot(id) {
     const settings={};
     for(const key of settingIds) {const control=$(key); settings[key]=control.type==='checkbox'?control.checked:control.tagName==='SELECT'?control.value:Number(control.value);}
-    return validate({id,title:title.value,video:$('youtube-url').value.trim(),chords:progression,settings});
+    return validate({id,title:title.value,video:$('youtube-url').value.trim(),chords:progression,settings,sections:window.StringSections.serialize()});
   }
   function save(update) {run(()=>{
     const song=snapshot(update?openedId:crypto.randomUUID());
@@ -51,7 +51,7 @@
     if(!song) {status.textContent='Selecciona una progresión guardada.';return;}
     if(draggingProgressionItem) return;
     window.dispatchEvent(new Event('traste:load-song'));
-    progression=song.chords.map(chord=>({...chord})); playingProgressionItem=null; selectProgressionChord(0);
+    progression=song.chords.map(chord=>({...chord})); playingProgressionItem=null; selectProgressionChord(0);window.StringSections.load(song.sections);
     for(const id of settingIds) {const control=$(id);if(control.type==='checkbox') control.checked=song.settings[id];else control.value=song.settings[id];control.dispatchEvent(new Event('input'));}
     title.value=song.title; openedId=song.id; refresh(song.id);
     window.dispatchEvent(new CustomEvent('traste:load-video',{detail:song.video}));

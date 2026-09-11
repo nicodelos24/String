@@ -278,6 +278,18 @@ Un doble clic sobre una tarjeta crea una copia independiente justo después, inc
 
 ## Importación MIDI local
 
+### Secciones del tema
+
+Las secciones están ahora dentro de **Acompañamiento**. Los botones Intro, Verso, Estribillo y Parte A/B rellenan el nombre; puedes personalizarlo. La cabecera conserva el selector **Progresión / MIDI** y el botón de reproducción y detención de la fuente elegida incluso al plegar. Cambiar de fuente detiene la reproducción anterior; plegar el panel no la detiene. MIDI se habilita al cargar un archivo y muestra su tiempo junto al botón.
+
+Los paneles y las ayudas tienen transiciones cancelables y respetan la preferencia de movimiento reducido. Las flechas de los paneles aparecen a la izquierda del título.
+
+Debajo de las tarjetas, abre **Secciones del tema**. Indica un nombre (Verso, Estribillo, Parte A…), el número de la primera y última tarjeta y de 1 a 8 repeticiones. **Añadir sección** crea una entrada en el orden de reproducción; las flechas la suben o bajan y × la quita sin borrar acordes. Se admiten hasta 64 secciones.
+
+El acompañamiento reproduce las secciones de arriba abajo e indica sección y vuelta. Sin secciones, reproduce todas las tarjetas como antes. Las repeticiones usan las mismas tarjetas, sin duplicarlas. Mover una tarjeta conserva la pertenencia y el orden capturado por la sección; eliminarla la retira de las secciones. Una copia nueva no se incorpora automáticamente. En esta primera versión, para editar nombre, rango o repeticiones debes quitar la sección y crearla de nuevo.
+
+**Mis progresiones** guarda la estructura en el campo opcional `sections` del formato existente; las progresiones antiguas sin ese campo siguen funcionando. Los archivos MIDI conservan su reproducción original: sus tiempos no se convierten en secciones ni se repiten por esta opción. Esta primera versión agrupa rangos; aún no dispone de un catálogo de secciones reutilizables ni duraciones variables por acorde.
+
 La importación, la vista previa, **Añadir acordes** y **Reproducir MIDI** están dentro de **Acompañamiento → Importar acordes MIDI**. El mismo panel agrupa las plantillas y los controles de ritmo y mezcla. El botón superior reproduce las tarjetas con el ritmo elegido; **Reproducir MIDI** conserva los tiempos del archivo. Ambos reproductores se detienen mutuamente.
 
 Se añaden patrones simplificados de **reggae**, **disco** y **balada**, todos en cuatro pulsos, y plantillas editables de pop (I–V–vi–IV), balada (vi–IV–I–V), reggae (I–IV–V–IV) y disco (i–iv). Usar una plantilla sustituye las tarjetas y establece su ritmo y tempo inicial; puedes cambiarlos después.

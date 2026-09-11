@@ -22,7 +22,7 @@
         playingProgressionItem = entry.source;
         showProgressionChord(entry.saved, progression.indexOf(entry.source));
       }
-      status.textContent = `Sonando: ${name} · acorde ${index + 1} de ${total}`;
+      status.textContent = `Sonando: ${name} · ${entry?.section ? entry.section+" · " : ""}acorde ${index + 1} de ${total}`;
     },
     onState: running => {
       if (!running) {playingProgressionItem = null; renderProgression();}
@@ -34,7 +34,7 @@
     if (player.running || player.starting) { player.stop(); return; }
     if (!bpm.reportValidity()) return;
     window.dispatchEvent?.(new Event('traste:progression-start'));
-    playbackItems = progression.map(item => ({source:item, saved:{...item}}));
+    playbackItems = window.StringSections ? window.StringSections.playback() : progression.map(item => ({source:item, saved:{...item}}));
     const chords = playbackItems.map(({saved:item}) => {
       const type = chordTypes.find(candidate => candidate.value === item.type);
       return {

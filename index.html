@@ -48,13 +48,14 @@
 
       <div class="fretboard-section">
 
-        
-        
+
+
 
 
         <div class="progression-header-inline"><div><p class="eyebrow">IDEA DE PROGRESIÓN</p><h3>Tu vuelta armónica</h3></div><details class="inline-help"><summary aria-label="Ayuda de las tarjetas">?</summary><p>Arrastra para ordenar. Doble clic para duplicar. Clic derecho o × para eliminar. Alt + flechas mueve una tarjeta con el teclado. Se conserva al menos una tarjeta.</p></details><button class="add-button" id="add-chord" type="button"><span>+</span> añadir acorde</button></div>
         <div class="progression-view-controls"><button id="progression-view" class="progression-disclosure" type="button" aria-expanded="true" aria-controls="progression" aria-label="Mostrar acordes en una fila" title="Mostrar acordes en una fila"><span class="disclosure-chevron" aria-hidden="true"></span></button><label class="follow-midi"><input id="follow-midi" type="checkbox" checked> Seguir acorde MIDI</label></div>
         <div class="progression" id="progression" aria-label="Progresión de acordes"></div>
+
     <div class="board-toolbar"><div><span class="eyebrow board-eyebrow">MÁSTIL / GUITARRA</span><h2 id="board-title">C · C Mayor</h2></div><div class="toolbar-buttons"><button class="icon-button" id="toggle-notes" type="button" aria-pressed="true" title="Ciclar entre mostrar sin notas, solo escala, o todas las notas">Aa <span>escala</span></button><button class="icon-button" id="toggle-degrees" type="button" aria-pressed="false" aria-label="Grados: no. Clic para cambiar." title="Alternar grados de la escala, grados de todo el mástil y desactivados. Se conserva la selección del control de notas.">1 <span>grados: no</span></button><button class="icon-button" id="toggle-display" type="button" aria-pressed="false" title="Ciclar entre modos de visualización">🎨 <span id="display-label">tríada</span></button></div></div>
         <div class="fretboard-wrap" tabindex="0" role="region" aria-label="Mástil: desplaza horizontalmente para recorrer los trastes"><div class="fretboard-layout">
           <div class="open-strings-heading">Al aire</div>
@@ -67,11 +68,14 @@
 
 
 <section class="chord-player" aria-label="Reproductor de acordes">
-          <div class="player-topline"><button id="player-disclosure" class="player-disclosure" type="button" aria-expanded="false" aria-controls="player-content"><strong>Acompañamiento</strong><span class="disclosure-chevron" aria-hidden="true">⌄</span></button><button id="player-toggle" type="button" aria-pressed="false">Reproducir</button></div>
+          <div class="player-topline"><button id="player-disclosure" class="player-disclosure" type="button" aria-expanded="false" aria-controls="player-content"><span class="disclosure-chevron" aria-hidden="true"></span><strong>Acompañamiento</strong></button><div class="source-switch" role="group" aria-label="Fuente de reproducción"><button type="button" data-source="progression" aria-pressed="true">Progresión</button><button type="button" data-source="midi" aria-pressed="false">MIDI</button></div><div id="progression-transport"><button id="player-toggle" type="button" aria-pressed="false">Reproducir</button></div><div id="midi-transport" hidden><button id="midi-play" type="button" disabled>Reproducir MIDI</button><span id="midi-time" role="timer">0:00</span></div></div>
           <p id="player-status" class="player-compact-status" role="status">Detenido</p>
           <div id="player-content" class="collapsible-content is-collapsed" inert><div class="collapsible-inner">
         <div class="accompaniment-block"><h4>Progresiones de partida</h4><div class="preset-controls"><label for="progression-preset">Plantillas</label><select id="progression-preset"><option value="jazz">Jazz · ii–V–I en Do</option><option value="blues">Blues · 12 compases en La</option><option value="turnaround">Jazz · I–vi–ii–V en Do</option><option value="pop">Pop · I–V–vi–IV en Do</option><option value="ballad">Balada · vi–IV–I–V en Do</option><option value="reggae">Reggae · I–IV–V–IV en Sol</option><option value="disco">Disco · i–iv en La menor</option></select><button id="apply-preset" type="button">Usar</button></div>
-<p id="preset-status" class="sr-only" role="status"></p><details class="inline-help contextual-help"><summary aria-label="Más información">?</summary><p>Usar una plantilla reemplaza las tarjetas actuales y ajusta el ritmo y el tempo.</p></details></div><div class="accompaniment-block"><h4>Ritmo y mezcla</h4>
+<p id="preset-status" class="sr-only" role="status"></p><details class="inline-help contextual-help"><summary aria-label="Más información">?</summary><p>Usar una plantilla reemplaza las tarjetas actuales y ajusta el ritmo y el tempo.</p></details></div><details class="sections-panel"><summary>Secciones del tema</summary>
+<details class="inline-help contextual-help"><summary aria-label="Ayuda de secciones">?</summary><p>Agrupa tarjetas por sus números. El acompañamiento reproduce la lista de secciones; sin secciones reproduce todas las tarjetas. Mover tarjetas conserva su vínculo y el orden capturado. MIDI conserva sus tiempos originales. Para modificar una sección, quítala y créala de nuevo.</p></details>
+<div class="section-shortcuts" role="group" aria-label="Nombre de sección"><button type="button" data-section-name="Intro">Intro</button><button type="button" data-section-name="Verso">Verso</button><button type="button" data-section-name="Estribillo">Estribillo</button><button type="button" data-section-name="Parte A">Parte A</button><button type="button" data-section-name="Parte B">Parte B</button></div><div class="section-fields"><label>Nombre <input id="section-name" maxlength="40" value="Verso"></label><label>Desde <input id="section-from" type="number" min="1" value="1"></label><label>Hasta <input id="section-to" type="number" min="1" value="4"></label><label>Repetir <input id="section-repeat" type="number" min="1" max="8" value="2"></label><button id="section-add" type="button">Añadir sección</button></div>
+<ol id="section-list"></ol><p id="section-status" role="status"></p></details><div class="accompaniment-block"><h4>Ritmo y mezcla</h4>
           <div class="player-controls">
             <label for="player-style">Estilo <select id="player-style"><option value="none">Sin ritmo</option><option value="pop">Pop / rock</option><option value="jazz">Jazz suave</option><option value="trap">Trap suave</option><option value="funk">Funk</option><option value="bossa">Bossa suave</option><option value="reggaeton">Reggaetón suave</option><option value="reggae">Reggae</option><option value="disco">Disco</option><option value="ballad">Balada</option></select></label>
             <label for="player-bpm">BPM <input id="player-bpm" type="number" min="30" max="240" step="1" value="100" required></label>
@@ -86,14 +90,14 @@
           <label for="midi-file">Archivo MIDI</label><input id="midi-file" type="file" accept=".mid,.midi,audio/midi">
           <details class="inline-help contextual-help"><summary aria-label="Más información">?</summary><p>Las obras con arpegios pueden tener pocos acordes reconocidos; puedes escuchar todas sus notas.</p></details>
           <p id="midi-status" role="status">Selecciona un archivo para analizarlo localmente.</p><ol id="midi-preview"></ol>
-          <button id="midi-play" type="button" disabled>Reproducir MIDI</button><span id="midi-time" role="timer">0:00</span>
+
           <button id="midi-add" type="button" disabled>Añadir acordes a la progresión</button>
         </details>
 </div></div>
         </section>
 
         <section class="youtube-panel transport-panel" aria-label="YouTube">
-          <div class="player-topline"><button id="youtube-disclosure" class="player-disclosure" aria-expanded="false" aria-controls="youtube-content" type="button"><strong>YouTube</strong><span class="disclosure-chevron" aria-hidden="true">⌄</span></button><button id="youtube-toggle" type="button" disabled>Reproducir</button><label class="float-option"><input id="youtube-float" type="checkbox" checked>Video flotante al minimizar</label></div>
+          <div class="player-topline"><button id="youtube-disclosure" class="player-disclosure" aria-expanded="false" aria-controls="youtube-content" type="button"><span class="disclosure-chevron" aria-hidden="true"></span><strong>YouTube</strong></button><button id="youtube-toggle" type="button" disabled>Reproducir</button><label class="float-option"><input id="youtube-float" type="checkbox" checked>Video flotante al minimizar</label></div>
           <div class="video-transport"><span id="youtube-time">0:00 / 0:00</span><input id="youtube-seek" type="range" min="0" max="0" step="1" value="0" aria-label="Posición del video" disabled></div>
           <div id="youtube-content" class="collapsible-content is-collapsed" inert><div class="collapsible-inner">
             <form id="youtube-form" class="youtube-form"><label for="youtube-url" class="sr-only">Enlace de YouTube</label><div class="youtube-url-row"><input id="youtube-url" type="url" placeholder="Pega el enlace de YouTube" required><button id="youtube-load" type="submit">Cargar video</button></div></form>
@@ -192,6 +196,7 @@
   <script src="progression-interactions.js"></script>
   <script src="metronome.js"></script>
   <script src="progression-player.js"></script>
+  <script src="sections.js"></script>
   <script src="player-ui.js"></script>
   <script src="player-disclosure.js"></script>
   <script src="youtube-url.js"></script>
@@ -203,6 +208,6 @@
   <script src="midi-import.js"></script>
   <script src="midi-player.js"></script>
   <script src="midi-ui.js"></script>
-  <script src="progression-presets.js"></script>
+  <script src="progression-presets.js"></script><script src="panel-controls.js"></script>
 </body>
 </html>

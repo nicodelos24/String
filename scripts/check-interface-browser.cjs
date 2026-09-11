@@ -160,6 +160,16 @@ const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
     assert.equal(await evaluate('progression.length'),12);assert.equal(await evaluate("document.querySelector('#player-bpm').value"),'90');
     assert(await evaluate(`(()=>{const original=progression.map(chord=>({...chord}));const result=appendMidiChords(Array.from({length:300},()=>({root:0,type:chordTypes[0].value})));if(!result)return false;document.querySelector('#song-title').value='MIDI largo';document.querySelector('#song-save').click();const saved=JSON.parse(localStorage.getItem('traste.songs.v1')).songs.some(song=>song.title==='MIDI largo' && song.chords.length===312);progression=original;updateView();return saved;})()`));
     assert(await evaluate(`(()=>{const before=JSON.stringify(progression),view=document.querySelector('#progression-view'),list=document.querySelector('#progression');view.click();const horizontal=getComputedStyle(list).display==='flex' && list.scrollWidth>list.clientWidth;view.click();return horizontal && getComputedStyle(list).display==='grid' && JSON.stringify(progression)===before;})()`));
+    assert(await evaluate(`(()=>{document.querySelector('#section-name').value='Verso';document.querySelector('#section-from').value='1';document.querySelector('#section-to').value='4';document.querySelector('#section-repeat').value='2';document.querySelector('#section-add').click();const items=StringSections.playback();return items.length===8 && items[0].source===items[4].source && progression.length===12;})()`));
+    await evaluate("document.querySelector('#song-title').value='Tema con secciones';document.querySelector('#song-save').click();StringSections.load([]);document.querySelector('#song-open').click();");
+    assert.equal(await evaluate('StringSections.playback().length'),8);
+    assert.equal(await evaluate('StringSections.serialize()[0].name'),'Verso');
+    await evaluate('StringSections.load([]);');
+    assert(await evaluate(`(()=>{const content=document.querySelector('#player-content');return content.contains(document.querySelector('.sections-panel')) && !content.contains(document.querySelector('#midi-play')) && !content.contains(document.querySelector('#player-toggle'));})()`));
+    await evaluate("document.querySelector('#player-disclosure').setAttribute('aria-expanded','false');document.querySelector('#player-content').classList.add('is-collapsed');document.querySelector('#player-content').inert=true;document.querySelector('[data-source=midi]').click();");
+    assert(await evaluate("document.querySelector('#midi-play').getBoundingClientRect().height>0 && document.querySelector('#progression-transport').hidden"));
+    await evaluate("document.querySelector('[data-source=progression]').click();");
+    assert(await evaluate("document.querySelector('#player-toggle').getBoundingClientRect().height>0 && document.querySelector('#midi-transport').hidden"));
     const screenshot=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:true});
     fs.writeFileSync(path.join(os.tmpdir(),`traste-interface-${edge?'edge':'chrome'}.png`),Buffer.from(screenshot.data,'base64'));
     for (const width of [320,390,768,1024]) {
