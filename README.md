@@ -280,6 +280,8 @@ Un doble clic sobre una tarjeta crea una copia independiente justo después, inc
 
 ### Secciones del tema
 
+Las partes del tema se muestran como tarjetas con nombre, repeticiones y resumen de acordes. Pulsa una para ver sus acordes; **Todos los acordes** recupera la lista completa. Durante el acompañamiento se selecciona automáticamente la sección que está sonando. El estado de reproducción se muestra debajo de las tarjetas, fuera de Acompañamiento. Arrastra una sección desde su asa de puntos para reordenarla; las flechas siguen disponibles para teclado. Cambiar el orden o eliminar secciones detiene el acompañamiento para aplicar la nueva estructura al reiniciar.
+
 **Ubicación actual:** junto a **Tu vuelta armónica**, la burbuja **Secciones del tema** se expande sin tapar el mástil. **Crear sección** permanece plegado dentro del panel para ahorrar espacio; la lista mantiene sus acciones de ordenar y quitar.
 
 El botón **Modo oscuro / Modo claro** de la cabecera cambia la interfaz y conserva la preferencia en este navegador. El tema inicial es claro. Los colores de las notas, las escalas, la madera del mástil y las teclas del piano se mantienen.
@@ -290,7 +292,7 @@ Los paneles y las ayudas tienen transiciones cancelables y respetan la preferenc
 
 Debajo de las tarjetas, abre **Secciones del tema**. Indica un nombre (Verso, Estribillo, Parte A…), el número de la primera y última tarjeta y de 1 a 8 repeticiones. **Añadir sección** crea una entrada en el orden de reproducción; las flechas la suben o bajan y × la quita sin borrar acordes. Se admiten hasta 64 secciones.
 
-El acompañamiento reproduce las secciones de arriba abajo e indica sección y vuelta. Sin secciones, reproduce todas las tarjetas como antes. Las repeticiones usan las mismas tarjetas, sin duplicarlas. Mover una tarjeta conserva la pertenencia y el orden capturado por la sección; eliminarla la retira de las secciones. Una copia nueva no se incorpora automáticamente. En esta primera versión, para editar nombre, rango o repeticiones debes quitar la sección y crearla de nuevo.
+El acompañamiento reproduce las secciones de arriba abajo e indica sección y vuelta. Sin secciones, reproduce todas las tarjetas como antes. Las repeticiones usan las mismas tarjetas, sin duplicarlas. En la vista de una sección, arrastrar acordes cambia solo su orden dentro de esa sección. Añadir o duplicar una tarjeta la incorpora a la sección seleccionada. En «Todos los acordes», mover tarjetas mantiene el orden interno de las secciones; eliminar una tarjeta la retira de todas ellas. En esta primera versión, para editar nombre, rango o repeticiones debes quitar la sección y crearla de nuevo.
 
 **Mis progresiones** guarda la estructura en el campo opcional `sections` del formato existente; las progresiones antiguas sin ese campo siguen funcionando. Los archivos MIDI conservan su reproducción original: sus tiempos no se convierten en secciones ni se repiten por esta opción. Esta primera versión agrupa rangos; aún no dispone de un catálogo de secciones reutilizables ni duraciones variables por acorde.
 

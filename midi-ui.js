@@ -28,6 +28,7 @@
   play.addEventListener('click',async()=>{
     if(engine.running || engine.starting){engine.stop();return;}
     if(!imported || !addCards())return;window.dispatchEvent(new Event('traste:load-song'));play.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>';play.setAttribute('aria-label','Iniciando…');play.title='Iniciando…';
+    window.StringSections?.clearView();
     try {await engine.start(imported);}catch {engine.stop();status.textContent='No se pudo iniciar el audio MIDI. Intenta de nuevo.';}
   });
   window.addEventListener('traste:load-song',()=>engine.stop());

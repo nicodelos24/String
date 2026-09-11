@@ -22,6 +22,7 @@
     onChord: (index, name, total) => {
       const entry = playbackItems[index];
       if (entry) {
+        window.StringSections?.follow(entry);
         playingProgressionItem = entry.source;
         showProgressionChord(entry.saved, progression.indexOf(entry.source));
       }
@@ -37,7 +38,8 @@
     if (player.running || player.starting) { player.stop(); return; }
     if (!bpm.reportValidity()) return;
     window.dispatchEvent?.(new Event('traste:progression-start'));
-    playbackItems = window.StringSections ? window.StringSections.playback() : progression.map(item => ({source:item, saved:{...item}}));
+    try {playbackItems = window.StringSections ? window.StringSections.playback() : progression.map(item => ({source:item, saved:{...item}}));}
+    catch(error){status.textContent=error.message;return;}
     const chords = playbackItems.map(({saved:item}) => {
       const type = chordTypes.find(candidate => candidate.value === item.type);
       return {

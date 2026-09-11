@@ -57,7 +57,7 @@
     const card = event.target.closest('.progression-card');
     if (!card || (event.pointerType === 'touch' && !event.target.closest('.drag-grip'))) return;
     drag = {card, id:event.pointerId, x:event.clientX, y:event.clientY,
-      source:progression[Number(card.dataset.index)], started:false};
+      source:progression[Number(card.dataset.index)], slots:cards().map(card=>Number(card.dataset.index)), started:false};
   });
   window.addEventListener('pointermove', event => {
     if (!drag || event.pointerId !== drag.id) return;
@@ -99,7 +99,7 @@
     if (!drag || event.pointerId!==drag.id) return;
     const current=drag; drag=null;
     if (!current.started) return;
-    const from=progression.indexOf(current.source), to=cards().indexOf(current.card);
+    const from=progression.indexOf(current.source), to=current.slots[cards().indexOf(current.card)];
     const target=current.card.getBoundingClientRect();
     draggingProgressionItem=null;
     list.classList.remove('is-dragging');
@@ -124,7 +124,8 @@
     const index=Number(card.dataset.index);
     if(event.altKey && ['ArrowLeft','ArrowRight'].includes(event.key)) {
       event.preventDefault();
-      const to=index+(event.key==='ArrowLeft'?-1:1);
+      const delta=event.key==='ArrowLeft'?-1:1;
+      const to=window.StringSections?window.StringSections.adjacent(index,delta):index+delta;
       const old=card.getBoundingClientRect();
       moveProgressionChord(index,to);
       const moved=list.querySelector(`[data-index="${Math.max(0,Math.min(progression.length-1,to))}"]`);

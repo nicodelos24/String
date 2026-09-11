@@ -842,7 +842,8 @@ function updateModeLegend() {
 }
 function renderProgression() {
   if (draggingProgressionItem) return;
-  document.querySelector('#progression').innerHTML = progression.map((item, index) => {
+  const entries=globalThis.StringSections?globalThis.StringSections.visible():progression.map((item,index)=>({item,index}));
+  document.querySelector('#progression').innerHTML = entries.map(({item,index}) => {
     const type = chordTypes.find(candidate => candidate.value === item.type);
     return `<div class="progression-card ${index === activeProgression ? 'active' : ''} ${item === playingProgressionItem ? 'playing' : ''}" data-index="${index}" tabindex="0" role="group" aria-label="Acorde ${index + 1}. Arrastrar o usar Alt y flechas para mover."><button type="button" data-remove="${index}" aria-label="Quitar acorde ${index + 1}">×</button><small>${index + 1}${item === playingProgressionItem ? ' · sonando' : ''}</small><strong>${item.rootNoteName || noteName(item.root)}${type ? type.suffix : ''}</strong><span class="progression-mode">${modes[item.mode || defaultChordMode(item)]?.name || ''}</span><span class="drag-grip" aria-hidden="true">⠿</span></div>`;
   }).join('');
@@ -947,6 +948,7 @@ function selectProgressionChord(index) {
 }
 
 function moveProgressionChord(from, to) {
+  if(globalThis.StringSections?.move(from,to))return;
   if (!Number.isInteger(from) || !Number.isInteger(to) || from < 0 || to < 0
     || from >= progression.length || to >= progression.length || from === to) return;
   const selected = progression[activeProgression];
@@ -960,6 +962,7 @@ function moveProgressionChord(from, to) {
 function duplicateProgressionChord(index) {
   if (!Number.isInteger(index) || !progression[index] || progression.length >= 4096 || draggingProgressionItem) return;
   progression.splice(index + 1, 0, {...progression[index]});
+  globalThis.StringSections?.include(progression[index],progression[index+1]);
   progressionEdited=true;
   selectProgressionChord(index + 1);
 }
@@ -968,6 +971,7 @@ function addProgressionChord() {
   if(draggingProgressionItem || progression.length>=4096)return;
   progressionEdited=true;
   progression.push({ root, rootNoteName, type: chordType.value, mode: selectedMode, ghostMode });
+  globalThis.StringSections?.include(null,progression[progression.length-1]);
   activeProgression = progression.length - 1;
   renderProgression();
 }
