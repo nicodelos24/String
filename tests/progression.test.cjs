@@ -30,14 +30,40 @@ function setup() {
   return {run,change,element};
 }
 
+test('chord views hide non-chord notes and mark guitar roots red only on strings 4 to 6',()=>{
+  const {run,element}=setup();
+  for(const mode of [3,4]){
+    run(`root=4;selectedMode='ionian';displayModeIndex=${mode};updateView()`);
+    const rows=element('#fretboard').innerHTML.split('class="string-row"').slice(1);
+    rows.forEach((row,index)=>{
+      const roots=[...row.matchAll(/data-midi="(\d+)"[^>]*style="([^"]*)"/g)].filter(m=>Number(m[1])%12===4);
+      assert(roots.length>0);
+      roots.forEach(m=>assert(m[2].includes(index>=3?'#c43d3d':'#287a46')));
+    });
+    assert.match(element('#fretboard').innerHTML,/opacity: 0;/);
+    const open=element('#open-strings').innerHTML;
+    assert.match(open,/data-midi="64"[^>]*background-color: #287a46/);
+    assert.match(open,/data-midi="40"[^>]*background-color: #c43d3d/);
+  }
+});
+
 test('pentatonic selection respects explicit choice and follows modal chord quality',()=>{
   const {run,element}=setup();
   const radios=['ionian','majorPentatonic','minorPentatonic'].map(value=>({value,checked:false}));
   element('#mode-selector').querySelectorAll=()=>radios;
   run("chooseMode('minorPentatonic')");
   assert.equal(run('viewMode()'),'minorPentatonic');
+  assert.equal(run('shouldHighlightInterval(5,1)'),false);
+  assert.equal(run('shouldHighlightInterval(10,2)'),true);
+  assert.equal(run('shouldHighlightInterval(10,3)'),false);
+  assert.equal(run('shouldHighlightInterval(10,4)'),true);
   run("chooseMode('majorPentatonic')");
   assert.equal(run('viewMode()'),'majorPentatonic');
+  assert.equal(run('shouldHighlightInterval(2,0)'),true);
+  assert.equal(run('shouldHighlightInterval(2,1)'),false);
+  assert.equal(run('shouldHighlightInterval(11,4)'),false);
+  run('displayModeIndex=4;updateView()');
+  assert.equal(run('displayModeIndex'),4);
   run("selectedMode='dorian';chordType=chordTypes.find(t=>t.value==='m7');updateView()");
   assert.equal(run('viewMode()'),'minorPentatonic');
   run("root=0;selectedMode='ionian';chordType=chordTypes.find(t=>t.value==='maj7');updateView()");

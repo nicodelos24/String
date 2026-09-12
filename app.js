@@ -297,7 +297,15 @@ function renderIntervalLegend() {
 
 // Función para determinar si un intervalo debe ser coloreado según el modo de visualización
 function shouldHighlightInterval(interval, displayModeIndex) {
-  if(pentatonicView)return modes[pentatonicMode()].intervals.includes(interval%12);
+  if(pentatonicView){
+    const notes=modes[pentatonicMode()].intervals;
+    const note=interval%12;
+    if(!notes.includes(note))return false;
+    if(displayModeIndex===0)return true;
+    const chordNotes=pentatonicMode()==='minorPentatonic'?[0,3,7]:[0,4,7];
+    if(displayModeIndex===2 || displayModeIndex===4)chordNotes.push(10,11);
+    return chordNotes.includes(note);
+  }
   const normalized = interval % 12;
   const displayMode = displayModes[displayModeIndex];
 
@@ -678,9 +686,9 @@ function renderFretboard() {
         textColor = '#999';
       }
 
-      if (!pentatonicView && displayModeIndex >= 3 && shouldHighlight) {
-        bgColor = intervalColors[modes[selectedMode].degree].color;
-        textColor = '#1d2521';
+      if (displayModeIndex >= 3 && shouldHighlight) {
+        bgColor = isRoot && (instrument !== 'guitar' || reversedIdx >= 3) ? '#c43d3d' : '#287a46';
+        textColor = '#ffffff';
       }
 
       // Determinar si mostrar el nombre de la nota según el modo
@@ -694,7 +702,7 @@ function renderFretboard() {
       }
       // showNotes === 0: no mostrar ninguna nota
 
-      return `<div class="fret"><span class="${noteClass}" data-midi="${openNote + actualFret}" data-note="${displayNote(pitchClass)}" data-interval="${intervalInfo.name}" style="background-color: ${bgColor}; color: ${textColor};" title="${displayNote(pitchClass)} · ${intervalInfo.name}">${getFretLabel(pitchClass, intervalFromRoot, inSelectedMode, inChord, showNoteName)}</span></div>`;
+      return `<div class="fret"><span class="${noteClass}" data-midi="${openNote + actualFret}" data-note="${displayNote(pitchClass)}" data-interval="${intervalInfo.name}" style="background-color: ${bgColor}; color: ${textColor};${displayModeIndex >= 3 && !shouldHighlight ? ' opacity: 0;' : ''}" title="${displayNote(pitchClass)} · ${intervalInfo.name}">${getFretLabel(pitchClass, intervalFromRoot, inSelectedMode, inChord, showNoteName)}</span></div>`;
     }).join('');
     return `<div class="string-row" style="--string-width: ${stringIndex < (instrument === 'guitar' ? 3 : 2) ? 2 : 1}px">${frets}</div>`;
   }).join('');
@@ -772,9 +780,9 @@ function renderOpenStrings() {
         textColor = '#1d2521';
       }
 
-      if (!pentatonicView && displayModeIndex >= 3 && shouldHighlight) {
-        bgColor = intervalColors[modes[selectedMode].degree].color;
-        textColor = '#1d2521';
+      if (displayModeIndex >= 3 && shouldHighlight) {
+        bgColor = isRoot && (instrument !== 'guitar' || reversedIdx >= 3) ? '#c43d3d' : '#287a46';
+        textColor = '#ffffff';
       }
 
       // Determinar si mostrar el nombre de la nota según el modo
@@ -788,7 +796,7 @@ function renderOpenStrings() {
       }
       // showNotes === 0: no mostrar ninguna nota
 
-      return `<div class="open-string-row"><span class="${noteClass}" data-midi="${openNote}" data-note="${displayNote(pitchClass)}" data-interval="${intervalInfo.name}" style="background-color: ${bgColor}; color: ${textColor};" title="${displayNote(pitchClass)} · ${intervalInfo.name}">${getFretLabel(pitchClass, intervalFromRoot, inSelectedMode, inChord, showNoteName)}</span></div>`;
+      return `<div class="open-string-row"><span class="${noteClass}" data-midi="${openNote}" data-note="${displayNote(pitchClass)}" data-interval="${intervalInfo.name}" style="background-color: ${bgColor}; color: ${textColor};${displayModeIndex >= 3 && !shouldHighlight ? ' opacity: 0;' : ''}" title="${displayNote(pitchClass)} · ${intervalInfo.name}">${getFretLabel(pitchClass, intervalFromRoot, inSelectedMode, inChord, showNoteName)}</span></div>`;
     }).join('');
 
   document.querySelector('#open-strings').innerHTML = openStringsHtml;
@@ -796,7 +804,7 @@ function renderOpenStrings() {
 function updateView() {
   const mode = viewMode();
   modeSelector.querySelectorAll('input[name="mode"]').forEach(radio=>{radio.checked=radio.value===mode;});
-  if(displayModeIndex>=3 && modes[mode].intervals.length!==7)displayModeIndex=1;
+  if(displayModeIndex>=3 && !pentatonicView && modes[mode].intervals.length!==7)displayModeIndex=1;
   document.querySelector('#display-label').textContent=displayModeLabels[displayModeIndex];
   renderRootPiano();
   const selectedModeData = modes[mode];
@@ -891,7 +899,7 @@ if (ghostModeSelect) {
 
 // Event listener para el botón de ciclo de modo de visualización
 document.querySelector('#toggle-display').addEventListener('click', event => { 
-  displayModeIndex = (displayModeIndex + 1) % (modes[viewMode()].intervals.length===7 ? displayModes.length : 3);
+  displayModeIndex = (displayModeIndex + 1) % (pentatonicView || modes[viewMode()].intervals.length===7 ? displayModes.length : 3);
   const button = event.currentTarget;
   const buttonText = button.querySelector('#display-label');
 
