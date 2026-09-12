@@ -30,6 +30,23 @@ function setup() {
   return {run,change,element};
 }
 
+test('pentatonic selection respects explicit choice and follows modal chord quality',()=>{
+  const {run,element}=setup();
+  const radios=['ionian','majorPentatonic','minorPentatonic'].map(value=>({value,checked:false}));
+  element('#mode-selector').querySelectorAll=()=>radios;
+  run("chooseMode('minorPentatonic')");
+  assert.equal(run('viewMode()'),'minorPentatonic');
+  run("chooseMode('majorPentatonic')");
+  assert.equal(run('viewMode()'),'majorPentatonic');
+  run("selectedMode='dorian';chordType=chordTypes.find(t=>t.value==='m7');updateView()");
+  assert.equal(run('viewMode()'),'minorPentatonic');
+  run("root=0;selectedMode='ionian';chordType=chordTypes.find(t=>t.value==='maj7');updateView()");
+  assert.equal(run('viewMode()'),'majorPentatonic');
+  assert.equal(radios.find(radio=>radio.checked).value,'majorPentatonic');
+  const html=element('#fretboard').innerHTML+element('#open-strings').innerHTML;
+  assert.doesNotMatch(html,/>B<\/span>/);
+});
+
 test('defaults show scale names and triads; duplicated chords are independent complete copies',()=>{
   const {run}=setup();
   assert.equal(run('showNotes'),1);assert.equal(run('displayModeIndex'),1);

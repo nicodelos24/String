@@ -540,7 +540,7 @@ function updateModeSelector() {
       <div class="mode-options-row">
         ${group.keys.map(modeKey => `
           <label class="mode-option">
-            <input type="radio" name="mode" value="${modeKey}" ${selectedMode === modeKey ? 'checked' : ''}>
+            <input type="radio" name="mode" value="${modeKey}" ${viewMode() === modeKey ? 'checked' : ''}>
             <span class="mode-label">${modes[modeKey].name}</span>
           </label>
         `).join('')}
@@ -594,8 +594,11 @@ function getFretLabel(pitchClass, interval, inSelectedMode, inChord, showNoteNam
 }
 
 let pentatonicView=false;
-function pentatonicMode(){return chordType.intervals.includes(3)?'minorPentatonic':'majorPentatonic';}
-// El modo efectivo: si la vista pentatónica está activa, siempre se muestra la pentatónica del acorde actual.
+function pentatonicMode(){
+  if(selectedMode==='majorPentatonic'||selectedMode==='minorPentatonic')return selectedMode;
+  return chordType.intervals.includes(3)?'minorPentatonic':'majorPentatonic';
+}
+// Respeta la elección explícita; en modos diatónicos adapta la pentatónica al acorde.
 function viewMode(){return pentatonicView?pentatonicMode():selectedMode;}
 document.querySelector('#pentatonic-view').addEventListener('change',event=>{pentatonicView=event.target.checked;updateView();});
 function renderFretboard() {
@@ -687,7 +690,7 @@ function renderFretboard() {
         showNoteName = true;
       } else if (showNotes === 1) {
         // Modo "escala": mostrar solo notas de la escala seleccionada
-        showNoteName = inSelectedMode || isRoot || inChord;
+        showNoteName = inSelectedMode || (!pentatonicView && (isRoot || inChord));
       }
       // showNotes === 0: no mostrar ninguna nota
 
@@ -781,7 +784,7 @@ function renderOpenStrings() {
         showNoteName = true;
       } else if (showNotes === 1) {
         // Modo "escala": mostrar solo notas de la escala seleccionada
-        showNoteName = inSelectedMode || isRoot || inChord;
+        showNoteName = inSelectedMode || (!pentatonicView && (isRoot || inChord));
       }
       // showNotes === 0: no mostrar ninguna nota
 
@@ -792,6 +795,7 @@ function renderOpenStrings() {
 }
 function updateView() {
   const mode = viewMode();
+  modeSelector.querySelectorAll('input[name="mode"]').forEach(radio=>{radio.checked=radio.value===mode;});
   if(displayModeIndex>=3 && modes[mode].intervals.length!==7)displayModeIndex=1;
   document.querySelector('#display-label').textContent=displayModeLabels[displayModeIndex];
   renderRootPiano();
