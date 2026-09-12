@@ -1427,6 +1427,11 @@ footer {
 .youtube-video-wrap { max-width: 360px; height: 220px; margin: 8px 0; }
 .youtube-video-wrap.is-floating { position: fixed; bottom: 18px; right: 18px; width: 320px; max-width: calc(100vw - 36px); height: 252px; padding-top: 32px; box-sizing: border-box; z-index: 100; box-shadow: 0 12px 40px #0005; }
 .video-restore { display: none; }
+.video-sync-panel { margin-top: 10px; padding: 8px; border: 1px solid var(--line); border-radius: 8px; }
+.video-sync-panel > summary { cursor: pointer; margin-bottom: 6px; }
+#video-marks { max-height: 150px; overflow: auto; padding-left: 22px; }
+#video-marks li { margin: 4px 0; }
+#video-sync-status { font-size: 11px; color: var(--muted); }
 .is-floating .video-restore { display: block; position: absolute; top: 0; right: 0; height: 32px; }
 .video-drag { display: none; }
 .is-floating .video-drag { display: block; position: absolute; top: 0; left: 0; height: 32px; touch-action: none; cursor: grab; }
@@ -1517,6 +1522,19 @@ footer {
   .progression-workspace > .sections-panel[open] { width: 100%; }
 }
 .sections-panel > summary { font-size: 11px; }
+#sections-maximize { margin-top: 10px; border-radius: 999px; cursor: pointer; }
+.section-chord-preview { display: none; }
+.progression-workspace.sections-expanded,
+.progression-workspace.chords-expanded { grid-template-columns: minmax(0, 1fr); }
+.progression-workspace.sections-expanded > .sections-panel,
+.progression-workspace.chords-expanded > .sections-panel { grid-column: 1; grid-row: auto; width: 100%; }
+.progression-workspace.sections-expanded > .progression,
+.progression-workspace.sections-expanded > .progression-view-controls { display: none; }
+.sections-expanded .sections-panel #section-list { grid-template-columns: repeat(auto-fit,minmax(min(100%,210px),1fr)); max-height: 420px; }
+.sections-expanded .section-chord-preview { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 5px; margin-top: 6px; }
+.sections-expanded .section-chord-preview > span { display: grid; gap: 3px; padding: 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--paper); min-width: 0; }
+.sections-expanded .section-chord-preview small { font-size: 9px; white-space: normal; }
+.sections-expanded .section-select > small { display: none; }
 .section-editor { padding: 8px 0; }
 .section-editor > summary { cursor: pointer; color: var(--rust); }
 .sections-panel #section-list li { padding: 5px 8px; font-size: 11px; }

@@ -44,9 +44,26 @@ Quiero que se vea lindo y las tarjetas tengan un tamaño mas parecido a las tarj
 
 Pero además noto que hay un boton que dice "Todos los acordes" y quisiera que ese botón adapte la función de expandir la sección de las tarjetas del acompañamiento principal, entonces ahí se puedan ver los acordes ya de todo el tema también, pero más amplio, quisiera que haya una animación al desplegar y ocultar estas dos secciones.
 
+  - Implementado: «Ampliar secciones» ocupa el ancho disponible y oculta las tarjetas principales. «Vista compacta» recupera la distribución lateral.
+  - En la vista ampliada cada sección muestra sus acordes y el modo debajo de cada uno, en pequeñas tarjetas. La lista conserva un límite de altura.
+  - «Todos los acordes» elimina el filtro, pliega el panel de secciones y muestra la progresión completa a ancho completo. El cambio tiene un fundido breve que respeta movimiento reducido.
+  - Pendiente de revisión visual del autor; no se añade «+» automáticamente.
+
 -Me gustaría además saber si se puede implementar algun vinculo con alguna pagina que ya muestre los acordes de canciones
+
+  - Implementado: campo opcional «Página de acordes» en Mis progresiones y enlace «Consultar acordes». Se guarda, actualiza y viaja en los respaldos; las progresiones anteriores sin ese campo siguen siendo compatibles.
+  - Es una referencia externa: no importa acordes ni tiempos automáticamente. Solo admite enlaces HTTP/HTTPS.
+  - Investigación: Chordify documenta un reproductor insertable, que no equivale a una API de importación para las tarjetas de String: https://support.chordify.net/hc/en-us/articles/360002155838-How-to-embed-Chordify-on-your-website-or-blog
 
 -De esta forma podía tener una biblioteca de canciones conocidas con sus acompañamientos. Y hasta su video de youtube con la canción original, me gustaría saber si hay forma de implementar algo así
 
 - Averiguar más sobre la implementacion de tener canciones en una biblioteca con su video de youtube y que se puedan ver los cambios de acorde a medida que avanza la cancion, puede ser con youtube o cualquier otra cosa como el programa Nuclear que es musica libre creo
+
+  - Implementado: YouTube → Sincronizar acordes permite marcar el acorde seleccionado en el tiempo actual del video y activar el seguimiento. Las marcas se pueden eliminar y se guardan con Mis progresiones y sus respaldos. No detecta acordes automáticamente.
+  - Reordenar tarjetas conserva su vínculo; eliminar una tarjeta excluye sus marcas del seguimiento y del próximo guardado. Una tarjeta puede aparecer en distintos tiempos. Cambiar de video descarta las marcas actuales sin guardar.
+  - MIDI y acompañamiento desactivan el seguimiento para evitar que dos fuentes cambien el mástil simultáneamente. Abrir una progresión recupera sus marcas, con seguimiento desactivado.
+  - Pendiente de probar con un video real: marcar varios cambios, guardar, volver a abrir y adelantar/retroceder. El seguimiento consulta el tiempo cada 250 ms; no es sincronización de audio de precisión.
+  - Referencia: https://developers.google.com/youtube/iframe_api_reference
+
+- Quiero correjir esta funcionalidad porque no tiene sentido pausar el video para poner acordes, no hay una manera de conseguir que en los videos se pueda mostrar una sección donde yo coloque qué acorde va? No se puede integrar alguna IA libre o con el micrófono o algo así que detecte al menos el tiempo de la canción así luego los acordes que agrego van cambiando al ritmo de la canción del video? Y luego podría agregar esa progresión vinculada al video a una biblioteca que sirva para que varios usuarios vean eso en un futuro
 

@@ -13,6 +13,18 @@ if(typeof module!=='undefined')module.exports={validateSections};
 if(typeof document!=='undefined')(()=>{
   let sections=[],active=null,drag=null;
   const $=id=>document.getElementById(id);
+  const workspace=document.querySelector('.progression-workspace');
+  const panel=document.querySelector('.sections-panel');
+  function setWorkspace(view){
+    workspace.classList.toggle('sections-expanded',view==='sections');
+    workspace.classList.toggle('chords-expanded',view==='chords');
+    $('sections-maximize').setAttribute('aria-pressed',String(view==='sections'));
+    $('sections-maximize').textContent=view==='sections'?'⤡ Vista compacta':'⤢ Ampliar secciones';
+    panel.open=view!=='chords';
+    if(!matchMedia('(prefers-reduced-motion: reduce)').matches)workspace.animate([{opacity:.4},{opacity:1}],{duration:220,easing:'ease-out'});
+  }
+  $('sections-maximize').onclick=()=>setWorkspace(workspace.classList.contains('sections-expanded')?'compact':'sections');
+  panel.addEventListener('toggle',()=>{if(!panel.open && workspace.classList.contains('sections-expanded'))setWorkspace('chords');});
   function serialize(){return sections.map(s=>({name:s.name,repeat:s.repeat,indices:s.items.map(item=>progression.indexOf(item)).filter(i=>i>=0)})).filter(s=>s.indices.length);}
   function render(){
     if(drag)return;
@@ -25,7 +37,15 @@ if(typeof document!=='undefined')(()=>{
       label.type='button';label.className='section-select';label.setAttribute('aria-pressed',String(active===s));
       const title=document.createElement('strong'),meta=document.createElement('span'),notes=document.createElement('small');title.textContent=s.name;meta.textContent=`${s.items.filter(item=>progression.includes(item)).length} acordes · ×${s.repeat}`;
       notes.textContent=s.items.filter(item=>progression.includes(item)).map(c=>(c.rootNoteName||noteName(c.root))+(chordTypes.find(t=>t.value===c.type)?.suffix||'')).join(' · ');
-      label.append(title,meta,notes);label.onclick=()=>{active=s;render();const first=s.items.find(item=>progression.includes(item));if(first)selectProgressionChord(progression.indexOf(first));};row.append(label);
+      const chordList=document.createElement('span');chordList.className='section-chord-preview';
+      s.items.filter(item=>progression.includes(item)).forEach(c=>{
+        const item=document.createElement('span'),name=document.createElement('b'),mode=document.createElement('small');
+        name.textContent=(c.rootNoteName||noteName(c.root))+(chordTypes.find(t=>t.value===c.type)?.suffix||'');
+        mode.textContent=modes[c.mode||defaultChordMode(c)]?.name||'';
+        item.append(name,mode);chordList.append(item);
+      });
+
+      label.append(title,meta,notes,chordList);label.onclick=()=>{active=s;render();const first=s.items.find(item=>progression.includes(item));if(first)selectProgressionChord(progression.indexOf(first));};row.append(label);
       const grip=document.createElement('button');grip.type='button';grip.className='section-grip';grip.textContent='⠿';grip.setAttribute('aria-label','Arrastrar '+s.name);row.append(grip);
       for(const [text,delta] of [['↑',-1],['↓',1],['×',0]]){
         const button=document.createElement('button');button.type='button';button.textContent=text;button.setAttribute('aria-label',`${delta===0?'Quitar':delta<0?'Subir':'Bajar'} ${s.name}`);
@@ -56,7 +76,7 @@ if(typeof document!=='undefined')(()=>{
       window.dispatchEvent(new Event('traste:load-song'));sections.push({name,repeat,items:progression.slice(from-1,to)});render();$('section-status').textContent='Sección añadida. El acompañamiento seguirá esta lista.';
     }catch(error){$('section-status').textContent=error.message;}
   };
-  $('section-all').onclick=()=>window.StringSections.clearView();
+  $('section-all').onclick=()=>{window.StringSections.clearView();setWorkspace('chords');panel.querySelector('summary').focus();};
   const list=$('section-list');
   list.addEventListener('pointerdown',event=>{const grip=event.target.closest('.section-grip');if(!grip||event.button!==0)return;const row=grip.closest('[data-section]');drag={id:event.pointerId,from:Number(row.dataset.section),to:Number(row.dataset.section)};list.setPointerCapture(event.pointerId);row.classList.add('dragging');});
   list.addEventListener('pointermove',event=>{if(!drag||drag.id!==event.pointerId)return;event.preventDefault();const rows=[...list.children],target=rows.find(row=>{const r=row.getBoundingClientRect();return event.clientX>=r.left&&event.clientX<=r.right&&event.clientY>=r.top&&event.clientY<=r.bottom;});if(target){drag.to=Number(target.dataset.section);rows.forEach(row=>row.classList.toggle('drop-target',row===target));}});

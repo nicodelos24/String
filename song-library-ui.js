@@ -3,6 +3,19 @@
   const title=$('song-title'), list=$('song-list'), status=$('song-status');
   const settingIds=['player-bpm','player-style','player-percussion','player-loop','player-volume','player-drum-volume'];
   let openedId=null;
+  function chordReference(value=''){
+    if(typeof value!=='string' || value.length>2000)throw new Error('Enlace de acordes no válido.');
+    if(!value.trim())return '';
+    let url;try{url=new URL(value.trim());}catch{throw new Error('Usa un enlace completo https:// para los acordes.');}
+    if(!['https:','http:'].includes(url.protocol)||url.username||url.password)throw new Error('Enlace de acordes no válido.');
+    return url.href;
+  }
+  function updateChordLink(){
+    const link=$('song-chord-link');
+    try{const url=chordReference($('song-chord-url').value);link.hidden=!url;if(url)link.href=url;else link.removeAttribute('href');}
+    catch{link.hidden=true;link.removeAttribute('href');}
+  }
+  $('song-chord-url').addEventListener('input',updateChordLink);
   function validate(song) {
     if(!song || typeof song.id!=='string' || song.id.length>100 || !song.id || typeof song.title!=='string' || !song.title.trim() || song.title.length>100 ||
       typeof song.video!=='string' || (song.video && !youtubeVideoId(song.video)) ||
@@ -22,7 +35,7 @@
       else if(typeof value!=='number' || !Number.isInteger(value) || value<Number(control.min) || value>Number(control.max)) throw new Error('Valor fuera de rango.');
       settings[id]=value;
     }
-    return {id:song.id,title:song.title.trim(),video:song.video,chords,settings,sections:validateSections(song.sections,chords.length)};
+    return {id:song.id,title:song.title.trim(),video:song.video,chordUrl:chordReference(song.chordUrl),videoMarks:validateVideoMarks(song.videoMarks,chords.length),chords,settings,sections:validateSections(song.sections,chords.length)};
   }
   // El acceso puede fallar si el usuario bloquea el almacenamiento.
   const library=new SongLibrary({getItem:key=>localStorage.getItem(key),setItem:(key,value)=>localStorage.setItem(key,value)},validate);
@@ -37,7 +50,7 @@
   function snapshot(id) {
     const settings={};
     for(const key of settingIds) {const control=$(key); settings[key]=control.type==='checkbox'?control.checked:control.tagName==='SELECT'?control.value:Number(control.value);}
-    return validate({id,title:title.value,video:$('youtube-url').value.trim(),chords:progression,settings,sections:window.StringSections.serialize()});
+    return validate({id,title:title.value,video:$('youtube-url').value.trim(),videoMarks:window.StringVideoSync.save($('youtube-url').value.trim()),chordUrl:$('song-chord-url').value,chords:progression,settings,sections:window.StringSections.serialize()});
   }
   function save(update) {run(()=>{
     const song=snapshot(update?openedId:crypto.randomUUID());
@@ -54,6 +67,8 @@
     progression=song.chords.map(chord=>({...chord})); playingProgressionItem=null; selectProgressionChord(0);window.StringSections.load(song.sections);
     for(const id of settingIds) {const control=$(id);if(control.type==='checkbox') control.checked=song.settings[id];else control.value=song.settings[id];control.dispatchEvent(new Event('input'));}
     title.value=song.title; openedId=song.id; refresh(song.id);
+    $('song-chord-url').value=song.chordUrl;updateChordLink();
+    window.StringVideoSync.load(song.videoMarks,song.video);
     window.dispatchEvent(new CustomEvent('traste:load-video',{detail:song.video}));
     status.textContent=`Abierta: ${song.title}. Los cambios se guardan con «Actualizar».`;
   }));

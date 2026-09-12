@@ -94,6 +94,8 @@ Carga un enlace válido para reproducir el video, pausar/reanudar, desplazarte p
 
 Guardar el enlace con una progresión no sincroniza automáticamente sus acordes ni analiza el audio. YouTube sigue siendo independiente del acompañamiento y MIDI. No hay integración con una cuenta de YouTube Music.
 
+En **YouTube → Sincronizar acordes**, selecciona una tarjeta y pulsa **Marcar acorde aquí** cuando comience en el video. Repite con los cambios y activa **Seguir marcas del video**. Puedes pausar el video para colocar las marcas. Usa **Guardar nueva** o **Actualizar** en Mis progresiones para conservarlas junto al enlace. Cambiar de video descarta las marcas actuales sin guardar. El seguimiento se desactiva al iniciar MIDI o acompañamiento.
+
 ## Verificación y documentación
 
 ```sh
@@ -112,4 +114,4 @@ Los reportes, casos manuales, Excel, evidencias y scripts de navegador se separa
 
 ## Próximos pasos
 
-Completar la prueba manual y auditiva, medir rendimiento con progresiones grandes, mejorar la edición de secciones, añadir duraciones por acorde y diseñar ejemplos propios y marcas temporales para YouTube. No hay sincronización de video, reconocimiento por micrófono ni biblioteca remota implementados.
+Completar la prueba manual y auditiva, medir rendimiento con progresiones grandes, mejorar la edición de secciones, añadir duraciones por acorde y diseñar ejemplos propios. El seguimiento de YouTube usa marcas manuales; no hay reconocimiento por micrófono ni biblioteca remota implementados.

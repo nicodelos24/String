@@ -45,11 +45,13 @@
     $('youtube-time').textContent=`${label(time)} / ${label(duration)}`;
     seek.max=String(duration);seek.disabled=duration<=0; if(document.activeElement!==seek) seek.value=String(time);
     setIcon(player.getPlayerState()===1);
+    window.dispatchEvent(new CustomEvent('string:video-time',{detail:{time}}));
   }
   async function load(value) {
     const id=value?youtubeVideoId(value):null;
     if(value && !id) {status.textContent='Introduce un enlace válido de YouTube.';return;}
     const request=++generation;
+    window.dispatchEvent(new CustomEvent('string:video-reset',{detail:id||''}));
     clearInterval(poll);clearTimeout(timeout);ready=false;toggle.disabled=true;seek.disabled=true;
     $('youtube-load').disabled=false;
     if(player) player.destroy();player=null;wrap.replaceChildren();wrap.hidden=true;
