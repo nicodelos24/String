@@ -13,7 +13,7 @@ Base inspeccionada: `4aee85c` más los cambios locales de esta revisión. Trabaj
 | BUG-013 | Panel reabierto podía conservar controles inert y perder foco | Recuperación de foco antes de inert; limpieza de animaciones; sincronización en toggle |
 | BUG-014 | Índices duplicados en secciones importadas ambiguaban la edición | Validación de índices únicos; repeticiones mediante repeat |
 
-Los pasos, severidad, casos y evidencia se registran en [BUGS.md](qa/BUGS.md). Las correcciones anteriores de límite de tarjetas y silencio de notas siguen cubiertas por pruebas.
+Los pasos, severidad, casos y evidencia se registran en BUGS.md, dentro del [archivo histórico de QA](../archivo-qa/README.md). Las correcciones anteriores de límite de tarjetas y silencio de notas siguen cubiertas por pruebas.
 
 ## Duplicaciones y código histórico
 

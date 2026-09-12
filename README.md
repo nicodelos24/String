@@ -24,7 +24,7 @@ python -m http.server 8000 --bind 127.0.0.1
 
 Ejecuta un solo servidor a la vez y detenlo con Ctrl+C. Live Server también funciona. Abrir index.html con doble clic permite explorar y escuchar audio local; para YouTube y un guardado más consistente usa HTTP.
 
-Las fuentes de Google Fonts y YouTube requieren conexión. Python y openpyxl solo se necesitan si quieres regenerar los Excel de QA; no son dependencias de la aplicación.
+Las fuentes de Google Fonts y YouTube requieren conexión. Las herramientas históricas de QA están archivadas; Python y openpyxl no son dependencias de la aplicación.
 
 ## Uso
 
@@ -92,34 +92,21 @@ Carga un enlace válido para reproducir el video, pausar/reanudar, desplazarte p
 
 Guardar el enlace con una progresión no sincroniza automáticamente sus acordes ni analiza el audio. YouTube sigue siendo independiente del acompañamiento y MIDI. No hay integración con una cuenta de YouTube Music.
 
-## Pruebas y documentación
+## Verificación y documentación
 
 ```sh
 npm test
-node scripts/check-interface-browser.cjs
-node scripts/check-interface-browser.cjs --edge
-node scripts/check-view-features-browser.cjs
-node scripts/check-player-browser.cjs --rhythms --no-artifacts
 ```
 
-Las pruebas de Node usan dobles de servicios y fixtures. Las comprobaciones de navegador son headless y silenciadas. La interfaz usa una API YouTube simulada; no constituyen una prueba de reproducción externa real. El resultado vigente, el entorno y la evidencia están en [Resultados QA](docs/qa/RESULTADOS.md), sin confundirlos con ejecución manual.
+Se conservan las pruebas rápidas de Node, sin dependencias adicionales. Comprueban la lógica musical, MIDI, guardado, secciones y estructura básica. No sustituyen la revisión visual o auditiva.
+
+Si PowerShell bloquea `npm.ps1`, usa `npm.cmd test` (o `npm.cmd start` para iniciar), sin cambiar la política del sistema.
+
+Los reportes, casos manuales, Excel, evidencias y scripts de navegador se separaron en un [archivo de QA recuperable](archivo-qa/README.md). No hace falta abrirlo para desarrollar. La documentación de QA se retomará cuando sea necesaria o se solicite.
 
 - [Guía del proyecto y portfolio](docs/GUIA-DEL-PROYECTO.md)
 - [Revisión técnica y pendientes](docs/REVISION-TECNICA.md)
 - [Ritmos y sonido](docs/RITMOS-Y-SONIDO.md)
-- [Plan de pruebas](docs/qa/PLAN-DE-PRUEBAS.md)
-- [Casos manuales](docs/qa/CASOS-MANUALES.md)
-- [Bugs y correcciones](docs/qa/BUGS.md)
-- [Excel: casos de prueba actuales](docs/qa/excel/Casos_de_prueba_String.xlsx)
-- [Excel: reporte de bugs actual](docs/qa/excel/Reporte_de_bugs_String.xlsx)
-
-Los Excel Traste conservan el historial anterior. Las plantillas String se generan desde docs/qa/REVISION-ACTUAL.json:
-
-```sh
-python scripts/generate-qa-current.py
-```
-
-Requiere openpyxl. Regenerar sobrescribe las plantillas String: guarda tus ejecuciones manuales con otro nombre.
 
 ## Próximos pasos
 

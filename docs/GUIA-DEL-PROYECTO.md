@@ -16,7 +16,8 @@ Actualizada el 2026-09-11. String es un proyecto de portfolio desarrollado con a
 | Tema y distribución adaptable | theme.js, responsive-layout.js, style.css |
 | Escucha de notas y metrónomo | note-preview.js, metronome.js |
 | Ejecución local | server.cjs |
-| QA y evidencia | tests/, scripts/check-*.cjs, docs/qa/ |
+| Verificación rápida | tests/; `npm test` |
+| QA histórico separado | archivo-qa/ (ZIP recuperable) |
 
 Los motores de audio y sus interfaces están separados. No hay base de datos remota: Mis progresiones usa localStorage. La clave histórica `traste.songs.v1` se conserva para no perder datos al cambiar la marca.
 
@@ -39,7 +40,7 @@ Los motores de audio y sus interfaces están separados. No hay base de datos rem
 - Biblioteca local con respaldo JSON y compatibilidad con progresiones sin secciones.
 - YouTube embebido con transporte y modo flotante; sin sincronización de acordes.
 - Tema claro/oscuro, vista pentatónica global, notas audibles y diseño adaptable.
-- Pruebas Node y comprobaciones Chrome/Edge.
+- Pruebas Node activas; comprobaciones históricas Chrome/Edge archivadas.
 
 ## Qué sigue pendiente
 
@@ -51,4 +52,4 @@ No hay integración continua ni publicación verificadas en esta revisión. Tamp
 
 Para una corrección: reproducir el problema, escribir el resultado esperado, encontrar la causa, añadir una regresión, cambiar el código y registrar la evidencia. Una prueba con un DOM simulado no demuestra que un botón se vea bien: para eso se necesitan navegador y revisión manual.
 
-Consulta [la revisión técnica](REVISION-TECNICA.md), [el plan QA](qa/PLAN-DE-PRUEBAS.md) y [los resultados](qa/RESULTADOS.md). En el portfolio explica qué hizo la IA, qué revisaste, qué comprobaste y qué límites siguen presentes.
+Consulta [la revisión técnica](REVISION-TECNICA.md). El plan QA y los resultados anteriores están en el [archivo de testing](../archivo-qa/README.md). En el portfolio explica qué hizo la IA, qué revisaste, qué comprobaste y qué límites siguen presentes.
