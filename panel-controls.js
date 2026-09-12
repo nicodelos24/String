@@ -1,6 +1,17 @@
 (() => {
   const $=id=>document.getElementById(id);
   let currentSource='progression';
+  const quickPlay=$('quick-play'),quickTime=$('quick-midi-time');
+  function syncQuickPlayer(){
+    const original=$(currentSource==='midi'?'midi-play':'player-toggle');
+    quickPlay.innerHTML=original.innerHTML;
+    quickPlay.disabled=original.disabled;
+    quickPlay.title=original.title;
+    quickPlay.setAttribute('aria-label',original.getAttribute('aria-label'));
+    quickPlay.setAttribute('aria-pressed',original.getAttribute('aria-pressed')||'false');
+    quickTime.hidden=currentSource!=='midi';
+    quickTime.textContent=$('midi-time').textContent;
+  }
   function choose(source,stop=true){
     if(stop && source!==currentSource)window.dispatchEvent(new Event('traste:load-song'));
     currentSource=source;
@@ -8,7 +19,15 @@
     $('progression-transport').hidden=source!=='progression';
     $('midi-transport').hidden=source!=='midi';
     $('player-status').hidden=source!=='progression';
+    syncQuickPlayer();
   }
+  // Un acceso adicional al mismo motor; refleja también finalización, carga y errores.
+  quickPlay.addEventListener('click',()=>$(currentSource==='midi'?'midi-play':'player-toggle').click());
+  const transportObserver=new MutationObserver(syncQuickPlayer);
+  ['player-toggle','midi-play','midi-time'].forEach(id=>transportObserver.observe($(id),{
+    attributes:true,attributeFilter:['disabled','aria-label','aria-pressed','title'],childList:true,subtree:true,characterData:true
+  }));
+  syncQuickPlayer();
   document.querySelectorAll('[data-source]').forEach(button=>button.addEventListener('click',()=>choose(button.dataset.source)));
   $('midi-file').addEventListener('change',()=>choose('midi'));
   $('player-toggle').addEventListener('click',()=>choose('progression',false));

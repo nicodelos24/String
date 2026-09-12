@@ -5,6 +5,13 @@
   // Mantener el mismo iframe al minimizar evita reiniciar la canción.
   content.after(wrap);
   let player=null,ready=false,generation=0,poll=null,timeout=null,apiPromise=null;
+  let floatPosition=null;
+  function positionFloat(x,y){
+    const bounds=wrap.getBoundingClientRect();
+    floatPosition={x:Math.max(8,Math.min(x,window.innerWidth-bounds.width-8)),y:Math.max(8,Math.min(y,window.innerHeight-bounds.height-8))};
+    Object.assign(wrap.style,{left:floatPosition.x+'px',top:floatPosition.y+'px',right:'auto',bottom:'auto'});
+  }
+  window.addEventListener('resize',()=>{if(wrap.classList.contains('is-floating') && floatPosition)positionFloat(floatPosition.x,floatPosition.y);});
   const label=seconds=>`${Math.floor(seconds/60)}:${String(Math.floor(seconds%60)).padStart(2,'0')}`;
   const setIcon=ticking=>{toggle.innerHTML=ticking?'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>':'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>';toggle.setAttribute('aria-label',ticking?'Pausar':'Reproducir');toggle.title=ticking?'Pausar':'Reproducir';};
   function layout() {
@@ -13,6 +20,9 @@
     content.classList.toggle('is-collapsed',collapsed); content.inert=collapsed;
     wrap.classList.toggle('is-floating',collapsed && floating.checked);
     wrap.hidden=!player || (collapsed && !floating.checked);
+    if(collapsed && floating.checked && !wrap.hidden){
+      if(floatPosition)positionFloat(floatPosition.x,floatPosition.y);
+    }else ['left','top','right','bottom'].forEach(key=>wrap.style.removeProperty(key));
     toggle.disabled=!ready || wrap.hidden;
     if(ready && wrap.hidden) player.pauseVideo();
   }
@@ -52,6 +62,21 @@
     try {
       await api();if(request!==generation) return;
       const host=document.createElement('div');wrap.append(host);
+      const handle=document.createElement('button');handle.type='button';handle.className='video-drag';handle.textContent='⠿ Mover';handle.setAttribute('aria-label','Mover video flotante con las flechas');wrap.append(handle);
+      let drag=null;
+      handle.addEventListener('pointerdown',event=>{
+        if(event.button!==0 || !wrap.classList.contains('is-floating'))return;
+        const rect=wrap.getBoundingClientRect();drag={id:event.pointerId,x:event.clientX-rect.left,y:event.clientY-rect.top};
+        handle.setPointerCapture(event.pointerId);wrap.classList.add('is-dragging');
+      });
+      handle.addEventListener('pointermove',event=>{if(drag && drag.id===event.pointerId)positionFloat(event.clientX-drag.x,event.clientY-drag.y);});
+      const endDrag=()=>{drag=null;wrap.classList.remove('is-dragging');};
+      handle.addEventListener('pointerup',endDrag);handle.addEventListener('pointercancel',endDrag);handle.addEventListener('lostpointercapture',endDrag);
+      handle.addEventListener('keydown',event=>{
+        const delta={ArrowLeft:[-20,0],ArrowRight:[20,0],ArrowUp:[0,-20],ArrowDown:[0,20]}[event.key];
+        if(!delta || !wrap.classList.contains('is-floating'))return;
+        event.preventDefault();const rect=wrap.getBoundingClientRect();positionFloat(rect.left+delta[0],rect.top+delta[1]);
+      });
       const restore=document.createElement('button');restore.className='video-restore';restore.textContent='↗ Restaurar video';restore.type='button';restore.onclick=()=>{disclosure.setAttribute('aria-expanded','true');layout();disclosure.focus();};wrap.append(restore);
       timeout=setTimeout(()=>{if(request===generation && !ready){$('youtube-load').disabled=false;status.textContent='YouTube no respondió. Puedes volver a cargar o abrir el enlace externo.';}},15000);
       player=new YT.Player(host,{width:'100%',height:'220',videoId:id,playerVars:{origin:location.origin,playsinline:1,autoplay:0,rel:0},events:{

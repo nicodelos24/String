@@ -59,6 +59,8 @@ Límites: 4096 tarjetas, 64 secciones, entre 1 y 8 repeticiones por sección y 3
 
 La cabecera conserva el selector **Progresión / MIDI** y el control del reproductor elegido, incluso plegada. El triángulo inicia; el cuadrado detiene. Volver a reproducir comienza desde el inicio: estos motores no tienen pausa reanudable.
 
+Junto a las tarjetas hay un acceso rápido con el mismo selector y control de reproducción. Ambos accesos se mantienen sincronizados; MIDI se habilita al cargar un archivo válido.
+
 - Cambiar de fuente detiene la anterior. Volver a pulsar la fuente activa no detiene.
 - Plegar Acompañamiento no detiene el audio.
 - Cada tarjeta del acompañamiento dura cuatro pulsos; BPM entre 30 y 240.
