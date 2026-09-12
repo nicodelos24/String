@@ -1,0 +1,46 @@
+{
+  "date": "2026-09-11",
+  "base": "4aee85c + cambios locales",
+  "node": "v24.16.0",
+  "unit": {
+    "tests": 66,
+    "pass": 66,
+    "fail": 0,
+    "evidence": "node-tests.txt"
+  },
+  "checks": [
+    {
+      "command": "node scripts/check-interface-browser.cjs",
+      "exitCode": 0,
+      "browser": "Chrome/152.0.7977.84",
+      "evidence": "interface-chrome.json"
+    },
+    {
+      "command": "node scripts/check-interface-browser.cjs --edge",
+      "exitCode": 0,
+      "browser": "Edg/152.0.4191.66",
+      "evidence": "interface-edge.json"
+    },
+    {
+      "command": "node scripts/check-view-features-browser.cjs",
+      "exitCode": 0,
+      "evidence": "view-chrome.json"
+    },
+    {
+      "command": "node scripts/check-player-browser.cjs --rhythms --no-artifacts",
+      "exitCode": 0,
+      "evidence": "audio-chrome.json"
+    }
+  ],
+  "manual": {
+    "executed": 0,
+    "pending": 38
+  },
+  "limitations": [
+    "Audio silenciado; no aceptación auditiva",
+    "YouTube simulado en interfaz; no video externo real",
+    "No dispositivos físicos, Safari ni Firefox",
+    "Sin porcentaje de cobertura medido"
+  ],
+  "runnerNote": "Un intento del caso de respaldo usó un fixture de 1559133 bytes, menor al umbral de 2 MB. Se amplió el fixture y el caso pasó. No fue un fallo de importación de la app."
+}

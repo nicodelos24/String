@@ -1,0 +1,37 @@
+{
+  "browser": "Edg/152.0.4191.66",
+  "dimensions": [
+    [
+      123,
+      90,
+      123,
+      190.00003051757812
+    ],
+    [
+      123,
+      90,
+      123,
+      190.00003051757812
+    ],
+    [
+      123,
+      90,
+      123,
+      190.00003051757812
+    ]
+  ],
+  "collapsed": {
+    "height": 57,
+    "inert": true,
+    "toggle": 32
+  },
+  "mobile": {
+    "width": 336,
+    "viewport": 390
+  },
+  "youtube": "Iframe con red bloqueada",
+  "connection": {
+    "iframe": "https://www.youtube.com/embed/M7lc1UVf-VE"
+  },
+  "result": "PASS"
+}

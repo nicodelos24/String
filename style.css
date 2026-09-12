@@ -94,9 +94,6 @@ footer {
 }
 
 .brand-word > span:first-child { font-style: italic; }
-.midi-catalog-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 12px 0; }
-.midi-catalog-controls select { min-width: 0; max-width: 100%; padding: 8px; background: var(--paper); border: 1px solid var(--line); color: var(--ink); font: inherit; }
-#midi-source { color: var(--rust); }
 .fret-lock { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; margin: 0; }
 .fret-lock input { accent-color: var(--rust); }
 .fret-lock span { color: var(--muted); font-size: 9px; }

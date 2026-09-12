@@ -1,5 +1,42 @@
 # Resultados de pruebas
 
+## Revisión vigente — 2026-09-11
+
+Base: `4aee85c` más cambios locales. Windows, PowerShell, Node.js v24.16.0. Ejecuciones con asistencia de IA; **0 casos manuales ejecutados formalmente en esta revisión y 38 pendientes**.
+
+| Ejecución | Resultado | Evidencia |
+| --- | --- | --- |
+| npm test | 66 pruebas aprobadas, 0 fallidas | [Salida Node](evidencia/revision-2026-09-11/node-tests.txt) |
+| Interfaz Chrome 152.0.7977.84 | Aprobada | [Informe](evidencia/revision-2026-09-11/interface-chrome.json) |
+| Interfaz Edge 152.0.4191.66 | Aprobada | [Informe](evidencia/revision-2026-09-11/interface-edge.json) |
+| Tema, iconos y pentatónicas en Chrome | Aprobada | [Informe](evidencia/revision-2026-09-11/view-chrome.json) |
+| Audio y ritmos en Chrome, file:// | Aprobada | [Informe](evidencia/revision-2026-09-11/audio-chrome.json) |
+
+El [registro consolidado](evidencia/revision-2026-09-11/ejecucion.json) contiene comandos, límites y el incidente del fixture de respaldo que se amplió antes de la ejecución final. Las regresiones de BUG-009 a BUG-014 están vinculadas en [BUGS.md](BUGS.md).
+
+Se comprobaron importación de respaldo válido mayor a 2 MB, rechazo de tamaño excesivo sin sobrescritura, foco en una sección filtrada, selección de fuente activa sin detención, icono de detener, reapertura de paneles e índices duplicados. La prueba de estructura valida IDs activos y scripts únicos.
+
+### Alcance real de la evidencia
+
+- Chrome/Edge de escritorio, perfiles temporales, modo headless y audio silenciado.
+- La comprobación de interfaz usa movimiento reducido para medir alturas; el script visual separado ejercita los switches. Clics muy rápidos, lector de pantalla y comodidad de animación quedan en los casos manuales.
+- YouTube simulado en la interfaz: no se probó una cuenta ni la reproducción de un video externo real.
+- Audio offline evaluó doce raíces y seis estilos (pop, jazz, trap, funk, bossa y reggaetón). Reggae, disco y balada tienen pruebas de programación en Node; no se certifica su percepción auditiva.
+- No se midió un porcentaje de cobertura. No se probaron Safari, Firefox ni teléfonos físicos.
+- BUG-006 y BUG-008 históricos conservan pendiente la aceptación auditiva.
+
+Capturas de referencia: [escritorio](evidencia/revision-2026-09-11/interface-chrome.png), [móvil emulado](evidencia/revision-2026-09-11/interface-mobile-chrome.png), [tema oscuro](evidencia/revision-2026-09-11/tema-oscuro.png), [tema claro](evidencia/revision-2026-09-11/tema-claro.png). No constituyen una ejecución manual.
+
+### Entregables actuales
+
+- [Casos de prueba String.xlsx](excel/Casos_de_prueba_String.xlsx): 38 casos manuales pendientes y resultados automáticos separados.
+- [Reporte de bugs String.xlsx](excel/Reporte_de_bugs_String.xlsx): seis defectos de esta revisión y referencias al historial.
+- [Fuente editable](REVISION-ACTUAL.json) y `python scripts/generate-qa-current.py`.
+
+## Historial conservado
+
+Los registros siguientes pertenecen a etapas anteriores. Sus cantidades y estados no describen la suite actual.
+
 ## Ejecución automatizada — 2026-09-09
 
 - Entorno: Windows, PowerShell, Node.js v24.16.0.

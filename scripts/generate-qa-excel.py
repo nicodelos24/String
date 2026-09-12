@@ -1,4 +1,6 @@
-"""Genera ejemplos de QA en Excel a partir de la documentación del proyecto.
+"""Generador histórico de la etapa Traste/Ritmos; no usar para la revisión actual.
+
+Para String actual ejecutar scripts/generate-qa-current.py.
 
 Requiere openpyxl. Ejecutar desde la raíz: python scripts/generate-qa-excel.py
 Las planillas son entregables editables. Regenerar reemplaza los archivos: guardar

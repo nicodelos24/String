@@ -1,11 +1,16 @@
 // Datos versionados y almacenamiento separados de la interfaz.
 class SongLibrary {
+  static maxBackupBytes=20*1024*1024;
+  static checkSize(raw) {
+    if(typeof raw!=='string' || new TextEncoder().encode(raw).length>SongLibrary.maxBackupBytes)throw new Error('El respaldo supera 20 MB.');
+  }
   constructor(storage, validate) {this.storage=storage; this.validate=validate; this.key='traste.songs.v1';}
   read() {
     const raw=this.storage.getItem(this.key);
     return raw === null ? [] : this.parse(raw);
   }
   parse(raw) {
+    SongLibrary.checkSize(raw);
     const data=JSON.parse(raw);
     if(data.version!==1 || !Array.isArray(data.songs) || data.songs.length>200) throw new Error('Formato de biblioteca no compatible.');
     const songs=data.songs.map(this.validate);
@@ -24,7 +29,7 @@ class SongLibrary {
     this.write(songs);
   }
   remove(id) {this.write(this.read().filter(song=>song.id!==id));}
-  export() {return JSON.stringify({version:1,songs:this.read()},null,2);}
+  export() {const raw=JSON.stringify({version:1,songs:this.read()});SongLibrary.checkSize(raw);return raw;}
   import(raw) {
     const incoming=this.parse(raw);
     const songs=this.read();

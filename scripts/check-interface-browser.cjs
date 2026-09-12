@@ -164,6 +164,7 @@ const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
     await evaluate("document.querySelector('#song-title').value='Tema con secciones';document.querySelector('#song-save').click();StringSections.load([]);document.querySelector('#song-open').click();");
     assert.equal(await evaluate('StringSections.playback().length'),8);
     assert.equal(await evaluate('StringSections.serialize()[0].name'),'Verso');
+    assert(await evaluate(`(()=>{StringSections.load([{name:'Teclado',repeat:1,indices:[0,2,4]}]);document.querySelector('.section-select').click();const card=document.querySelector('#progression [data-index="0"]');card.focus();card.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',altKey:true,bubbles:true}));return document.activeElement.dataset.index==='0' && JSON.stringify(StringSections.serialize()[0].indices)==='[2,0,4]';})()`));
     assert(await evaluate(`(()=>{StringSections.load([{name:'Verso',repeat:1,indices:[0,1,2,3]},{name:'Estribillo',repeat:1,indices:[4,5]}]);document.querySelector('.section-select').click();const original=[...progression];moveProgressionChord(0,2);const correct=JSON.stringify(StringSections.serialize()[0].indices)==='[1,2,0,3]' && progression.every((item,i)=>item===original[i]);duplicateProgressionChord(1);const included=StringSections.serialize()[0].indices.length===5 && StringSections.serialize()[1].indices.length===2;removeProgressionChord(2);return correct && included && progression.length===12;})()`));
     await evaluate("StringSections.load([{name:'Parte A',repeat:1,indices:[0]},{name:'Parte B',repeat:1,indices:[1]}]);document.querySelector('.sections-panel').open=true;document.querySelectorAll('.section-select')[1].click();");
     assert.equal(await evaluate("document.querySelectorAll('#progression .progression-card').length"),1);
@@ -176,6 +177,7 @@ const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
     await send('Input.dispatchMouseEvent',{type:'mouseReleased',x:sectionDrag.toX,y:sectionDrag.toY,button:'left',clickCount:1});
     assert.equal(await evaluate('StringSections.serialize()[0].name'),'Parte B');
     await evaluate("StringSections.load([{name:'Parte A',repeat:1,indices:[0]},{name:'Parte B',repeat:1,indices:[1]}]);document.querySelector('#player-bpm').value='240';document.querySelector('#player-loop').checked=false;document.querySelector('#player-toggle').click();");
+    assert(await evaluate("(()=>{document.querySelector('[data-source=progression]').click();return document.querySelector('#player-toggle').getAttribute('aria-pressed')==='true' && document.querySelector('#player-toggle path').getAttribute('d')==='M6 6h12v12H6z';})()"));
     for(let i=0;i<80;i++){if(await evaluate("document.querySelector('#section-view-label').textContent==='Parte B'"))break;await delay(50);}
     assert.equal(await evaluate("document.querySelector('#section-view-label').textContent"),'Parte B');
     assert.equal(await evaluate("document.querySelector('#progression .progression-card').dataset.index"),'1');
@@ -189,6 +191,16 @@ const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
     assert(await evaluate("document.querySelector('#player-toggle').getBoundingClientRect().height>0 && document.querySelector('#midi-transport').hidden"));
     assert(await evaluate(`(()=>{const colors=()=>[...document.querySelectorAll('.fret-note')].map(n=>[getComputedStyle(n).backgroundColor,getComputedStyle(n).color]);const before=JSON.stringify(colors());document.querySelector('#theme-toggle').click();return document.documentElement.dataset.theme==='dark' && JSON.stringify(colors())===before && localStorage.getItem('string.theme')==='dark';})()`));
     await evaluate("document.querySelector('#theme-toggle').click();");
+    // Regresión de ayudas: cerrar con foco dentro y reabrir programáticamente.
+    await evaluate("document.querySelector('.sections-panel').open=true;document.querySelector('.section-editor').open=true;");
+    await delay(50);
+    await evaluate("document.querySelector('#section-name').focus();document.querySelector('.section-editor > summary').click();");
+    assert(await evaluate("document.activeElement===document.querySelector('.section-editor > summary')"));
+    await evaluate("document.querySelector('.section-editor').open=true;");await delay(50);
+    assert(await evaluate("!document.querySelector('#section-name').closest('.section-fields').inert"));
+    await evaluate("document.querySelector('.section-editor').open=false;document.querySelector('.sections-panel').open=false;");
+    const backupCheck=await evaluate(`(async()=>{const key='traste.songs.v1',original=localStorage.getItem(key),base=JSON.parse(original).songs[0];try{const songs=Array.from({length:10},(_,i)=>({...base,id:'backup-large-'+i,title:'Respaldo '+i,chords:Array.from({length:4096},()=>({...base.chords[0],rootNoteName:String.fromCharCode(67),mode:String.fromCharCode(105,111,110,105,97,110)})),sections:[]}));const raw=JSON.stringify({version:1,songs}),file=new File([raw],'respaldo.json',{type:'application/json'}),transfer=new DataTransfer();transfer.items.add(file);const input=document.querySelector('#song-import');input.files=transfer.files;input.dispatchEvent(new Event('change'));for(let i=0;i<100;i++){if(document.querySelector('#song-status').textContent.includes('Se importaron 10'))return {bytes:file.size,ok:true};await new Promise(r=>setTimeout(r,25));}return {bytes:file.size,ok:false,status:document.querySelector('#song-status').textContent};}finally{localStorage.setItem(key,original);}})()`);
+    assert(backupCheck.bytes>2*1024*1024 && backupCheck.ok,JSON.stringify(backupCheck));
     const screenshot=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:true});
     fs.writeFileSync(path.join(os.tmpdir(),`traste-interface-${edge?'edge':'chrome'}.png`),Buffer.from(screenshot.data,'base64'));
     for (const width of [320,390,768,1024]) {

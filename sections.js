@@ -5,6 +5,7 @@ function validateSections(value,count) {
   return value.map(s=>{
     if(!s||typeof s.name!=='string'||!s.name.trim()||s.name.length>40||!Number.isInteger(s.repeat)||s.repeat<1||s.repeat>8||!Array.isArray(s.indices)||!s.indices.length||s.indices.some(i=>!Number.isInteger(i)||i<0||i>=count))throw new Error('Sección no válida.');
     total+=s.indices.length*s.repeat;if(total>32768)throw new Error('Estructura demasiado larga.');
+    if(new Set(s.indices).size!==s.indices.length)throw new Error('Una sección no puede incluir dos veces la misma tarjeta. Usa las repeticiones.');
     return {name:s.name.trim(),repeat:s.repeat,indices:[...s.indices]};
   });
 }

@@ -127,8 +127,9 @@
       const delta=event.key==='ArrowLeft'?-1:1;
       const to=window.StringSections?window.StringSections.adjacent(index,delta):index+delta;
       const old=card.getBoundingClientRect();
+      const source=progression[index];
       moveProgressionChord(index,to);
-      const moved=list.querySelector(`[data-index="${Math.max(0,Math.min(progression.length-1,to))}"]`);
+      const moved=list.querySelector(`[data-index="${progression.indexOf(source)}"]`);
       moved?.focus();
       if(moved && !reducedMotion()) moved.animate([{transform:`translateX(${old.left-moved.getBoundingClientRect().left}px)`},{transform:'translateX(0)'}],{duration:180});
     } else if(event.key==='Enter' || event.key===' ') {

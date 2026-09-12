@@ -1,28 +1,39 @@
-# Revisión técnica y próximos pasos
+# Revisión técnica — 2026-09-11
 
-Esta revisión se realizó con ayuda de IA. Las pruebas automatizadas cubren comportamientos concretos; no garantizan ausencia de errores ni sustituyen la escucha y la prueba manual en dispositivos reales.
+Base inspeccionada: `4aee85c` más los cambios locales de esta revisión. Trabajo realizado con asistencia de IA. Es una revisión de código y regresiones de los flujos existentes; no garantiza ausencia total de defectos.
 
-## Hallazgos
+## Correcciones de esta revisión
 
-- El botón de añadir permitía superar los 4096 acordes aceptados por el guardado. Se alineó ese límite y se impide añadir durante el arrastre.
-- La escucha de notas programaba una envolvente incluso con volumen cero. Ahora el silencio y los volúmenes no válidos no crean una voz.
-- MIDI y acompañamiento tienen motores distintos porque uno respeta tiempos originales y el otro usa compases de cuatro pulsos. Sus eventos detienen el otro motor. YouTube y metrónomo siguen siendo independientes.
-- No se debe eliminar un módulo solo por compartir operaciones de audio: las envolventes, los tiempos y la cancelación tienen responsabilidades diferentes.
-- `app.js` concentra estado musical, renderizado y edición. Conviene separar el modelo de progresión de su interfaz antes de añadir estructura por secciones.
-- `style.css` contiene sucesivas redefiniciones y reglas de distintos tamaños de pantalla. No todas son duplicaciones innecesarias; consolidarlas requiere comparar las vistas y evitar cambiar de nuevo las proporciones del mástil.
-- La carpeta `version 1.0` es una copia histórica, no está cargada por la página actual. `midi-catalog.js` conserva metadatos utilizados en pruebas, no una conexión activa a una API.
-- Las tarjetas se reconstruyen al cambiar de acorde. Con miles de tarjetas conviene medir el rendimiento y actualizar solo selección y resaltado.
-- La biblioteca usa almacenamiento local y conserva su clave y formato anteriores al cambiar el nombre visible a «Mis progresiones». Los tiempos MIDI no se guardan. El respaldo importado tiene un límite de 2 MB; una biblioteca muy grande podría exportar un archivo que exceda ese límite. Esto debe resolverse antes de ampliar el almacenamiento.
+| ID | Problema | Cambio |
+| --- | --- | --- |
+| BUG-009 | Exportación permitía respaldos que la interfaz rechazaba por superar 2 MB | Límite común de 20 MB, exportación compacta e importación con validación antes de escribir |
+| BUG-010 | Foco incorrecto al mover un acorde dentro de una sección filtrada | Se conserva la identidad del acorde para recuperar el foco |
+| BUG-011 | Pausa visual para motores que realmente detienen | Icono cuadrado en MIDI/acompañamiento; pausa real sigue en YouTube |
+| BUG-012 | Elegir la fuente ya activa detenía la música | Se detiene únicamente al cambiar de fuente |
+| BUG-013 | Panel reabierto podía conservar controles inert y perder foco | Recuperación de foco antes de inert; limpieza de animaciones; sincronización en toggle |
+| BUG-014 | Índices duplicados en secciones importadas ambiguaban la edición | Validación de índices únicos; repeticiones mediante repeat |
 
-## Evolución de secciones
+Los pasos, severidad, casos y evidencia se registran en [BUGS.md](qa/BUGS.md). Las correcciones anteriores de límite de tarjetas y silencio de notas siguen cubiertas por pruebas.
 
-Se implementó una primera versión por rangos de tarjetas, con nombre, repeticiones, orden de reproducción y guardado opcional en `sections`. No duplica tarjetas y mantiene compatibilidad con progresiones anteriores. La propuesta siguiente describe el modelo más avanzado que aún queda pendiente, con secciones reutilizables y duraciones variables.
+## Duplicaciones y código histórico
 
-1. Separar una sección musical de su uso en el tema: una sección «Verso» contiene acordes; el orden del tema referencia esa sección con una cantidad de repeticiones.
-2. Ejemplo: Intro → Verso ×2 → Estribillo → Verso → Estribillo ×2. Editar Verso actualiza sus apariciones; duplicar la sección crea una variante independiente.
-3. Cada acorde debe tener una duración en pulsos. El reproductor debe informar sección, repetición y acorde actual. Para MIDI se conservan además los tiempos originales.
-4. Versionar el formato de guardado y migrar las progresiones existentes a una sección inicial «Parte A», sin perder datos.
-5. Añadir una biblioteca de ejemplos propia, separada de lo guardado por el usuario. Abrir un ejemplo crea una copia editable.
-6. Incorporar marcas temporales de YouTube por aparición del acorde: una misma sección puede sonar en distintos momentos del video. Mantener el seguimiento opcional.
+- No se encontraron funciones nombradas duplicadas dentro de cada archivo JavaScript raíz en la inspección estática realizada.
+- Se retiraron fragmentos HTML comentados de interfaces anteriores y estilos del catálogo MIDI retirado.
+- Una prueba verifica IDs HTML activos únicos, scripts no repetidos y existencia de sus archivos.
+- `version 1.0/` es una copia histórica no cargada por la aplicación; no se modificó.
+- `midi-catalog.js` contiene metadatos de fixtures usados en pruebas; no es una API activa.
+- Audio MIDI, acompañamiento y escucha de notas no son duplicaciones intercambiables: tienen tiempos, voces y responsabilidades diferentes.
+- El CSS mantiene reglas que se sobrescriben y media queries. No se hizo una consolidación completa a ciegas: requiere comparación visual por componente.
 
-Primero se debe definir y probar este modelo; los botones «×2», «Verso» y «Estribillo» deben representar datos reales, no solo etiquetas decorativas.
+## Límites y deuda técnica
+
+- app.js aún concentra datos musicales, estado y renderizado.
+- Cambiar acordes reconstruye tarjetas y el mástil; queda pendiente medir y optimizar progresiones de miles de tarjetas.
+- localStorage depende de la cuota del navegador: un JSON menor a 20 MB puede no caber. El fallo se informa sin reemplazar datos existentes.
+- Las secciones siguen guardadas por índices con referencias en memoria, no mediante IDs persistentes de acordes.
+- Las pruebas de YouTube usan un doble de API. El video externo real, la percepción de audio, Safari/Firefox y los dispositivos físicos requieren validación aparte.
+- Los iconos de MIDI y acompañamiento representan detener, no una pausa reanudable.
+
+## Evolución recomendada
+
+Primero completar los casos manuales y medir el uso real. Después, separar el modelo de progresión, añadir edición directa de secciones y duraciones por acorde, versionar datos si cambia su estructura e incorporar ejemplos propios y marcas de tiempo de YouTube. Ninguna de esas funciones futuras se presenta como implementada.

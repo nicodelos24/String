@@ -1,68 +1,54 @@
-# Guía de aprendizaje y portfolio
+# Guía del proyecto y aprendizaje — String
 
-## Objetivo
+Actualizada el 2026-09-11. String es un proyecto de portfolio desarrollado con asistencia de IA. El objetivo es comprender, revisar y demostrar el código y las pruebas, no presentar la generación automática como trabajo manual.
 
-Construir una herramienta para estudiar escalas y practicar sobre progresiones, y poder explicar cómo se desarrolló y verificó. Este repositorio puede mostrar trabajo de frontend, pruebas automatizadas y testing manual, con evidencia concreta de tus habilidades.
+## Cómo está organizado
 
-## Etapas pequeñas
+| Responsabilidad | Archivos principales |
+| --- | --- |
+| Notas, modos, mástil y tarjetas | app.js |
+| Secciones y repeticiones | sections.js |
+| Audio de acompañamiento y controles | progression-player.js, player-ui.js |
+| Lectura y reproducción MIDI | midi-import.js, midi-player.js, midi-ui.js |
+| Guardado, validación e importación JSON | song-library.js, song-library-ui.js |
+| YouTube y enlaces admitidos | youtube-player.js, youtube-url.js |
+| Interacciones y paneles | progression-interactions.js, panel-controls.js, player-disclosure.js |
+| Tema y distribución adaptable | theme.js, responsive-layout.js, style.css |
+| Escucha de notas y metrónomo | note-preview.js, metronome.js |
+| Ejecución local | server.cjs |
+| QA y evidencia | tests/, scripts/check-*.cjs, docs/qa/ |
 
-| Etapa | Entregable | Qué aprender | Estado |
-| --- | --- | --- | --- |
-| 1 | Reproductor local: acordes, BPM, volumen, repetición | Web Audio, asincronía, separación entre lógica e interfaz, pruebas con dobles | Implementado; usuario confirma inicio de audio; aceptación completa pendiente |
-| 2 | Primera ejecución manual y corrección de defectos encontrados | Casos de prueba, evidencia, severidad, regresión | Reportes exploratorios registrados; casos formales pendientes |
-| 3 | Patrones Pop / rock y Jazz suave | Eventos rítmicos, swing, pruebas de tiempos | Implementados; aceptación manual pendiente |
-| 4 | Patrón Trap suave y mezcla | Percusión, subdivisiones y normalización de niveles | Implementado sin bajo; aceptación manual pendiente |
-| 5 | Guardado de progresiones y ajustes | Almacenamiento local, validación y recuperación de datos | Pendiente |
-| 6 | Pruebas de navegador y ejecución automática en GitHub | E2E y CI | Comprobación básica de audio en Chrome/Edge incorporada tras BUG-005; ampliar pruebas y agregar CI sigue pendiente |
-| 7 | Demo publicada y caso de estudio | Presentación del trabajo y decisiones técnicas | Pendiente |
+Los motores de audio y sus interfaces están separados. No hay base de datos remota: Mis progresiones usa localStorage. La clave histórica `traste.songs.v1` se conserva para no perder datos al cambiar la marca.
 
-Cada etapa debe poder demostrarse antes de comenzar la siguiente. Los estilos serán patrones programados, con parámetros y límites explícitos; la app no genera canciones con IA.
+## Recorrido de datos
 
-## Paso 1: cómo funciona el reproductor
+1. Las tarjetas son los acordes base. Una sección conserva referencias a esas tarjetas durante la edición.
+2. Al guardar, las referencias se convierten en índices dentro de la lista completa. Se guardan nombre, repeticiones e índices únicos.
+3. El acompañamiento crea una copia para reproducir. Repetir una sección expande la ejecución, no duplica las tarjetas visibles.
+4. Los callbacks indican el acorde y la sección actuales, cambian el mástil y seleccionan la sección.
+5. El MIDI tiene su propio tiempo y conserva el vínculo con las tarjetas importadas mientras permanece cargado.
+6. Los eventos detienen MIDI y acompañamiento mutuamente. YouTube y metrónomo son independientes.
+7. Las vistas pentatónica y oscura modifican la presentación, no el archivo MIDI ni las tarjetas guardadas.
 
-1. `app.js` mantiene la progresión: raíz y tipo de cada acorde.
-2. `player-ui.js` lee esos datos al presionar Reproducir y construye las notas de cada acorde.
-3. `chordToMidi()` coloca las notas en un registro ascendente. Por ejemplo, Do mayor es `[48, 52, 55]`. Una novena se coloca encima de la séptima.
-4. `midiToFrequency()` convierte cada número MIDI a una frecuencia. Se usa MIDI como numeración; no se genera un archivo MIDI.
-5. `ProgressionPlayer` programa osciladores de Web Audio. Un oscilador produce un tono; varias notas simultáneas forman el acorde. Una envolvente de volumen suaviza el inicio y el final.
-6. El motor revisa el reloj de audio cada 25 ms. Cuando faltan menos de 100 ms para el próximo compás, programa sus ataques de acordes y percusión con `AudioContext.currentTime`.
-7. Los callbacks `onChord` y `onState` actualizan el texto y los controles. El motor no consulta el HTML.
+## Funcionalidad implementada
 
-Con 120 BPM, un pulso dura `60 / 120 = 0,5 segundos`. Cada acorde ocupa cuatro pulsos: dos segundos. Detener cancela el sonido y el temporizador; la próxima ejecución empieza por el primer acorde.
+- Editor de tarjetas, arrastre, duplicado y eliminación.
+- Secciones con rangos, repeticiones, tarjetas propias, filtrado y reordenamiento.
+- Diez estilos de acompañamiento y siete plantillas editables.
+- Importación y reproducción MIDI local; sin catálogo/API MIDI activo.
+- Biblioteca local con respaldo JSON y compatibilidad con progresiones sin secciones.
+- YouTube embebido con transporte y modo flotante; sin sincronización de acordes.
+- Tema claro/oscuro, vista pentatónica global, notas audibles y diseño adaptable.
+- Pruebas Node y comprobaciones Chrome/Edge.
 
-El motor copia la progresión para que editarla durante la reproducción no altere los eventos en curso. Un contador de ejecución evita un inicio tardío si se presiona Detener mientras se activa el audio.
+## Qué sigue pendiente
 
-### Límites de la primera etapa (histórico)
+La estructura de secciones ya existe. Quedan por diseñar la edición directa de nombre/repeticiones, duraciones variables, catálogo de ejemplos y marcas temporales para YouTube. También conviene medir rendimiento con progresiones grandes y separar el modelo y renderizado de app.js.
 
-La segunda etapa agrega ritmos y mejora la síntesis. Ver [Ritmos y sonido](RITMOS-Y-SONIDO.md) para el funcionamiento actual.
+No hay integración continua ni publicación verificadas en esta revisión. Tampoco hay evaluación formal de accesibilidad completa o aceptación auditiva.
 
-- Sonido sintetizado sencillo, sin muestras de guitarra, piano o instrumentos reales.
-- Cuatro pulsos por acorde; todavía no hay patrones de estilo, percusión ni duraciones individuales.
-- BPM y repetición se eligen antes de iniciar; el volumen puede cambiar durante la reproducción.
-- El metrónomo y el reproductor son independientes y no están sincronizados.
-- El acorde que suena se indica por texto; no cambia automáticamente la selección ni la escala del mástil.
-- No reproduce las notas individuales al tocar el mástil.
+## Cómo aprender de cada cambio
 
-## Música externa: decisión para otra etapa
+Para una corrección: reproducir el problema, escribir el resultado esperado, encontrar la causa, añadir una regresión, cambiar el código y registrar la evidencia. Una prueba con un DOM simulado no demuestra que un botón se vea bien: para eso se necesitan navegador y revisión manual.
 
-Reproducir una canción existente puede servir para practicar, pero no interpreta la progresión creada en Traste. La opción inicial a evaluar es pegar un enlace de YouTube y mostrar su reproductor oficial. La documentación de [IFrame Player API](https://developers.google.com/youtube/iframe_api_reference) permite incrustar y controlar videos; un [iframe básico](https://developers.google.com/youtube/player_parameters) usa el identificador del video, sin implementar acceso a una cuenta.
-
-Eso no equivale a vincular una biblioteca de YouTube Music. No se confirmó una API oficial específica para esa integración en la documentación consultada. La [YouTube Data API](https://developers.google.com/youtube/v3/getting-started) requiere configuración de proyecto y autorización para operaciones sobre datos de usuario. No está implementada en esta etapa.
-
-Antes de agregar un embed, probar disponibilidad del video, errores y comportamiento desde una demo servida por HTTP/HTTPS. Mantener el reproductor oficial visible y respetar sus controles. No diseñar la función como extracción de audio.
-
-## Cómo convertirlo en un portfolio que puedas defender
-
-- Explicar el problema: visualizar escalas y escuchar una progresión para practicar.
-- Mostrar una demo breve con una tarea real, incluyendo un caso de error bien manejado.
-- Enlazar requisitos, pruebas y bugs desde el README. Registrar versiones del entorno y evidencia real de las ejecuciones manuales.
-- Hacer commits pequeños con propósito: por ejemplo, `feat: reproducir progresiones con Web Audio` o `test: evitar inicio tardío después de detener`. Los cambios de esta etapa aún no se confirmaron en un commit.
-- Escribir un caso de estudio: problema, decisión técnica, alternativa considerada, prueba que encontró un fallo, solución y límite pendiente.
-- Explicar qué implementaste, qué hiciste con asistencia y cómo lo verificaste. Poder modificar y explicar una función vale más que enumerar tecnologías.
-- No presentar pruebas simuladas como E2E ni afirmar cobertura total porque la suite pasa. No hay todavía una medición de cobertura ni una demo publicada por esta tarea.
-
-## Tu siguiente ejercicio
-
-Ejecutar MAN-01 a MAN-04 de [los casos manuales](qa/CASOS-MANUALES.md), registrar resultados y anotar cómo suena el timbre. Después, explicar con tus palabras por qué a 120 BPM cada acorde dura dos segundos y por qué Detener debe cancelar también los sonidos programados.
-
-Los patrones ya están implementados. El siguiente ejercicio es ejecutar MAN-14 a MAN-18 y anotar qué estilo y notas escuchaste. Conviene mantener la misma progresión y el mismo volumen al comparar, para cambiar una sola variable por vez.
+Consulta [la revisión técnica](REVISION-TECNICA.md), [el plan QA](qa/PLAN-DE-PRUEBAS.md) y [los resultados](qa/RESULTADOS.md). En el portfolio explica qué hizo la IA, qué revisaste, qué comprobaste y qué límites siguen presentes.

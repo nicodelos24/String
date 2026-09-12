@@ -7,6 +7,13 @@ function setup() {
   const validate=song=>{if(!song?.id || !song.title) throw new Error('Invalid');return structuredClone(song);};
   return {library:new SongLibrary(storage,validate),storage};
 }
+test('backups larger than 2 MB round-trip and oversize input preserves stored data',()=>{
+  const {library}=setup();
+  for(let i=0;i<10;i++)library.save({id:String(i),title:'Práctica',chords:Array.from({length:4096},()=>({root:0,type:'maj7',rootNoteName:'C',mode:'ionian',ghostMode:''}))});
+  const raw=library.export();assert(Buffer.byteLength(raw)>2*1024*1024);
+  const other=setup().library;assert.equal(other.import(raw),10);assert.equal(other.read()[0].chords.length,4096);
+  const before=other.export();assert.throws(()=>other.import(' '.repeat(SongLibrary.maxBackupBytes+1)),/20 MB/);assert.equal(other.export(),before);
+});
 test('songs persist across instances, update by id and preserve saved copies',()=>{
   const {library,storage}=setup(); const song={id:'one',title:'Blues',chords:[{root:0}]};
   library.save(song);song.chords[0].root=5;

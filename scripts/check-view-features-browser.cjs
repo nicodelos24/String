@@ -62,7 +62,7 @@ const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
     assert.equal(await evaluate("document.documentElement.dataset.theme"),'light');
     const shotLight2=await shoot('1-tema-claro.png');
 
-    // 2) Transporte: iconos de play/pausa a la izquierda y visibles al plegar Acompañamiento.
+    // 2) Transporte: iconos de reproducir/detener a la izquierda y visibles al plegar.
     const transport=await evaluate(`(()=>{
       const disclosure=document.querySelector('#player-disclosure');
       if(disclosure.getAttribute('aria-expanded')!=='false')disclosure.click();

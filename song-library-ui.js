@@ -71,7 +71,7 @@
   $('song-import').addEventListener('change',async event=>{
     const file=event.target.files[0]; if(!file) return;
     try {
-      if(file.size>2*1024*1024) throw new Error('El archivo supera 2 MB.');
+      if(file.size>SongLibrary.maxBackupBytes) throw new Error('El respaldo supera 20 MB.');
       const count=library.import(await file.text()); refresh();status.textContent=`Se importaron ${count} progresiones como copias.`;
     } catch(error) {status.textContent=`No se importó el archivo: ${error.message}`;}
     event.target.value='';

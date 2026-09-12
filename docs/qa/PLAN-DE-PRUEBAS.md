@@ -1,55 +1,45 @@
-# Plan de pruebas
+# Plan de pruebas — String
 
-## Alcance y estrategia
+Actualizado el 2026-09-11. Proyecto de aprendizaje desarrollado con asistencia de IA. Este plan separa la comprobación técnica de la aceptación manual y auditiva.
 
-Se verifica la lógica musical, la gestión de progresiones, el metrónomo y el primer reproductor de acordes. Las pruebas automatizadas usan `node:test` y `node:assert/strict`, sin instalar dependencias.
+## Objetivo y entorno
 
-```sh
-node --test tests/*.test.cjs
-```
+Verificar que editar tarjetas y secciones, cambiar de vista, reproducir, importar y guardar no interfieran entre sí. Se prueba con Node.js y navegadores Chromium instalados (Chrome y Edge). La aplicación se inicia con `npm start`; el explorador y audio local también admiten `file://`. YouTube requiere HTTP.
 
-| Archivo | Nivel y alcance | Límite |
+## Capas y comandos
+
+| Comando | Qué verifica | Límites |
 | --- | --- | --- |
-| `tests/metronome.test.cjs` | Motor de metrónomo con reloj y audio simulados | No verifica altavoces ni latencia real |
-| `tests/progression.test.cjs` | Lógica musical e integración de controles con DOM simulado | No verifica renderizado, foco real ni compatibilidad de navegador |
-| `tests/player.test.cjs` | Motor de reproducción con reloj, temporizador y audio simulados | No escucha el timbre ni verifica Web Audio real |
+| `npm test` | Estructura HTML, lógica musical, metrónomo, audio, MIDI, biblioteca y validación de secciones | Dobles de DOM/audio y fixtures; no mide comodidad visual ni sonido percibido |
+| `node scripts/check-interface-browser.cjs` | Integración de controles, guardado, tarjetas, secciones, MIDI, tema, tamaños móviles y regresiones de esta revisión | Chrome headless, audio silenciado, API YouTube simulada/red bloqueada; movimiento reducido para medir distribución |
+| `node scripts/check-interface-browser.cjs --edge` | Mismo flujo en Edge | No equivale a Safari, Firefox ni un teléfono físico |
+| `node scripts/check-view-features-browser.cjs` | Tema, iconos, pentatónica y capturas | Automatización visual; no aprobación humana del diseño |
+| `node scripts/check-player-browser.cjs --rhythms --no-artifacts` | Web Audio real y análisis offline de niveles, ataques y detención | Archivo local, headless y silenciado; no escucha humana |
+| `python scripts/generate-qa-current.py` | Generación y reapertura de Excel actuales | Requiere openpyxl solo para QA; no es una dependencia de la app |
 
-Los dobles de prueba sustituyen servicios externos al código probado. Permiten adelantar el reloj sin esperar segundos reales y reproducir errores de audio. No son un navegador.
+Los scripts de navegador requieren permiso para lanzar procesos en entornos restringidos. Los perfiles son temporales y no usan cuentas personales. Los reportes viejos no deben sobrescribirse: usar `--no-artifacts` en el script de audio y guardar la salida de la ejecución nueva aparte.
 
-Tras el reporte BUG-005 se agregó `scripts/check-player-browser.cjs`, que abre el archivo local en Chrome o Edge real y comprueba el flujo con Web Audio. Esta comprobación usa el navegador en headless y silenciado: valida los estados y las notas programadas, sin escucha humana. PLY-14 cubre el contexto de los temporizadores y PLY-15 la envolvente de volumen.
+## Cobertura y trazabilidad
 
-## Requisitos y trazabilidad del reproductor
+| Área | Automatización | Casos manuales |
+| --- | --- | --- |
+| Reproducción, volumen y cancelación | tests/player, metronome y note-preview | MAN-01 a MAN-18 |
+| Tema, colores, pentatónica y responsive | tests/progression; interfaz y view-features | MAN-19, MAN-20, MAN-38 |
+| Fuente, iconos y paneles | interfaz; BUG-011/012/013 | MAN-21 a MAN-24 |
+| MIDI: validación, tiempos y seguimiento | tests/midi-import y midi-player; interfaz | MAN-25 a MAN-27 |
+| Secciones: guardar, filtrar, mover, editar y seguir | tests/sections; interfaz; BUG-010/014 | MAN-28 a MAN-32, MAN-34 |
+| Biblioteca, límites y compatibilidad | tests/song-library; interfaz; BUG-009 | MAN-33 a MAN-35 |
+| Ritmos y plantillas | tests/player y progression-presets | MAN-36 |
+| YouTube | tests/youtube-url; API simulada en interfaz | MAN-37 |
+| Carga de módulos e IDs | tests/project-structure | MAN-12 |
 
-| Requisito | Criterio de aceptación | Automatización | Manual |
-| --- | --- | --- | --- |
-| REP-01 | Reproducir en orden las notas de los acordes guardados, incluidas extensiones | PLY-01, PLY-02, PLY-12 | MAN-01 |
-| REP-02 | Un acorde cada cuatro pulsos; BPM entre 30 y 240 | PLY-02, PLY-06, PLY-13 | MAN-02, MAN-05 |
-| REP-03 | Repetir al activar la opción; terminar tras el último acorde al desactivarla | PLY-02, PLY-03 | MAN-03 |
-| REP-04 | Detener cancela audio pendiente; reiniciar comienza en el primer acorde | PLY-04, PLY-05, PLY-11 | MAN-04 |
-| REP-05 | Volumen ajustable durante la reproducción, con silencio en cero | PLY-08, PLY-13 | MAN-06 |
-| REP-06 | La ejecución mantiene una copia de la progresión sin cambiar la selección del editor | PLY-07, PLY-12 | MAN-07 |
-| REP-07 | Mostrar un error recuperable si falla el audio; detener al abandonar la página | PLY-10, PLY-13 | MAN-08, MAN-09 |
-| REP-08 | Tras una demora no lanzar muchos acordes juntos | PLY-09 | MAN-09 |
-| REP-09 | Controles con etiquetas, foco visible y acceso por teclado | Pendiente de pruebas de navegador | MAN-10, MAN-11 |
-| RIT-REQ-01 | Sin ritmo, Pop / rock, Jazz suave y Trap suave mantienen cuatro pulsos por tarjeta y las notas guardadas | RIT-01/02/06; navegador | MAN-14 |
-| RIT-REQ-02 | Desactivar Percusión conserva los ataques rítmicos de los acordes | RIT-03 | MAN-15 |
-| RIT-REQ-03 | Volumen percusión independiente y ajustable durante la ejecución | RIT-04/06 | MAN-16 |
-| RIT-REQ-04 | Detener cancela acordes y fuentes de percusión pendientes | RIT-03; pruebas base del motor | MAN-17 |
-| MIX-REQ-01 | Ganancias normalizadas entre acordes y ausencia de saturación en ejemplos medidos | MIX-01; OfflineAudioContext | MAN-18 |
+## Criterios de aceptación
 
-Los identificadores PLY están en los nombres de las pruebas. Los requisitos describen comportamiento verificable; los próximos estilos musicales se definirán en requisitos nuevos.
+- Suite Node y flujos automatizados declarados sin errores.
+- Toda corrección tiene un caso de regresión o una inspección explícitamente identificada.
+- La importación fallida conserva la biblioteca anterior.
+- Una sola fuente entre MIDI y acompañamiento; la selección y la vista musical no alteran los acordes guardados.
+- Las pruebas manuales se marcan aprobadas únicamente después de ejecutarlas, indicando entorno y evidencia.
+- La demo no se considera validada para producción solo por tener pruebas verdes: falta escucha, dispositivos físicos, accesibilidad con lector de pantalla y video externo real.
 
-La etapa de ritmos usa identificadores RIT y MIX. Se verifica con `node scripts/check-player-browser.cjs --rhythms` y opcionalmente `--edge`. El análisis de RMS y pico no sustituye la aceptación auditiva del balance ni certifica todo el rango posible de notas y volúmenes.
-
-## Ejecución registrada
-
-Ver [RESULTADOS.md](RESULTADOS.md) para el entorno, el comando y los resultados. No marcar un caso manual como aprobado hasta ejecutarlo. Un caso bloqueado necesita indicar qué impidió probarlo.
-
-## Criterio para presentar la demo
-
-- Suite automatizada sin fallos.
-- Casos manuales del flujo principal ejecutados con entorno y evidencia.
-- Sin defectos abiertos que impidan reproducir, detener o editar la progresión.
-- Limitaciones documentadas; revisión de teclado y pantalla móvil.
-
-La publicación de la demo sigue pendiente hasta completar esas comprobaciones.
+Los resultados reales están en [RESULTADOS.md](RESULTADOS.md). Los casos y bugs actuales comparten la fuente [REVISION-ACTUAL.json](REVISION-ACTUAL.json), que genera Markdown y las planillas String. No se ha medido un porcentaje de cobertura.

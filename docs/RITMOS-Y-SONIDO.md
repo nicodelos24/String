@@ -1,4 +1,6 @@
-# Ritmos y sonido — segunda etapa
+# Ritmos y sonido
+
+Actualizado el 2026-09-11. Los resultados históricos de niveles están en QA; las comprobaciones automáticas no sustituyen la escucha humana.
 
 ## Qué se agregó
 
@@ -10,8 +12,18 @@ Ahora puedo elegir un acompañamiento antes de reproducir. Cada tarjeta sigue du
 | Pop / rock | Ataques en los pulsos 1 y 3 | Bombo, caja en 2 y 4, hi-hat en corcheas |
 | Jazz suave | Tres ataques con una anticipación con swing | Patrón suave con hi-hats desiguales, inspirado en swing |
 | Trap suave | Acorde largo | Bombo sincopado, caja en el tercer pulso y hi-hats en semicorcheas |
+| Funk | Cinco ataques cortos y sincopados | Bombo sincopado, caja y hi-hats subdivididos |
+| Bossa suave | Cuatro ataques con anticipaciones | Bombo, caja y hi-hats en corcheas |
+| Reggaetón suave | Cuatro ataques alternando duración | Patrón simplificado inspirado en dembow |
+| Reggae | Acordes cortos en contratiempos | Bombo/caja en el tercer pulso e hi-hats en contratiempos |
+| Disco | Cuatro ataques de acorde | Bombo en cada pulso, caja en 2 y 4 |
+| Balada | Acorde sostenido | Patrón espaciado de bombo, caja e hi-hats |
 
 Son patrones sintetizados simples para estudiar. No son una simulación completa de cada género, ni una grabación de músicos. No se agregó bajo ni generación automática de canciones.
+
+Lo anterior se refiere al acompañamiento: la escucha individual del mástil sí tiene un timbre sintetizado de bajo tipo slap y otro de guitarra. El piano usa una onda triangular. La reproducción de notas respeta silencio en cero y cancela la voz anterior.
+
+MIDI tiene su propio motor y respeta los tiempos del archivo. Se detiene mutuamente con el acompañamiento. Ambos muestran un cuadrado para detener y reinician desde el comienzo; solo YouTube ofrece pausa reanudable. Las secciones expanden el orden del acompañamiento sin duplicar tarjetas ni cambiar los tiempos del MIDI.
 
 ## Cómo probarlo
 

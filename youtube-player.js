@@ -9,6 +9,7 @@
   const setIcon=ticking=>{toggle.innerHTML=ticking?'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>':'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>';toggle.setAttribute('aria-label',ticking?'Pausar':'Reproducir');toggle.title=ticking?'Pausar':'Reproducir';};
   function layout() {
     const collapsed=disclosure.getAttribute('aria-expanded')==='false';
+    if(collapsed && content.contains(document.activeElement))disclosure.focus();
     content.classList.toggle('is-collapsed',collapsed); content.inert=collapsed;
     wrap.classList.toggle('is-floating',collapsed && floating.checked);
     wrap.hidden=!player || (collapsed && !floating.checked);

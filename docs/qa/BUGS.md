@@ -113,3 +113,91 @@ El 2026-09-10 el usuario confirmó que el sonido ahora se reproduce. Esto aporta
 - **Caso vinculado:** MAN-XX o prueba automatizada.
 - **Estado:** abierto / en corrección / pendiente de verificación / cerrado.
 - **Solución y verificación:** completar después de corregir y volver a probar.
+
+## Revisión 2026-09-11
+
+Defectos encontrados en revisión técnica, no reportes manuales inventados. Los estados siguientes se refieren a la verificación automatizada.
+
+### BUG-009 — Respaldo exportado mayor a 2 MB no se puede importar
+
+- **Origen:** Revisión de código y regresión automatizada; no es un reporte manual del usuario.
+- **Severidad:** Alta
+- **Prioridad:** Alta
+- **Pasos:** Exportar biblioteca grande e intentar importarla en otra sesión.
+- **Esperado:** Restaurar un respaldo válido que la app haya exportado.
+- **Observado en el código revisado:** La interfaz rechazaba archivos mayores de 2 MB, aunque guardar/exportar no imponían ese límite.
+- **Corrección:** Límite común de 20 MB en lectura, escritura, exportación e importación; exportación compacta.
+- **Caso manual:** MAN-33
+- **Regresión:** tests/song-library.test.cjs; check-interface-browser.cjs
+- **Estado:** Corregido y verificado automáticamente; revalidación manual pendiente
+- **Evidencia:** docs/qa/evidencia/revision-2026-09-11/ejecucion.json
+
+### BUG-010 — El foco salta a otro acorde al ordenar una sección con teclado
+
+- **Origen:** Revisión de código y regresión automatizada; no es un reporte manual del usuario.
+- **Severidad:** Media
+- **Prioridad:** Alta
+- **Pasos:** Seleccionar una sección con índices no contiguos; mover acorde con Alt + flecha.
+- **Esperado:** El foco permanece en el acorde que se movió.
+- **Observado en el código revisado:** El selector de foco usaba el índice destino global, que corresponde a otra tarjeta cuando cambia solo el orden interno.
+- **Corrección:** Conservar la identidad del acorde y buscar su índice después de mover.
+- **Caso manual:** MAN-31
+- **Regresión:** check-interface-browser.cjs
+- **Estado:** Corregido y verificado automáticamente; revalidación manual pendiente
+- **Evidencia:** docs/qa/evidencia/revision-2026-09-11/ejecucion.json
+
+### BUG-011 — Icono de pausa para una acción que detiene y reinicia
+
+- **Origen:** Revisión de código y regresión automatizada; no es un reporte manual del usuario.
+- **Severidad:** Baja
+- **Prioridad:** Media
+- **Pasos:** Iniciar acompañamiento o MIDI; pulsar icono de pausa; volver a reproducir.
+- **Esperado:** El icono representa detener si la próxima reproducción comienza desde cero.
+- **Observado en el código revisado:** Se dibujaban dos barras de pausa aunque la etiqueta y el motor indicaban Detener.
+- **Corrección:** Cuadrado de detener en MIDI y progresión; YouTube conserva pausa real.
+- **Caso manual:** MAN-22
+- **Regresión:** check-interface-browser.cjs; revisión de los motores
+- **Estado:** Corregido y verificado automáticamente; revalidación manual pendiente
+- **Evidencia:** docs/qa/evidencia/revision-2026-09-11/ejecucion.json
+
+### BUG-012 — Pulsar la fuente activa detiene la reproducción
+
+- **Origen:** Revisión de código y regresión automatizada; no es un reporte manual del usuario.
+- **Severidad:** Media
+- **Prioridad:** Media
+- **Pasos:** Reproducir Progresión; volver a pulsar Progresión en el selector.
+- **Esperado:** Mantener la reproducción al elegir la misma fuente.
+- **Observado en el código revisado:** Cada clic emitía traste:load-song incluso sin cambiar de fuente.
+- **Corrección:** Emitir detención solamente al cambiar de fuente.
+- **Caso manual:** MAN-21
+- **Regresión:** check-interface-browser.cjs
+- **Estado:** Corregido y verificado automáticamente; revalidación manual pendiente
+- **Evidencia:** docs/qa/evidencia/revision-2026-09-11/ejecucion.json
+
+### BUG-013 — Panel reabierto con controles inactivos y foco perdido
+
+- **Origen:** Revisión de código y regresión automatizada; no es un reporte manual del usuario.
+- **Severidad:** Media
+- **Prioridad:** Alta
+- **Pasos:** Cerrar Crear sección con foco en Nombre; reabrir mediante cambio de open; repetir con movimiento reducido.
+- **Esperado:** Devolver foco al encabezado y reactivar el contenido al abrir.
+- **Observado en el código revisado:** Se aplicaba inert antes de recuperar el foco; cambios programáticos de open no restauraban inert. Una animación cancelada podía quedar registrada.
+- **Corrección:** Recuperar foco antes de inert, limpiar animación cancelada y sincronizar inert en toggle.
+- **Caso manual:** MAN-24
+- **Regresión:** check-interface-browser.cjs
+- **Estado:** Corregido y verificado automáticamente; revalidación manual pendiente
+- **Evidencia:** docs/qa/evidencia/revision-2026-09-11/ejecucion.json
+
+### BUG-014 — Secciones importadas aceptan la misma tarjeta repetida por índice
+
+- **Origen:** Revisión de código y regresión automatizada; no es un reporte manual del usuario.
+- **Severidad:** Media
+- **Prioridad:** Media
+- **Pasos:** Importar una sección con indices [0,0].
+- **Esperado:** Rechazar referencias duplicadas; usar repeat para repeticiones.
+- **Observado en el código revisado:** El validador aceptaba índices repetidos; las operaciones de edición por identidad no distinguen esas apariciones.
+- **Corrección:** Validar índices únicos dentro de cada sección.
+- **Caso manual:** MAN-34
+- **Regresión:** tests/sections.test.cjs
+- **Estado:** Corregido y verificado automáticamente; revalidación manual pendiente
+- **Evidencia:** docs/qa/evidencia/revision-2026-09-11/ejecucion.json

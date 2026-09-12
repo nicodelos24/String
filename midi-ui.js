@@ -9,7 +9,7 @@
     linked=progression.slice(-pending.length);
     pending=[];add.disabled=true;return true;
   }
-  const engine=new MidiPlayer({onState:running=>{play.innerHTML=running?'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>':'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>';play.setAttribute('aria-label',running?'Detener MIDI':'Reproducir MIDI');play.title=running?'Detener MIDI':'Reproducir MIDI';play.setAttribute('aria-pressed',String(running));if(!running){if(linked.includes(playingProgressionItem)){playingProgressionItem=null;renderProgression();}last=-1;preview.querySelectorAll('li').forEach(row=>row.removeAttribute('aria-current'));}},onTime:time=>{
+  const engine=new MidiPlayer({onState:running=>{play.innerHTML=running?'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6h12v12H6z"/></svg>':'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>';play.setAttribute('aria-label',running?'Detener MIDI':'Reproducir MIDI');play.title=running?'Detener MIDI':'Reproducir MIDI';play.setAttribute('aria-pressed',String(running));if(!running){if(linked.includes(playingProgressionItem)){playingProgressionItem=null;renderProgression();}last=-1;preview.querySelectorAll('li').forEach(row=>row.removeAttribute('aria-current'));}},onTime:time=>{
     clock.textContent=`${Math.floor(time/60)}:${String(Math.floor(time%60)).padStart(2,'0')} / ${Math.floor(imported.duration/60)}:${String(Math.floor(imported.duration%60)).padStart(2,'0')}`;
     let index=-1;for(let i=0;i<imported.chords.length;i++){if(imported.chords[i].time>time)break;index=i;}
     if(index!==last){last=index;preview.querySelectorAll('li').forEach((row,i)=>row.setAttribute('aria-current',String(i===index)));
@@ -27,7 +27,7 @@
   }});
   play.addEventListener('click',async()=>{
     if(engine.running || engine.starting){engine.stop();return;}
-    if(!imported || !addCards())return;window.dispatchEvent(new Event('traste:load-song'));play.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>';play.setAttribute('aria-label','Iniciando…');play.title='Iniciando…';
+    if(!imported || !addCards())return;window.dispatchEvent(new Event('traste:load-song'));play.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6h12v12H6z"/></svg>';play.setAttribute('aria-label','Iniciando…');play.title='Iniciando…';
     window.StringSections?.clearView();
     try {await engine.start(imported);}catch {engine.stop();status.textContent='No se pudo iniciar el audio MIDI. Intenta de nuevo.';}
   });

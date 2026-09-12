@@ -7,7 +7,7 @@
   const percussion = document.querySelector('#player-percussion');
   const status = document.querySelector('#player-status');
   let playbackItems = [];
-  const icon = playing => `<svg viewBox="0 0 24 24" aria-hidden="true">${playing ? '<path d="M6 5h4v14H6zM14 5h4v14h-4z"/>' : '<path d="M8 5v14l11-7z"/>'}</svg>`;
+  const icon = playing => `<svg viewBox="0 0 24 24" aria-hidden="true">${playing ? '<path d="M6 6h12v12H6z"/>' : '<path d="M8 5v14l11-7z"/>'}</svg>`;
   const setBusy = busy => {
     bpm.disabled = busy;
     loop.disabled = busy;
@@ -51,7 +51,7 @@
     status.textContent = 'Iniciando…';
     try { await player.start(chords, {bpm: Number(bpm.value), loop: loop.checked,
       style: style.value, percussion: percussion.checked}); }
-    catch { setBusy(false); status.textContent = 'No se pudo iniciar el audio. Volvé a intentar.'; }
+    catch { setBusy(false); status.textContent = 'No se pudo iniciar el audio. Intenta de nuevo.'; }
   });
   document.querySelector('#player-volume').addEventListener('input', event => {
     player.setVolume(Number(event.target.value) / 100);

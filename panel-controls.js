@@ -1,7 +1,9 @@
 (() => {
   const $=id=>document.getElementById(id);
+  let currentSource='progression';
   function choose(source,stop=true){
-    if(stop)window.dispatchEvent(new Event('traste:load-song'));
+    if(stop && source!==currentSource)window.dispatchEvent(new Event('traste:load-song'));
+    currentSource=source;
     document.querySelectorAll('[data-source]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.source===source)));
     $('progression-transport').hidden=source!=='progression';
     $('midi-transport').hidden=source!=='midi';
@@ -19,15 +21,15 @@
     summary.addEventListener('click',event=>{
       event.preventDefault();event.stopPropagation();
       const height=panel.getBoundingClientRect().height;
-      animation?.cancel();expanded=!expanded;
-      [...panel.children].filter(child=>child!==summary).forEach(child=>child.inert=!expanded);
+      animation?.cancel();animation=null;expanded=!expanded;
       if(!expanded && panel.contains(document.activeElement))summary.focus();
+      [...panel.children].filter(child=>child!==summary).forEach(child=>child.inert=!expanded);
       if(matchMedia('(prefers-reduced-motion: reduce)').matches){panel.open=expanded;return;}
       panel.open=true;
       const target=expanded?panel.getBoundingClientRect().height:summary.getBoundingClientRect().height+parseFloat(getComputedStyle(panel).paddingTop)+parseFloat(getComputedStyle(panel).paddingBottom)+2;
       animation=panel.animate([{height:height+'px',overflow:'hidden'},{height:target+'px',overflow:'hidden'}],{duration:250,easing:'cubic-bezier(.2,.8,.2,1)'});
       animation.onfinish=()=>{panel.open=expanded;animation=null;};
     });
-    panel.addEventListener('toggle',()=>{if(!animation)expanded=panel.open;});
+    panel.addEventListener('toggle',()=>{if(!animation){expanded=panel.open;[...panel.children].filter(child=>child!==summary).forEach(child=>child.inert=!expanded);}});
   });
 })();
