@@ -113,6 +113,13 @@
           <div id="youtube-content" class="collapsible-content is-collapsed" inert><div class="collapsible-inner">
             <form id="youtube-form" class="youtube-form"><label for="youtube-url" class="sr-only">Enlace de YouTube</label><div class="youtube-url-row"><input id="youtube-url" type="url" placeholder="Pega el enlace de YouTube" required><button id="youtube-load" type="submit">Cargar video</button></div></form>
             <details class="video-sync-panel"><summary>Sincronizar acordes</summary>
+              <div class="video-tempo-controls">
+                <label>BPM <input id="video-bpm" type="number" min="30" max="240" value="100"></label>
+                <button id="video-tap" type="button">Marcar pulso</button>
+                <label>Pulsos por acorde <input id="video-beats" type="number" min="1" max="16" value="4"></label>
+                <button id="video-tempo-start" type="button">Empezar progresión aquí</button>
+                <details class="inline-help contextual-help"><summary aria-label="Ayuda del tempo del video">?</summary><p>Mientras escuchas, pulsa Marcar pulso varias veces al ritmo de la canción para estimar su BPM, o escríbelo. Elige cuántos pulsos dura cada acorde y pulsa Empezar progresión aquí en el primer cambio. Reemplaza las marcas anteriores y sigue toda la progresión, incluidas las secciones y repeticiones. No pausa el video. Funciona con tempo y duración constantes; puedes volver a generar las marcas para ajustar el inicio.</p></details>
+              </div>
               <button id="video-mark" type="button" disabled>Marcar acorde aquí</button>
               <label><input id="video-follow" type="checkbox">Seguir marcas del video</label>
               <details class="inline-help contextual-help"><summary aria-label="Ayuda de sincronización">?</summary><p>Selecciona una tarjeta y pulsa Marcar acorde aquí cuando empiece en el video. Puedes pausar para hacerlo. Repite con los siguientes acordes y activa Seguir marcas. Guarda o actualiza en Mis progresiones para conservar los tiempos. Cambiar de video descarta las marcas actuales sin guardar.</p></details>

@@ -96,6 +96,8 @@ Guardar el enlace con una progresión no sincroniza automáticamente sus acordes
 
 En **YouTube → Sincronizar acordes**, selecciona una tarjeta y pulsa **Marcar acorde aquí** cuando comience en el video. Repite con los cambios y activa **Seguir marcas del video**. Puedes pausar el video para colocar las marcas. Usa **Guardar nueva** o **Actualizar** en Mis progresiones para conservarlas junto al enlace. Cambiar de video descarta las marcas actuales sin guardar. El seguimiento se desactiva al iniciar MIDI o acompañamiento.
 
+Para sincronizar sin marcar cada acorde, indica el BPM (o pulsa **Marcar pulso** al ritmo de la canción), elige los pulsos por acorde y pulsa **Empezar progresión aquí** en el momento inicial. Se generan marcas para toda la progresión, respetando secciones y repeticiones, y se reemplazan las anteriores. Requiere tempo constante y la misma duración por acorde; no detecta el ritmo del audio automáticamente.
+
 ## Verificación y documentación
 
 ```sh

@@ -67,3 +67,8 @@ Pero además noto que hay un boton que dice "Todos los acordes" y quisiera que e
 
 - Quiero correjir esta funcionalidad porque no tiene sentido pausar el video para poner acordes, no hay una manera de conseguir que en los videos se pueda mostrar una sección donde yo coloque qué acorde va? No se puede integrar alguna IA libre o con el micrófono o algo así que detecte al menos el tiempo de la canción así luego los acordes que agrego van cambiando al ritmo de la canción del video? Y luego podría agregar esa progresión vinculada al video a una biblioteca que sirva para que varios usuarios vean eso en un futuro
 
+  - Implementado: sincronización por tempo sin pausar. «Marcar pulso» estima el BPM a partir de tus pulsaciones; también puedes escribirlo. «Empezar progresión aquí» genera los tiempos desde la posición actual del video y activa el seguimiento.
+  - Usa la progresión completa o el orden de las secciones y sus repeticiones. Puedes elegir entre 1 y 16 pulsos por acorde. Reemplaza las marcas anteriores; guarda o actualiza para conservarlas con el video.
+  - Límite de esta primera versión: BPM y duración por acorde constantes. No es detección automática del audio, IA ni micrófono. La biblioteca compartida entre usuarios sigue pendiente; hoy puedes intercambiar respaldos JSON.
+  - Comprobado: cálculo de tiempos con inicio desplazado y acordes repetidos, validación y estructura HTML. Pendiente de prueba con video real y ajuste manual del pulso.
+

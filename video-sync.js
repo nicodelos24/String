@@ -8,10 +8,32 @@ function validateVideoMarks(value, count) {
     previous=mark.time;return {time:mark.time,index:mark.index};
   });
 }
-if(typeof module!=='undefined')module.exports={validateVideoMarks};
+function createTempoMarks(indices,start,bpm,beats){
+  if(!Number.isFinite(start)||start<0||!Number.isFinite(bpm)||bpm<30||bpm>240||!Number.isInteger(beats)||beats<1||beats>16||!indices.length||indices.length>4096)throw new Error('Usa BPM entre 30 y 240, de 1 a 16 pulsos y hasta 4096 cambios.');
+  return indices.map((index,i)=>({index,time:start+i*60/bpm*beats}));
+}
+if(typeof module!=='undefined')module.exports={validateVideoMarks,createTempoMarks};
 if(typeof document!=='undefined')(()=>{
   const $=id=>document.getElementById(id);
   let marks=[],video='',time=null,last=null;
+  let taps=[];
+  $('video-tap').onclick=()=>{
+    const now=performance.now();if(taps.length && now-taps.at(-1)>2500)taps=[];
+    taps.push(now);taps=taps.slice(-8);
+    if(taps.length>1){const bpm=Math.round(60000*(taps.length-1)/(now-taps[0]));if(bpm>=30&&bpm<=240)$('video-bpm').value=bpm;}
+  };
+  $('video-tempo-start').onclick=()=>{
+    if(time===null){$('video-sync-status').textContent='Carga un video primero.';return;}
+    try{
+      const entries=window.StringSections?window.StringSections.playback():progression.map(source=>({source}));
+      const planned=createTempoMarks(entries.map(e=>progression.indexOf(e.source)),time,Number($('video-bpm').value),Number($('video-beats').value));
+      validateVideoMarks(planned,progression.length);
+      window.dispatchEvent(new Event('traste:load-song'));
+      marks=planned.map(m=>({time:m.time,source:progression[m.index]}));render();
+      $('video-follow').checked=true;last=null;
+      $('video-sync-status').textContent='Siguiendo el tempo desde aquí. Guarda o actualiza tu progresión para conservar estos tiempos.';
+    }catch(error){$('video-sync-status').textContent=error.message;}
+  };
   function stop(){
     $('video-follow').checked=false;
     if(last && playingProgressionItem===last){playingProgressionItem=null;renderProgression();}

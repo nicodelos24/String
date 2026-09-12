@@ -1429,6 +1429,9 @@ footer {
 .video-restore { display: none; }
 .video-sync-panel { margin-top: 10px; padding: 8px; border: 1px solid var(--line); border-radius: 8px; }
 .video-sync-panel > summary { cursor: pointer; margin-bottom: 6px; }
+.video-tempo-controls { display: flex; flex-wrap: wrap; align-items: end; gap: 8px; margin: 8px 0; }
+.video-tempo-controls label { display: grid; gap: 4px; }
+.video-tempo-controls input { width: 70px; box-sizing: border-box; }
 #video-marks { max-height: 150px; overflow: auto; padding-left: 22px; }
 #video-marks li { margin: 4px 0; }
 #video-sync-status { font-size: 11px; color: var(--muted); }
