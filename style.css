@@ -743,10 +743,11 @@ footer {
 @media(prefers-reduced-motion: reduce) { .sections-panel #section-list .section-card { transition: none; } }
 .player-topline .player-disclosure { justify-content: flex-start; }
 .source-switch { display: inline-flex; padding: 3px; gap: 2px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); }
-.progression-quick-player { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 8px 0 12px; }
-#quick-play { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; padding: 10px; border-radius: 50%; transition: background-color .2s, color .2s; }
+.progression-quick-player { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+#quick-play { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; padding: 10px; border-radius: 50%; transition: background-color .2s, color .2s, transform .2s ease, box-shadow .2s ease; }
 #quick-play svg { width: 18px; height: 18px; fill: currentColor; }
-#quick-play[aria-pressed="true"] { background: var(--rust); color: var(--paper-light); }
+#quick-play[aria-pressed="true"] { background: var(--rust); color: var(--paper-light); box-shadow: 0 0 0 4px color-mix(in srgb, var(--rust) 18%, transparent); animation: play-pulse 1.5s ease-in-out infinite; }
+#quick-play:hover:not(:disabled) { transform: scale(1.06); }
 #quick-play:disabled { opacity: .45; cursor: default; }
 #quick-midi-time { font: 11px var(--sans); color: var(--muted); font-variant-numeric: tabular-nums; }
 #progression-transport button::after, #midi-transport button::after { content: attr(aria-label); margin-left: 6px; }
@@ -832,6 +833,7 @@ footer {
 @media(max-width: 900px) { .note-feedback { flex-basis: 100%; justify-content: space-between; } .note-feedback .hint { flex: 1; } }
 @media(prefers-reduced-motion: reduce) { .spelling-switch .spelling-track, .spelling-switch .spelling-track::after, .fret-lock .lock-symbol, .fret-lock .lock-symbol path { transition: none; } }
 .board-view-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 8px 0 10px; }
+.pentatonic-control { display: inline-flex; align-items: center; gap: 8px; margin-left: auto; }
 .pentatonic-switch { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font: 11px var(--mono); color: var(--muted); }
 .pentatonic-switch input { position: absolute; width: 1px; height: 1px; opacity: 0; }
 .pentatonic-switch .spelling-track { display: block; flex: 0 0 38px; }
@@ -1030,6 +1032,7 @@ footer {
 .toolbar-buttons {
   flex-wrap: wrap;
 }
+@keyframes play-pulse { 50% { box-shadow: 0 0 0 7px color-mix(in srgb, var(--rust) 0%, transparent); } }
 
 /* Proportional frets: shared columns keep numbers, strings and inlays aligned. */
 .fretboard-layout {
@@ -1070,6 +1073,7 @@ footer {
   .player-controls label { max-width: 100%; flex-wrap: wrap; }
   .song-library input, .midi-panel input[type="file"] { max-width: 100%; min-width: 0; }
 }
+@media(prefers-reduced-motion: reduce) { #quick-play { transition: none; } #quick-play[aria-pressed="true"] { animation: none; } }
 .fret-note {
   position: relative;
   z-index: 2;
