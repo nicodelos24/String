@@ -63,7 +63,7 @@ if (typeof document !== 'undefined') (() => {
   }
 
   function renderState(state, detail) {
-    const label = toggle.querySelector('span');
+    const label = toggle.querySelector('span:last-child');
     if (state === 'requesting') {
       toggle.setAttribute('aria-pressed', 'true');
       toggle.title = 'Pidiendo permiso de micrófono…';
