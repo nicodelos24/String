@@ -9,14 +9,14 @@ if (typeof document !== 'undefined') (() => {
 
   const reader = new MicrophoneReader({
     onPitch: detection => {
-      if (detection) highlightPitch(detection.midi);
+      if (detection && Number.isInteger(detection.midi)) highlightPitch(detection.midi);
+      else clearLive();
       showReadout(detection);
     },
     onState: renderState,
   });
 
   let liveMidi = null;
-  let liveTimer = null;
 
   function noteLabel(detection) {
     const pitchClass = detection.midi % 12;
@@ -34,14 +34,28 @@ if (typeof document !== 'undefined') (() => {
     readout.textContent = detection ? noteLabel(detection) : 'esperando nota…';
   }
 
+  function fadeOut(note) {
+    note.classList.remove('live');
+    note.classList.add('live-fade');
+    setTimeout(() => note.classList.remove('live-fade'), 300);
+  }
+
   function clearLive() {
-    document.querySelectorAll('.fret-note.live, .open-string-note.live').forEach(note => note.classList.remove('live'));
+    document.querySelectorAll('.fret-note.live').forEach(fadeOut);
+    document.querySelectorAll('.open-string-note.live').forEach(fadeOut);
     liveMidi = null;
   }
 
+  // La nota suena mientras su pulso permanece: se mantiene hasta una nota
+  // distinta o el silencio, y las posiciones que dejan de sonar se atenúan.
   function applyLive(midi) {
     document.querySelectorAll('#fretboard [data-midi], #open-strings [data-midi]').forEach(note => {
-      note.classList.toggle('live', Number(note.dataset.midi) === midi);
+      if (Number(note.dataset.midi) === midi) {
+        note.classList.remove('live-fade');
+        note.classList.add('live');
+      } else if (note.classList.contains('live')) {
+        fadeOut(note);
+      }
     });
   }
 
@@ -49,8 +63,6 @@ if (typeof document !== 'undefined') (() => {
     if (!Number.isInteger(midi)) return;
     liveMidi = midi;
     applyLive(midi);
-    clearTimeout(liveTimer);
-    liveTimer = setTimeout(clearLive, 600);
   }
 
   // El mástil se reconstruye al cambiar de acorde/modo; reaplicar si sigue activo.
@@ -85,7 +97,6 @@ if (typeof document !== 'undefined') (() => {
       toggle.title = 'Usar el micrófono para resaltar la nota que tocas';
       label.textContent = 'Micrófono';
       readout.hidden = true;
-      clearTimeout(liveTimer);
       clearLive();
     }
   }

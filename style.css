@@ -753,24 +753,34 @@ footer {
 .fret-note.live,
 .open-string-note.live {
   position: relative;
-  z-index: 2;
-  animation: live-bounce 0.9s ease-in-out infinite;
-  box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.45), 0 0 18px 4px rgba(255, 193, 7, 0.5);
+  z-index: 3;
+  background: #ffc107 !important;
+  color: #1d2521 !important;
+  font-weight: 800;
+  transform: scale(1.18);
+  box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.55), 0 0 24px 6px rgba(255, 193, 7, 0.65);
+  animation: live-bounce 1s ease-in-out infinite;
 }
 
 .fret-note.live::after,
 .open-string-note.live::after {
   content: '';
   position: absolute;
-  inset: -5px;
+  inset: -6px;
   border-radius: inherit;
   border: 2px solid #ffc107;
-  animation: live-ring 0.9s ease-out infinite;
+  animation: live-ring 1s ease-out infinite;
   pointer-events: none;
 }
 
 .open-string-note.live::after {
   border-radius: 999px;
+}
+
+.fret-note.live-fade,
+.open-string-note.live-fade {
+  opacity: 0.45;
+  transition: opacity 0.3s ease;
 }
 
 @keyframes live-ring {
