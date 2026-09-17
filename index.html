@@ -72,7 +72,7 @@
           <div id="open-strings" class="open-strings" aria-label="Cuerdas al aire"></div>
           <div class="fretboard" id="fretboard" aria-label="Mástil interactivo de guitarra"></div>
         </div></div>
-        <div class="board-footer"><span id="note-count">7 notas</span><span>·</span><span>22 trastes · desliza para recorrer</span><div class="note-feedback"><span class="hint">Haz clic en una nota para consultar su intervalo</span><div class="fret-lock"><label class="spelling-switch" aria-label="Mantener escala al tocar el mástil"><input id="fret-scale-lock" type="checkbox" role="switch" aria-label="Mantener escala al tocar el mástil"><span class="spelling-track" aria-hidden="true"></span><svg class="lock-symbol" viewBox="0 0 20 20" aria-hidden="true"><rect x="4" y="9" width="12" height="9" rx="2"/><path d="M6 9V6a4 4 0 0 1 8 0v3"/></svg></label><details class="inline-help"><summary aria-label="Ayuda del bloqueo de escala">?</summary><p>Activado: pulsar el mástil escucha y marca la nota sin cambiar la escala. Desactivado: cambia la raíz. El piano sigue cambiando la raíz en ambos casos.</p></details></div></div></div>
+        <div class="board-footer"><span id="note-count">7 notas</span><span>·</span><span>22 trastes · desliza para recorrer</span><div class="note-feedback"><span class="hint">Haz clic en una nota para consultar su intervalo</span><div class="fret-lock"><label class="spelling-switch" aria-label="Mantener escala al tocar el mástil"><input id="fret-scale-lock" type="checkbox" role="switch" aria-label="Mantener escala al tocar el mástil"><span class="spelling-track" aria-hidden="true"></span><svg class="lock-symbol" viewBox="0 0 20 20" aria-hidden="true"><rect x="4" y="9" width="12" height="9" rx="2"/><path d="M6 9V6a4 4 0 0 1 8 0v3"/></svg></label><details class="inline-help"><summary aria-label="Ayuda del bloqueo de escala">?</summary><p>Activado: pulsar el mástil escucha y marca la nota sin cambiar la escala. Desactivado: cambia la raíz. El piano sigue cambiando la raíz en ambos casos.</p></details></div><div class="microphone-control"><button id="microphone-toggle" class="icon-button" type="button" aria-pressed="false" title="Usar el micrófono para resaltar la nota que tocas">🎤 <span>Micrófono</span></button><span id="microphone-readout" class="mic-readout" hidden></span></div></div></div>
 
 
 
@@ -230,6 +230,7 @@
   <script src="note-preview.js"></script>
   <script src="pitch-detection.js"></script>
   <script src="microphone.js"></script>
+  <script src="microphone-ui.js"></script>
   <script src="instrument-picker.js"></script>
   <script src="midi-import.js"></script>
   <script src="midi-player.js"></script>

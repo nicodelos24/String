@@ -1,6 +1,6 @@
 # Detección por micrófono en tiempo real — diseño
 
-Fecha: 2026-09-17. Estado: **propuesta, no implementada**. El objetivo es resaltar en el mástil, en tiempo real, la nota que el usuario toca con el instrumento, para improvisar viendo qué está sonando mientras se estudia la escala.
+Fecha: 2026-09-17. Estado: **pasos 1–3 (fase 1 monofónica) implementados**; la validación con instrumento real y navegador queda pendiente. La fase 2 (polifónica) es futura. El objetivo es resaltar en el mástil, en tiempo real, la nota que el usuario toca con el instrumento, para improvisar viendo qué está sonando mientras se estudia la escala.
 
 ## Objetivo y límites del alcance (fase 1)
 

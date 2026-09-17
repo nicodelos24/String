@@ -688,6 +688,40 @@ footer {
   font-size: 11px;
 }
 
+.microphone-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+.mic-readout {
+  font: 11px var(--sans);
+  color: var(--ink);
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.fret-note.live,
+.open-string-note.live {
+  outline: 3px solid var(--ink);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(255, 193, 7, 0.6);
+  animation: live-pulse 0.9s ease-in-out infinite;
+  z-index: 1;
+}
+
+@keyframes live-pulse {
+  0%, 100% { box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.35); }
+  50% { box-shadow: 0 0 0 7px rgba(255, 193, 7, 0.75); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fret-note.live,
+  .open-string-note.live { animation: none; }
+}
+
 .progression-section {
   padding: 76px 0 79px;
   border-bottom: 1px solid var(--line);
