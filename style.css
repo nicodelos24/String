@@ -961,7 +961,7 @@ footer {
 .drag-grip { display: block; text-align: center; color: var(--muted); opacity: .55; font-size: 18px; touch-action: none; }
 .progression-card:hover .drag-grip { opacity: 1; color: var(--rust); }
 .drag-placeholder { opacity: .3; border: 1px dashed var(--rust); background: #ead8c5; }
-.drag-ghost { position: fixed; z-index: 1000; pointer-events: none; margin: 0; opacity: .97; transform: rotate(-2deg) scale(1.03); box-shadow: 0 12px 28px #30241935; border-color: var(--rust); cursor: grabbing; }
+.drag-ghost { position: fixed; z-index: 1000; pointer-events: none; margin: 0; opacity: .97; transform: rotate(-2deg) scale(1.03); background: var(--paper-light); box-shadow: 0 12px 28px #30241935; border-color: var(--rust); cursor: grabbing; }
 .is-dragging { cursor: grabbing; }
 
 .progression-card small {
@@ -982,6 +982,72 @@ footer {
   background: none;
   cursor: pointer;
   font-size: 14px;
+}
+
+/* Estética de partitura: cada símbolo se apoya en la línea del compás. */
+.progression {
+  row-gap: 30px;
+  padding-top: 20px;
+}
+.progression-card {
+  padding: 4px 10px 6px;
+  border: 0;
+  border-bottom: 2px solid color-mix(in srgb, var(--ink) 30%, transparent);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  transition: border-bottom-color .18s, background-color .18s, box-shadow .18s;
+}
+.progression-card:hover {
+  border-color: transparent;
+  border-bottom-color: var(--rust);
+  background: transparent;
+}
+.progression-card.active {
+  border-color: transparent;
+  border-bottom-color: var(--rust);
+  background: color-mix(in srgb, var(--rust) 8%, transparent);
+  box-shadow: none;
+}
+.progression-card.playing {
+  background: #f8dfce;
+  border-bottom-color: transparent;
+  box-shadow: inset 0 -4px 0 var(--rust);
+}
+.progression-card.bar-start::before {
+  content: '';
+  position: absolute;
+  left: -5px;
+  top: 16px;
+  bottom: 0;
+  width: 2px;
+  background: var(--ink);
+}
+.bar-number {
+  position: absolute;
+  top: -17px;
+  left: -4px;
+  color: var(--rust);
+  font: 600 10px var(--mono);
+}
+.beats-control {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 4px;
+}
+.beats-control select {
+  appearance: none;
+  padding: 1px 4px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--paper);
+  color: var(--muted);
+  font: 10px var(--mono);
+  cursor: pointer;
+}
+.beats-control select:focus-visible {
+  outline: 2px solid var(--rust);
+  outline-offset: 1px;
 }
 
 .progression-note {

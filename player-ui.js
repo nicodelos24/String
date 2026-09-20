@@ -44,7 +44,8 @@
       const type = chordTypes.find(candidate => candidate.value === item.type);
       return {
         name: (item.rootNoteName || noteName(item.root)) + type.suffix,
-        notes: chordToMidi(item.root, type.intervals)
+        notes: chordToMidi(item.root, type.intervals),
+        beats: validBeats(item.beats)
       };
     });
     setBusy(true);

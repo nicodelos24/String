@@ -43,7 +43,7 @@ En móvil, el mástil se desplaza horizontalmente sin comprimir sus proporciones
 ### Tarjetas y secciones
 
 1. Elige un acorde y pulsa **Añadir acorde**.
-2. Arrastra las tarjetas para ordenar, haz doble clic para duplicar o usa clic derecho / × para eliminar. Se conserva al menos una tarjeta.
+2. Arrastra las tarjetas para ordenar, haz doble clic para duplicar o usa clic derecho / × para eliminar. El selector de cada tarjeta ajusta su duración (¼, ½, ¾, 1, 1½, 2, 3 o 4 compases). Se conserva al menos una tarjeta.
 3. Con teclado, Enter o Espacio seleccionan; Alt + flechas mueve el acorde y mantiene el foco.
 4. La flecha de vista alterna entre filas y una sola fila horizontal.
 5. Abre la burbuja **Secciones del tema**, junto a **Tu vuelta armónica**. Dentro de **Crear sección**, elige nombre, rango de números de tarjeta y repeticiones.
@@ -63,9 +63,9 @@ Junto a las tarjetas hay un acceso rápido con el mismo selector y control de re
 
 - Cambiar de fuente detiene la anterior. Volver a pulsar la fuente activa no detiene.
 - Plegar Acompañamiento no detiene el audio.
-- Cada tarjeta del acompañamiento dura cuatro pulsos; BPM entre 30 y 240.
+- Cada tarjeta dura un compás de cuatro pulsos por defecto; su selector ajusta la duración y el acompañamiento la respeta. BPM entre 30 y 240.
 - Estilos: Sin ritmo, Pop / rock, Jazz suave, Trap suave, Funk, Bossa suave, Reggaetón suave, Reggae, Disco y Balada.
-- Plantillas: jazz ii–V–I, blues de 12 compases, turnaround I–vi–ii–V, pop, balada, reggae y disco. Usarlas reemplaza las tarjetas y ajusta estilo y tempo.
+- Plantillas: jazz ii–V–I, blues de 12 compases (La y Fa con turnaround), Autumn Leaves, turnaround I–vi–ii–V, pop, balada, reggae y disco. Usarlas reemplaza las tarjetas y ajusta estilo y tempo.
 - Volumen general y percusión se pueden ajustar; el metrónomo es independiente.
 
 En **Acompañamiento → Importar acordes MIDI**, elige un archivo de hasta 2 MB. El importador lee MIDI estándar de formato 0/1 con división PPQ y reconoce grupos de notas que empiezan juntas. No deduce acordes de arpegios.
@@ -116,4 +116,4 @@ Los reportes, casos manuales, Excel, evidencias y scripts de navegador se separa
 
 ## Próximos pasos
 
-Completar la prueba manual y auditiva, medir rendimiento con progresiones grandes, mejorar la edición de secciones, añadir duraciones por acorde y diseñar ejemplos propios. El seguimiento de YouTube usa marcas manuales; no hay reconocimiento por micrófono ni biblioteca remota implementados.
+Completar la prueba manual y auditiva, medir rendimiento con progresiones grandes, mejorar la edición de secciones y diseñar ejemplos propios. El seguimiento de YouTube usa marcas manuales; no hay reconocimiento por micrófono ni biblioteca remota implementados.

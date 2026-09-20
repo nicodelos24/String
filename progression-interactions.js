@@ -31,7 +31,7 @@
   list.addEventListener('dragstart', event => event.preventDefault());
   list.addEventListener('click', event => {
     if (suppressClick) {event.preventDefault(); event.stopImmediatePropagation(); suppressClick=false;}
-    else if(event.detail>0 && !event.target.closest('button')) {
+    else if(event.detail>0 && !event.target.closest('button, select, label')) {
       const card=event.target.closest('.progression-card');
       if(!card)return;
       const index=Number(card.dataset.index),source=progression[index],now=performance.now();
@@ -45,7 +45,7 @@
   }, true);
   list.addEventListener('contextmenu',event=>{
     const card=event.target.closest('.progression-card');
-    if(!card || event.target.closest('button'))return;
+    if(!card || event.target.closest('button, select, label'))return;
     event.preventDefault();lastClick=null;
     if(draggingProgressionItem)return;
     const index=Number(card.dataset.index);removeProgressionChord(index);
@@ -53,7 +53,7 @@
   });
   list.addEventListener('pointerdown', event => {
     if (drag) return;
-    if (event.button !== 0 || event.target.closest('button')) return;
+    if (event.button !== 0 || event.target.closest('button, select, label')) return;
     const card = event.target.closest('.progression-card');
     if (!card || (event.pointerType === 'touch' && !event.target.closest('.drag-grip'))) return;
     drag = {card, id:event.pointerId, x:event.clientX, y:event.clientY,
@@ -118,7 +118,7 @@
   window.addEventListener('pointercancel',event=>finish(event,true));
   window.addEventListener('blur',()=>{if(drag) finish({pointerId:drag.id},true);});
   list.addEventListener('keydown', event => {
-    if(event.target.closest('button')) return;
+    if(event.target.closest('button, select, label')) return;
     const card=event.target.closest('[data-index]');
     if(!card) return;
     const index=Number(card.dataset.index);

@@ -852,12 +852,28 @@ function updateModeLegend() {
     `;
   }).join('');
 }
+// Duración de cada acorde en pulsos de 4/4. Cuatro pulsos equivalen a un compás.
+const beatOptions = [1, 2, 3, 4, 6, 8, 12, 16];
+const beatLabels = {1: '¼', 2: '½', 3: '¾', 4: '1', 6: '1½', 8: '2', 12: '3', 16: '4'};
+function validBeats(value) {
+  const beats = Number(value);
+  return Number.isInteger(beats) && beats >= 1 && beats <= 16 ? beats : 4;
+}
+function beatsLabel(value) { return beatLabels[validBeats(value)]; }
+
 function renderProgression() {
   if (draggingProgressionItem) return;
   const entries=globalThis.StringSections?globalThis.StringSections.visible():progression.map((item,index)=>({item,index}));
+  let cursor = 0; // Pulsos acumulados: marcan el inicio de cada compás de 4/4.
   document.querySelector('#progression').innerHTML = entries.map(({item,index}) => {
     const type = chordTypes.find(candidate => candidate.value === item.type);
-    return `<div class="progression-card ${index === activeProgression ? 'active' : ''} ${item === playingProgressionItem ? 'playing' : ''}" data-index="${index}" tabindex="0" role="group" aria-label="Acorde ${index + 1}. Arrastrar o usar Alt y flechas para mover."><button type="button" data-remove="${index}" aria-label="Quitar acorde ${index + 1}">×</button><small>${index + 1}${item === playingProgressionItem ? ' · sonando' : ''}</small><strong>${item.rootNoteName || noteName(item.root)}${type ? type.suffix : ''}</strong><span class="progression-mode">${modes[item.mode || defaultChordMode(item)]?.name || ''}</span><span class="drag-grip" aria-hidden="true">⠿</span></div>`;
+    const beats = validBeats(item.beats);
+    const startsBar = cursor % 4 === 0;
+    const barNumber = Math.floor(cursor / 4) + 1;
+    cursor += beats;
+    const barMark = startsBar ? `<span class="bar-number" aria-hidden="true">${barNumber}</span>` : '';
+    const beatsSelect = `<label class="beats-control" title="Duración: ${beatsLabel(beats)} de compás"><span class="sr-only">Duración del acorde ${index + 1}</span><select data-beats="${index}" aria-label="Duración del acorde ${index + 1}">${beatOptions.map(option => `<option value="${option}"${option === beats ? ' selected' : ''}>${beatLabels[option]}</option>`).join('')}</select></label>`;
+    return `<div class="progression-card ${index === activeProgression ? 'active' : ''} ${item === playingProgressionItem ? 'playing' : ''}${startsBar ? ' bar-start' : ''}" data-index="${index}" tabindex="0" role="group" aria-label="Acorde ${index + 1}, compás ${barNumber}, ${beatsLabel(beats)} de compás. Arrastrar o usar Alt y flechas para mover.">${barMark}<button type="button" data-remove="${index}" aria-label="Quitar acorde ${index + 1}">×</button><small>${index + 1}${item === playingProgressionItem ? ' · sonando' : ''}</small><span class="progression-mode">${modes[item.mode || defaultChordMode(item)]?.name || ''}</span>${beatsSelect}<span class="drag-grip" aria-hidden="true">⠿</span><strong>${item.rootNoteName || noteName(item.root)}${type ? type.suffix : ''}</strong></div>`;
   }).join('');
 }
 instrumentSelect.addEventListener('change', event => { instrument = event.target.value; updateView(); });
@@ -982,7 +998,7 @@ function duplicateProgressionChord(index) {
 function addProgressionChord() {
   if(draggingProgressionItem || progression.length>=4096)return;
   progressionEdited=true;
-  progression.push({ root, rootNoteName, type: chordType.value, mode: selectedMode, ghostMode });
+  progression.push({ root, rootNoteName, type: chordType.value, mode: selectedMode, ghostMode, beats: 4 });
   globalThis.StringSections?.include(null,progression[progression.length-1]);
   activeProgression = progression.length - 1;
   renderProgression();
@@ -1001,10 +1017,21 @@ function removeProgressionChord(index) {
 }
 
 document.querySelector('#progression').addEventListener('click', event => {
+  if (event.target.closest('select')) return;
   const remove = event.target.closest('[data-remove]');
   if (remove) { removeProgressionChord(Number(remove.dataset.remove)); return; }
   const card = event.target.closest('[data-index]');
   if (card) selectProgressionChord(Number(card.dataset.index));
+});
+document.querySelector('#progression').addEventListener('change', event => {
+  const select = event.target.closest('[data-beats]');
+  if (!select) return;
+  const item = progression[Number(select.dataset.beats)];
+  const beats = validBeats(select.value);
+  if (!item || validBeats(item.beats) === beats) return;
+  item.beats = beats;
+  progressionEdited = true;
+  renderProgression();
 });
 document.querySelector('#add-chord').addEventListener('click', addProgressionChord);
 function selectFretNote(note) {

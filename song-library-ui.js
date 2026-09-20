@@ -24,8 +24,9 @@
       if(!chord || !Number.isInteger(chord.root) || chord.root<0 || chord.root>11 || !chordTypes.some(type=>type.value===chord.type) ||
         (chord.mode!==undefined && !Object.hasOwn(modes,chord.mode)) ||
         (chord.ghostMode && !Object.hasOwn(modes,chord.ghostMode)) ||
+        (chord.beats!==undefined && (!Number.isInteger(chord.beats) || chord.beats<1 || chord.beats>16)) ||
         (chord.rootNoteName!==undefined && !/^[A-G](?:#|b|♯|♭)?$/.test(chord.rootNoteName))) throw new Error('Acorde no válido.');
-      return {root:chord.root,type:chord.type,rootNoteName:chord.rootNoteName,mode:chord.mode,ghostMode:chord.ghostMode || ''};
+      return {root:chord.root,type:chord.type,rootNoteName:chord.rootNoteName,mode:chord.mode,ghostMode:chord.ghostMode || '',beats:chord.beats===undefined?4:chord.beats};
     });
     const settings={};
     for(const id of settingIds) {

@@ -285,3 +285,19 @@ test('new styles schedule distinct complete bars with cancellable percussion',as
     assert.equal(player.voices.size,0);
   }
 });
+
+test('PLY-16: each chord follows its own beat duration and invalid durations are rejected',async()=>{
+  const {player,context,oscillators,heard}=setup();
+  const custom=[{name:'C',notes:[48,52,55],beats:2},{name:'G7',notes:[55,59,62,65],beats:4}];
+  await player.start(custom,{bpm:120,loop:false,style:'none'});
+  assert.equal(oscillators[0].time,0.04);
+  context.currentTime=1; player.tick();
+  assert.equal(oscillators[3].time,1.04);
+  context.currentTime=1.05; player.tick();
+  assert.deepEqual(heard[1],[1,'G7',2]);
+  context.currentTime=3.05; player.tick();
+  assert.equal(player.running,false);
+  const {player:other,oscillators:others}=setup();
+  for(const beats of [0,17,2.5]) await assert.rejects(other.start([{name:'C',notes:[48,52,55],beats}]));
+  assert.equal(others.length,0);
+});

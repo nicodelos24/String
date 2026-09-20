@@ -92,8 +92,9 @@ class ProgressionPlayer {
   async start(chords, {bpm = 100, loop = true, style = 'none', percussion = true} = {}) {
     if (this.running || this.starting) return;
     if (!Array.isArray(chords) || !chords.length || chords.some(chord =>
-      !Array.isArray(chord.notes) || !chord.notes.length || chord.notes.some(note =>
-        !Number.isInteger(note) || note < 0 || note > 127))) {
+      !chord || !Array.isArray(chord.notes) || !chord.notes.length || chord.notes.some(note =>
+        !Number.isInteger(note) || note < 0 || note > 127) ||
+      (chord.beats !== undefined && (!Number.isInteger(chord.beats) || chord.beats < 1 || chord.beats > 16)))) {
       throw new Error('La progresión no contiene notas válidas.');
     }
     if (!Number.isFinite(Number(bpm)) || Number(bpm) < 30 || Number(bpm) > 240) {
@@ -101,8 +102,9 @@ class ProgressionPlayer {
     }
     if (!Object.hasOwn(accompanimentStyles, style)) throw new Error('Estilo desconocido.');
     // Una copia mantiene estable la reproducción mientras se edita la progresión.
-    this.chords = chords.map(chord => ({name: chord.name, notes: [...chord.notes]}));
-    this.duration = 4 * 60 / Number(bpm);
+    this.chords = chords.map(chord => ({name: chord.name, notes: [...chord.notes], beats: chord.beats === undefined ? 4 : chord.beats}));
+    this.beat = 60 / Number(bpm);
+    this.duration = 4 * this.beat;
     this.loop = Boolean(loop);
     this.style = style;
     this.percussion = Boolean(percussion);
@@ -138,9 +140,9 @@ class ProgressionPlayer {
     if (this.nextTime < now) this.nextTime = now + 0.04;
     if (this.endTime === null && this.nextTime < now + 0.1) {
       const chord = this.chords[this.index];
-      this.scheduleBar(chord, this.nextTime);
+      this.scheduleBar(chord, this.nextTime, chord.beats);
       this.queue.push({time: this.nextTime, index: this.index, name: chord.name});
-      this.nextTime += this.duration;
+      this.nextTime += chord.beats * this.beat;
       this.index++;
       if (this.index === this.chords.length) {
         if (this.loop) this.index = 0;
@@ -152,15 +154,16 @@ class ProgressionPlayer {
     if (latest) this.onChord(latest.index, latest.name, this.chords.length);
   }
 
-  scheduleBar(chord, time) {
+  scheduleBar(chord, time, beats = 4) {
     const pattern = accompanimentStyles[this.style];
-    const beat = this.duration / 4;
+    // El patrón está escrito para un compás de cuatro pulsos: se adapta a la duración del acorde.
+    const step = this.beat * beats / 4;
     for (const [position, duration, velocity] of pattern.chords) {
-      this.scheduleChord(chord, time + position * beat, duration * beat, velocity);
+      this.scheduleChord(chord, time + position * step, duration * step, velocity);
     }
     if (!this.percussion || this.style === 'none') return;
     for (const kind of ['kick','snare','hat']) {
-      pattern[kind].forEach((position, index) => this.scheduleDrum(kind, time + position * beat,
+      pattern[kind].forEach((position, index) => this.scheduleDrum(kind, time + position * step,
         (['jazz','bossa'].includes(this.style) ? 0.55 : 0.85) * (kind === 'hat' && index % 2 ? 0.7 : 1)));
     }
   }
