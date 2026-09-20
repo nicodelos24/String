@@ -116,4 +116,4 @@ Los reportes, casos manuales, Excel, evidencias y scripts de navegador se separa
 
 ## Próximos pasos
 
-Completar la prueba manual y auditiva, medir rendimiento con progresiones grandes, mejorar la edición de secciones y diseñar ejemplos propios. El seguimiento de YouTube usa marcas manuales; no hay reconocimiento por micrófono ni biblioteca remota implementados.
+Completar la prueba manual y auditiva, medir rendimiento con progresiones grandes, mejorar la edición de secciones y diseñar ejemplos propios. El micrófono puede resaltar notas monofónicas y, en modo experimental, reconocer acordes simultáneos. La tarjeta «Acorde en vivo» permite añadir el acorde detectado o activar «Auto añadir»; «Escala en vivo» aplica el modo sugerido. Esta fase requiere validación con instrumento real y no reemplaza una transcripción profesional.

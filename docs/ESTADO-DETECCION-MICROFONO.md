@@ -4,7 +4,7 @@ Actualizado el 2026-09-17. Sigue el avance de la funcionalidad de [detección po
 
 ## Dónde estamos
 
-Fase 1 (monofónica) implementada de extremo a extremo: detector, envoltorio y interfaz con resaltado en el mástil. Falta la validación visual/auditiva con instrumento real y una afinación más cómoda para instrumentos por debajo de 440 Hz. La fase 2 (polifónica/acordes) no está iniciada.
+Fase 1 (monofónica) implementada de extremo a extremo: detector, envoltorio y interfaz con resaltado en el mástil. Falta la validación visual/auditiva con instrumento real y una afinación más cómoda para instrumentos por debajo de 440 Hz. La fase 2 (polifónica/acordes) tiene una primera versión experimental integrada; todavía requiere calibración con guitarra real.
 
 ## Pasos completados
 
@@ -32,7 +32,7 @@ Estado de las pruebas: `npm test` → 86/86 (detector y envoltorio cubiertos; la
 3. **Rango agudo**: `maxFreq` 1100 deja fuera las notas agudas de la primera cuerda (hasta D6/1175 Hz). Si se toca ahí, se pueden subir los límites; faltaría notificar cuando la nota cae fuera de banda (hoy simplemente no se detecta).
 4. **Aliasing fuera de banda**: una fundamental por encima de `maxFreq` puede detectarse como su subarmónico (la autocorrelación encuentra el primer múltiplo de periodo dentro del rango). Limitación conocida; mitigar con umbral de confianza si molesta.
 5. **Documentación oficial**: cuando validemos, actualizar README (sección de uso) y docs/GUIA-DEL-PROYECTO (funcionalidad implementada), siguiendo la regla de `AGENTS.md`.
-6. **Fase 2 (polifónica)**: reconocimiento de acordes simultáneos mediante análisis armónico y plantillas. No recomendada hasta cerrar 1–3.
+6. **Fase 2 (polifónica)**: primera versión integrada en `chord-detection.js`. Usa picos espectrales, plantillas y confirmación temporal; reconoce mayores, menores, séptimas, maj7, m7, disminuidos y m7b5. La tarjeta permite añadir el acorde o activar «Auto añadir». El switch «Escala en vivo» usa el modo sugerido por la plantilla. Sigue pendiente la prueba con guitarra real, arpegios, cejillas, ruido y falsos positivos.
 
 ## Cómo revertir un paso
 

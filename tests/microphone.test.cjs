@@ -2,6 +2,8 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { MicrophoneReader, followStable } = require('../microphone.js');
 const { detectPitch } = require('../pitch-detection.js');
+const { detectChord, followStableChord } = require('../chord-detection.js');
+const { audioSpectrum } = require('./helpers/audio-spectrum.cjs');
 
 function sineInto(buffer, freq, sampleRate = 48000, amplitude = 0.5) {
   for (let i = 0; i < buffer.length; i++) buffer[i] = amplitude * Math.sin(2 * Math.PI * freq * i / sampleRate);
@@ -108,4 +110,53 @@ test('permiso denegado o sin micrófono reporta error y no queda activo', async 
   await reader.start();
   assert.equal(reader.running, false);
   assert.equal(messages.at(-1), 'error: Permission denied');
+});
+
+test('micrófono con ambos analizadores inicia, confirma acordes y libera el audio', async () => {
+  let frame, now = 0, silent = false, closed = 0, stopped = 0;
+  const sizes = [], events = [], states = [];
+  const spectrum = audioSpectrum([48, 52, 55], { harmonics: 6 });
+  const reader = new MicrophoneReader({
+    getUserMedia: async () => ({ getTracks: () => [{ stop() { stopped++; } }] }),
+    createContext: () => ({ sampleRate: 48000, resume: async () => {},
+      createMediaStreamSource: () => ({ connect() {} }), close() { closed++; } }),
+    createAnalyser(context, size) {
+      sizes.push(size);
+      return { fftSize: size, frequencyBinCount: size / 2,
+        getFloatTimeDomainData(buffer) { buffer.fill(0); },
+        getFloatFrequencyData(buffer) { if (silent) buffer.fill(-Infinity); else buffer.set(spectrum); } };
+    },
+    detect: () => null, detectChord, followChord: followStableChord, now: () => now,
+    requestFrame(fn) { frame = fn; return 1; }, cancelFrame() {},
+    onChord: chord => events.push(chord), onState: state => states.push(state),
+  });
+  await reader.start();
+  assert.equal(reader.running, true);
+  assert.deepEqual(states, ['requesting', 'ready']);
+  assert.deepEqual(sizes, [2048, 16384]);
+  for (now of [0, 100, 200, 400, 500]) frame();
+  assert.equal(events.length, 1);
+  assert.equal(events[0].root, 0); assert.equal(events[0].type, 'maj');
+  silent = true;
+  for (now of [600, 1000, 1200]) frame();
+  assert.equal(events.at(-1), null);
+  reader.stop();
+  assert.equal(reader.running, false);
+  assert.equal(reader.chordAnalyser, null);
+  assert.equal(closed, 1); assert.equal(stopped, 1);
+});
+
+test('si falla el analizador de acordes se cierran el contexto y el micrófono', async () => {
+  let closed = 0, stopped = 0;
+  const states = [];
+  const reader = new MicrophoneReader({
+    getUserMedia: async () => ({ getTracks: () => [{ stop() { stopped++; } }] }),
+    createContext: () => ({ resume: async () => {}, createMediaStreamSource: () => ({ connect() {} }), close() { closed++; } }),
+    createAnalyser(context, size) { if (size === 16384) throw new Error('Fallo de prueba'); return {}; },
+    detectChord, followChord: followStableChord, onState: state => states.push(state),
+  });
+  await reader.start();
+  assert.equal(reader.running, false); assert.equal(reader.starting, false);
+  assert.equal(states.at(-1), 'error');
+  assert.equal(closed, 1); assert.equal(stopped, 1);
 });

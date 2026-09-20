@@ -72,3 +72,15 @@ Pero además noto que hay un boton que dice "Todos los acordes" y quisiera que e
   - Límite de esta primera versión: BPM y duración por acorde constantes. No es detección automática del audio, IA ni micrófono. La biblioteca compartida entre usuarios sigue pendiente; hoy puedes intercambiar respaldos JSON.
   - Comprobado: cálculo de tiempos con inicio desplazado y acordes repetidos, validación y estructura HTML. Pendiente de prueba con video real y ajuste manual del pulso.
 
+  Me gustaría que continuemos haciendo⠐que se puedan detectar acordes en
+  tiempo real y⠈que se muestre cuál es también generando la escala y   ⠂
+  mostrandola⢀a partir⡀de esto, con un switch al lado del⠐switch de las
+⠠ pentatonicas, donde pueda activar o desactivar que se muestren escalas en  ⠠
+  tiempo real⠈o se⠄mantenga, y⠂también otro switch para que se muestre la
+  tarjeta en tiempo real de cuál⠠acorde suena, y un botón al lado de las⠄
+  tarjetas para agregar el acorde a las tarjetas, e incluso un boton para que
+  agregue los acordes automáticamente mientras van sonando.
+
+  - Implementado en fase experimental: `chord-detection.js` analiza el espectro del micrófono con plantillas para acordes mayores, menores, séptimas, maj7, m7, disminuidos y m7b5.
+  - La interfaz muestra la tarjeta «Acorde en vivo», ofrece «＋ Añadir» y «Auto añadir», y añade «Escala en vivo» junto al switch de pentatónicas.
+  - La confirmación temporal evita añadir repetidamente el mismo acorde. Pendiente de prueba manual con guitarra real, inversiones, arpegios y ruido.

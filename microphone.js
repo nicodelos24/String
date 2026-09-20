@@ -1,6 +1,6 @@
 // Envoltorio de micrófono: permisos, AnalyserNode y lazo de detección.
 // Publica la nota confirmada (objeto de pitch-detection.js) o null en silencio.
-// Fase 1: monofónico; no deduce acordes simultáneos.
+// Conserva la lectura monofónica y añade análisis de acordes si está disponible.
 
 const DEFAULT_FFT_SIZE = 2048;
 const DEFAULT_CONFIRM_FRAMES = 3;
@@ -31,8 +31,13 @@ class MicrophoneReader {
     this.requestFrame = options.requestFrame || (fn => requestAnimationFrame(fn));
     this.cancelFrame = options.cancelFrame || (id => cancelAnimationFrame(id));
     this.onPitch = options.onPitch || (() => {});
+    this.onChord = options.onChord || (() => {});
     this.onState = options.onState || (() => {});
     this.detect = options.detect || (typeof detectPitch === 'function' ? detectPitch : () => null);
+    this.detectChord = options.detectChord || (typeof detectChord === 'function' ? detectChord : null);
+    this.followChord = options.followChord || (typeof followStableChord === 'function' ? followStableChord : null);
+    this.chordFftSize = options.chordFftSize || 16384;
+    this.now = options.now || (() => performance.now());
     this.fftSize = options.fftSize || DEFAULT_FFT_SIZE;
     this.minFreq = options.minFreq;
     this.maxFreq = options.maxFreq;
@@ -42,8 +47,10 @@ class MicrophoneReader {
     this.stream = null;
     this.context = null;
     this.analyser = null;
+    this.chordAnalyser = null;
     this.frameId = null;
     this.framePointer = null;
+    this.starting = false;
   }
 
   get running() {
@@ -51,35 +58,50 @@ class MicrophoneReader {
   }
 
   async start() {
-    if (this.stream) return;
+    if (this.stream || this.starting) return;
+    this.starting = true;
     this.onState('requesting');
     let stream;
     try {
       stream = await this.getUserMedia();
     } catch (error) {
+      this.starting = false;
       this.onState('error', error.message || 'No se pudo usar el micrófono.');
       return;
     }
     try {
       const context = this.createContext();
+      this.context = context;
       await context.resume();
       const source = context.createMediaStreamSource(stream);
       const analyser = this.createAnalyser(context, this.fftSize);
       source.connect(analyser);
+      const chordAnalyser = this.detectChord && this.followChord ? this.createAnalyser(context, this.chordFftSize) : null;
+      if (chordAnalyser) {
+        chordAnalyser.smoothingTimeConstant = 0;
+        source.connect(chordAnalyser);
+      }
       this.stream = stream;
       this.context = context;
       this.analyser = analyser;
+      this.chordAnalyser = chordAnalyser;
       this.buffer = new Float32Array(analyser.fftSize);
+      this.chordBuffer = chordAnalyser ? new Float32Array(chordAnalyser.frequencyBinCount) : null;
       this.byteBuffer = new Uint8Array(analyser.fftSize);
       this.sampleRate = context.sampleRate;
       this.hysteresis = null;
+      this.chordHysteresis = null;
+      this.lastChordFrame = -Infinity;
       this.onState('ready');
       this.framePointer = () => this.frame();
       this.schedule();
     } catch (error) {
       this.teardownContext();
       stream.getTracks().forEach(track => track.stop());
+      this.stream = null;
       this.onState('error', error.message || 'No se pudo iniciar el análisis.');
+    } finally {
+      this.starting = false;
     }
   }
 
@@ -105,6 +127,15 @@ class MicrophoneReader {
     const result = followStable(detected, this.hysteresis, this.confirmFrames);
     this.hysteresis = result.state;
     if (result.note !== undefined) this.onPitch(result.note);
+    const now = this.now();
+    if (this.chordAnalyser && this.chordBuffer && now - this.lastChordFrame >= 90) {
+      this.lastChordFrame = now;
+      this.chordAnalyser.getFloatFrequencyData(this.chordBuffer);
+      const candidate = this.detectChord(this.chordBuffer, this.sampleRate, this.chordAnalyser.fftSize);
+      const stable = this.followChord(candidate, this.chordHysteresis, now);
+      this.chordHysteresis = stable.state;
+      if (stable.chord !== undefined) this.onChord(stable.chord);
+    }
     this.schedule();
   }
 
@@ -119,6 +150,7 @@ class MicrophoneReader {
     }
     this.teardownContext();
     this.hysteresis = null;
+    this.chordHysteresis = null;
     this.onState('stopped');
   }
 
@@ -127,6 +159,7 @@ class MicrophoneReader {
       const context = this.context;
       this.context = null;
       this.analyser = null;
+      this.chordAnalyser = null;
       try { if (typeof context.close === 'function') context.close(); } catch { /* el contexto ya no existe */ }
     }
   }
