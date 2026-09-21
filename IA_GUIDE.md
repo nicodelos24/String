@@ -111,3 +111,5 @@ Falta corregir errores de las implementaciones de micrófono
 * Me gustaría corregir los colores en el botón de acordes y acordes 7ma, que se muestren los colores de cada grado que le corresponde envez de todas las notas del mismo color excepto la raiz
 
   - Implementado: las vistas Acorde y Acorde 7ma vuelven a colorear cada grado con su color (raíz roja, tercera, quinta y séptima con su propio color), tanto en trastes como en cuerdas al aire; ya no se pinta todo de un solo verde. Las notas ajenas al acorde siguen ocultas. Comprobado con `npm test` → 145/145. Pendiente tu revisión visual.
+
+  Quisiera implementar que el switch de backtrack o midi también tenga la opción de metronomo asi puedo pausarlo o reproducirlo desde ahí, y tambien que los bpm se puedan cambiar manualmente si hago click en ellos, ya que solo muestra los bpm que resultan del boton de ritmo
