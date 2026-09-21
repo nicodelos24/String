@@ -84,3 +84,30 @@ Pero además noto que hay un boton que dice "Todos los acordes" y quisiera que e
   - Implementado en fase experimental: `chord-detection.js` analiza el espectro del micrófono con plantillas para acordes mayores, menores, séptimas, maj7, m7, disminuidos y m7b5.
   - La interfaz muestra la tarjeta «Acorde en vivo», ofrece «＋ Añadir» y «Auto añadir», y añade «Escala en vivo» junto al switch de pentatónicas.
   - La confirmación temporal evita añadir repetidamente el mismo acorde. Pendiente de prueba manual con guitarra real, inversiones, arpegios y ruido.
+
+  Me gustaría avanzar en el reconocimiento de acordes: que se vea en tiempo real el acorde del micrófono y poder elegir con un switch si el mástil cambia la escala o no.
+
+  - Ampliadas las plantillas del detector (`chord-detection.js`): ahora reconoce también 6, m6, add9, 6/9, 9, maj9, m9, sus2, sus4, 7sus4, aug y dim7, además de las de antes.
+  - Añadidos esos tipos a `chordTypes` (app.js) para que la tarjeta en vivo los nombre bien y el mástil aplique el acorde y el modo correctos; `defaultChordMode` asigna el modo (mixolidio para suspendidos/novenas, dórico para m6/m9, etc.).
+  - Los empates enarmónicos (Dm7 = F6, Am6 = F#m7b5) y los acordes simétricos (dim7, aug) se resuelven por la nota más grave que suena.
+  - El switch «Escala en vivo» sigue funcionando como pediste: activado, el mástil sigue el acorde; desactivado, se mantiene la escala como está. El botón «Auto añadir» sigue agrega el acorde a las tarjetas.
+  - 16 voicings sintéticos nuevos cubiertos en `tests/chord-detection.test.cjs`; `npm test` → 143/143. Pendiente de prueba manual con guitarra real.
+
+  Me gustaría quitarle los límites artificiales (umbrales) y hacerlo tolerante al volumen: con el micrófono no se detectaba nada porque el volumen quedaba bajo el umbral.
+
+  - El detector ya no usa un umbral absoluto de decibelios: toma el pico máximo del espectro y descarta lo que esté >75 dB por debajo (y < −80 dB se considera silencio). Con volumen alto o bajo se detecta igual.
+  - La resta de armónicos era demasiado agresiva y borraba fundamentales reales de cuerdas agudas (ej. la cejilla F con las cuerdas 2-5: el C4 llegaba a 0.01 y se perdía). Ahora nunca se resta más de la mitad de un pico real (cap 0.5) y la parte es 0.6/√armónico.
+  - Al acumular la croma se aplica un tilt (freq/220)^0.6 para que las cuerdas bajas, que dominan el espectro, no sepulten a las agudas; la presencia se cuenta sobre el 20% del máximo.
+  - Calibrado contra una matriz de 36 voicings (mayores, menores, G7, Dm7, C6, suspendidos, add9, 9, dim7, aug… en espectros ecualizados y con las cuerdas graves al doble de nivel) y 11 casos negativos (silencio, ruido, notas sueltas, power chords y acordes incompletos): todos pasan.
+  - El switch «Escala en vivo» ahora arranca ACTIVADO al encender el micrófono; al apagarlo, el mástil conserva la escala como está.
+  - Revisado con `npm test` → 143/143. Pendiente: prueba real con guitarra, cejillas y ruido de habitación desde el navegador.
+
+Falta corregir errores de las implementaciones de micrófono
+
+* Ahora me gustaría implementar un botón a la derecha del boton de play y switch entre backtrack y midi, me gustaría un botón donde se pueda hacer click (mínimo dos veces) para asignar un tempo al acompañamiento, esto también puede servir para agregar los acordes de los video de youtube dandole ya un tempo.
+
+  - Implementado: botón «Tempo» junto al botón de reproducción y al selector Backtrack/MIDI, al lado de las tarjetas. Con dos o más pulsaciones estima el BPM y lo fija en el acompañamiento; si hay un video cargado, también fija el BPM del video para generar sus marcas. La lectura «NNN BPM» se oculta al editar el tempo a mano. `tempo-tap.js`; `npm test` → 145/145. Pendiente tu prueba real con la guitarra y el video.
+
+* Me gustaría corregir los colores en el botón de acordes y acordes 7ma, que se muestren los colores de cada grado que le corresponde envez de todas las notas del mismo color excepto la raiz
+
+  - Implementado: las vistas Acorde y Acorde 7ma vuelven a colorear cada grado con su color (raíz roja, tercera, quinta y séptima con su propio color), tanto en trastes como en cuerdas al aire; ya no se pinta todo de un solo verde. Las notas ajenas al acorde siguen ocultas. Comprobado con `npm test` → 145/145. Pendiente tu revisión visual.

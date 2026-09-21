@@ -61,6 +61,8 @@ La cabecera conserva el selector **Progresión / MIDI** y el control del reprodu
 
 Junto a las tarjetas hay un acceso rápido con el mismo selector y control de reproducción. Ambos accesos se mantienen sincronizados; MIDI se habilita al cargar un archivo válido.
 
+El botón **Tempo** junto a ese acceso estima el BPM con dos o más pulsaciones al ritmo de la canción y lo fija en el acompañamiento; con un video cargado también actualiza el BPM para generar sus marcas sincronizadas.
+
 - Cambiar de fuente detiene la anterior. Volver a pulsar la fuente activa no detiene.
 - Plegar Acompañamiento no detiene el audio.
 - Cada tarjeta dura un compás de cuatro pulsos por defecto; su selector ajusta la duración y el acompañamiento la respeta. BPM entre 30 y 240.
