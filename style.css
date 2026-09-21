@@ -876,6 +876,12 @@ footer {
 #quick-play:hover:not(:disabled) { transform: scale(1.06); }
 #quick-play:disabled { opacity: .45; cursor: default; }
 #quick-midi-time { font: 11px var(--sans); color: var(--muted); font-variant-numeric: tabular-nums; }
+.tempo-tap { display: inline-flex; align-items: center; gap: 5px; min-height: 40px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); color: var(--muted); cursor: pointer; }
+.tempo-tap svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.tempo-tap:hover { border-color: var(--rust); color: var(--rust); }
+.tempo-tap:active { transform: scale(.97); }
+.tempo-tap-label { font: 11px var(--sans); color: var(--rust); font-variant-numeric: tabular-nums; }
+.tempo-tap-label[hidden] { display: none; }
 #progression-transport button::after, #midi-transport button::after { content: attr(aria-label); margin-left: 6px; }
 .source-switch button { padding: 6px 8px; border: 0; border-radius: 5px; background: transparent; color: var(--muted); font: 11px var(--sans); cursor: pointer; }
 .source-switch button[aria-pressed="true"] { background: var(--rust); color: var(--paper-light); }
