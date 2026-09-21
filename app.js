@@ -125,6 +125,13 @@ const chordTypes = [
   { value: '7', label: 'Dominante 7', suffix: '7', intervals: [0, 4, 7, 10] },
   { value: '7sus4', label: 'Dom 7sus4', suffix: '7sus4', intervals: [0, 5, 7, 10] },
   { value: 'm7b5', label: 'Semidisminuido', suffix: 'm7♭5', intervals: [0, 3, 6, 10] },
+  { value: '6', label: 'Sexta', suffix: '6', intervals: [0, 4, 7, 9] },
+  { value: 'm6', label: 'Menor sexta', suffix: 'm6', intervals: [0, 3, 7, 9] },
+  { value: 'add9', label: 'Novena añadida', suffix: 'add9', intervals: [0, 4, 7, 2] },
+  { value: '6/9', label: 'Novenas 6/9', suffix: '6/9', intervals: [0, 4, 7, 9, 2] },
+  { value: '9', label: 'Novena', suffix: '9', intervals: [0, 4, 7, 10, 2] },
+  { value: 'sus2', label: 'Suspendido 2', suffix: 'sus2', intervals: [0, 2, 7] },
+  { value: 'sus4', label: 'Suspendido 4', suffix: 'sus4', intervals: [0, 5, 7] },
 ];
 
 // Calidades para el nuevo flujo de selección
@@ -686,10 +693,7 @@ function renderFretboard() {
         textColor = '#999';
       }
 
-      if (displayModeIndex >= 3 && shouldHighlight) {
-        bgColor = isRoot && (instrument !== 'guitar' || reversedIdx >= 3) ? '#c43d3d' : '#287a46';
-        textColor = '#ffffff';
-      }
+      
 
       // Determinar si mostrar el nombre de la nota según el modo
       let showNoteName = false;
@@ -780,10 +784,7 @@ function renderOpenStrings() {
         textColor = '#1d2521';
       }
 
-      if (displayModeIndex >= 3 && shouldHighlight) {
-        bgColor = isRoot && (instrument !== 'guitar' || reversedIdx >= 3) ? '#c43d3d' : '#287a46';
-        textColor = '#ffffff';
-      }
+      
 
       // Determinar si mostrar el nombre de la nota según el modo
       let showNoteName = false;
@@ -953,8 +954,10 @@ document.querySelector('#toggle-notes').addEventListener('click', event => {
   renderFretboard(); 
 });
 function defaultChordMode(item) {
-  const type = chordTypes.find(type => type.value === item.type) || chordTypes[0];
-  return type.intervals.includes(6) ? 'locrian' : item.type === '7' ? 'mixolydian'
+  const type = chordTypes.find(candidate => candidate.value === item.type) || chordTypes[0];
+  if (item.type === '7' || item.type === '7sus4' || item.type === '9' || item.type === 'sus2' || item.type === 'sus4') return 'mixolydian';
+  if (item.type === 'm6' || item.type === 'm9') return 'dorian';
+  return type.intervals.includes(6) ? 'locrian'
     : type.intervals.includes(3) ? 'aeolian' : 'ionian';
 }
 

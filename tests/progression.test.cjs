@@ -30,20 +30,25 @@ function setup() {
   return {run,change,element};
 }
 
-test('chord views hide non-chord notes and mark guitar roots red only on strings 4 to 6',()=>{
+test('chord views hide non-chord notes and color each chord degree',()=>{
   const {run,element}=setup();
   for(const mode of [3,4]){
     run(`root=4;selectedMode='ionian';displayModeIndex=${mode};updateView()`);
-    const rows=element('#fretboard').innerHTML.split('class="string-row"').slice(1);
-    rows.forEach((row,index)=>{
+    const html=element('#fretboard').innerHTML;
+    const rows=html.split('class="string-row"').slice(1);
+    rows.forEach(row=>{
       const roots=[...row.matchAll(/data-midi="(\d+)"[^>]*style="([^"]*)"/g)].filter(m=>Number(m[1])%12===4);
       assert(roots.length>0);
-      roots.forEach(m=>assert(m[2].includes(index>=3?'#c43d3d':'#287a46')));
+      roots.forEach(make=>assert(make[2].includes('#E53935')));
     });
-    assert.match(element('#fretboard').innerHTML,/opacity: 0;/);
+    assert.match(html,/opacity: 0;/);
+    assert(!html.includes('#287a46')&&!html.includes('#c43d3d'));
+    assert.match(html,/data-interval="3ª mayor"[^>]*background-color: #4CAF50/);
+    assert.match(html,/data-interval="5ª justa"[^>]*background-color: #E6B800/);
+    if(mode===4)assert.match(html,/data-interval="7ª mayor"[^>]*background-color: #AB47BC/);
     const open=element('#open-strings').innerHTML;
-    assert.match(open,/data-midi="64"[^>]*background-color: #287a46/);
-    assert.match(open,/data-midi="40"[^>]*background-color: #c43d3d/);
+    assert.match(open,/data-midi="64"[^>]*background-color: #E53935/);
+    assert.match(open,/data-midi="40"[^>]*background-color: #E53935/);
   }
 });
 
