@@ -112,4 +112,8 @@ Falta corregir errores de las implementaciones de micrófono
 
   - Implementado: las vistas Acorde y Acorde 7ma vuelven a colorear cada grado con su color (raíz roja, tercera, quinta y séptima con su propio color), tanto en trastes como en cuerdas al aire; ya no se pinta todo de un solo verde. Las notas ajenas al acorde siguen ocultas. Comprobado con `npm test` → 145/145. Pendiente tu revisión visual.
 
-  Quisiera implementar que el switch de backtrack o midi también tenga la opción de metronomo asi puedo pausarlo o reproducirlo desde ahí, y tambien que los bpm se puedan cambiar manualmente si hago click en ellos, ya que solo muestra los bpm que resultan del boton de ritmo
+* Quisiera implementar que el switch de backtrack o midi también tenga la opción de metronomo asi puedo pausarlo o reproducirlo desde ahí, y tambien que los bpm se puedan cambiar manualmente si hago click en ellos, ya que solo muestra los bpm que resultan del boton de ritmo
+
+  - Implementado: el switch del acceso rápido ahora tiene tres fuentes: Backtrack, MIDI y Metrónomo. Con Metrónomo activo, el botón de reproducción inicia/pausa el metrónomo (anticipa por 2.5 s los taps y reinicia el cálculo). Cambiar a otra fuente lo detiene.
+  - El valor de BPM pasó de ser una etiqueta solo lectura a un campo editable junto al botón «Tempo»: se puede escribir a mano (límites 30–240) y se mantiene sincronizado con el acompañamiento y el video. El botón «Tempo» sigue estimando con las pulsaciones y lo rellena.
+  - `npm test` → 148/148 (nuevos tests de `panel-controls` y del campo editable). Pendiente tu revisión visual y la prueba con guitarra/video.

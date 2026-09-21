@@ -59,9 +59,9 @@ Límites: 4096 tarjetas, 64 secciones, entre 1 y 8 repeticiones por sección y 3
 
 La cabecera conserva el selector **Progresión / MIDI** y el control del reproductor elegido, incluso plegada. El triángulo inicia; el cuadrado detiene. Volver a reproducir comienza desde el inicio: estos motores no tienen pausa reanudable.
 
-Junto a las tarjetas hay un acceso rápido con el mismo selector y control de reproducción. Ambos accesos se mantienen sincronizados; MIDI se habilita al cargar un archivo válido.
+Junto a las tarjetas hay un acceso rápido con el mismo selector y control de reproducción. Ambos accesos se mantienen sincronizados; MIDI se habilita al cargar un archivo válido. Ese selector incluye una tercera fuente, **Metrónomo**, y el botón de reproducción pasa a iniciar/pausar el metrónomo mientras esté activa.
 
-El botón **Tempo** junto a ese acceso estima el BPM con dos o más pulsaciones al ritmo de la canción y lo fija en el acompañamiento; con un video cargado también actualiza el BPM para generar sus marcas sincronizadas.
+El botón **Tempo** junto a ese acceso estima el BPM con dos o más pulsaciones al ritmo de la canción y lo fija en el acompañamiento; el número que lo acompaña es editable a mano (30–240) y se mantiene sincronizado con el acompañamiento y, con un video cargado, con el BPM para generar sus marcas.
 
 - Cambiar de fuente detiene la anterior. Volver a pulsar la fuente activa no detiene.
 - Plegar Acompañamiento no detiene el audio.
