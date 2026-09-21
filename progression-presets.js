@@ -30,6 +30,7 @@ if(typeof document!=='undefined')document.querySelector('#apply-preset').addEven
   progression=preset.chords.map(chord=>({...chord}));progressionEdited=true;playingProgressionItem=null;
   selectProgressionChord(0);
   document.querySelector('#player-bpm').value=preset.bpm;
+  window.dispatchEvent(new Event('traste:preset-applied'));
   document.querySelector('#player-style').value=preset.style;
   document.querySelector('#player-percussion').checked=true;
   document.querySelector('#player-loop').checked=true;

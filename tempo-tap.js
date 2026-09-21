@@ -1,14 +1,25 @@
-// Botón «Tempo» por pulsaciones: con al menos dos clics estima el BPM y lo
-// fija en el acompañamiento; si hay una referencia de video, también allí.
+// Botón «Tempo» por pulsaciones: con al menos dos clics estima el BPM. El valor
+// se muestra en un campo editable que también aplica cambios manuales y se
+// mantiene sincronizado con el acompañamiento (y con el video si hay referencia).
 (() => {
   const button = document.querySelector('#tempo-tap');
-  const label = document.querySelector('#tempo-tap-label');
-  if (!button || !label) return;
+  const bpmInput = document.querySelector('#tempo-tap-bpm');
+  if (!button || !bpmInput) return;
   const playerBpm = document.querySelector('#player-bpm');
   const videoBpm = document.querySelector('#video-bpm');
   let taps = [];
-  const dismiss = () => { label.hidden = true; };
-  if (playerBpm) playerBpm.addEventListener('input', dismiss);
+  const applyBpm = (bpm) => {
+    if (playerBpm) playerBpm.value = bpm;
+    if (videoBpm) videoBpm.value = bpm;
+  };
+  if (playerBpm && playerBpm.value !== '') bpmInput.value = playerBpm.value;
+  if (playerBpm) playerBpm.addEventListener('input', () => { bpmInput.value = playerBpm.value; });
+  globalThis.window?.addEventListener?.('traste:preset-applied', () => { if (playerBpm) bpmInput.value = playerBpm.value; });
+  bpmInput.addEventListener('change', () => {
+    const bpm = Math.min(240, Math.max(30, Math.round(Number(bpmInput.value) || 100)));
+    bpmInput.value = bpm;
+    applyBpm(bpm);
+  });
   button.addEventListener('click', () => {
     const now = performance.now();
     if (taps.length && now - taps.at(-1) > 2500) taps = [];
@@ -16,9 +27,7 @@
     if (taps.length < 2) return;
     const bpm = Math.round(60000 * (taps.length - 1) / (now - taps[0]));
     if (bpm < 30 || bpm > 240) return;
-    if (playerBpm) playerBpm.value = bpm;
-    if (videoBpm) videoBpm.value = bpm;
-    label.textContent = `${bpm} BPM`;
-    label.hidden = false;
+    bpmInput.value = bpm;
+    applyBpm(bpm);
   });
 })();

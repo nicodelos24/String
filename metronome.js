@@ -111,8 +111,10 @@ else {
       button.setAttribute('aria-pressed', String(running));
       status.textContent = running ? 'En marcha' : 'En pausa';
       if (!running) Array.from(lights.children).forEach(light => light.classList.remove('active'));
+      window.dispatchEvent?.(new CustomEvent('traste:metronome-state', {detail:{running}}));
     }
   });
+  window.StringMetronome = metronome;
   function renderPulses() {
     lights.innerHTML = Array.from({length: metronome.beats}, (_, i) => '<span class="metronome-pulse">' + (i + 1) + '</span>').join('');
   }

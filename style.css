@@ -880,8 +880,9 @@ footer {
 .tempo-tap svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 .tempo-tap:hover { border-color: var(--rust); color: var(--rust); }
 .tempo-tap:active { transform: scale(.97); }
-.tempo-tap-label { font: 11px var(--sans); color: var(--rust); font-variant-numeric: tabular-nums; }
-.tempo-tap-label[hidden] { display: none; }
+.tempo-tap-bpm { width: 52px; box-sizing: border-box; padding: 4px 2px; border: 0; border-radius: 0; background: transparent; color: var(--rust); font: 11px var(--mono); font-variant-numeric: tabular-nums; text-align: center; }
+.tempo-tap-bpm:hover { text-decoration: underline; text-underline-offset: 3px; }
+.tempo-tap-bpm:focus { outline: 1px solid var(--rust); outline-offset: 2px; border-radius: 2px; }
 #progression-transport button::after, #midi-transport button::after { content: attr(aria-label); margin-left: 6px; }
 .source-switch button { padding: 6px 8px; border: 0; border-radius: 5px; background: transparent; color: var(--muted); font: 11px var(--sans); cursor: pointer; }
 .source-switch button[aria-pressed="true"] { background: var(--rust); color: var(--paper-light); }
