@@ -34,6 +34,8 @@ function setup() {
 test('añadir manual o automáticamente usa el acorde escuchado y conserva la escala fija', () => {
   const { context, callbacks, element, click } = setup();
   callbacks.onState('ready');
+  assert.equal(element('live-scale-toggle').checked, true, 'Al activar el micrófono la escala en vivo arranca activada');
+  element('live-scale-toggle').checked = false;
   callbacks.onChord({ root: 9, type: 'm', mode: 'aeolian', confidence: .95 });
   click('live-chord-add');
   click('live-chord-auto');

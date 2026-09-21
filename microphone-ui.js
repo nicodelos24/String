@@ -134,6 +134,8 @@ if (typeof document !== 'undefined') (() => {
       toggle.setAttribute('aria-pressed', 'true');
       toggle.title = 'Detener micrófono';
       label.textContent = 'Detener';
+      // Por defecto el mástil sigue el acorde en vivo; se puede apagar con el switch.
+      if (scaleToggle) scaleToggle.checked = true;
       readout.hidden = false;
       readout.textContent = 'esperando nota…';
       showChord(null);
