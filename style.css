@@ -880,11 +880,11 @@ footer {
 .tempo-tap svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 .tempo-tap:hover { border-color: var(--rust); color: var(--rust); }
 .tempo-tap:active { transform: scale(.97); }
-.tempo-tap-stepper { display: block; margin-top: 2px; }
+.tempo-tap-stepper { display: block; margin-top: 0.5px; }
 .tempo-tap-control { display: inline-flex; align-items: center; }
 .tempo-tap-wrap { position: relative; display: inline-flex; }
-.tempo-tap-stepper .tempo-tap-bpm { width: 30px; box-sizing: border-box; padding: 0; border: 0; border-radius: 0; background: transparent; color: var(--rust); font: 11px var(--mono); font-variant-numeric: tabular-nums; text-align: center; appearance: textfield; -moz-appearance: textfield; }
-.tempo-tap-unit { color: var(--rust); font: 11px var(--mono); margin-left: 2px; font-variant-numeric: tabular-nums; line-height: 1; }
+.tempo-tap-stepper .tempo-tap-bpm { width: 26px; box-sizing: border-box; padding: 0; border: 0; border-radius: 0; background: transparent; color: var(--rust); font: 11px var(--mono); font-variant-numeric: tabular-nums; text-align: center; appearance: textfield; -moz-appearance: textfield; }
+.tempo-tap-unit { color: var(--rust); font: 11px var(--mono); margin-left: 5px; font-variant-numeric: tabular-nums; line-height: 1; }
 .tempo-tap-stepper .tempo-tap-bpm::-webkit-outer-spin-button, .tempo-tap-stepper .tempo-tap-bpm::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .tempo-tap-stepper .tempo-tap-bpm:hover { text-decoration: underline; text-underline-offset: 3px; cursor: text; }
 .tempo-tap-stepper .tempo-tap-bpm:focus { outline: 1px solid var(--rust); outline-offset: 2px; border-radius: 2px; }
