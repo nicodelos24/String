@@ -7,17 +7,21 @@ const path=require('node:path');
 function setup() {
   const elements=new Map();
   function element(key) {
-    if(!elements.has(key))elements.set(key,{
-      handlers:{},_value:'100',
-      get value(){return this._value;},
-      set value(value){this._value=String(value);},
-      addEventListener(name,fn){this.handlers[name]=fn;},
-    });
+    if(!elements.has(key)){
+      const el={
+        handlers:{},_value:'100',dataset:{},
+        get value(){return this._value;},
+        set value(value){this._value=String(value);},
+        addEventListener(name,fn){this.handlers[name]=fn;},
+      };
+      if(key.startsWith('.tempo-tap-step')){const match=/"(-?\d+)"/.exec(key);if(match)el.dataset.step=match[1];}
+      elements.set(key,el);
+    }
     return elements.get(key);
   }
   const clock={now:0};
   const ctx=vm.createContext({
-    document:{querySelector:element},
+    document:{querySelector:element,querySelectorAll:sel=>['.tempo-tap-step[data-step="1"]','.tempo-tap-step[data-step="-1"]'].map(element)},
     performance:{now:()=>clock.now},
   });
   vm.runInContext(fs.readFileSync(path.join(__dirname,'../tempo-tap.js'),'utf8'),ctx);
@@ -61,4 +65,19 @@ test('tempo tap: far-apart taps restart the estimation window',()=>{
   clock.now=10400;button.handlers.click();
   clock.now=10900;button.handlers.click();
   assert.equal(bpmInput.value,'120');
+});
+
+test('tempo tap: stepper arrows adjust the BPM by one with the same limits',()=>{
+  const {element}=setup();
+  const up=element('.tempo-tap-step[data-step="1"]'),down=element('.tempo-tap-step[data-step="-1"]');
+  const bpmInput=element('#tempo-tap-bpm'),playerBpm=element('#player-bpm');
+  bpmInput.value='90';up.handlers.click();
+  assert.equal(bpmInput.value,'91');
+  assert.equal(playerBpm.value,'91');
+  bpmInput.value='240';up.handlers.click();
+  assert.equal(bpmInput.value,'240');
+  bpmInput.value='30';down.handlers.click();
+  assert.equal(bpmInput.value,'30');
+  bpmInput.value='120';down.handlers.click();
+  assert.equal(bpmInput.value,'119');
 });

@@ -12,6 +12,11 @@
     if (playerBpm) playerBpm.value = bpm;
     if (videoBpm) videoBpm.value = bpm;
   };
+  const clampedBpm = () => Math.min(240, Math.max(30, Math.round(Number(bpmInput.value) || 100)));
+  document.querySelectorAll('.tempo-tap-step').forEach(step => step.addEventListener('click', () => {
+    bpmInput.value = Math.min(240, Math.max(30, clampedBpm() + Number(step.dataset.step)));
+    applyBpm(Number(bpmInput.value));
+  }));
   if (playerBpm && playerBpm.value !== '') bpmInput.value = playerBpm.value;
   if (playerBpm) playerBpm.addEventListener('input', () => { bpmInput.value = playerBpm.value; });
   globalThis.window?.addEventListener?.('traste:preset-applied', () => { if (playerBpm) bpmInput.value = playerBpm.value; });
