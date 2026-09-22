@@ -32,8 +32,39 @@ test('keyboard: letters are labelled only inside the active window', () => {
   assert.equal(keyLetter(62, 60), 's');
   assert.equal(keyLetter(64, 60), 'd');
   assert.equal(keyLetter(65, 60), 'f');
-  assert.equal(keyLetter(48, 60), '');
-  assert.equal(keyLetter(76, 60), ';');
+  assert.equal(keyLetter(48, 60), 'z');
+  assert.equal(keyLetter(76, 60), 'ñ');
+});
+
+test('keyboard: la fila grave y las teclas extras se suman a los sostenidos y naturales', () => {
+  const { KEY_OFFSETS, KEY_CODES } = require('../keyboard-section.js');
+  assert.equal(KEY_OFFSETS.z, -12); // C3
+  assert.equal(KEY_OFFSETS.x, -10); // D3
+  assert.equal(KEY_OFFSETS.c, -8);  // E3
+  assert.equal(KEY_OFFSETS.v, -7);  // F3
+  assert.equal(KEY_OFFSETS.b, -5);  // G3
+  assert.equal(KEY_OFFSETS.n, -3);  // A3
+  assert.equal(KEY_OFFSETS.m, -1);  // B3
+  assert.equal(KEY_OFFSETS['{'], 17); // F5
+  assert.equal(KEY_OFFSETS['´'], 18);  // F#5
+  assert.equal(KEY_OFFSETS['+'], 20);  // G#5
+  assert.equal(KEY_OFFSETS.p, 15); // D#5, sigue siendo sostenido
+  assert.equal(KEY_OFFSETS.ñ, KEY_OFFSETS[';'], 'ñ es la posición de ; en teclado español');
+  assert.equal(KEY_CODES.Semicolon, 16); // ñ → E5
+  assert.equal(KEY_CODES.Quote, 17);     // { → F5
+  assert.equal(KEY_CODES.BracketLeft, 18); // ´ → F#5
+  assert.equal(KEY_CODES.Equal, 20);       // + → G#5
+});
+
+test('keyboard: keyOffsetFor usa la letra o la posición física como respaldo', () => {
+  const { keyOffsetFor } = require('../keyboard-section.js');
+  assert.equal(keyOffsetFor({ key: 'a', code: 'KeyA' }), 0);
+  assert.equal(keyOffsetFor({ key: 'ñ', code: 'Semicolon' }), 16);
+  assert.equal(keyOffsetFor({ key: 'Z', code: 'KeyZ' }), -12);
+  assert.equal(keyOffsetFor({ key: 'Dead', code: 'BracketLeft' }), 18, 'tecla de acento muerto por posición');
+  assert.equal(keyOffsetFor({ key: '{', code: 'Quote' }), 17);
+  assert.equal(keyOffsetFor({ key: '+', code: 'Equal' }), 20);
+  assert.equal(keyOffsetFor({ key: 'q', code: 'KeyQ' }), undefined);
 });
 
 test('keyboard: left shift lowers a full octave and right shift raises it, clamped to visible octaves', () => {
@@ -104,6 +135,48 @@ test('keyboard: resalta en el mástil solo las posiciones del mismo MIDI sin toc
   assert(!notes[1].classList.contains('keyboard-live'));
   assert.equal(mastilKeyToggle(notes, 60, false), 0);
   assert.equal(mastilKeyToggle(notes, 200, true), 0, 'un MIDI fuera del rango del mástil no resalta nada');
+});
+
+test('keyboard synth: guitarra y bajo usan una cuerda pulsada que decae y se normaliza', () => {
+  const { pluckWave } = require('../keyboard-section.js');
+  for (const options of [{ brightness: 0.92 }, { brightness: 0.35, damping: 0.9945 }]) {
+    const wave = pluckWave(44100, 220, 2.2, options);
+    assert.equal(wave.length, Math.ceil(44100 * 2.2));
+    const peak = Math.max(...Array.from(wave, Math.abs));
+    assert.ok(peak <= 0.85 + 1e-6, 'la onda se normaliza a 0.85');
+    const quarter = Math.floor(wave.length / 4);
+    const first = wave.slice(0, quarter).reduce((s, v) => s + Math.abs(v), 0);
+    const last = wave.slice(wave.length - quarter).reduce((s, v) => s + Math.abs(v), 0);
+    assert.ok(first > last * 5, 'la cuerda se extingue sola');
+  }
+});
+
+test('keyboard synth: noteOn de guitarra o bajo usa un buffer pulsado y no osciladores', async () => {
+  const { KeySynth } = require('../keyboard-section.js');
+  const oscillators = [];
+  const sources = [];
+  const parameter = () => ({ setValueAtTime() {}, linearRampToValueAtTime() {}, setTargetAtTime() {}, cancelScheduledValues() {} });
+  const ctx = {
+    currentTime: 0,
+    destination: {},
+    sampleRate: 44100,
+    resume: async () => {},
+    createBuffer: (ch, n) => { const d = new Float32Array(n); return { getChannelData: () => d }; },
+    createBufferSource: () => { const s = { connect() {}, start() {}, stop(t) { this.stopTime = t; } }; sources.push(s); return s; },
+    createGain: () => ({ gain: parameter(), connect() {} }),
+    createOscillator: () => { const o = { type: '', frequency: {}, connect() {}, start() {}, stop() {} }; oscillators.push(o); return o; },
+  };
+  const synth = new KeySynth({ createContext: () => ctx });
+  await synth.noteOn(40, 'guitar');
+  await synth.noteOn(29, 'bass');
+  assert.equal(synth.voices.size, 2);
+  assert.equal(oscillators.length, 0, 'ningún oscilador para instrumentos pulsados');
+  assert.equal(sources.length, 2, 'dos buffer source, uno por nota');
+  synth.noteOff(40);
+  assert.equal(synth.voices.size, 1);
+  synth.allOff();
+  assert.equal(synth.voices.size, 0);
+  assert.ok(sources.every(s => s.stopTime !== undefined));
 });
 
 test('keyboard synth: timbre and effects update even before the context starts', () => {

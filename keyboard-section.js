@@ -1,13 +1,26 @@
 // Teclado expandible: piano de varias octavas que cubre el mástil y se toca
-// con el teclado físico (a s d f g h j = do re mi fa sol la si; w e t y u =
-// sostenidos) o con el puntero. Shift izquierdo baja una octava, derecho la
-// sube. Sintetizador polifónico con timbres y efectos delay/reverb.
+// con el teclado físico o con el puntero. Con la sección cerrada, las mismas
+// teclas tocan el mástil con el sonido del instrumento elegido (guitarra o
+// bajo). Teclas naturales: z x c v b n m (octava grave), a s d f g h j k l ñ
+// { (media y aguda); sostenidos: w e t y u o p ´ +. Shift izquierdo baja una
+// octava y derecho la sube. Sintetizador polifónico con timbres y efectos.
 // La lógica pura y el sintetizador se exportan para pruebas sin navegador.
 
 var WHITE_SEMITONES = [0, 2, 4, 5, 7, 9, 11];
 var BLACK_SPECS = [[1, 1], [3, 2], [6, 4], [8, 5], [10, 6]];
-var KEY_OFFSETS = { a: 0, w: 1, s: 2, e: 3, d: 4, f: 5, t: 6, g: 7, y: 8, h: 9, u: 10, j: 11, k: 12, o: 13, l: 14, p: 15, ';': 16 };
+var KEY_OFFSETS = { a: 0, w: 1, s: 2, e: 3, d: 4, f: 5, t: 6, g: 7, y: 8, h: 9, u: 10, j: 11, k: 12, o: 13, l: 14, p: 15, ñ: 16, ';': 16, '{': 17, '´': 18, '+': 20, z: -12, x: -10, c: -8, v: -7, b: -5, n: -3, m: -1 };
+// Posiciones físicas que cambian de carácter según el idioma del teclado y
+// palabras muertas (acentos), identificadas por código en vez de por letra.
+var KEY_CODES = { Semicolon: 16, Quote: 17, BracketLeft: 18, Equal: 20 };
 var KEYBOARD_NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+
+// Offset para una tecla según su letra o, si esa posición no tiene letra fija
+// (ñ, ´, etc. cambian según el idioma), según la posición física de la tecla.
+function keyOffsetFor(event) {
+  var byKey = KEY_OFFSETS[event.key.toLowerCase()];
+  if (byKey !== undefined) return byKey;
+  return KEY_CODES[event.code];
+}
 
 function keyboardMidiFor(octave, semitone) { return 12 * (octave + 1) + semitone; }
 
@@ -72,6 +85,41 @@ function keyboardImpulse(context, seconds, decay) {
   return buffer;
 }
 
+// Cuerda pulsada (Karplus-Strong): un pulso de ruido recorre un codo que
+// promedia consigo mismo y se apaga solo. brightness acerca el timbre a la
+// guitarra (agudos presentes) o al bajo (menos brillante).
+function pluckWave(sampleRate, frequency, seconds, options) {
+  options = options || {};
+  var damping = options.damping || 0.996;
+  var brightness = options.brightness === undefined ? 0.9 : options.brightness;
+  var length = Math.ceil(sampleRate * seconds);
+  var period = Math.max(2, Math.round(sampleRate / frequency));
+  var out = new Float32Array(length);
+  for (var i = 0; i < period && i < length; i++) {
+    out[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / period, 0.5);
+  }
+  for (var i = period; i < length; i++) {
+    out[i] = 0.5 * (out[i - period] + out[i - period + 1]) * damping;
+  }
+  if (brightness < 1) {
+    var a = 1 - brightness, last = 0;
+    for (var i = 0; i < length; i++) {
+      last = last + a * (out[i] - last);
+      out[i] = last;
+    }
+  }
+  var peak = 0;
+  for (var i = 0; i < length; i++) {
+    var v = out[i] < 0 ? -out[i] : out[i];
+    if (v > peak) peak = v;
+  }
+  if (peak > 0) {
+    var scale = 0.85 / peak;
+    for (var i = 0; i < length; i++) out[i] *= scale;
+  }
+  return out;
+}
+
 function KeySynth(options) {
   options = options || {};
   this.createContext = options.createContext || (function () { return new (window.AudioContext || window.webkitAudioContext)(); });
@@ -81,6 +129,7 @@ function KeySynth(options) {
   this.volume = typeof options.volume === 'number' ? options.volume : 0.3;
   this.voices = new Map();
   this.voiceSequence = 0;
+  this.pluckCache = new Map();
   this.context = null;
 }
 KeySynth.prototype.ensure = function () {
@@ -149,12 +198,14 @@ KeySynth.prototype.releaseTime = function () {
   if (this.timbre === 'lead') return 0.09;
   return 0.14;
 };
-KeySynth.prototype.noteOn = function (midi) {
+KeySynth.prototype.noteOn = function (midi, timbre) {
   var self = this;
   if (!Number.isInteger(midi) || midi < 0 || midi > 127) return Promise.resolve(false);
+  var effective = timbre || this.timbre;
   return this.ensure().then(function () {
     if (!self.context || self.voices.has(midi)) return false;
     var ctx = self.context, t = ctx.currentTime || 0;
+    if (effective === 'guitar' || effective === 'bass') return self.pluckOn(ctx, midi, effective, t);
     var voiceGain = ctx.createGain();
     voiceGain.gain.setValueAtTime(0, t);
     voiceGain.gain.linearRampToValueAtTime(0.24, t + 0.014);
@@ -177,14 +228,59 @@ KeySynth.prototype.noteOn = function (midi) {
     return true;
   });
 };
+
+// Sonido de cuerda pulsada: reproduce la onda de Karplus-Strong (una sola vez,
+// se extingue sola) para guitarra o bajo según el timbre indicado.
+KeySynth.prototype.pluckBuffer = function (ctx, midi, timbre) {
+  if (!ctx.createBuffer) return null;
+  var rate = ctx.sampleRate || 44100;
+  var frequency = 440 * Math.pow(2, (midi - 69) / 12);
+  var key = rate + ':' + midi + ':' + timbre;
+  if (this.pluckCache && this.pluckCache.has(key)) return this.pluckCache.get(key);
+  var options = timbre === 'bass' ? { damping: 0.9945, brightness: 0.35 } : { damping: 0.9965, brightness: 0.92 };
+  var wave = pluckWave(rate, frequency, 2.2, options);
+  var buffer;
+  try {
+    buffer = ctx.createBuffer(1, wave.length, rate);
+    buffer.getChannelData(0).set(wave);
+  } catch (error) { return null; }
+  this.pluckCache.set(key, buffer);
+  return buffer;
+};
+
+KeySynth.prototype.pluckOn = function (ctx, midi, timbre, t) {
+  var self = this;
+  var buffer = this.pluckBuffer(ctx, midi, timbre);
+  if (!buffer) return false;
+  var source = ctx.createBufferSource();
+  source.buffer = buffer;
+  var gain = ctx.createGain();
+  gain.gain.setValueAtTime(0, t);
+  gain.gain.linearRampToValueAtTime(0.5, t + 0.004);
+  gain.connect(this.bus);
+  source.connect(gain);
+  source.start(t);
+  this.voices.set(midi, {
+    gain: gain,
+    source: source,
+    nodes: [{ source: source }],
+    pluck: true,
+    id: ++this.voiceSequence
+  });
+  return true;
+};
 KeySynth.prototype.noteOff = function (midi) {
   var voice = this.voices.get(midi);
   if (!voice || !this.context) return;
   this.voices.delete(midi);
-  var ctx = this.context, t = ctx.currentTime || 0, release = this.releaseTime();
+  var ctx = this.context, t = ctx.currentTime || 0;
+  var release = voice.pluck ? 0.05 : this.releaseTime();
   voice.gain.gain.cancelScheduledValues(t);
   voice.gain.gain.setTargetAtTime(0, t, release);
-  voice.nodes.forEach(function (node) { node.osc.stop(t + release * 6 + 0.05); });
+  voice.nodes.forEach(function (node) {
+    if (node.osc) node.osc.stop(t + release * 6 + 0.05);
+    else if (node.source) node.source.stop(t + release * 6 + 0.05);
+  });
 };
 KeySynth.prototype.allOff = function () {
   var self = this;
@@ -213,17 +309,21 @@ KeySynth.prototype.close = function () {
   this.bus = null;
   this.delaySend = null;
   this.reverbSend = null;
+  this.pluckCache = new Map();
 };
 
 if (typeof module !== 'undefined' && module.exports) module.exports = {
   WHITE_SEMITONES: WHITE_SEMITONES,
   BLACK_SPECS: BLACK_SPECS,
   KEY_OFFSETS: KEY_OFFSETS,
+  KEY_CODES: KEY_CODES,
   keyboardMidiFor: keyboardMidiFor,
   keyStrip: keyStrip,
   keyLetter: keyLetter,
   activeBaseMidi: activeBaseMidi,
+  keyOffsetFor: keyOffsetFor,
   mastilKeyToggle: mastilKeyToggle,
+  pluckWave: pluckWave,
   KeySynth: KeySynth,
   noteNames: KEYBOARD_NOTE_NAMES
 };
@@ -261,8 +361,22 @@ if (typeof document !== 'undefined') (function () {
   }
 
   // Modo mástil: con el teclado cerrado, las mismas teclas marcan la nota
-  // pulsada en el mástil de guitarra/bajo en vez de un piano.
+  // pulsada en el mástil de guitarra/bajo en vez de un piano, y suenan con el
+  // timbre del instrumento activo.
   function inMastilMode() { return panel.hidden; }
+
+  function mastilTimbre() {
+    return typeof instrument !== 'undefined' && instrument === 'bass' ? 'bass' : 'guitar';
+  }
+
+  // Octava base del modo mástil: el bajo necesita notas más graves que la
+  // guitarra para tener posiciones en el diapasón.
+  function mastilBaseMidi() {
+    var isBass = mastilTimbre() === 'bass';
+    var octaveStart = isBass ? 2 : 3;
+    var base = keyboardMidiFor(octaveStart + (isBass ? 0 : 1), 0);
+    return activeBaseMidi(base, shiftDirection(), octaveStart, 4);
+  }
 
   function mastilNotes() {
     return document.querySelectorAll('#fretboard [data-midi], #open-strings [data-midi]');
@@ -342,14 +456,14 @@ if (typeof document !== 'undefined') (function () {
     var target = event.target;
     if (target && (target.tagName === 'INPUT' || target.tagName === 'SELECT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
     if (event.altKey || event.metaKey || event.ctrlKey) return;
-    var key = event.key.toLowerCase();
-    var offset = KEY_OFFSETS[key];
+    var offset = keyOffsetFor(event);
     if (offset === undefined) return;
-    var midi = effectiveBase() + offset;
+    var base = inMastilMode() ? mastilBaseMidi() : effectiveBase();
+    var midi = base + offset;
     if (midi < 0 || midi > 127) return;
-    if (!pressed.has(key)) {
-      pressed.set(key, midi);
-      if (inMastilMode()) { applyMastil(midi, true); synth.noteOn(midi); }
+    if (!pressed.has(event.key)) {
+      pressed.set(event.key, midi);
+      if (inMastilMode()) { applyMastil(midi, true); synth.noteOn(midi, mastilTimbre()); }
       else synth.noteOn(midi).then(function () { setPlaying(midi, true); });
     }
     event.preventDefault();
@@ -360,12 +474,9 @@ if (typeof document !== 'undefined') (function () {
       if (!panel.hidden) render();
       return;
     }
-    var key = event.key.toLowerCase();
-    var offset = KEY_OFFSETS[key];
-    if (offset === undefined) return;
-    if (!pressed.has(key)) return;
-    var midi = pressed.get(key);
-    pressed.delete(key);
+    if (!pressed.has(event.key)) return;
+    var midi = pressed.get(event.key);
+    pressed.delete(event.key);
     synth.noteOff(midi);
     if (inMastilMode()) applyMastil(midi, false);
     else setPlaying(midi, false);
