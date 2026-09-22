@@ -5,16 +5,10 @@
 if (typeof document !== 'undefined') (() => {
   const toggle = document.getElementById('microphone-toggle');
   const readout = document.getElementById('microphone-readout');
-  const chordCard = document.getElementById('live-chord-card');
-  const chordName = document.getElementById('live-chord-name');
-  const chordConfidence = document.getElementById('live-chord-confidence');
-  const chordAdd = document.getElementById('live-chord-add');
-  const chordAuto = document.getElementById('live-chord-auto');
   const scaleToggle = document.getElementById('live-scale-toggle');
   if (!toggle || !readout) return;
 
   let liveChord = null;
-  let autoAdd = false;
 
   // La detección de duración con el micrófono es imprecisa: al enmudecer, la
   // nota queda dibujada al menos NOTE_HOLD_MS y solo se limpia antes si se
@@ -44,55 +38,22 @@ if (typeof document !== 'undefined') (() => {
     onChord: detection => {
       if (keyboardOwnsChord()) return;
       liveChord = detection;
-      showChord(detection);
       if (detection && scaleToggle?.checked && typeof showProgressionChord === 'function') {
         showProgressionChord({ root: detection.root, type: detection.type, mode: detection.mode }, -1);
       }
-      if (detection && autoAdd) addDetectedChord();
     },
     onState: renderState,
   });
 
-  function showChord(detection) {
-    if (!chordCard) return;
-    chordCard.hidden = false;
-    chordAdd.disabled = !detection;
-    if (!detection) {
-      chordName.textContent = '—';
-      chordConfidence.textContent = 'Esperando acorde…';
-      return;
-    }
-    const type = typeof chordTypes !== 'undefined' && chordTypes.find(item => item.value === detection.type);
-    chordName.textContent = `${noteName(detection.root)}${type?.suffix || ''}`;
-    chordConfidence.textContent = 'Detección experimental';
-  }
-
   // Mientras el teclado muestra un acorde en vivo, el micrófono cede la palabra
-  // para no pisar la tarjeta ni la escala.
+  // para no pisar la escala del mástil.
   function keyboardOwnsChord() {
     const playing = document.getElementById('keyboard-live-chord')?.dataset?.playing;
     return playing === '1';
   }
 
-  function addDetectedChord() {
-    if (!liveChord || draggingProgressionItem || progression.length >= 4096) return;
-    const item = { root: liveChord.root, rootNoteName: noteName(liveChord.root), type: liveChord.type, mode: liveChord.mode, ghostMode: '', beats: 4 };
-    progression.push(item);
-    progressionEdited = true;
-    globalThis.StringSections?.include(null, item);
-    renderProgression();
-  }
-  chordAdd?.addEventListener('click', () => {
-    if (keyboardOwnsChord()) return; // el botón lo maneja el teclado
-    addDetectedChord();
-  });
   scaleToggle?.addEventListener('change', () => {
     if (scaleToggle.checked && liveChord) showProgressionChord(liveChord, -1);
-  });
-  chordAuto?.addEventListener('click', event => {
-    autoAdd = !autoAdd;
-    event.currentTarget.setAttribute('aria-pressed', String(autoAdd));
-    event.currentTarget.textContent = autoAdd ? 'Auto activo' : 'Auto añadir';
   });
 
   let liveMidi = null;
@@ -184,7 +145,6 @@ if (typeof document !== 'undefined') (() => {
       if (scaleToggle) scaleToggle.checked = true;
       readout.hidden = false;
       readout.textContent = 'esperando nota…';
-      showChord(null);
     } else if (state === 'error') {
       toggle.setAttribute('aria-pressed', 'false');
       toggle.title = 'Usar el micrófono para resaltar la nota que tocas';
@@ -200,17 +160,8 @@ if (typeof document !== 'undefined') (() => {
     }
     if (state === 'stopped' || state === 'error') {
       liveChord = null;
-      autoAdd = false;
       if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
       heldMidi = null;
-      if (!keyboardOwnsChord()) {
-        if (chordCard) chordCard.hidden = true;
-        if (chordAdd) chordAdd.disabled = true;
-      }
-      if (chordAuto) {
-        chordAuto.setAttribute('aria-pressed', 'false');
-        chordAuto.textContent = 'Auto añadir';
-      }
     }
   }
 

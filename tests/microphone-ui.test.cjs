@@ -31,28 +31,19 @@ function setup() {
   return { context, callbacks, element, click(id) { const el = element(id); el.handlers.click({ currentTarget: el }); } };
 }
 
-test('añadir manual o automáticamente usa el acorde escuchado y conserva la escala fija', () => {
-  const { context, callbacks, element, click } = setup();
+test('el acorde escuchado marca el mástil sin añadir a la progresión y sin tocar los controles', () => {
+  const { context, callbacks, element } = setup();
   callbacks.onState('ready');
   assert.equal(element('live-scale-toggle').checked, true, 'Al activar el micrófono la escala en vivo arranca activada');
   element('live-scale-toggle').checked = false;
   callbacks.onChord({ root: 9, type: 'm', mode: 'aeolian', confidence: .95 });
-  click('live-chord-add');
-  click('live-chord-auto');
-  callbacks.onChord({ root: 7, type: '7', mode: 'mixolydian', confidence: .95 });
-  assert.deepEqual(Array.from(context.progression, chord => [chord.root, chord.type, chord.beats]), [[9, 'm', 4], [7, '7', 4]]);
+  assert.equal(context.progression.length, 0, 'El micrófono no agrega acordes a la progresión por sí solo');
+  callbacks.onChord(null);
+  assert.equal(context.progression.length, 0);
+  callbacks.onState('stopped');
   assert.equal(context.root, 0); assert.equal(context.quality, 'major');
   assert.equal(context.selectedMode, 'ionian'); assert.equal(context.ghostMode, 'lydian');
-  assert.equal(context.activeProgression, 2); assert.equal(context.progressionEdited, true);
-  callbacks.onChord(null);
-  assert.equal(context.progression.length, 2);
-  assert.equal(element('live-chord-add').disabled, true);
-  assert.equal(element('live-chord-card').hidden, false, 'Auto debe poder detenerse durante el silencio');
-  callbacks.onState('stopped');
-  click('live-chord-add');
-  assert.equal(context.progression.length, 2);
-  assert.equal(element('live-chord-card').hidden, true);
-  assert.equal(element('live-chord-auto').attributes['aria-pressed'], 'false');
+  assert.equal(context.activeProgression, 2); assert.equal(context.progressionEdited, false);
 });
 
 test('activar Escala en vivo aplica el acorde actual; apagado mantiene la última escala', () => {

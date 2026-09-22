@@ -535,12 +535,8 @@ if (typeof document !== 'undefined') (function () {
   // tocar no cambia la escala. Nota: una nota (tecla o golpe en el mástil)
   // muestra el acorde mayor o menor según la calidad y el modo elegidos a la
   // izquierda. Acorde: con la raíz (nota más grave) y su tercera alcanza; toca
-  // más notas para acordes más ricos. Enter (o ＋ Añadir) agrega a las tarjetas.
+  // más notas para acordes más ricos. Enter agrega a las tarjetas.
   var liveRoot = document.getElementById('keyboard-live-chord');
-  var chordCard = document.getElementById('live-chord-card');
-  var chordNameEl = document.getElementById('live-chord-name');
-  var chordConfidenceEl = document.getElementById('live-chord-confidence');
-  var chordAddBtn = document.getElementById('live-chord-add');
   var keyboardLive = null;      // último acorde detectado
   var keyboardLiveKey = '';     // raíz:tipo:modo ya aplicado en el mástil
   var mastilClickMidis = new Set();  // notas marcadas con clicks en el mástil (en modo acorde)
@@ -573,12 +569,6 @@ if (typeof document !== 'undefined') (function () {
 
   function setKeyboardPlaying(on) {
     if (liveRoot) liveRoot.dataset.playing = on ? '1' : '';
-  }
-
-  // Cuando el teclado muestra el acorde, el micrófono lo deja pasar en vivo.
-  function micActive() {
-    var mic = document.getElementById('microphone-toggle');
-    return !!mic && mic.getAttribute('aria-pressed') === 'true';
   }
 
   // Notas activas: las teclas mantenidas más las marcadas en el mástil.
@@ -615,13 +605,6 @@ if (typeof document !== 'undefined') (function () {
     }
     if (!chord) { resetKeyboardLive(); return; }
     keyboardLive = chord;
-    if (chordCard && chordNameEl && chordConfidenceEl) {
-      chordCard.hidden = false;
-      var type = typeof chordTypes !== 'undefined' && chordTypes.find(function (item) { return item.value === chord.type; });
-      chordNameEl.textContent = (chord.rootNoteName || noteName(chord.root)) + (type ? type.suffix : '');
-      chordConfidenceEl.textContent = phase === 'note' ? 'Nota única · Enter para añadir' : 'Notas · Enter para añadir';
-      if (chordAddBtn) chordAddBtn.disabled = false;
-    }
     setKeyboardPlaying(true);
     if (typeof showProgressionChord === 'function') {
       var key = chord.root + ':' + chord.type + ':' + chord.mode;
@@ -636,13 +619,6 @@ if (typeof document !== 'undefined') (function () {
     keyboardLive = null;
     keyboardLiveKey = '';
     setKeyboardPlaying(false);
-    if (!chordCard || !chordNameEl || !chordConfidenceEl) return;
-    if (micActive()) {
-      chordNameEl.textContent = '—';
-      chordConfidenceEl.textContent = 'Esperando acorde…';
-    } else {
-      chordCard.hidden = true;
-    }
   }
 
   function clearLivePhase() {
@@ -700,8 +676,6 @@ if (typeof document !== 'undefined') (function () {
   liveButtons().forEach(function (button) {
     button.addEventListener('click', function () { onLiveButtonClick(button); });
   });
-
-  if (chordAddBtn) chordAddBtn.addEventListener('click', function () { if (keyboardLive) addKeyboardLiveChord(); });
 
   window.addEventListener('keydown', function (event) {
     if (event.code === 'ShiftLeft') { shiftLeft = true; if (!panel.hidden) render(); return; }

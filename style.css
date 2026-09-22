@@ -695,14 +695,7 @@ footer {
   flex: 0 0 auto;
 }
 
-.live-chord-card { display: inline-flex; align-items: center; gap: 6px; padding: 6px 8px; border: 1px solid var(--rust); border-radius: 12px; background: var(--paper-light); color: var(--ink); font-size: 10px; }
-.live-chord-card[hidden] { display: none; }
-.live-chord-card, .mic-control, .pentatonic-control { flex-wrap: wrap; }
-.live-chord-card button:disabled { opacity: .5; cursor: default; }
-.live-chord-card strong { font: 700 15px var(--sans); color: var(--rust); }
-.live-chord-label { font: 9px var(--mono); color: var(--muted); }
-.live-chord-card button { border: 1px solid var(--line); border-radius: 999px; background: transparent; color: inherit; padding: 3px 7px; font-size: 10px; cursor: pointer; }
-.live-chord-card button[aria-pressed="true"] { background: var(--rust); color: #fff; border-color: var(--rust); }
+.mic-control, .pentatonic-control { flex-wrap: wrap; }
 
 .mic-button {
   display: inline-flex;
