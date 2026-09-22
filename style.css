@@ -183,7 +183,10 @@ footer {
   background: var(--paper-light);
   border: 1px solid var(--line);
   box-shadow: 12px 12px 0 rgba(44, 50, 40, .06);
-  animation: rise .55s ease-out both;
+  /* backwards (no «both»): al terminar la animación el transform vuelve a
+     none, así el position: fixed de los flotantes (video de YouTube, ghost)
+     se ancla al viewport y no a este contenedor. */
+  animation: rise .55s ease-out backwards;
   gap: 1px;
 }
 
@@ -1783,6 +1786,7 @@ footer {
 @media (prefers-reduced-motion: reduce) {
   .collapsible-content, .disclosure-chevron, .progression-card { transition: none; }
   .drag-ghost { transform: none; }
+  .workspace { animation: none; }
 }
 .note-controls-row > .selected-root {
   flex: 1;

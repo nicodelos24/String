@@ -37,6 +37,10 @@ Errores actuales a corregir por pruebas manuales exploratorias de regresión
 
 - Otro error es el reproductor de youtube en modo ventana flotante, este queda abajo en la página y no se puede ni siquiera mover.
 
+  - Implementado: el flotante quedaba anclado al fondo de la página porque la animación de entrada del `.workspace` usaba `fill-mode: both` y dejaba un `transform` (matriz identidad) aplicado para siempre; cualquier `transform` en un ancestro convierte el `position: fixed` del video en posicionamiento respecto de ese contenedor. Ahora la animación termina sin transform (fill-mode `backwards`; `animation: none` si hay `prefers-reduced-motion`) y el video flotante vuelve a anclarse al viewport y a poder arrastrarse.
+  - Verificado en Chromium headless: antes el flotante quedaba en `top:1301` (fuera del viewport de 900 px) y tras corregirlo arranca en `top:487` y el arrastre lo mueve dejando `left/top` inline.
+  - `npm test` → 159/159 (nuevo test de regresión sobre el fill-mode del `.workspace`). Pendiente tu confirmación en navegador.
+
 
 
 - Ahora quiero implementar un gran cambio visual en la parte del acompañamiento, me gustaría que en la seccion "secciones del tema" haya como una forma de "maximizar" esa sección, y esta se expanda ocultando la sección de las tarjetas de las progresiones, así puedo ver sólo las tarjetas de cada sección del tema como intro, verso, etc (me gustaría que cada acorde también muestre su grado o modo bajo cada acorde como en las tarjetas del acompañamiento).
