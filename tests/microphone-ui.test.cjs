@@ -8,7 +8,7 @@ function setup() {
   const elements = new Map();
   function element(id) {
     if (!elements.has(id)) elements.set(id, {
-      checked: false, hidden: true, handlers: {}, attributes: {},
+      checked: false, hidden: true, handlers: {}, attributes: {}, dataset: {},
       addEventListener(event, fn) { this.handlers[event] = fn; },
       setAttribute(key, value) { this.attributes[key] = value; },
       querySelector: () => element('label'),
@@ -74,7 +74,7 @@ function setupPitch() {
   const elements = new Map();
   function element(id) {
     if (!elements.has(id)) elements.set(id, {
-      checked: false, hidden: true, handlers: {}, attributes: {},
+      checked: false, hidden: true, handlers: {}, attributes: {}, dataset: {},
       addEventListener(event, fn) { this.handlers[event] = fn; },
       setAttribute(key, value) { this.attributes[key] = value; },
       querySelector: () => element('label'),

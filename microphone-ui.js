@@ -42,6 +42,7 @@ if (typeof document !== 'undefined') (() => {
       }
     },
     onChord: detection => {
+      if (keyboardOwnsChord()) return;
       liveChord = detection;
       showChord(detection);
       if (detection && scaleToggle?.checked && typeof showProgressionChord === 'function') {
@@ -66,6 +67,13 @@ if (typeof document !== 'undefined') (() => {
     chordConfidence.textContent = 'Detección experimental';
   }
 
+  // Mientras el teclado muestra un acorde en vivo, el micrófono cede la palabra
+  // para no pisar la tarjeta ni la escala.
+  function keyboardOwnsChord() {
+    const playing = document.getElementById('keyboard-live-chord')?.dataset?.playing;
+    return playing === '1';
+  }
+
   function addDetectedChord() {
     if (!liveChord || draggingProgressionItem || progression.length >= 4096) return;
     const item = { root: liveChord.root, rootNoteName: noteName(liveChord.root), type: liveChord.type, mode: liveChord.mode, ghostMode: '', beats: 4 };
@@ -74,7 +82,10 @@ if (typeof document !== 'undefined') (() => {
     globalThis.StringSections?.include(null, item);
     renderProgression();
   }
-  chordAdd?.addEventListener('click', addDetectedChord);
+  chordAdd?.addEventListener('click', () => {
+    if (keyboardOwnsChord()) return; // el botón lo maneja el teclado
+    addDetectedChord();
+  });
   scaleToggle?.addEventListener('change', () => {
     if (scaleToggle.checked && liveChord) showProgressionChord(liveChord, -1);
   });
@@ -192,8 +203,10 @@ if (typeof document !== 'undefined') (() => {
       autoAdd = false;
       if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
       heldMidi = null;
-      if (chordCard) chordCard.hidden = true;
-      if (chordAdd) chordAdd.disabled = true;
+      if (!keyboardOwnsChord()) {
+        if (chordCard) chordCard.hidden = true;
+        if (chordAdd) chordAdd.disabled = true;
+      }
       if (chordAuto) {
         chordAuto.setAttribute('aria-pressed', 'false');
         chordAuto.textContent = 'Auto añadir';

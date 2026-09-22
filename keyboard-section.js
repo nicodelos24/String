@@ -76,6 +76,48 @@ function mastilKeyToggle(notes, midi, on) {
   return changed;
 }
 
+// Reconocimiento del acorde formado por las notas pulsadas con el teclado.
+// Devuelve {root, type, mode} según las plantillas (iguales a las del
+// micrófono), o null con menos de 3 notas distintas o sin coincidencia.
+// Prefiere la plantilla que explica más notas con menos extras y, entre
+// empates, la de más notas y la raíz más cercana a la nota más grave.
+function chordFromNotes(midis, templates) {
+  if (!Array.isArray(midis) || midis.length < 3) return null;
+  var present = [];
+  for (var i = 0; i < midis.length; i++) {
+    if (!Number.isInteger(midis[i])) continue;
+    var pitch = ((midis[i] % 12) + 12) % 12;
+    if (present.indexOf(pitch) === -1) present.push(pitch);
+  }
+  if (present.length < 3) return null;
+  var table = templates || (typeof LIVE_CHORD_TEMPLATES !== 'undefined' ? LIVE_CHORD_TEMPLATES : []);
+  if (!table.length) return null;
+  var lowest = Math.min.apply(null, present);
+  var bestScore, best = null;
+  for (var root = 0; root < 12; root++) {
+    for (var t = 0; t < table.length; t++) {
+      var required = table[t].intervals.map(function (interval) { return (root + interval) % 12; });
+      var missing = required.some(function (pitch) { return present.indexOf(pitch) === -1; });
+      if (missing) continue;
+      var extras = present.filter(function (pitch) { return required.indexOf(pitch) === -1; }).length;
+      var bassDist = (root - lowest + 12) % 12;
+      var score = [required.length - extras, -extras, required.length, -bassDist];
+      if (!best || scoreAhead(score, bestScore)) {
+        bestScore = score;
+        best = { root: root, type: table[t].type, mode: table[t].mode };
+      }
+    }
+  }
+  return best;
+}
+
+function scoreAhead(a, b) {
+  for (var i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) return a[i] > b[i];
+  }
+  return false;
+}
+
 function keyboardImpulse(context, seconds, decay) {
   var length = Math.floor((context.sampleRate || 44100) * seconds);
   var buffer = context.createBuffer(2, length, context.sampleRate || 44100);
@@ -324,6 +366,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = {
   activeBaseMidi: activeBaseMidi,
   keyOffsetFor: keyOffsetFor,
   mastilKeyToggle: mastilKeyToggle,
+  chordFromNotes: chordFromNotes,
   pluckWave: pluckWave,
   KeySynth: KeySynth,
   noteNames: KEYBOARD_NOTE_NAMES
@@ -359,6 +402,7 @@ if (typeof document !== 'undefined') (function () {
     document.querySelector('.fretboard-section')?.classList.toggle('keyboard-open', open);
     if (open) { render(); clearMastil(); }
     else { synth.allOff(); clearMastil(); }
+    if (typeof recomputeKeyboardLive === 'function') recomputeKeyboardLive();
   }
 
   // Modo mástil: con el teclado cerrado, las mismas teclas marcan la nota
@@ -451,12 +495,91 @@ if (typeof document !== 'undefined') (function () {
     });
   }
 
+  // Acorde en vivo desde el teclado: con el interruptor del pie del mástil
+  // activado y el «Teclado» cerrado, las notas mantenidas forman un acorde que
+  // cambia la escala del mástil en vivo y se muestra en la tarjeta
+  // «ACORDE EN VIVO». Enter (o el botón ＋ Añadir) lo agrega a las tarjetas.
+  var keyboardLiveSwitch = document.getElementById('keyboard-live-chord');
+  var chordCard = document.getElementById('live-chord-card');
+  var chordNameEl = document.getElementById('live-chord-name');
+  var chordConfidenceEl = document.getElementById('live-chord-confidence');
+  var chordAddBtn = document.getElementById('live-chord-add');
+  var keyboardLive = null;      // último acorde detectado desde el teclado
+  var keyboardLiveKey = '';     // raíz:tipo ya aplicado en el mástil
+
+  function keyboardLiveEnabled() {
+    return !!keyboardLiveSwitch && keyboardLiveSwitch.checked && inMastilMode();
+  }
+
+  function setKeyboardPlaying(on) {
+    if (keyboardLiveSwitch) keyboardLiveSwitch.dataset.playing = on ? '1' : '';
+  }
+
+  // Cuando el teclado muestra el acorde, el micrófono lo deja pasar en vivo.
+  function micActive() {
+    var mic = document.getElementById('microphone-toggle');
+    return !!mic && mic.getAttribute('aria-pressed') === 'true';
+  }
+
+  function recomputeKeyboardLive() {
+    if (!keyboardLiveEnabled()) { resetKeyboardLive(); return; }
+    if (pressed.size < 3) { resetKeyboardLive(); return; }
+    var chord = chordFromNotes(Array.from(pressed.values()));
+    if (!chord) { resetKeyboardLive(); return; }
+    keyboardLive = chord;
+    if (chordCard && chordNameEl && chordConfidenceEl) {
+      chordCard.hidden = false;
+      var type = typeof chordTypes !== 'undefined' && chordTypes.find(function (item) { return item.value === chord.type; });
+      chordNameEl.textContent = noteName(chord.root) + (type ? type.suffix : '');
+      chordConfidenceEl.textContent = 'Notas mantenidas · Enter para añadir';
+      if (chordAddBtn) chordAddBtn.disabled = false;
+    }
+    setKeyboardPlaying(true);
+    if (typeof showProgressionChord === 'function') {
+      var key = chord.root + ':' + chord.type;
+      if (key !== keyboardLiveKey) {
+        keyboardLiveKey = key;
+        showProgressionChord({ root: chord.root, rootNoteName: noteName(chord.root), type: chord.type, mode: chord.mode }, -1);
+      }
+    }
+  }
+
+  function resetKeyboardLive() {
+    keyboardLive = null;
+    keyboardLiveKey = '';
+    setKeyboardPlaying(false);
+    if (!chordCard || !chordNameEl || !chordConfidenceEl) return;
+    if (micActive()) {
+      chordNameEl.textContent = '—';
+      chordConfidenceEl.textContent = 'Esperando acorde…';
+    } else {
+      chordCard.hidden = true;
+    }
+  }
+
+  function addKeyboardLiveChord() {
+    if (!keyboardLive || !progression || draggingProgressionItem || progression.length >= 4096) return;
+    var item = { root: keyboardLive.root, rootNoteName: noteName(keyboardLive.root), type: keyboardLive.type, mode: keyboardLive.mode, ghostMode: '', beats: 4 };
+    progression.push(item);
+    progressionEdited = true;
+    if (globalThis.StringSections && globalThis.StringSections.include) globalThis.StringSections.include(null, item);
+    if (typeof renderProgression === 'function') renderProgression();
+  }
+
+  if (keyboardLiveSwitch) keyboardLiveSwitch.addEventListener('change', recomputeKeyboardLive);
+  if (chordAddBtn) chordAddBtn.addEventListener('click', function () { if (keyboardLive) addKeyboardLiveChord(); });
+
   window.addEventListener('keydown', function (event) {
     if (event.code === 'ShiftLeft') { shiftLeft = true; if (!panel.hidden) render(); return; }
     if (event.code === 'ShiftRight') { shiftRight = true; if (!panel.hidden) render(); return; }
     var target = event.target;
     if (target && (target.tagName === 'INPUT' || target.tagName === 'SELECT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
     if (event.altKey || event.metaKey || event.ctrlKey) return;
+    if (event.code === 'Enter' && keyboardLiveEnabled()) {
+      if (keyboardLive) addKeyboardLiveChord();
+      event.preventDefault();
+      return;
+    }
     var offset = keyOffsetFor(event);
     if (offset === undefined) return;
     var base = inMastilMode() ? mastilBaseMidi() : effectiveBase();
@@ -466,6 +589,7 @@ if (typeof document !== 'undefined') (function () {
       pressed.set(event.key, midi);
       if (inMastilMode()) { applyMastil(midi, true); synth.noteOn(midi, mastilTimbre()); }
       else synth.noteOn(midi).then(function () { setPlaying(midi, true); });
+      recomputeKeyboardLive();
     }
     event.preventDefault();
   });
@@ -481,6 +605,7 @@ if (typeof document !== 'undefined') (function () {
     synth.noteOff(midi);
     if (inMastilMode()) applyMastil(midi, false);
     else setPlaying(midi, false);
+    recomputeKeyboardLive();
   });
 
   keysEl.addEventListener('pointerdown', onPointerDown);

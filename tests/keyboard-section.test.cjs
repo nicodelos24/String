@@ -59,6 +59,30 @@ test('keyboard: la fila grave arranca en sol (z=G3) y las teclas extras se suman
   assert.equal(KEY_CODES.Equal, 20);       // + → G#5
 });
 
+test('keyboard: chordFromNotes reconoce el acorde de las notas mantenidas', () => {
+  const { chordFromNotes } = require('../keyboard-section.js');
+  const templates = [
+    { type: 'maj', intervals: [0, 4, 7], mode: 'ionian' },
+    { type: 'm', intervals: [0, 3, 7], mode: 'aeolian' },
+    { type: '7', intervals: [0, 4, 7, 10], mode: 'mixolydian' },
+    { type: 'maj7', intervals: [0, 4, 7, 11], mode: 'ionian' },
+    { type: 'm7', intervals: [0, 3, 7, 10], mode: 'aeolian' },
+    { type: '6', intervals: [0, 4, 7, 9], mode: 'ionian' },
+    { type: '6/9', intervals: [0, 4, 7, 9, 2], mode: 'ionian' },
+    { type: 'sus4', intervals: [0, 5, 7], mode: 'mixolydian' },
+  ];
+  assert.deepEqual(chordFromNotes([60, 64, 67, 72], templates), { root: 0, type: 'maj', mode: 'ionian' }, 'C E G (con octava)');
+  assert.deepEqual(chordFromNotes([48, 60, 64, 67], templates), { root: 0, type: 'maj', mode: 'ionian' }, 'C2/C3 E G');
+  assert.deepEqual(chordFromNotes([59, 62, 66], templates), { root: 11, type: 'm', mode: 'aeolian' }, 'si re fa# = Bm');
+  assert.deepEqual(chordFromNotes([48, 52, 55, 58], templates), { root: 0, type: '7', mode: 'mixolydian' }, 'do mi sol sib = C7');
+  assert.deepEqual(chordFromNotes([60, 64, 67, 69], templates), { root: 0, type: '6', mode: 'ionian' }, 'do mi sol la = C6');
+  assert.deepEqual(chordFromNotes([60, 64, 67, 69, 74], templates), { root: 0, type: '6/9', mode: 'ionian' }, 'do mi sol la re = C6/9');
+  assert.deepEqual(chordFromNotes([60, 65, 67], templates), { root: 0, type: 'sus4', mode: 'mixolydian' }, 'do fa sol = Csus4');
+  assert.deepEqual(chordFromNotes([57, 60, 64], templates), { root: 9, type: 'm', mode: 'aeolian' }, 'la do mi = Am');
+  assert.equal(chordFromNotes([60, 64], templates), null, 'con menos de 3 notas no hay acorde');
+  assert.equal(chordFromNotes([57, 60, 62], templates), null, 'la-do-re sin quinta no da acorde');
+});
+
 test('keyboard: keyOffsetFor usa la letra o la posición física como respaldo', () => {
   const { keyOffsetFor } = require('../keyboard-section.js');
   assert.equal(keyOffsetFor({ key: 'a', code: 'KeyA' }), 0);
