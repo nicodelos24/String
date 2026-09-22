@@ -1,10 +1,12 @@
-// Teclado expandible: piano de varias octavas que cubre el mástil y se toca
-// con el teclado físico o con el puntero. Con la sección cerrada, las mismas
-// teclas tocan el mástil con el sonido del instrumento elegido (guitarra o
-// bajo). Teclas naturales: z x c v b n m , . - (fila grave y su cola: sol la si
-// do re mi fa sol la si), a s d f g h j k l ñ { (media y aguda); sostenidos:
-// w e t y u o p ´ +. Shift izquierdo baja una octava y derecho la sube.
-// Sintetizador polifónico con timbres y efectos. La lógica pura y el
+// Teclado expandible: piano de varias octavas que acompaña al mástil y se toca
+// con el teclado físico o con el puntero. Tres modos elegidos en el panel
+// izquierdo: «Mástil» (solo el mástil, las teclas lo tocan con el sonido del
+// instrumento), «Teclado» (el piano reemplaza el mástil) y «Ambos» (el piano
+// junto al mástil; las teclas tocan solo el piano y el mástil muestra las notas
+// del micrófono). Teclas naturales: z x c v b n m , . - (fila grave y su cola:
+// sol la si do re mi fa sol la si), a s d f g h j k l ñ { (media y aguda);
+// sostenidos: w e t y u o p ´ +. Shift izquierdo baja una octava y derecho la
+// sube. Sintetizador polifónico con timbres y efectos. La lógica pura y el
 // sintetizador se exportan para pruebas sin navegador.
 
 var WHITE_SEMITONES = [0, 2, 4, 5, 7, 9, 11];
@@ -74,6 +76,14 @@ function mastilKeyToggle(notes, midi, on) {
     }
   }
   return changed;
+}
+
+// Estado visual de un modo del teclado para la lógica pura: si el panel queda
+// oculto o visible y qué clase recibe la sección del mástil.
+function keyboardLayoutClasses(mode) {
+  if (mode === 'mastil') return { hidden: true, open: false, split: false };
+  if (mode === 'ambos') return { hidden: false, open: false, split: true };
+  return { hidden: false, open: true, split: false };
 }
 
 // Reconocimiento del acorde formado por las notas pulsadas con el teclado.
@@ -375,6 +385,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = {
   activeBaseMidi: activeBaseMidi,
   keyOffsetFor: keyOffsetFor,
   mastilKeyToggle: mastilKeyToggle,
+  keyboardLayoutClasses: keyboardLayoutClasses,
   chordFromNotes: chordFromNotes,
   pluckWave: pluckWave,
   KeySynth: KeySynth,
@@ -383,8 +394,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = {
 
 if (typeof document !== 'undefined') (function () {
   var panel = document.getElementById('keyboard-section');
-  var toggle = document.getElementById('keyboard-toggle');
-  if (!panel || !toggle) return;
+  var modesRoot = document.getElementById('keyboard-modes');
+  if (!panel) return;
   var keysEl = document.getElementById('keyboard-keys');
   var rangeEl = document.getElementById('keyboard-range');
   var octaveEl = document.getElementById('keyboard-octave');
@@ -403,20 +414,36 @@ if (typeof document !== 'undefined') (function () {
   function shiftDirection() { return shiftRight ? 1 : shiftLeft ? -1 : 0; }
   function effectiveBase() { return activeBaseMidi(baseMidi, shiftDirection(), OCTAVE_START, OCTAVE_COUNT); }
 
-  function setExpanded(open) {
-    panel.hidden = !open;
-    toggle.setAttribute('aria-expanded', String(open));
-    toggle.classList.toggle('is-open', open);
-    toggle.textContent = open ? '✕ Teclado' : '⤢ Teclado';
-    document.querySelector('.fretboard-section')?.classList.toggle('keyboard-open', open);
-    if (open) { render(); clearMastil(); }
+  function modeButtonFor(modeName) {
+    return modesRoot ? modesRoot.querySelector('[data-keyboard-mode="' + modeName + '"]') : null;
+  }
+
+  function keyboardModeButtons() {
+    return modesRoot ? [].slice.call(modesRoot.querySelectorAll('[data-keyboard-mode]')) : [];
+  }
+
+  function setMode(mode) {
+    var layout = keyboardLayoutClasses(mode);
+    panel.hidden = layout.hidden;
+    var section = document.querySelector('.fretboard-section');
+    if (section) {
+      section.classList.toggle('keyboard-open', layout.open);
+      section.classList.toggle('keyboard-split', layout.split);
+    }
+    keyboardModeButtons().forEach(function (button) {
+      var active = button.dataset.keyboardMode === mode;
+      button.setAttribute('aria-pressed', String(active));
+      button.classList.toggle('is-active', active);
+    });
+    if (!layout.hidden) { render(); clearMastil(); }
     else { synth.allOff(); clearMastil(); }
     if (typeof recomputeKeyboardLive === 'function') recomputeKeyboardLive();
   }
 
-  // Modo mástil: con el teclado cerrado, las mismas teclas marcan la nota
-  // pulsada en el mástil de guitarra/bajo en vez de un piano, y suenan con el
-  // timbre del instrumento activo.
+  // Modo mástil: con el panel oculto (modo «Mástil»), las mismas teclas marcan
+  // la nota pulsada en el mástil de guitarra/bajo en vez de un piano, y suenan
+  // con el timbre del instrumento activo. En «Ambos» el panel está visible, así
+  // que las teclas tocan el piano y no el mástil.
   function inMastilMode() { return panel.hidden; }
 
   function mastilTimbre() {
@@ -530,10 +557,18 @@ if (typeof document !== 'undefined') (function () {
     return 'off';
   }
 
-  window.__liveChordActive = function () { return keyboardLivePhase() !== 'off' && inMastilMode(); };
+  // El mástil está visible en «Mástil» (panel oculto) y en «Ambos» (layout
+  // dividido por abajo del piano); en «Teclado» queda oculto.
+  function mastilShown() {
+    if (panel.hidden) return true;
+    var section = document.querySelector('.fretboard-section');
+    return !!section && section.classList.contains('keyboard-split');
+  }
+
+  window.__liveChordActive = function () { return keyboardLivePhase() !== 'off' && mastilShown(); };
 
   function keyboardLiveEnabled() {
-    return !!liveRoot && keyboardLivePhase() !== 'off' && inMastilMode();
+    return !!liveRoot && keyboardLivePhase() !== 'off' && mastilShown();
   }
 
   function setKeyboardPlaying(on) {
@@ -665,6 +700,7 @@ if (typeof document !== 'undefined') (function () {
   liveButtons().forEach(function (button) {
     button.addEventListener('click', function () { onLiveButtonClick(button); });
   });
+
   if (chordAddBtn) chordAddBtn.addEventListener('click', function () { if (keyboardLive) addKeyboardLiveChord(); });
 
   window.addEventListener('keydown', function (event) {
@@ -714,7 +750,13 @@ if (typeof document !== 'undefined') (function () {
   if (timbreSel) timbreSel.addEventListener('change', function () { synth.setTimbre(timbreSel.value); });
   if (delayIn) delayIn.addEventListener('change', function () { synth.setDelay(delayIn.checked); });
   if (reverbIn) reverbIn.addEventListener('change', function () { synth.setReverb(reverbIn.checked); });
-  if (closeBtn) closeBtn.addEventListener('click', function () { setExpanded(false); toggle.focus(); });
-  toggle.addEventListener('click', function () { setExpanded(panel.hidden); });
+  if (closeBtn) closeBtn.addEventListener('click', function () {
+    setMode('mastil');
+    var mastilBtn = modeButtonFor('mastil');
+    if (mastilBtn) mastilBtn.focus();
+  });
+  keyboardModeButtons().forEach(function (button) {
+    button.addEventListener('click', function () { setMode(button.dataset.keyboardMode || 'mastil'); });
+  });
   window.addEventListener('pagehide', function () { synth.close(); });
 })();

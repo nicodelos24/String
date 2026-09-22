@@ -1617,28 +1617,34 @@ footer {
 .spelling-switch input:focus-visible + .spelling-track { outline: 2px solid var(--rust); outline-offset: 3px; }
 .piano-black { justify-content: flex-start; padding-top: 9px; font-size: 10px; }
 
-.keyboard-toggle {
+.keyboard-modes {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
+  gap: 2px;
   width: 100%;
-  max-width: 220px;
   margin: 12px auto 0;
-  padding: 9px 12px;
-  color: var(--ink);
-  border: 2px solid var(--rust-dark);
+  padding: 3px;
+  border: 1px solid var(--line);
   border-radius: 8px;
-  background: color-mix(in srgb, var(--paper) 88%, var(--rust) 12%);
+  background: var(--paper);
+  box-shadow: 0 1px 0 var(--paper-light) inset, 0 2px 0 rgba(44, 50, 40, .12);
+}
+.keyboard-modes button {
+  flex: 1;
+  min-width: 0;
+  padding: 7px 6px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--muted);
   font: 600 10px var(--mono);
   text-transform: uppercase;
-  letter-spacing: .08em;
+  letter-spacing: .04em;
   cursor: pointer;
-  box-shadow: 0 1px 0 var(--paper-light) inset, 0 2px 0 rgba(44, 50, 40, .12);
-  transition: border-color .18s, background-color .18s, color .18s, box-shadow .18s;
+  transition: background-color .18s, color .18s, box-shadow .18s;
 }
-.keyboard-toggle:hover { border-color: var(--ink); }
-.keyboard-toggle.is-open { background: var(--rust); border-color: var(--rust-dark); color: var(--paper-light); box-shadow: 0 2px 0 var(--rust-dark) inset; }
+.keyboard-modes button:hover { color: var(--ink); }
+.keyboard-modes button[aria-pressed='true'] { background: var(--rust); color: var(--paper-light); box-shadow: 0 2px 0 var(--rust-dark) inset; }
+.keyboard-modes button:focus-visible { outline: 2px solid var(--rust); outline-offset: 1px; }
 
 .keyboard-panel {
   margin: 16px 0 6px;
@@ -1743,12 +1749,35 @@ footer {
 .fretboard-section.keyboard-open .fretboard-wrap,
 .fretboard-section.keyboard-open .board-footer { display: none; }
 
+/* Modo «Ambos»: el piano se muestra encima y casi pegado al mástil, ambos a
+   todo lo ancho. Las teclas del PC tocan solo el piano; el mástil conserva su
+   ancho completo y, con «Acorde en vivo», sigue el acorde que formes. */
+.fretboard-section.keyboard-split { display: flex; flex-wrap: wrap; align-items: flex-start; }
+.fretboard-section.keyboard-split > * { flex: 0 0 100%; }
+/* Orden explícito de todos los hijos para que el piano y el mástil queden
+   arriba, justo como en la estética de solo mástil, con el piano encima. */
+.fretboard-section.keyboard-split .progression-header-inline { order: 1; }
+.fretboard-section.keyboard-split .progression-workspace { order: 2; }
+.fretboard-section.keyboard-split .board-toolbar { order: 3; }
+.fretboard-section.keyboard-split .board-view-row { order: 4; }
+.fretboard-section.keyboard-split .keyboard-panel { order: 5; margin: 16px 0 4px; }
+.fretboard-section.keyboard-split .fretboard-wrap { order: 6; }
+.fretboard-section.keyboard-split .board-footer { order: 7; }
+.fretboard-section.keyboard-split .board-add-row { order: 8; }
+.fretboard-section.keyboard-split .scale-summary { order: 9; }
+.fretboard-section.keyboard-split .chord-player { order: 10; }
+.fretboard-section.keyboard-split .youtube-panel { order: 11; }
+.fretboard-section.keyboard-split .metronome { order: 12; }
+.fretboard-section.keyboard-split .library-panel { order: 13; }
+
 @media (prefers-reduced-motion: reduce) { .keyboard-panel { animation: none; } .kp-key { transition: none; } }
 @media (max-width: 800px) {
   .keyboard-keys { height: 130px; }
   .kp-black small { display: none; }
   .keyboard-panel-head { flex-wrap: wrap; }
   .keyboard-octave-load { margin-left: 0; flex-basis: 100%; }
+  .fretboard-section.keyboard-split .fretboard-wrap,
+  .fretboard-section.keyboard-split .keyboard-panel { flex: 0 0 100%; max-width: 100%; }
 }
 
 

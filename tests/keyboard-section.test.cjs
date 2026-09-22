@@ -1,6 +1,6 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { keyStrip, keyLetter, activeBaseMidi, keyboardMidiFor, KEY_OFFSETS, KeySynth } = require('../keyboard-section.js');
+const { keyStrip, keyLetter, activeBaseMidi, keyboardMidiFor, KEY_OFFSETS, KeySynth, keyboardLayoutClasses } = require('../keyboard-section.js');
 
 test('keyboard: the strip builds 7 white and 5 black keys per octave with ascending MIDI', () => {
   const strip = keyStrip(3, 2, 60);
@@ -113,6 +113,13 @@ test('keyboard: left shift lowers a full octave and right shift raises it, clamp
   assert.equal(activeBaseMidi(60, 1, 3, 4), 72);
   assert.equal(activeBaseMidi(48, -1, 3, 4), 48);
   assert.equal(activeBaseMidi(72, 1, 3, 4), 72);
+});
+
+test('keyboard: los tres modos ocultan o muestran el panel y la clase del mástil', () => {
+  assert.deepEqual(keyboardLayoutClasses('mastil'), { hidden: true, open: false, split: false }, 'solo mástil: el panel queda oculto');
+  assert.deepEqual(keyboardLayoutClasses('teclado'), { hidden: false, open: true, split: false }, 'teclado: el piano reemplaza el mástil');
+  assert.deepEqual(keyboardLayoutClasses('ambos'), { hidden: false, open: false, split: true }, 'ambos: el piano se muestra junto al mástil');
+  assert.deepEqual(keyboardLayoutClasses('otro'), { hidden: false, open: true, split: false }, 'modo desconocido recurre al reemplazo como comportamiento seguro');
 });
 
 test('keyboard synth: hard-clamped octaves do not stay stuck and invalid notes never start audio', async () => {
