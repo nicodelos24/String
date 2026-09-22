@@ -59,6 +59,42 @@ test('keyboard: la fila grave arranca en sol (z=G3) y las teclas extras se suman
   assert.equal(KEY_CODES.Equal, 20);       // + → G#5
 });
 
+test('keyboard: el modo por cuerdas toca cada fila como una cuerda cromática (guitarra)', () => {
+  const { stringModeMidiFor } = require('../keyboard-section.js');
+  const isBass = false;
+  assert.equal(stringModeMidiFor('z', 'KeyZ', isBass), 40);   // mi (cuerda E)
+  assert.equal(stringModeMidiFor('x', 'KeyX', isBass), 41);   // fa
+  assert.equal(stringModeMidiFor('c', 'KeyC', isBass), 42);   // fa#
+  assert.equal(stringModeMidiFor('v', 'KeyV', isBass), 43);   // sol
+  assert.equal(stringModeMidiFor('m', 'KeyM', isBass), 46);   // la#
+  assert.equal(stringModeMidiFor(',', 'Comma', isBass), 47);  // si
+  assert.equal(stringModeMidiFor('.', 'Period', isBass), 48); // do (traste 8)
+  assert.equal(stringModeMidiFor('a', 'KeyA', isBass), 50);   // re (cuerda D)
+  assert.equal(stringModeMidiFor('s', 'KeyS', isBass), 51);
+  assert.equal(stringModeMidiFor('q', 'KeyQ', isBass), 59);   // si (cuerda B)
+  assert.equal(stringModeMidiFor('w', 'KeyW', isBass), 60);
+  assert.equal(stringModeMidiFor('1', 'Digit1', isBass), 64); // mi (cuerda E aguda)
+  assert.equal(stringModeMidiFor('5', 'Digit5', isBass), 68);
+  assert.equal(stringModeMidiFor('0', 'Digit0', isBass), 73);
+});
+
+test('keyboard: el modo por cuerdas usa las cuatro cuerdas del bajo y respalda por posición física', () => {
+  const { stringModeMidiFor } = require('../keyboard-section.js');
+  const isBass = true;
+  assert.equal(stringModeMidiFor('z', 'KeyZ', isBass), 28);   // mi (cuerda E del bajo)
+  assert.equal(stringModeMidiFor('v', 'KeyV', isBass), 31);   // sol
+  assert.equal(stringModeMidiFor('a', 'KeyA', isBass), 33);   // la (cuerda A)
+  assert.equal(stringModeMidiFor('q', 'KeyQ', isBass), 38);   // re (cuerda D)
+  assert.equal(stringModeMidiFor('1', 'Digit1', isBass), 43); // sol (cuerda G)
+  assert.equal(stringModeMidiFor('Dead', 'BracketLeft', isBass), 48, 'acento muerto por posición física');
+  assert.equal(stringModeMidiFor('{', 'Quote', isBass), 43, 'pos del { en la cuerda D (bajo)');
+  assert.equal(stringModeMidiFor('k', 'KeyK', isBass), 40);
+  assert.equal(stringModeMidiFor('l', 'KeyL', isBass), 41);
+  assert.equal(stringModeMidiFor('ñ', 'Semicolon', isBass), 42);
+  assert.equal(stringModeMidiFor('ñ', 'Semicolon', !isBass), 59, 'en guitarra ñ=si (cuerda B, traste 0 al no ser la aguda)');
+  assert.equal(stringModeMidiFor('Ctrl', 'KeyC', isBass), undefined, 'solo se toca la tecla de la fila');
+});
+
 test('keyboard: keyOffsetFor usa la letra o la posición física como respaldo', () => {
   const { keyOffsetFor } = require('../keyboard-section.js');
   assert.equal(keyOffsetFor({ key: 'a', code: 'KeyA' }), 0);
