@@ -126,7 +126,7 @@ Falta corregir errores de las implementaciones de micrófono
 
   si se puede con algunos efectos tipo sintetizador también, con opciones delay, reverb, distintos tipos de sonido. y que esta seccion se pueda expandir con algun boton cerca del teclado miniatura cubriendo el mastil para mostrar esta sección
 
-  También que estas notas y controles se apliquen para tocar la guitarra o bajo mostrandose la nota en el mastil de un color distinto al de las notas detectadas por micrófono
+  
 
   *Quisiera mover el botón añadir acorde más cerca del mástil, quizá debajo centrado para que sea visible
 
@@ -149,3 +149,4 @@ Falta corregir errores de las implementaciones de micrófono
   - La nota audible queda anclada a la tecla física aunque cambies de octava mientras suena. Cierre con botón «✕» o el mismo toggle; el audio se corta al cerrar la página.
   - `npm test` → 156/156 (nuevos tests de `keyboard-section`). Verificado en navegador headless: expansión, 48 teclas renderizadas, mapeo de letras y octavas por shift. Pendiente tu revisión auditiva del sintetizador y de la alineación visual.
 
+*Quisiera implementar que en el mástil de guitarra o bajo también se pueda tocar con las teclas de la pc, con los mismos controles que el teclado
