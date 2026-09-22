@@ -32,19 +32,19 @@ test('keyboard: letters are labelled only inside the active window', () => {
   assert.equal(keyLetter(62, 60), 's');
   assert.equal(keyLetter(64, 60), 'd');
   assert.equal(keyLetter(65, 60), 'f');
-  assert.equal(keyLetter(48, 60), 'z');
+  assert.equal(keyLetter(48, 60), '', 'fuera de la ventana activa');
   assert.equal(keyLetter(76, 60), 'ñ');
 });
 
-test('keyboard: la fila grave y las teclas extras se suman a los sostenidos y naturales', () => {
+test('keyboard: la fila grave arranca en sol (z=G3) y las teclas extras se suman a los sostenidos y naturales', () => {
   const { KEY_OFFSETS, KEY_CODES } = require('../keyboard-section.js');
-  assert.equal(KEY_OFFSETS.z, -12); // C3
-  assert.equal(KEY_OFFSETS.x, -10); // D3
-  assert.equal(KEY_OFFSETS.c, -8);  // E3
-  assert.equal(KEY_OFFSETS.v, -7);  // F3
-  assert.equal(KEY_OFFSETS.b, -5);  // G3
-  assert.equal(KEY_OFFSETS.n, -3);  // A3
-  assert.equal(KEY_OFFSETS.m, -1);  // B3
+  assert.equal(KEY_OFFSETS.z, -5); // G3
+  assert.equal(KEY_OFFSETS.x, -3); // A3
+  assert.equal(KEY_OFFSETS.c, -1); // B3
+  assert.equal(KEY_OFFSETS.v, 0);  // C4
+  assert.equal(KEY_OFFSETS.b, 2);  // D4
+  assert.equal(KEY_OFFSETS.n, 4);  // E4
+  assert.equal(KEY_OFFSETS.m, 5);  // F4
   assert.equal(KEY_OFFSETS['{'], 17); // F5
   assert.equal(KEY_OFFSETS['´'], 18);  // F#5
   assert.equal(KEY_OFFSETS['+'], 20);  // G#5
@@ -60,7 +60,7 @@ test('keyboard: keyOffsetFor usa la letra o la posición física como respaldo',
   const { keyOffsetFor } = require('../keyboard-section.js');
   assert.equal(keyOffsetFor({ key: 'a', code: 'KeyA' }), 0);
   assert.equal(keyOffsetFor({ key: 'ñ', code: 'Semicolon' }), 16);
-  assert.equal(keyOffsetFor({ key: 'Z', code: 'KeyZ' }), -12);
+  assert.equal(keyOffsetFor({ key: 'Z', code: 'KeyZ' }), -5);
   assert.equal(keyOffsetFor({ key: 'Dead', code: 'BracketLeft' }), 18, 'tecla de acento muerto por posición');
   assert.equal(keyOffsetFor({ key: '{', code: 'Quote' }), 17);
   assert.equal(keyOffsetFor({ key: '+', code: 'Equal' }), 20);

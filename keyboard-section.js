@@ -1,14 +1,15 @@
 // Teclado expandible: piano de varias octavas que cubre el mástil y se toca
 // con el teclado físico o con el puntero. Con la sección cerrada, las mismas
 // teclas tocan el mástil con el sonido del instrumento elegido (guitarra o
-// bajo). Teclas naturales: z x c v b n m (octava grave), a s d f g h j k l ñ
-// { (media y aguda); sostenidos: w e t y u o p ´ +. Shift izquierdo baja una
-// octava y derecho la sube. Sintetizador polifónico con timbres y efectos.
-// La lógica pura y el sintetizador se exportan para pruebas sin navegador.
+// bajo). Teclas naturales: z x c v b n m (fila grave: sol la si do re mi fa),
+// a s d f g h j k l ñ { (media y aguda); sostenidos: w e t y u o p ´ +.
+// Shift izquierdo baja una octava y derecho la sube. Sintetizador polifónico
+// con timbres y efectos. La lógica pura y el sintetizador se exportan para
+// pruebas sin navegador.
 
 var WHITE_SEMITONES = [0, 2, 4, 5, 7, 9, 11];
 var BLACK_SPECS = [[1, 1], [3, 2], [6, 4], [8, 5], [10, 6]];
-var KEY_OFFSETS = { a: 0, w: 1, s: 2, e: 3, d: 4, f: 5, t: 6, g: 7, y: 8, h: 9, u: 10, j: 11, k: 12, o: 13, l: 14, p: 15, ñ: 16, ';': 16, '{': 17, '´': 18, '+': 20, z: -12, x: -10, c: -8, v: -7, b: -5, n: -3, m: -1 };
+var KEY_OFFSETS = { a: 0, w: 1, s: 2, e: 3, d: 4, f: 5, t: 6, g: 7, y: 8, h: 9, u: 10, j: 11, k: 12, o: 13, l: 14, p: 15, ñ: 16, ';': 16, '{': 17, '´': 18, '+': 20, z: -5, x: -3, c: -1, v: 0, b: 2, n: 4, m: 5 };
 // Posiciones físicas que cambian de carácter según el idioma del teclado y
 // palabras muertas (acentos), identificadas por código en vez de por letra.
 var KEY_CODES = { Semicolon: 16, Quote: 17, BracketLeft: 18, Equal: 20 };
