@@ -34,6 +34,7 @@
         <select id="root-select" hidden aria-label="Nota base"></select>
           <div class="note-controls-row"><div class="selected-root"><strong id="selected-root-note" role="status" aria-label="Nota seleccionada">C</strong></div><label class="spelling-switch"><span aria-hidden="true">&#9839;</span><input id="root-spelling" type="checkbox" role="switch" aria-label="Usar bemoles en el piano"><span class="spelling-track" aria-hidden="true"></span><span aria-hidden="true">&#9837;</span></label></div>
           <div id="root-piano" class="root-piano" role="group" aria-label="Piano: seleccionar nota base"></div>
+          <button id="keyboard-toggle" class="keyboard-toggle" type="button" aria-expanded="false" aria-controls="keyboard-section">⤢ Teclado</button>
 
 
         <div class="panel-heading"><span class="section-number">03</span><h2>Calidad</h2></div>
@@ -74,6 +75,15 @@
         </div></div>
         <div class="board-footer"><span id="note-count">7 notas</span><span>·</span><span>22 trastes · desliza para recorrer</span><div class="note-feedback"><span class="hint">Haz clic en una nota para consultar su intervalo</span><div class="fret-lock"><label class="spelling-switch" aria-label="Mantener escala al tocar el mástil"><input id="fret-scale-lock" type="checkbox" role="switch" aria-label="Mantener escala al tocar el mástil"><span class="spelling-track" aria-hidden="true"></span><svg class="lock-symbol" viewBox="0 0 20 20" aria-hidden="true"><rect x="4" y="9" width="12" height="9" rx="2"/><path d="M6 9V6a4 4 0 0 1 8 0v3"/></svg></label><details class="inline-help"><summary aria-label="Ayuda del bloqueo de escala">?</summary><p>Activado: pulsar el mástil escucha y marca la nota sin cambiar la escala. Desactivado: cambia la raíz. El piano sigue cambiando la raíz en ambos casos.</p></details></div></div></div>
         <div class="board-add-row"><button class="add-button board-add-button" id="add-chord" type="button"><span>+</span> añadir acorde</button></div>
+        <section id="keyboard-section" class="keyboard-panel" aria-label="Teclado expandible" hidden>
+          <div class="keyboard-panel-head"><strong>Teclado</strong><span id="keyboard-range" class="keyboard-range"></span><span id="keyboard-octave" class="keyboard-octave-load" aria-live="polite"></span><details class="inline-help"><summary aria-label="Ayuda del teclado">?</summary><p>Teclas: <strong>a s d f g h j</strong> = do re mi fa sol la si · <strong>w e t y u</strong> = sostenidos. <strong>Shift izquierdo</strong> baja una octava, <strong>shift derecho</strong> la sube. También puedes pulsar las teclas en pantalla.</p></details><button id="keyboard-close" type="button" aria-label="Cerrar teclado">✕</button></div>
+          <div class="keyboard-controls">
+            <label for="keyboard-timbre">Sonido <select id="keyboard-timbre"><option value="piano">Piano</option><option value="organ">Órgano</option><option value="lead">Lead</option></select></label>
+            <label class="keyboard-effect"><input id="keyboard-delay" type="checkbox" role="switch"><span class="spelling-track" aria-hidden="true"></span>Delay</label>
+            <label class="keyboard-effect"><input id="keyboard-reverb" type="checkbox" role="switch"><span class="spelling-track" aria-hidden="true"></span>Reverb</label>
+          </div>
+          <div id="keyboard-keys" class="keyboard-keys" role="group" aria-label="Piano de varias octavas"></div>
+        </section>
 
 
 
@@ -237,6 +247,6 @@
   <script src="midi-import.js"></script>
   <script src="midi-player.js"></script>
   <script src="midi-ui.js"></script>
-  <script src="progression-presets.js"></script><script src="panel-controls.js"></script><script src="tempo-tap.js"></script>
+  <script src="progression-presets.js"></script><script src="panel-controls.js"></script><script src="tempo-tap.js"></script><script src="keyboard-section.js"></script>
 </body>
 </html>

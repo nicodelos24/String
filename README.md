@@ -36,6 +36,7 @@ Las fuentes de Google Fonts y YouTube requieren conexión. Las herramientas hist
 - **Acorde** y **Acorde 7ma** colorean los componentes con el color del grado modal. La vista pentatónica global muestra cinco notas según la calidad del acorde y puede desactivarse.
 - En acordes disminuidos la pentatónica menor es solo una referencia: no incluye su quinta disminuida. En suspendidos se usa la mayor.
 - La escucha del mástil usa timbres sintetizados de cuerda pulsada o bajo tipo slap; el piano conserva su timbre suave. No son muestras de instrumentos reales.
+- El botón **⤢ Teclado** junto al teclado miniatura expande un piano de cuatro octavas que cubre el mástil. Se toca con el puntero o con el teclado físico (`a s d f g h j` = do re mi fa sol la si, `w e t y u` = sostenidos); **Shift izquierdo** baja una octava y **Shift derecho** la sube. Ofrece sintetizador con timbres Piano, Órgano y Lead, y efectos Delay y Reverb.
 - El switch sol/luna guarda el tema de interfaz. No cambia los colores musicales ni la madera del mástil.
 
 En móvil, el mástil se desplaza horizontalmente sin comprimir sus proporciones. El acorde seleccionado y la armadura aparecen cerca del mástil. Las explicaciones se abren mediante botones **?**; los errores y estados siguen visibles.

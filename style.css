@@ -839,6 +839,7 @@ footer {
   color: var(--rust);
   font-size: 16px;
 }
+
 /* Botón de añadir acorde junto al mástil: centrado bajo el diapasón. */
 .board-add-row {
   display: flex;
@@ -1579,6 +1580,140 @@ footer {
 .spelling-switch input:checked + .spelling-track::after { transform: translateX(16px); }
 .spelling-switch input:focus-visible + .spelling-track { outline: 2px solid var(--rust); outline-offset: 3px; }
 .piano-black { justify-content: flex-start; padding-top: 9px; font-size: 10px; }
+
+.keyboard-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: 100%;
+  max-width: 220px;
+  margin: 12px auto 0;
+  padding: 9px 12px;
+  color: var(--ink);
+  border: 2px solid var(--rust-dark);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--paper) 88%, var(--rust) 12%);
+  font: 600 10px var(--mono);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  cursor: pointer;
+  box-shadow: 0 1px 0 var(--paper-light) inset, 0 2px 0 rgba(44, 50, 40, .12);
+  transition: border-color .18s, background-color .18s, color .18s, box-shadow .18s;
+}
+.keyboard-toggle:hover { border-color: var(--ink); }
+.keyboard-toggle.is-open { background: var(--rust); border-color: var(--rust-dark); color: var(--paper-light); box-shadow: 0 2px 0 var(--rust-dark) inset; }
+
+.keyboard-panel {
+  margin: 16px 0 6px;
+  padding: 14px;
+  border: 4px solid var(--wood-dark);
+  border-radius: 10px;
+  background: var(--paper);
+  animation: rise .4s ease both;
+}
+.keyboard-panel-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.keyboard-panel-head strong { font: 700 13px var(--sans); letter-spacing: -.02em; }
+.keyboard-range { font: 10px var(--mono); color: var(--muted); }
+.keyboard-octave-load { font: 10px var(--mono); color: var(--rust); margin-left: auto; }
+#keyboard-close {
+  border: 0;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  font: 13px var(--mono);
+  padding: 2px 6px;
+}
+#keyboard-close:hover { color: var(--rust); }
+
+.keyboard-controls {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin: 8px 0 12px;
+  font: 10px var(--mono);
+  color: var(--muted);
+  flex-wrap: wrap;
+}
+.keyboard-controls select {
+  margin-left: 6px;
+  padding: 4px 6px;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 0;
+  background: var(--paper);
+  font: 600 10px var(--sans);
+  cursor: pointer;
+}
+.keyboard-effect { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.keyboard-effect input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.keyboard-effect .spelling-track { flex: 0 0 30px; width: 30px; height: 17px; padding: 2px; }
+.keyboard-effect .spelling-track::after { width: 11px; height: 11px; }
+.keyboard-effect input:checked + .spelling-track { background: var(--rust); }
+.keyboard-effect input:checked + .spelling-track::after { transform: translateX(13px); }
+.keyboard-effect input:focus-visible + .spelling-track { outline: 2px solid var(--rust); outline-offset: 3px; }
+
+.keyboard-keys {
+  position: relative;
+  display: flex;
+  height: 170px;
+  isolation: isolate;
+}
+.kp-key {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 0 0 6px;
+  border: 1px solid #b9b6ad;
+  border-radius: 0 0 4px 4px;
+  cursor: pointer;
+  font: 10px var(--mono);
+  transition: background-color .12s ease, color .12s ease, box-shadow .12s ease;
+  touch-action: none;
+}
+.kp-white {
+  flex: 1;
+  min-width: 0;
+  background: var(--paper-light);
+  color: var(--ink);
+  box-shadow: inset 0 -3px 0 #dedacf;
+}
+.kp-black {
+  position: absolute;
+  z-index: 2;
+  left: calc((var(--key-position) - 0.3) * 100% / var(--key-total));
+  top: 0;
+  width: calc(100% / var(--key-total) * 0.6);
+  height: 62%;
+  background: #29332e;
+  color: #faf9f5;
+  border-color: #18201c;
+  padding-bottom: 4px;
+  font-size: 9px;
+  gap: 3px;
+}
+.kp-key small { font: inherit; opacity: .8; }
+.kp-key.has-key small { color: var(--rust); opacity: 1; }
+.kp-key.playing { background: var(--rust); color: var(--paper-light); box-shadow: inset 0 -3px 0 var(--rust-dark); border-color: var(--rust-dark); }
+.kp-key.has-key { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--rust) 35%, transparent); }
+.kp-key:focus-visible { outline: 2px solid var(--rust); outline-offset: 1px; z-index: 3; }
+
+.fretboard-section.keyboard-open .fretboard-wrap,
+.fretboard-section.keyboard-open .board-footer { display: none; }
+
+@media (prefers-reduced-motion: reduce) { .keyboard-panel { animation: none; } .kp-key { transition: none; } }
+@media (max-width: 800px) {
+  .keyboard-keys { height: 130px; }
+  .kp-black small { display: none; }
+  .keyboard-panel-head { flex-wrap: wrap; }
+  .keyboard-octave-load { margin-left: 0; flex-basis: 100%; }
+}
 
 
 

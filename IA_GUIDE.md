@@ -118,6 +118,31 @@ Falta corregir errores de las implementaciones de micrófono
   - El valor de BPM pasó de ser una etiqueta solo lectura a un campo editable junto al botón «Tempo»: se puede escribir a mano (límites 30–240) y se mantiene sincronizado con el acompañamiento y el video. El botón «Tempo» sigue estimando con las pulsaciones y lo rellena. Al pasar el puntero (o al enfocar) aparecen flechitas arriba y abajo del número para subir o bajar de a un BPM con estilo discreto; se ocultan las flechas nativas del input numérico.
   - `npm test` → 148/148 (nuevos tests de `panel-controls` y del campo editable). Pendiente tu revisión visual y la prueba con guitarra/video.
 
+  *Quisiera una seccion donde se pueda expandir el teclado y que se pueda tocar con algunas teclas 
+  asdetc (do re mi etc)
+  wer etc (do#/b re#/mib etc) 
+
+  quizá esta sección extendida pueda tener algunas octavas más que se pueda activar con las teclas shift izquierdo  para la mitad izquierda y derecho para la otra mitad o algo asi 
+
+  si se puede con algunos efectos tipo sintetizador también, con opciones delay, reverb, distintos tipos de sonido. y que esta seccion se pueda expandir con algun boton cerca del teclado miniatura cubriendo el mastil para mostrar esta sección
+
+  También que estas notas y controles se apliquen para tocar la guitarra o bajo mostrandose la nota en el mastil de un color distinto al de las notas detectadas por micrófono
+
   *Quisiera mover el botón añadir acorde más cerca del mástil, quizá debajo centrado para que sea visible
 
   - Implementado: el botón «＋ añadir acorde» se movió del encabezado de la progresión a una fila centrada bajo el mástil, debajo de la información del diapasón. Estilo con la cara izquierda en óxido, esquinas ligeras y sombra inferior; mantiene la misma lógica `addProgressionChord`. Pendiente tu revisión visual.
+
+  *Quisiera buscar la forma en que el micrófono reconozca acordes y no solo notas sueltas
+
+  *A el micrófono le cuesta muchísimo detectar la duración de las notas, así que quisiera que la nota se mantenga dibujada al menos un segundo, a no ser que toque otra nota 
+  (quizá más adelante una opción de "mantener nota dibujada" para que al tocar con el microfono, se mantenga dibujada junto a la anterior nota que toqué de otro color o algo así).
+
+  * Actualmente no se cambia la escala en tiempo real al usar el microfono, 
+  Quisiera que muestre en tiempo real cuál escala/acorde se toca, y el switch de escala en vivo funcione para que la escala quede lockeada y no cambie en tiempo real al tener microfono.
+
+- Implementado: sección de teclado expandible (`keyboard-section.js`) con botón «⤢ Teclado» junto al teclado miniatura; al expandirse cubre el mástil.
+  - Piano de 4 octavas (C3–B6) pulsable con el ratón/táctil y con el teclado físico: `a s d f g h j` = do re mi fa sol la si, `w e t y u` = sostenidos. `Shift izquierdo` baja una octava, `Shift derecho` la sube; las teclas en pantalla remarcan la letra asignada.
+  - Sintetizador polifónico (`KeySynth`) con timbres Piano, Órgano y Lead, y efectos Delay y Reverb activables con switches.
+  - La nota audible queda anclada a la tecla física aunque cambies de octava mientras suena. Cierre con botón «✕» o el mismo toggle; el audio se corta al cerrar la página.
+  - `npm test` → 156/156 (nuevos tests de `keyboard-section`). Verificado en navegador headless: expansión, 48 teclas renderizadas, mapeo de letras y octavas por shift. Pendiente tu revisión auditiva del sintetizador y de la alineación visual.
+
