@@ -97,9 +97,6 @@ footer {
 .fret-lock { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; margin: 0; }
 .fret-lock input { accent-color: var(--rust); }
 .fret-lock span { color: var(--muted); font-size: 9px; }
-.string-mode-switch { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; margin: 0; }
-.string-mode-switch input { accent-color: var(--rust); }
-.string-mode-switch span { color: var(--muted); font-size: 9px; }
 .is-picked { outline: 3px solid var(--ink); outline-offset: 3px; }
 .preset-controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
 .preset-controls select, .preset-controls button { max-width: 100%; padding: 7px; border: 1px solid var(--line); background: var(--paper-light); color: var(--ink); font: 12px var(--sans); }
@@ -1045,11 +1042,6 @@ html[data-theme="dark"] .board-add-button {
 .fret-lock .spelling-switch input { margin: 0; }
 .fret-lock .lock-symbol { display: block; order: -1; flex: 0 0 16px; width: 16px; height: 16px; fill: none; stroke: var(--muted); stroke-width: 1.6; }
 .fret-lock .spelling-switch:has(:checked) .lock-symbol { stroke: var(--rust); }
-.string-mode-switch .inline-help p { top: auto; bottom: calc(100% + 8px); left: auto; right: 0; }
-.string-mode-switch .spelling-switch { display: inline-flex; align-items: center; position: relative; flex-shrink: 0; margin: 0; padding: 4px 0; gap: 8px; cursor: pointer; }
-.string-mode-switch .spelling-track { display: block; flex: 0 0 38px; }
-.string-mode-switch .spelling-switch input { margin: 0; }
-.string-mode-switch .spelling-switch span:last-of-type { order: -1; }
 .fret-lock .lock-symbol { transition: stroke .22s ease; }
 .fret-lock .lock-symbol path { transform-origin: 14px 9px; transform: rotate(-18deg) translateY(-1px); transition: transform .22s ease; }
 .fret-lock .spelling-switch:has(:checked) .lock-symbol path { transform: rotate(0) translateY(0); }

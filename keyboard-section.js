@@ -23,34 +23,6 @@ function keyOffsetFor(event) {
   return KEY_CODES[event.code];
 }
 
-// Modo por cuerdas: cada fila del teclado toca una sola cuerda, cromáticamente
-// (cada tecla siguiente sube medio tono en esa cuerda). En guitarra las filas
-// son, de abajo hacia arriba, E (mi grave), D, B, E (mi aguda); en el bajo las
-// cuatro cuerdas abiertas E, A, D, G. `codes` respalda por posición física las
-// teclas que cambian de carácter según el idioma (ñ, ´, etc.).
-var STRING_MODE_ROWS = [
-  { keys: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '='], codes: { Equal: 11 }, guitar: 64, bass: 43 },
-  { keys: ['q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '´', '+'], codes: { BracketLeft: 10 }, guitar: 59, bass: 38 },
-  { keys: ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'ñ', '{'], codes: { Semicolon: 9, Quote: 10 }, guitar: 50, bass: 33 },
-  { keys: ['z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '-'], codes: { Comma: 7, Period: 8, Minus: 9 }, guitar: 40, bass: 28 }
-];
-
-// Nota absoluta (MIDI) para una tecla en modo por cuerdas, o undefined si la
-// tecla no pertenece a ninguna fila. La cuerda abierta se elige según el
-// instrumento (guitarra o bajo).
-function stringModeMidiFor(key, code, isBass) {
-  var match = (key || '').toLowerCase();
-  for (var r = 0; r < STRING_MODE_ROWS.length; r++) {
-    var row = STRING_MODE_ROWS[r];
-    var idx = row.keys.indexOf(match);
-    if (idx === -1 && code !== undefined && row.codes && Object.prototype.hasOwnProperty.call(row.codes, code)) {
-      idx = row.codes[code];
-    }
-    if (idx !== -1) return row[isBass ? 'bass' : 'guitar'] + idx;
-  }
-  return undefined;
-}
-
 function keyboardMidiFor(octave, semitone) { return 12 * (octave + 1) + semitone; }
 
 // Genera las teclas visibles. Las blancas llevan índice 0-based dentro del
@@ -351,8 +323,6 @@ if (typeof module !== 'undefined' && module.exports) module.exports = {
   keyLetter: keyLetter,
   activeBaseMidi: activeBaseMidi,
   keyOffsetFor: keyOffsetFor,
-  stringModeMidiFor: stringModeMidiFor,
-  STRING_MODE_ROWS: STRING_MODE_ROWS,
   mastilKeyToggle: mastilKeyToggle,
   pluckWave: pluckWave,
   KeySynth: KeySynth,
@@ -407,19 +377,6 @@ if (typeof document !== 'undefined') (function () {
     var octaveStart = isBass ? 2 : 3;
     var base = keyboardMidiFor(octaveStart + (isBass ? 0 : 1), 0);
     return activeBaseMidi(base, shiftDirection(), octaveStart, 4);
-  }
-
-  // Modo por cuerdas: se activa con el interruptor del pie del mástil y cambia
-  // la asignación de teclas en modo mástil para tocar cada fila como una
-  // cuerda, cromáticamente (z e, x fa, c fa#, v sol, ...). Ignora los shift de
-  // octava: cada fila ya nace anclada a su cuerda abierta.
-  function stringModeActive() {
-    var el = document.getElementById('string-mode-toggle');
-    return inMastilMode() && !!el && el.checked;
-  }
-
-  function stringModeMidi(event) {
-    return stringModeMidiFor(event.key, event.code, mastilTimbre() === 'bass');
   }
 
   function mastilNotes() {
@@ -500,15 +457,11 @@ if (typeof document !== 'undefined') (function () {
     var target = event.target;
     if (target && (target.tagName === 'INPUT' || target.tagName === 'SELECT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
     if (event.altKey || event.metaKey || event.ctrlKey) return;
-    var midi;
-    if (inMastilMode() && stringModeActive()) {
-      midi = stringModeMidi(event);
-    } else {
-      var offset = keyOffsetFor(event);
-      if (offset === undefined) return;
-      midi = (inMastilMode() ? mastilBaseMidi() : effectiveBase()) + offset;
-    }
-    if (midi === undefined || midi < 0 || midi > 127) return;
+    var offset = keyOffsetFor(event);
+    if (offset === undefined) return;
+    var base = inMastilMode() ? mastilBaseMidi() : effectiveBase();
+    var midi = base + offset;
+    if (midi < 0 || midi > 127) return;
     if (!pressed.has(event.key)) {
       pressed.set(event.key, midi);
       if (inMastilMode()) { applyMastil(midi, true); synth.noteOn(midi, mastilTimbre()); }
