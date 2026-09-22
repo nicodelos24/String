@@ -67,3 +67,77 @@ test('activar Escala en vivo aplica el acorde actual; apagado mantiene la últim
   callbacks.onChord({ root: 9, type: 'm', mode: 'aeolian' });
   assert.equal(context.root, 7);
 });
+
+function setupPitch() {
+  const timers = [];
+  let fakeNow = 0;
+  const elements = new Map();
+  function element(id) {
+    if (!elements.has(id)) elements.set(id, {
+      checked: false, hidden: true, handlers: {}, attributes: {},
+      addEventListener(event, fn) { this.handlers[event] = fn; },
+      setAttribute(key, value) { this.attributes[key] = value; },
+      querySelector: () => element('label'),
+    });
+    return elements.get(id);
+  }
+  let callbacks;
+  class FakeDate extends Date { static now() { return fakeNow; } }
+  const context = vm.createContext({
+    document: { getElementById: element, querySelectorAll: () => [] },
+    window: { addEventListener() {} }, MutationObserver: class { observe() {} },
+    MicrophoneReader: class { constructor(options) { callbacks = options; } },
+    Date: FakeDate,
+    setTimeout(fn, ms) { timers.push({ fn, ms }); return timers.length; },
+    clearTimeout() {},
+    root: 0, quality: 'major', selectedMode: 'ionian', activeProgression: 2,
+    rootNoteName: 'C', chordType: { value: 'maj' }, ghostMode: 'lydian',
+    progression: [], progressionEdited: false, draggingProgressionItem: null,
+    chordTypes: [{ value: 'm', suffix: 'm' }, { value: '7', suffix: '7' }],
+    noteName: root => ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'][root],
+    isInTune: detection => Math.abs(detection.cents) <= 40,
+    renderProgression() {}, showProgressionChord(chord) { context.root = chord.root; context.selectedMode = chord.mode; },
+  });
+  vm.runInContext(fs.readFileSync(path.join(__dirname, '../microphone-ui.js'), 'utf8'), context);
+  return {
+    callbacks,
+    readout: element('microphone-readout'),
+    timers,
+    delay(ms) { fakeNow += ms; },
+    fire(t) { t.fn(); },
+  };
+}
+
+test('al enmudecer la nota queda dibujada al menos un segundo y luego se limpia', () => {
+  const { callbacks, readout, timers, delay, fire } = setupPitch();
+  callbacks.onState('ready');
+  callbacks.onPitch({ midi: 60, freq: 261.63, cents: 0 });
+  assert.equal(readout.textContent, 'C4 · 261.63 Hz');
+
+  callbacks.onPitch(null);
+  assert.equal(readout.textContent, 'C4 · 261.63 Hz', 'La nota sigue dibujada durante el sostén');
+  const hold = timers.find(t => t.ms === 1000);
+  assert.ok(hold, 'Se programa la limpieza al cumplirse el segundo');
+
+  delay(1100);
+  fire(hold);
+  assert.equal(readout.textContent, 'esperando nota…', 'Pasado el segundo sin otra nota, se limpia');
+});
+
+test('una nota nueva durante el sostén reemplaza al instante y extiende el reloj', () => {
+  const { callbacks, readout, timers, delay, fire } = setupPitch();
+  callbacks.onState('ready');
+  callbacks.onPitch({ midi: 60, freq: 261.63, cents: 0 });
+  delay(400);
+  callbacks.onPitch(null);
+  timers.length = 0; // descarta la limpieza del primer sostén, la nota nueva la reemplaza
+  callbacks.onPitch({ midi: 62, freq: 293.66, cents: 5 });
+  assert.equal(readout.textContent, 'D4 · 293.66 Hz', 'La nota nueva reemplaza la anterior al instante');
+  delay(400);
+  callbacks.onPitch(null);
+  const hold = timers.find(t => t.ms === 600);
+  assert.ok(hold, 'El sostén se reanuda desde la nota nueva');
+  delay(700);
+  fire(hold);
+  assert.equal(readout.textContent, 'esperando nota…');
+});

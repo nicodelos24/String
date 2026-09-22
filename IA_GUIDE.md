@@ -137,6 +137,9 @@ Falta corregir errores de las implementaciones de micrófono
   *A el micrófono le cuesta muchísimo detectar la duración de las notas, así que quisiera que la nota se mantenga dibujada al menos un segundo, a no ser que toque otra nota 
   (quizá más adelante una opción de "mantener nota dibujada" para que al tocar con el microfono, se mantenga dibujada junto a la anterior nota que toqué de otro color o algo así).
 
+  - Implementado: al enmudecer, la nota queda dibujada al menos 1 s (y su lectura mantiene la frecuencia), a no ser que se toque otra nota, que reemplaza el resaltado al instante y renueva el reloj. La limpieza previa a 300 ms de atenuado se conserva al cumplirse el sostén. La opción futura de "mantener nota dibujada junto a la anterior con otro color" sigue pendiente.
+  - `npm test` → 158/158 (dos tests nuevos de `microphone-ui`). Pendiente tu prueba real con guitarra.
+
   * Actualmente no se cambia la escala en tiempo real al usar el microfono, 
   Quisiera que muestre en tiempo real cuál escala/acorde se toca, y el switch de escala en vivo funcione para que la escala quede lockeada y no cambie en tiempo real al tener microfono.
 

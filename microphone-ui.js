@@ -16,11 +16,30 @@ if (typeof document !== 'undefined') (() => {
   let liveChord = null;
   let autoAdd = false;
 
+  // La detección de duración con el micrófono es imprecisa: al enmudecer, la
+  // nota queda dibujada al menos NOTE_HOLD_MS y solo se limpia antes si se
+  // toca otra nota (que reemplaza el resaltado al instante).
+  const NOTE_HOLD_MS = 1000;
+
   const reader = new MicrophoneReader({
     onPitch: detection => {
-      if (detection && Number.isInteger(detection.midi)) highlightPitch(detection.midi);
-      else clearLive();
-      showReadout(detection);
+      const now = Date.now();
+      if (detection && Number.isInteger(detection.midi)) {
+        highlightPitch(detection.midi);
+        heldMidi = detection.midi;
+        heldSince = now;
+        if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
+        showReadout(detection);
+      } else {
+        const holding = heldMidi !== null && now - heldSince < NOTE_HOLD_MS;
+        if (holding) {
+          scheduleHoldClear();
+        } else {
+          clearLive();
+          heldMidi = null;
+          showReadout(detection);
+        }
+      }
     },
     onChord: detection => {
       liveChord = detection;
@@ -66,6 +85,22 @@ if (typeof document !== 'undefined') (() => {
   });
 
   let liveMidi = null;
+  let heldMidi = null;
+  let heldSince = 0;
+  let holdTimer = null;
+
+  function scheduleHoldClear() {
+    if (holdTimer) return;
+    const remaining = Math.max(0, heldSince + NOTE_HOLD_MS - Date.now());
+    holdTimer = setTimeout(() => {
+      holdTimer = null;
+      if (heldMidi !== null && Date.now() - heldSince >= NOTE_HOLD_MS) {
+        clearLive();
+        heldMidi = null;
+        showReadout(null);
+      }
+    }, remaining);
+  }
 
   function noteLabel(detection) {
     const pitchClass = detection.midi % 12;
@@ -155,6 +190,8 @@ if (typeof document !== 'undefined') (() => {
     if (state === 'stopped' || state === 'error') {
       liveChord = null;
       autoAdd = false;
+      if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
+      heldMidi = null;
       if (chordCard) chordCard.hidden = true;
       if (chordAdd) chordAdd.disabled = true;
       if (chordAuto) {
