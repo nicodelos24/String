@@ -59,7 +59,21 @@ test('keyboard: la fila grave arranca en sol (z=G3) y las teclas extras se suman
   assert.equal(KEY_CODES.Equal, 20);       // + → G#5
 });
 
-test('keyboard: chordFromNotes reconoce el acorde de las notas mantenidas', () => {
+test('keyboard: chordFromNotes con 2 notas reconoce raíz y tercera (mayor o menor)', () => {
+  const { chordFromNotes } = require('../keyboard-section.js');
+  const templates = [];
+
+  assert.deepEqual(chordFromNotes([60, 64], templates), { root: 0, type: 'maj', mode: 'ionian' }, 'do mi = do mayor');
+  assert.deepEqual(chordFromNotes([64, 60], templates), { root: 0, type: 'maj', mode: 'ionian' }, 'sin importar el orden');
+  assert.deepEqual(chordFromNotes([60, 63], templates), { root: 0, type: 'm', mode: 'aeolian' }, 'do mib = do menor');
+  assert.deepEqual(chordFromNotes([59, 62], templates), { root: 11, type: 'm', mode: 'aeolian' }, 'si re = si menor');
+  assert.deepEqual(chordFromNotes([47, 50], templates), { root: 11, type: 'm', mode: 'aeolian' }, 'la nota más grave manda');
+  assert.equal(chordFromNotes([55, 60], templates), null, 'quinta sin tercera no da acorde');
+  assert.equal(chordFromNotes([60, 72], templates), null, 'octava de la misma nota no alcanza');
+  assert.equal(chordFromNotes([60, 61], templates), null, 'segunda menor no es tercera');
+});
+
+test('keyboard: chordFromNotes con 3 o más notas usa las plantillas', () => {
   const { chordFromNotes } = require('../keyboard-section.js');
   const templates = [
     { type: 'maj', intervals: [0, 4, 7], mode: 'ionian' },
@@ -79,7 +93,6 @@ test('keyboard: chordFromNotes reconoce el acorde de las notas mantenidas', () =
   assert.deepEqual(chordFromNotes([60, 64, 67, 69, 74], templates), { root: 0, type: '6/9', mode: 'ionian' }, 'do mi sol la re = C6/9');
   assert.deepEqual(chordFromNotes([60, 65, 67], templates), { root: 0, type: 'sus4', mode: 'mixolydian' }, 'do fa sol = Csus4');
   assert.deepEqual(chordFromNotes([57, 60, 64], templates), { root: 9, type: 'm', mode: 'aeolian' }, 'la do mi = Am');
-  assert.equal(chordFromNotes([60, 64], templates), null, 'con menos de 3 notas no hay acorde');
   assert.equal(chordFromNotes([57, 60, 62], templates), null, 'la-do-re sin quinta no da acorde');
 });
 

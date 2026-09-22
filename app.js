@@ -1042,10 +1042,11 @@ function selectFretNote(note) {
   const pitch=Number(note.dataset.midi)%12;
   if(!Number.isInteger(pitch))return;
   selectedFretMidi=Number(note.dataset.midi);
-  if(document.querySelector('#fret-scale-lock').checked) {
+  const liveChordActive = typeof window !== 'undefined' && typeof window.__liveChordActive === 'function' ? window.__liveChordActive() : false;
+  if(liveChordActive || document.querySelector('#fret-scale-lock').checked) {
     document.querySelectorAll('.is-picked').forEach(item=>item.classList.remove('is-picked'));
     note.classList?.add('is-picked');
-    document.querySelector('.hint').textContent=`Nota seleccionada: ${displayNote(pitch)} · ${note.dataset.interval || ''}. Escala fija.`;
+    document.querySelector('.hint').textContent=`Nota seleccionada: ${displayNote(pitch)}${note.dataset.interval ? ` · ${note.dataset.interval}` : ''}${liveChordActive ? ' · la escala la lleva el acorde en vivo.' : '. Escala fija.'}`;
     return;
   }
   choosePianoRoot(pitch,pianoUseFlats ? noteLabels[notes[pitch]] || notes[pitch] : notes[pitch]);

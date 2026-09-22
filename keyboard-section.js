@@ -77,19 +77,28 @@ function mastilKeyToggle(notes, midi, on) {
 }
 
 // Reconocimiento del acorde formado por las notas pulsadas con el teclado.
-// Devuelve {root, type, mode} según las plantillas (iguales a las del
-// micrófono), o null con menos de 3 notas distintas o sin coincidencia.
+// Devuelve {root, type, mode}: con 2 notas bastan raíz (la más grave) y su
+// tercera (intervalo de 3 = menor, 4 = mayor). Con 3 o más notas se usan las
+// plantillas (iguales a las del micrófono); null sin coincidencia.
 // Prefiere la plantilla que explica más notas con menos extras y, entre
 // empates, la de más notas y la raíz más cercana a la nota más grave.
 function chordFromNotes(midis, templates) {
-  if (!Array.isArray(midis) || midis.length < 3) return null;
+  if (!Array.isArray(midis) || midis.length < 2) return null;
   var present = [];
   for (var i = 0; i < midis.length; i++) {
     if (!Number.isInteger(midis[i])) continue;
     var pitch = ((midis[i] % 12) + 12) % 12;
     if (present.indexOf(pitch) === -1) present.push(pitch);
   }
-  if (present.length < 3) return null;
+  if (present.length < 2) return null;
+  present.sort(function (a, b) { return a - b; });
+  if (present.length === 2) {
+    var lo = Math.min.apply(null, midis);
+    var hi = Math.max.apply(null, midis);
+    var third = (hi - lo) % 12;
+    if (third !== 3 && third !== 4) return null;
+    return { root: lo % 12, type: third === 3 ? 'm' : 'maj', mode: third === 3 ? 'aeolian' : 'ionian' };
+  }
   var table = templates || (typeof LIVE_CHORD_TEMPLATES !== 'undefined' ? LIVE_CHORD_TEMPLATES : []);
   if (!table.length) return null;
   var lowest = Math.min.apply(null, present);
@@ -495,24 +504,40 @@ if (typeof document !== 'undefined') (function () {
     });
   }
 
-  // Acorde en vivo desde el teclado: con el interruptor del pie del mástil
-  // activado y el «Teclado» cerrado, las notas mantenidas forman un acorde que
-  // cambia la escala del mástil en vivo y se muestra en la tarjeta
-  // «ACORDE EN VIVO». Enter (o el botón ＋ Añadir) lo agrega a las tarjetas.
-  var keyboardLiveSwitch = document.getElementById('keyboard-live-chord');
+  // Acorde en vivo: las tres fases del control del pie del mástil. Apagado:
+  // tocar no cambia la escala. Nota: una nota (tecla o golpe en el mástil)
+  // muestra el acorde mayor o menor según la calidad y el modo elegidos a la
+  // izquierda. Acorde: con la raíz (nota más grave) y su tercera alcanza; toca
+  // más notas para acordes más ricos. Enter (o ＋ Añadir) agrega a las tarjetas.
+  var liveRoot = document.getElementById('keyboard-live-chord');
   var chordCard = document.getElementById('live-chord-card');
   var chordNameEl = document.getElementById('live-chord-name');
   var chordConfidenceEl = document.getElementById('live-chord-confidence');
   var chordAddBtn = document.getElementById('live-chord-add');
-  var keyboardLive = null;      // último acorde detectado desde el teclado
-  var keyboardLiveKey = '';     // raíz:tipo ya aplicado en el mástil
+  var keyboardLive = null;      // último acorde detectado
+  var keyboardLiveKey = '';     // raíz:tipo:modo ya aplicado en el mástil
+  var mastilClickMidis = new Set();  // notas marcadas con clicks en el mástil (en modo acorde)
+
+  function liveButtons() {
+    return liveRoot ? [].slice.call(liveRoot.querySelectorAll('[data-live-mode]')) : [];
+  }
+
+  function keyboardLivePhase() {
+    var buttons = liveButtons();
+    for (var i = 0; i < buttons.length; i++) {
+      if (buttons[i].getAttribute('aria-pressed') === 'true') return buttons[i].dataset.liveMode || 'off';
+    }
+    return 'off';
+  }
+
+  window.__liveChordActive = function () { return keyboardLivePhase() !== 'off' && inMastilMode(); };
 
   function keyboardLiveEnabled() {
-    return !!keyboardLiveSwitch && keyboardLiveSwitch.checked && inMastilMode();
+    return !!liveRoot && keyboardLivePhase() !== 'off' && inMastilMode();
   }
 
   function setKeyboardPlaying(on) {
-    if (keyboardLiveSwitch) keyboardLiveSwitch.dataset.playing = on ? '1' : '';
+    if (liveRoot) liveRoot.dataset.playing = on ? '1' : '';
   }
 
   // Cuando el teclado muestra el acorde, el micrófono lo deja pasar en vivo.
@@ -521,25 +546,53 @@ if (typeof document !== 'undefined') (function () {
     return !!mic && mic.getAttribute('aria-pressed') === 'true';
   }
 
+  // Notas activas: las teclas mantenidas más las marcadas en el mástil.
+  function activeNotes() {
+    var notes = [];
+    pressed.forEach(function (midi) { if (notes.indexOf(midi) === -1) notes.push(midi); });
+    mastilClickMidis.forEach(function (midi) {
+      if (Number.isFinite(midi) && notes.indexOf(midi) === -1) notes.push(Math.round(midi));
+    });
+    notes.sort(function (a, b) { return a - b; });
+    return notes;
+  }
+
+  // Acorde de una sola nota según la calidad y el modo de los controles izquierdos.
+  function chordFromQuality(pitch) {
+    var type = typeof chordType !== 'undefined' && chordType ? chordType.value : 'maj';
+    var modeName = typeof selectedMode !== 'undefined' && selectedMode ? selectedMode : (type === 'm' ? 'aeolian' : type === 'dim' ? 'locrian' : 'ionian');
+    var spelling = typeof notes !== 'undefined' && notes[pitch];
+    if (typeof pianoUseFlats !== 'undefined' && pianoUseFlats && typeof noteLabels !== 'undefined') {
+      spelling = noteLabels[spelling] || spelling;
+    }
+    return { root: pitch, rootNoteName: spelling, type: type, mode: modeName };
+  }
+
   function recomputeKeyboardLive() {
     if (!keyboardLiveEnabled()) { resetKeyboardLive(); return; }
-    if (pressed.size < 3) { resetKeyboardLive(); return; }
-    var chord = chordFromNotes(Array.from(pressed.values()));
+    var phase = keyboardLivePhase();
+    var notes = activeNotes();
+    var chord = null;
+    if (phase === 'note' && notes.length >= 1) {
+      chord = chordFromQuality(notes[0] % 12);
+    } else if (phase === 'chord' && notes.length >= 2) {
+      chord = chordFromNotes(notes);
+    }
     if (!chord) { resetKeyboardLive(); return; }
     keyboardLive = chord;
     if (chordCard && chordNameEl && chordConfidenceEl) {
       chordCard.hidden = false;
       var type = typeof chordTypes !== 'undefined' && chordTypes.find(function (item) { return item.value === chord.type; });
-      chordNameEl.textContent = noteName(chord.root) + (type ? type.suffix : '');
-      chordConfidenceEl.textContent = 'Notas mantenidas · Enter para añadir';
+      chordNameEl.textContent = (chord.rootNoteName || noteName(chord.root)) + (type ? type.suffix : '');
+      chordConfidenceEl.textContent = phase === 'note' ? 'Nota única · Enter para añadir' : 'Notas · Enter para añadir';
       if (chordAddBtn) chordAddBtn.disabled = false;
     }
     setKeyboardPlaying(true);
     if (typeof showProgressionChord === 'function') {
-      var key = chord.root + ':' + chord.type;
+      var key = chord.root + ':' + chord.type + ':' + chord.mode;
       if (key !== keyboardLiveKey) {
         keyboardLiveKey = key;
-        showProgressionChord({ root: chord.root, rootNoteName: noteName(chord.root), type: chord.type, mode: chord.mode }, -1);
+        showProgressionChord({ root: chord.root, rootNoteName: chord.rootNoteName || noteName(chord.root), type: chord.type, mode: chord.mode }, -1);
       }
     }
   }
@@ -557,6 +610,11 @@ if (typeof document !== 'undefined') (function () {
     }
   }
 
+  function clearLivePhase() {
+    mastilClickMidis.clear();
+    resetKeyboardLive();
+  }
+
   function addKeyboardLiveChord() {
     if (!keyboardLive || !progression || draggingProgressionItem || progression.length >= 4096) return;
     var item = { root: keyboardLive.root, rootNoteName: noteName(keyboardLive.root), type: keyboardLive.type, mode: keyboardLive.mode, ghostMode: '', beats: 4 };
@@ -566,7 +624,47 @@ if (typeof document !== 'undefined') (function () {
     if (typeof renderProgression === 'function') renderProgression();
   }
 
-  if (keyboardLiveSwitch) keyboardLiveSwitch.addEventListener('change', recomputeKeyboardLive);
+  function onLiveButtonClick(button) {
+    var next = button.dataset.liveMode || 'off';
+    liveButtons().forEach(function (other) {
+      var active = other === button;
+      other.setAttribute('aria-pressed', String(active));
+      other.classList.toggle('is-active', active);
+    });
+    if (next === 'off') clearLivePhase();
+    else recomputeKeyboardLive();
+  }
+
+  // Un golpe en el mástil también alimenta la detección. En modo «Nota», la
+  // última nota tocada es la raíz; en modo «Acorde», cada golpe añade o quita
+  // una nota (con la raíz y la tercera alcanza).
+  function onMastilNoteClick(note) {
+    if (!inMastilMode()) return;
+    var phase = keyboardLivePhase();
+    if (phase === 'off') return;
+    var midi = Math.round(Number(note.dataset.midi));
+    if (!Number.isFinite(midi)) return;
+    if (phase === 'note') {
+      mastilClickMidis.clear();
+      mastilClickMidis.add(midi);
+    } else if (mastilClickMidis.has(midi)) {
+      mastilClickMidis.delete(midi);
+    } else {
+      mastilClickMidis.add(midi);
+    }
+    recomputeKeyboardLive();
+  }
+
+  document.addEventListener('click', function (event) {
+    var target = event.target;
+    if (!target || !target.closest) return;
+    var note = target.closest('.fret-note, .open-string-note');
+    if (note) onMastilNoteClick(note);
+  });
+
+  liveButtons().forEach(function (button) {
+    button.addEventListener('click', function () { onLiveButtonClick(button); });
+  });
   if (chordAddBtn) chordAddBtn.addEventListener('click', function () { if (keyboardLive) addKeyboardLiveChord(); });
 
   window.addEventListener('keydown', function (event) {
