@@ -80,32 +80,6 @@ test('keyboard synth: noteOn starts a voice per MIDI, noteOff releases it and al
   assert.equal(synth.voices.size, 0);
 });
 
-test('keyboard: resalta en el mástil solo las posiciones del mismo MIDI sin tocar el resaltado del micrófono', () => {
-  const { mastilKeyToggle } = require('../keyboard-section.js');
-  const makeNote = midi => ({
-    dataset: { midi: String(midi) },
-    classList: {
-      set: new Set(),
-      contains(c) { return this.set.has(c); },
-      add(c) { this.set.add(c); },
-      remove(c) { this.set.delete(c); },
-    },
-  });
-  const notes = [makeNote(60), makeNote(60), makeNote(62), makeNote(62)];
-  notes[3].classList.add('live'); // resaltado previo del micrófono
-  assert.equal(mastilKeyToggle(notes, 60, true), 2);
-  assert(notes[0].classList.contains('keyboard-live'));
-  assert(notes[1].classList.contains('keyboard-live'));
-  assert(!notes[2].classList.contains('keyboard-live'));
-  assert(notes[3].classList.contains('live'), 'el resaltado del micrófono queda intacto');
-  assert.equal(mastilKeyToggle(notes, 60, true), 0, 'ya resaltadas no cuentan como cambio');
-  assert.equal(mastilKeyToggle(notes, 60, false), 2);
-  assert(!notes[0].classList.contains('keyboard-live'));
-  assert(!notes[1].classList.contains('keyboard-live'));
-  assert.equal(mastilKeyToggle(notes, 60, false), 0);
-  assert.equal(mastilKeyToggle(notes, 200, true), 0, 'un MIDI fuera del rango del mástil no resalta nada');
-});
-
 test('keyboard synth: timbre and effects update even before the context starts', () => {
   const synth = new KeySynth({ createContext: () => { throw new Error('Unexpected audio'); } });
   synth.setTimbre('organ');

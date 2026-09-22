@@ -792,33 +792,6 @@ footer {
   transition: opacity 0.3s ease;
 }
 
-.fret-note.keyboard-live,
-.open-string-note.keyboard-live {
-  position: relative;
-  z-index: 3;
-  background: #6c5ce7 !important;
-  color: #ffffff !important;
-  font-weight: 800;
-  transform: scale(1.18);
-  box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.55), 0 0 24px 6px rgba(108, 92, 231, 0.65);
-  animation: live-bounce 1s ease-in-out infinite;
-}
-
-.fret-note.keyboard-live::after,
-.open-string-note.keyboard-live::after {
-  content: '';
-  position: absolute;
-  inset: -6px;
-  border-radius: inherit;
-  border: 2px solid #6c5ce7;
-  animation: live-ring 1s ease-out infinite;
-  pointer-events: none;
-}
-
-.open-string-note.keyboard-live::after {
-  border-radius: 999px;
-}
-
 @keyframes live-ring {
   0% { transform: scale(0.7); opacity: 0.9; }
   70%, 100% { transform: scale(1.35); opacity: 0; }
@@ -832,8 +805,6 @@ footer {
 @media (prefers-reduced-motion: reduce) {
   .fret-note.live,
   .open-string-note.live,
-  .fret-note.keyboard-live,
-  .open-string-note.keyboard-live,
   .mic-button[aria-pressed='true'] .mic-dot {
     animation: none;
   }
