@@ -46,6 +46,22 @@ function activeBaseMidi(base, shiftDir, octaveStart, count) {
   return Math.max(min, Math.min(max, next));
 }
 
+// Marca o desmarca en el mástil (y cuerdas al aire) las posiciones cuyo MIDI
+// coincide con el indicado, usando la clase del teclado para distinguirlas del
+// resaltado del micrófono. Devuelve cuántos elementos cambiaron.
+function mastilKeyToggle(notes, midi, on) {
+  var changed = 0;
+  for (var i = 0; i < notes.length; i++) {
+    var note = notes[i];
+    if (note && Number(note.dataset.midi) === midi) {
+      var wasOn = note.classList.contains('keyboard-live');
+      if (on) note.classList.add('keyboard-live'); else note.classList.remove('keyboard-live');
+      if (wasOn !== on) changed++;
+    }
+  }
+  return changed;
+}
+
 function keyboardImpulse(context, seconds, decay) {
   var length = Math.floor((context.sampleRate || 44100) * seconds);
   var buffer = context.createBuffer(2, length, context.sampleRate || 44100);
@@ -207,6 +223,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = {
   keyStrip: keyStrip,
   keyLetter: keyLetter,
   activeBaseMidi: activeBaseMidi,
+  mastilKeyToggle: mastilKeyToggle,
   KeySynth: KeySynth,
   noteNames: KEYBOARD_NOTE_NAMES
 };
@@ -239,9 +256,38 @@ if (typeof document !== 'undefined') (function () {
     toggle.classList.toggle('is-open', open);
     toggle.textContent = open ? '✕ Teclado' : '⤢ Teclado';
     document.querySelector('.fretboard-section')?.classList.toggle('keyboard-open', open);
-    if (open) render();
-    else synth.allOff();
+    if (open) { render(); clearMastil(); }
+    else { synth.allOff(); clearMastil(); }
   }
+
+  // Modo mástil: con el teclado cerrado, las mismas teclas marcan la nota
+  // pulsada en el mástil de guitarra/bajo en vez de un piano.
+  function inMastilMode() { return panel.hidden; }
+
+  function mastilNotes() {
+    return document.querySelectorAll('#fretboard [data-midi], #open-strings [data-midi]');
+  }
+
+  function applyMastil(midi, on) {
+    mastilKeyToggle(mastilNotes(), midi, on);
+  }
+
+  function clearMastil() {
+    document.querySelectorAll('#fretboard .keyboard-live, #open-strings .keyboard-live').forEach(function (element) {
+      element.classList.remove('keyboard-live');
+    });
+  }
+
+  // Al reconstruirse el mástil (acorde, modo, instrumento) se reaplica el
+  // resaltado de las notas que siguen sonando en modo mástil.
+  var mastilObserver = new MutationObserver(function () {
+    if (!inMastilMode()) return;
+    pressed.forEach(function (midi) { applyMastil(midi, true); });
+  });
+  ['fretboard', 'open-strings'].forEach(function (id) {
+    var node = document.getElementById(id);
+    if (node) mastilObserver.observe(node, { childList: true, subtree: true });
+  });
 
   function render() {
     var base = effectiveBase();
@@ -293,7 +339,6 @@ if (typeof document !== 'undefined') (function () {
   window.addEventListener('keydown', function (event) {
     if (event.code === 'ShiftLeft') { shiftLeft = true; if (!panel.hidden) render(); return; }
     if (event.code === 'ShiftRight') { shiftRight = true; if (!panel.hidden) render(); return; }
-    if (panel.hidden) return;
     var target = event.target;
     if (target && (target.tagName === 'INPUT' || target.tagName === 'SELECT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
     if (event.altKey || event.metaKey || event.ctrlKey) return;
@@ -304,7 +349,8 @@ if (typeof document !== 'undefined') (function () {
     if (midi < 0 || midi > 127) return;
     if (!pressed.has(key)) {
       pressed.set(key, midi);
-      synth.noteOn(midi).then(function () { setPlaying(midi, true); });
+      if (inMastilMode()) { applyMastil(midi, true); synth.noteOn(midi); }
+      else synth.noteOn(midi).then(function () { setPlaying(midi, true); });
     }
     event.preventDefault();
   });
@@ -314,7 +360,6 @@ if (typeof document !== 'undefined') (function () {
       if (!panel.hidden) render();
       return;
     }
-    if (panel.hidden) return;
     var key = event.key.toLowerCase();
     var offset = KEY_OFFSETS[key];
     if (offset === undefined) return;
@@ -322,7 +367,8 @@ if (typeof document !== 'undefined') (function () {
     var midi = pressed.get(key);
     pressed.delete(key);
     synth.noteOff(midi);
-    setPlaying(midi, false);
+    if (inMastilMode()) applyMastil(midi, false);
+    else setPlaying(midi, false);
   });
 
   keysEl.addEventListener('pointerdown', onPointerDown);
