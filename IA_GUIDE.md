@@ -117,3 +117,7 @@ Falta corregir errores de las implementaciones de micrófono
   - Implementado: el switch del acceso rápido ahora tiene tres fuentes: Backtrack, MIDI y Metrónomo. Con Metrónomo activo, el botón de reproducción inicia/pausa el metrónomo (anticipa por 2.5 s los taps y reinicia el cálculo). Cambiar a otra fuente lo detiene.
   - El valor de BPM pasó de ser una etiqueta solo lectura a un campo editable junto al botón «Tempo»: se puede escribir a mano (límites 30–240) y se mantiene sincronizado con el acompañamiento y el video. El botón «Tempo» sigue estimando con las pulsaciones y lo rellena. Al pasar el puntero (o al enfocar) aparecen flechitas arriba y abajo del número para subir o bajar de a un BPM con estilo discreto; se ocultan las flechas nativas del input numérico.
   - `npm test` → 148/148 (nuevos tests de `panel-controls` y del campo editable). Pendiente tu revisión visual y la prueba con guitarra/video.
+
+  *Quisiera mover el botón añadir acorde más cerca del mástil, quizá debajo centrado para que sea visible
+
+  - Implementado: el botón «＋ añadir acorde» se movió del encabezado de la progresión a una fila centrada bajo el mástil, debajo de la información del diapasón. Estilo con la cara izquierda en óxido, esquinas ligeras y sombra inferior; mantiene la misma lógica `addProgressionChord`. Pendiente tu revisión visual.

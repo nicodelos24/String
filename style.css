@@ -839,6 +839,47 @@ footer {
   color: var(--rust);
   font-size: 16px;
 }
+/* Botón de añadir acorde junto al mástil: centrado bajo el diapasón. */
+.board-add-row {
+  display: flex;
+  justify-content: center;
+  padding-right: 32px;
+  margin: 14px 0 20px;
+}
+
+.board-add-button {
+  padding: 10px 18px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--rust);
+  border-radius: 6px;
+  background: #f1e8dc;
+  color: var(--ink);
+  font: 11px var(--mono);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  cursor: pointer;
+  box-shadow: 0 2px 0 rgba(201, 87, 53, 0.22);
+  transition: background .15s ease, border-color .15s ease, box-shadow .15s ease;
+}
+
+.board-add-button:hover {
+  border-color: var(--rust);
+  box-shadow: 0 0 0 4px rgba(201, 87, 53, 0.16);
+}
+
+.board-add-button:focus-visible {
+  outline: 2px solid var(--rust);
+  outline-offset: 2px;
+}
+
+.board-add-button span {
+  color: var(--rust);
+}
+
+html[data-theme="dark"] .board-add-button {
+  background: var(--paper);
+  border-color: var(--line);
+}
 
 .progression {
   display: grid;
