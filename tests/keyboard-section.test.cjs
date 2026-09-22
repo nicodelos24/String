@@ -45,6 +45,9 @@ test('keyboard: la fila grave arranca en sol (z=G3) y las teclas extras se suman
   assert.equal(KEY_OFFSETS.b, 2);  // D4
   assert.equal(KEY_OFFSETS.n, 4);  // E4
   assert.equal(KEY_OFFSETS.m, 5);  // F4
+  assert.equal(KEY_OFFSETS[','], 7);  // G4
+  assert.equal(KEY_OFFSETS['.'], 9);  // A4
+  assert.equal(KEY_OFFSETS['-'], 11); // B4
   assert.equal(KEY_OFFSETS['{'], 17); // F5
   assert.equal(KEY_OFFSETS['´'], 18);  // F#5
   assert.equal(KEY_OFFSETS['+'], 20);  // G#5
@@ -61,6 +64,7 @@ test('keyboard: keyOffsetFor usa la letra o la posición física como respaldo',
   assert.equal(keyOffsetFor({ key: 'a', code: 'KeyA' }), 0);
   assert.equal(keyOffsetFor({ key: 'ñ', code: 'Semicolon' }), 16);
   assert.equal(keyOffsetFor({ key: 'Z', code: 'KeyZ' }), -5);
+  assert.equal(keyOffsetFor({ key: 'z', code: 'KeyZ' }), -5);
   assert.equal(keyOffsetFor({ key: 'Dead', code: 'BracketLeft' }), 18, 'tecla de acento muerto por posición');
   assert.equal(keyOffsetFor({ key: '{', code: 'Quote' }), 17);
   assert.equal(keyOffsetFor({ key: '+', code: 'Equal' }), 20);
