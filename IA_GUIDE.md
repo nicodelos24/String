@@ -174,3 +174,8 @@ Falta corregir errores de las implementaciones de micrófono
 
   - Implementado: slider «Volumen» en la fila de controles del teclado expandible (`#keyboard-volume`, 0–100, arranca en 30). Por defecto arranca en el volumen histórico (0.3) y se aplica al `KeySynth` compartido, por lo que cubre el piano (modos Teclado y Ambos) y el mástil de guitarra/bajo (modo Mástil); cambia la ganancia maestra en vivo, sin detener las voces. `npm test` → 169/169 (test nuevo de `setVolume` y la ganancia maestra). Pendiente tu revisión auditiva y visual.
 
+* Al hacer click en un switch o en el volumen, después las teclas del PC dejaban de sonar hasta hacer click en el piano/área.
+
+  - Implementado: los switchs, radios y el slider de volumen ya no bloquean las teclas musicales: se interceptan aunque el foco haya quedado en el control tras el clic. Los campos de escritura (texto, número, URL…) y los select conservan su comportamiento para poder tipear. La decisión vive en `keyTargetIsTyping` (estado puro, exportado y testeado) y el manejador de `keydown` de `keyboard-section.js`.
+  - De paso se estabilizó un test intermitente de la cuerda pulsada (dependía de `Math.random`): ahora usa una semilla fija. `npm test` → 170/170. Pendiente tu prueba real en navegador.
+

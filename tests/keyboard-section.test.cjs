@@ -134,6 +134,25 @@ test('keyboard: keyOffsetFor usa la letra o la posición física como respaldo',
   assert.equal(keyOffsetFor({ key: 'q', code: 'KeyQ' }), undefined);
 });
 
+test('keyboard: keyTargetIsTyping deja tocar tras hacer clic en switchs y volumen, pero no sobre campos de texto', () => {
+  const { keyTargetIsTyping } = require('../keyboard-section.js');
+  const el = (tagName, type, extra) => Object.assign({ tagName, type: type, isContentEditable: false }, extra || {});
+  assert.equal(keyTargetIsTyping(el('INPUT', 'checkbox')), false, 'un switch no bloquea las teclas');
+  assert.equal(keyTargetIsTyping(el('INPUT', 'radio')), false, 'un radio no bloquea las teclas');
+  assert.equal(keyTargetIsTyping(el('INPUT', 'range')), false, 'el slider de volumen no bloquea las teclas');
+  assert.equal(keyTargetIsTyping(el('BUTTON')), false, 'un botón no bloquea las teclas');
+  assert.equal(keyTargetIsTyping(el('BODY')), false, 'el cuerpo no bloquea las teclas');
+  assert.equal(keyTargetIsTyping(null), false, 'sin foco no bloquea');
+  assert.equal(keyTargetIsTyping(el('INPUT', 'text')), true, 'un campo de texto bloquea');
+  assert.equal(keyTargetIsTyping(el('INPUT', 'number')), true, 'un campo numérico bloquea (para tipear BPM)');
+  assert.equal(keyTargetIsTyping(el('INPUT', 'url')), true);
+  assert.equal(keyTargetIsTyping(el('INPUT', 'file')), true);
+  assert.equal(keyTargetIsTyping(el('SELECT')), true, 'un select bloquea para no disparar su salto por tecla');
+  assert.equal(keyTargetIsTyping(el('TEXTAREA')), true);
+  assert.equal(keyTargetIsTyping(el('DIV', undefined, { isContentEditable: true })), true);
+  assert.equal(keyTargetIsTyping(el('INPUT', undefined)), true, 'un input sin type se trata como texto');
+});
+
 test('keyboard: left shift lowers a full octave and right shift raises it, clamped to visible octaves', () => {
   assert.equal(activeBaseMidi(60, -1, 3, 4), 48);
   assert.equal(activeBaseMidi(60, 1, 3, 4), 72);
@@ -213,15 +232,31 @@ test('keyboard: resalta en el mástil solo las posiciones del mismo MIDI sin toc
 
 test('keyboard synth: guitarra y bajo usan una cuerda pulsada que decae y se normaliza', () => {
   const { pluckWave } = require('../keyboard-section.js');
-  for (const options of [{ brightness: 0.92 }, { brightness: 0.35, damping: 0.9945 }]) {
-    const wave = pluckWave(44100, 220, 2.2, options);
-    assert.equal(wave.length, Math.ceil(44100 * 2.2));
-    const peak = Math.max(...Array.from(wave, Math.abs));
-    assert.ok(peak <= 0.85 + 1e-6, 'la onda se normaliza a 0.85');
-    const quarter = Math.floor(wave.length / 4);
-    const first = wave.slice(0, quarter).reduce((s, v) => s + Math.abs(v), 0);
-    const last = wave.slice(wave.length - quarter).reduce((s, v) => s + Math.abs(v), 0);
-    assert.ok(first > last * 5, 'la cuerda se extingue sola');
+  // PRNG determinista: el decaimiento del primer tramo depende de la semilla de
+  // Math.random, así que se fija para que la aserción no sea intermitente.
+  let state = 68;
+  const seeded = () => {
+    state = (state + 0x6D2B79F5) >>> 0;
+    let t = state;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  const originalRandom = Math.random;
+  Math.random = seeded;
+  try {
+    for (const options of [{ brightness: 0.92 }, { brightness: 0.35, damping: 0.9945 }]) {
+      const wave = pluckWave(44100, 220, 2.2, options);
+      assert.equal(wave.length, Math.ceil(44100 * 2.2));
+      const peak = Math.max(...Array.from(wave, Math.abs));
+      assert.ok(peak <= 0.85 + 1e-6, 'la onda se normaliza a 0.85');
+      const quarter = Math.floor(wave.length / 4);
+      const first = wave.slice(0, quarter).reduce((s, v) => s + Math.abs(v), 0);
+      const last = wave.slice(wave.length - quarter).reduce((s, v) => s + Math.abs(v), 0);
+      assert.ok(first > last * 5, 'la cuerda se extingue sola');
+    }
+  } finally {
+    Math.random = originalRandom;
   }
 });
 

@@ -26,6 +26,22 @@ function keyOffsetFor(event) {
   return KEY_CODES[event.code];
 }
 
+// ¿El foco está en un campo donde las teclas deben escribir y no tocar notas?
+// Los switchs, radios y el slider de volumen NO bloquean las teclas musicales:
+// el clic los deja enfocados pero igual se puede tocar después.
+function keyTargetIsTyping(target) {
+  if (!target || typeof target.tagName !== 'string') return false;
+  var tagname = target.tagName.toUpperCase();
+  if (tagname === 'TEXTAREA' || target.isContentEditable) return true;
+  if (tagname === 'SELECT') return true;
+  if (tagname === 'INPUT') {
+    var type = String(target.type || 'text').toLowerCase();
+    return type === 'text' || type === 'search' || type === 'url' || type === 'email'
+      || type === 'tel' || type === 'number' || type === 'password' || type === 'date' || type === 'file';
+  }
+  return false;
+}
+
 function keyboardMidiFor(octave, semitone) { return 12 * (octave + 1) + semitone; }
 
 // Genera las teclas visibles. Las blancas llevan índice 0-based dentro del
@@ -393,6 +409,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = {
   keyLetter: keyLetter,
   activeBaseMidi: activeBaseMidi,
   keyOffsetFor: keyOffsetFor,
+  keyTargetIsTyping: keyTargetIsTyping,
   mastilKeyToggle: mastilKeyToggle,
   keyboardLayoutClasses: keyboardLayoutClasses,
   chordFromNotes: chordFromNotes,
@@ -692,7 +709,11 @@ if (typeof document !== 'undefined') (function () {
     if (event.code === 'ShiftLeft') { shiftLeft = true; if (!panel.hidden) render(); return; }
     if (event.code === 'ShiftRight') { shiftRight = true; if (!panel.hidden) render(); return; }
     var target = event.target;
-    if (target && (target.tagName === 'INPUT' || target.tagName === 'SELECT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
+    // Los campos de escritura (y los select) no interceptan las teclas para
+    // que se pueda tipear; los switchs y el slider de volumen se dejan pasar.
+    if (keyTargetIsTyping(target)) return;
+    if (target && target.tagName === 'INPUT'
+      && (event.key === ' ' || event.code === 'Enter' || /^Arrow/.test(event.key))) return;
     if (event.altKey || event.metaKey || event.ctrlKey) return;
     if (event.code === 'Enter' && keyboardLiveEnabled()) {
       if (keyboardLive) addKeyboardLiveChord();
