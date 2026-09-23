@@ -47,7 +47,7 @@ En móvil, el mástil se desplaza horizontalmente sin comprimir sus proporciones
 2. Arrastra las tarjetas para ordenar, haz doble clic para duplicar o usa clic derecho / × para eliminar. El selector de cada tarjeta ajusta su duración (¼, ½, ¾, 1, 1½, 2, 3 o 4 compases). Se conserva al menos una tarjeta.
 3. Con teclado, Enter o Espacio seleccionan; Alt + flechas mueve el acorde y mantiene el foco.
 4. La flecha de vista alterna entre filas y una sola fila horizontal.
-5. Abre la burbuja **Secciones del tema**, junto a **Tu vuelta armónica**. Dentro de **Crear sección**, elige nombre, rango de números de tarjeta y repeticiones.
+5. Abre la burbuja **Secciones del tema**, a la derecha de las tarjetas de progresión. Dentro de **Crear sección**, elige nombre, rango de números de tarjeta y repeticiones.
 6. Pulsa una tarjeta de sección para ver sus acordes. **Todos los acordes** recupera la lista completa. Arrastra el asa de una sección o usa sus flechas para cambiar el orden.
 
 Con secciones, el acompañamiento sigue esa lista y sus repeticiones, sin duplicar tarjetas. Cambia automáticamente de sección y muestra el acorde y la vuelta debajo de las tarjetas. Sin secciones, reproduce la progresión completa.

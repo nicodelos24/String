@@ -211,15 +211,10 @@ footer {
 .panel-heading h2,
 .board-toolbar h2,
 .progression-header h2,
-.progression-header-inline h3,
 .next-section h2 {
   margin: 0;
   font-size: 17px;
   letter-spacing: -.03em;
-}
-
-.progression-header-inline h3 {
-  font-size: 14px;
 }
 
 .legend-heading h2 {
@@ -470,22 +465,6 @@ footer {
 
 .board-toolbar h2 {
   font-size: 19px;
-}
-
-.progression-header-inline {
-  display: flex;
-  align-items: end;
-  justify-content: space-between;
-  margin-bottom: 12px;
-}
-
-.progression-header-inline .eyebrow {
-  margin: 0 0 8px;
-}
-
-.progression-header-inline h3 {
-  margin: 0;
-  font-size: 13px;
 }
 
 .icon-button,
@@ -1012,7 +991,12 @@ html[data-theme="dark"] .board-add-button {
 #section-list li span { flex: 1; overflow-wrap: anywhere; min-width: 0; }
 .contextual-help { margin: 8px 0; }
 .inline-help.contextual-help > p { position: static; width: auto; max-width: 100%; box-sizing: border-box; margin-top: 8px; font: 11px/1.6 var(--sans); }
-.progression-view-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin: 8px 0; font: 11px var(--mono); color: var(--muted); }
+.progression-view-controls { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; font: 11px var(--mono); color: var(--muted); }
+.progression-stack { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; column-gap: 10px; min-width: 0; }
+.progression-stack > .progression { min-width: 0; margin-bottom: 6px; }
+.progression-stack > .progression-view-controls { margin-top: 2px; }
+.progression-stack .follow-midi { margin: 0; }
+.progression-stack > .progression-view-controls .inline-help p { top: auto; bottom: calc(100% + 8px); left: auto; right: 0; white-space: normal; width: 250px; }
 .progression-disclosure { display: grid; place-items: center; width: 32px; height: 32px; padding: 0; border: 1px solid var(--line); border-radius: 8px; background: var(--paper-light); cursor: pointer; }
 .progression-disclosure:hover { background: #f1e8dc; }
 .progression-disclosure:focus-visible { outline: 2px solid var(--rust); outline-offset: 2px; }
@@ -1373,7 +1357,6 @@ footer {
   .control-panel, .fretboard-section, .legend-panel { min-width: 0; }
   .board-toolbar { flex-wrap: wrap; }
   .toolbar-buttons { width: 100%; gap: 6px; }
-  .progression-header-inline { flex-wrap: wrap; gap: 8px; }
   .player-controls label { max-width: 100%; flex-wrap: wrap; }
   .song-library input, .midi-panel input[type="file"] { max-width: 100%; min-width: 0; }
 }
@@ -1772,7 +1755,6 @@ footer {
 .fretboard-section.keyboard-split > * { flex: 0 0 100%; }
 /* Orden explícito de todos los hijos para que el piano y el mástil queden
    arriba, justo como en la estética de solo mástil, con el piano encima. */
-.fretboard-section.keyboard-split .progression-header-inline { order: 1; }
 .fretboard-section.keyboard-split .progression-workspace { order: 2; }
 .fretboard-section.keyboard-split .board-toolbar { order: 3; }
 .fretboard-section.keyboard-split .board-view-row { order: 4; }
@@ -1986,8 +1968,7 @@ footer {
 .progression-workspace { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; column-gap: 14px; }
 .progression-workspace > .sections-panel { grid-column: 2; grid-row: 1 / 4; margin: 8px 0; box-sizing: border-box; }
 .progression-workspace > .sections-panel[open] { width: 280px; }
-.progression-workspace > .progression-view-controls,
-.progression-workspace > .progression,
+.progression-workspace > .progression-stack,
 .progression-workspace > .progression-playback { grid-column: 1; min-width: 0; }
 .progression-workspace .section-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .progression-workspace .section-fields label:first-child { grid-column: 1 / -1; }
@@ -1996,6 +1977,9 @@ footer {
   .progression-workspace { grid-template-columns: minmax(0, 1fr); }
   .progression-workspace > .sections-panel { grid-column: 1; grid-row: auto; justify-self: end; }
   .progression-workspace > .sections-panel[open] { width: 100%; }
+  .progression-stack { grid-template-columns: minmax(0, 1fr); }
+  .progression-stack > .progression-view-controls { grid-column: 1; grid-row: auto; flex-direction: row; flex-wrap: wrap; align-items: center; margin: 2px 0 4px; }
+  .progression-stack > .progression-view-controls .inline-help p { top: calc(100% + 8px); bottom: auto; left: auto; right: 0; }
 }
 .sections-panel > summary { font-size: 11px; }
 #sections-maximize { margin-top: 10px; border-radius: 999px; cursor: pointer; }
@@ -2004,8 +1988,7 @@ footer {
 .progression-workspace.chords-expanded { grid-template-columns: minmax(0, 1fr); }
 .progression-workspace.sections-expanded > .sections-panel,
 .progression-workspace.chords-expanded > .sections-panel { grid-column: 1; grid-row: auto; width: 100%; }
-.progression-workspace.sections-expanded > .progression,
-.progression-workspace.sections-expanded > .progression-view-controls { display: none; }
+.progression-workspace.sections-expanded > .progression-stack { display: none; }
 .sections-expanded .sections-panel #section-list { grid-template-columns: repeat(auto-fit,minmax(min(100%,210px),1fr)); max-height: 420px; }
 .sections-expanded .section-chord-preview { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 5px; margin-top: 6px; }
 .sections-expanded .section-chord-preview > span { display: grid; gap: 3px; padding: 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--paper); min-width: 0; }
