@@ -866,8 +866,29 @@ footer {
 .board-add-row {
   display: flex;
   justify-content: center;
+  align-items: center;
+  gap: 10px;
   padding-right: 32px;
   margin: 14px 0 20px;
+}
+
+/* Indicador del acorde seleccionado, a la izquierda del botón. */
+.board-add-chord {
+  min-width: 2.4em;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--paper-light);
+  color: var(--ink);
+  font: 14px Georgia, serif;
+  font-weight: 700;
+  text-align: center;
+  box-shadow: 0 2px 0 rgba(201, 87, 53, 0.12);
+}
+
+html[data-theme="dark"] .board-add-chord {
+  background: var(--paper);
+  border-color: var(--line);
 }
 
 .board-add-button {

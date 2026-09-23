@@ -833,6 +833,7 @@ function updateView() {
   document.querySelector('#mode-display').textContent = selectedModeData.name;
   document.querySelector('#key-signature-chord').textContent = `Armadura: ${keySignatureText}`;
   document.querySelector('#board-title').textContent = `${rootNoteName}${chordSuffix} · ${selectedModeData.name}`;
+  document.querySelector('#board-add-chord').textContent = `${rootNoteName}${chordSuffix}`.replace(/#/g, '♯').replace(/b/g, '♭');
   document.querySelector('.board-eyebrow').textContent = `MÁSTIL / ${instruments[instrument].name.toUpperCase()}`;
 
   updateModeLegend();
