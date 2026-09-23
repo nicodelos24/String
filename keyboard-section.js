@@ -430,6 +430,7 @@ if (typeof document !== 'undefined') (function () {
   var delayIn = document.getElementById('keyboard-delay');
   var reverbIn = document.getElementById('keyboard-reverb');
   var volumeIn = document.getElementById('keyboard-volume');
+  var mastilVolumeIn = document.getElementById('mastil-volume');
   var closeBtn = document.getElementById('keyboard-close');
 
   var OCTAVE_START = 3, OCTAVE_COUNT = 4;
@@ -760,7 +761,13 @@ if (typeof document !== 'undefined') (function () {
   if (timbreSel) timbreSel.addEventListener('change', function () { synth.setTimbre(timbreSel.value); });
   if (delayIn) delayIn.addEventListener('change', function () { synth.setDelay(delayIn.checked); });
   if (reverbIn) reverbIn.addEventListener('change', function () { synth.setReverb(reverbIn.checked); });
-  if (volumeIn) volumeIn.addEventListener('input', function () { synth.setVolume(Number(volumeIn.value) / 100); });
+  var volumeInputs = []; if (volumeIn) volumeInputs.push(volumeIn); if (mastilVolumeIn) volumeInputs.push(mastilVolumeIn);
+  volumeInputs.forEach(function (input) {
+    input.addEventListener('input', function () {
+      synth.setVolume(Number(input.value) / 100);
+      volumeInputs.forEach(function (other) { if (other !== input) other.value = input.value; });
+    });
+  });
   if (closeBtn) closeBtn.addEventListener('click', function () {
     setMode('mastil');
     var mastilBtn = modeButtonFor('mastil');
