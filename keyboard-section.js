@@ -589,7 +589,11 @@ if (typeof document !== 'undefined') (function () {
     return !!section && section.classList.contains('keyboard-split');
   }
 
-  window.__liveChordActive = function () { return keyboardLivePhase() !== 'off' && mastilShown(); };
+  window.__liveChordActive = function () {
+    const keyboard = keyboardLivePhase() !== 'off' && mastilShown();
+    const microphone = typeof window.__microLiveActive === 'function' && window.__microLiveActive();
+    return keyboard || microphone;
+  };
 
   function keyboardLiveEnabled() {
     return !!liveRoot && keyboardLivePhase() !== 'off' && mastilShown();
