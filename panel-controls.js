@@ -38,6 +38,7 @@
       const metronome=window.StringMetronome;
       if(!metronome)return;
       if(metronome.running||metronome.starting){metronome.stop();return;}
+      window.syncTempoToMetronome?.();
       metronome.start().catch(()=>metronome.stop());
       return;
     }

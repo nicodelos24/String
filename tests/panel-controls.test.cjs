@@ -34,6 +34,7 @@ function setup() {
     fire(name){this.listeners[name]?.();},
     dispatchEvent(){},
     StringMetronome:metronome,
+    syncTempoToMetronome(){this.publishedTempo=true;},
   };
   const context={window:windowStub,
     document:{
@@ -79,4 +80,11 @@ test('leaving the Metrónomo source stops it; MIDI and Backtrack keep their own 
   assert.equal(metronome.stopped,1);
   assert.equal(element('progression-transport').hidden,false);
   assert.equal(element('midi-transport').hidden,true);
+});
+
+test('pressing quick-play with Metrónomo selected publishes the tempo field into the metronome',()=>{
+  const {element,switchButtons,windowStub}=setup();
+  switchButtons[2].handlers.click();
+  element('quick-play').listeners.click();
+  assert.equal(windowStub.publishedTempo,true,'Al dar play se publica el tempo del campo en el metrónomo');
 });

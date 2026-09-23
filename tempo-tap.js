@@ -1,7 +1,9 @@
 // Botón «Tempo» por pulsaciones: con al menos dos clics estima el BPM. El valor
 // se muestra en un campo editable que también aplica cambios manuales y se
-// mantiene sincronizado con el acompañamiento, con el metrónomo y con el video
-// si hay referencia. El MIDI no se toca: conserva su propio tempo.
+// mantiene sincronizado con el acompañamiento y con el video si hay referencia.
+// Solo si la fuente activa es «Metrónomo» se fija también su tempo (al tocar/
+// editar tempo y también al dar play con esa fuente). El MIDI no se toca:
+// conserva su propio tempo.
 (() => {
   const button = document.querySelector('#tempo-tap');
   const bpmInput = document.querySelector('#tempo-tap-bpm');
@@ -9,15 +11,21 @@
   const playerBpm = document.querySelector('#player-bpm');
   const videoBpm = document.querySelector('#video-bpm');
   let taps = [];
-  const applyBpm = (bpm) => {
-    if (playerBpm) playerBpm.value = bpm;
-    if (videoBpm) videoBpm.value = bpm;
+  const syncTempoToMetronome = () => {
+    const sourceButton = document.querySelector('[data-source][aria-pressed="true"]');
+    if (!sourceButton || sourceButton.dataset.source !== 'metronome') return;
     const metroBpm = document.querySelector('#metronome-bpm');
     const metronome = globalThis.StringMetronome;
     if (metronome && typeof metronome.setTempo === 'function') {
-      const value = metronome.setTempo(bpm);
+      const value = metronome.setTempo(Number(bpmInput.value) || 100);
       if (metroBpm) metroBpm.value = value;
     }
+  };
+  globalThis.syncTempoToMetronome = syncTempoToMetronome;
+  const applyBpm = (bpm) => {
+    if (playerBpm) playerBpm.value = bpm;
+    if (videoBpm) videoBpm.value = bpm;
+    syncTempoToMetronome();
   };
   const clampedBpm = () => Math.min(240, Math.max(30, Math.round(Number(bpmInput.value) || 100)));
   document.querySelectorAll('.tempo-tap-step').forEach(step => step.addEventListener('click', () => {

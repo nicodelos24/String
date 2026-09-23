@@ -120,6 +120,7 @@ else {
   }
   button.addEventListener('click', async () => {
     if (metronome.running || metronome.starting) { metronome.stop(); return; }
+    window.syncTempoToMetronome?.();
     status.textContent = 'Iniciando...';
     try { await metronome.start(); }
     catch { metronome.stop(); status.textContent = 'No se pudo iniciar el audio. Volvé a intentar.'; }

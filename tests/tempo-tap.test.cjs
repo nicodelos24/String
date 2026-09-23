@@ -6,7 +6,9 @@ const path=require('node:path');
 
 function setup() {
   const elements=new Map();
+  const source={dataset:{source:'progression'}};
   function element(key) {
+    if(key==='[data-source][aria-pressed="true"]')return source;
     if(!elements.has(key)){
       const el={
         handlers:{},_value:'100',dataset:{},
@@ -27,17 +29,29 @@ function setup() {
     StringMetronome:metronome,
   });
   vm.runInContext(fs.readFileSync(path.join(__dirname,'../tempo-tap.js'),'utf8'),ctx);
-  return {element,clock,metronome};
+  return {element,clock,metronome,source,global:vm.runInContext('globalThis',ctx)};
 }
 
+test('tempo tap: syncTempoToMetronome publishes the field tempo, only with the metronome source active',()=>{
+  const {element,metronome,source,global}=setup();
+  const bpmInput=element('#tempo-tap-bpm'),metroBpm=element('#metronome-bpm');
+  bpmInput.value='130';metroBpm.value='90';metronome.tempo=90;
+  source.dataset.source='progression';global.syncTempoToMetronome();
+  assert.equal(metroBpm.value,'90','Con otra fuente no publica el tempo');
+  assert.equal(metronome.tempo,90);
+  source.dataset.source='metronome';global.syncTempoToMetronome();
+  assert.equal(metroBpm.value,'130');
+  assert.equal(metronome.tempo,130,'Al dar play publica el tempo del campo');
+});
+
 test('tempo tap: two clicks estimate the BPM and write the editable field, accompaniment, video and metronome',()=>{
-  const {element,clock,metronome}=setup();
+  const {element,clock,metronome,source}=setup();
   const button=element('#tempo-tap'),bpmInput=element('#tempo-tap-bpm');
   const playerBpm=element('#player-bpm'),videoBpm=element('#video-bpm'),metroBpm=element('#metronome-bpm');
   assert.equal(bpmInput.value,'100');
   clock.now=0;button.handlers.click();
   assert.equal(bpmInput.value,'100');
-  clock.now=500;button.handlers.click();
+  clock.now=500;source.dataset.source='metronome';button.handlers.click();
   assert.equal(bpmInput.value,'120');
   assert.equal(playerBpm.value,'120');
   assert.equal(videoBpm.value,'120');
@@ -45,12 +59,27 @@ test('tempo tap: two clicks estimate the BPM and write the editable field, accom
   assert.equal(metronome.tempo,120,'El metrónomo recibe el tempo pulsado');
 });
 
+test('tempo tap: without metronome selected, the tempo buttons leave the metronome untouched',()=>{
+  const {element,clock,metronome,source}=setup();
+  const button=element('#tempo-tap');
+  const playerBpm=element('#player-bpm'),videoBpm=element('#video-bpm'),metroBpm=element('#metronome-bpm');
+  source.dataset.source='progression';metroBpm.value='90';metronome.tempo=90;
+  clock.now=0;button.handlers.click();
+  clock.now=500;button.handlers.click();
+  assert.equal(playerBpm.value,'120');
+  assert.equal(videoBpm.value,'120');
+  assert.equal(metroBpm.value,'90','El campo del metrónomo no cambia');
+  assert.equal(metronome.tempo,90,'El tempo del metrónomo no cambia');
+});
+
 test('tempo tap: manual edits apply the BPM with limits and the accompaniment field stays in sync',()=>{
-  const {element,metronome}=setup();
+  const {element,metronome,source}=setup();
   const bpmInput=element('#tempo-tap-bpm'),playerBpm=element('#player-bpm'),videoBpm=element('#video-bpm'),metroBpm=element('#metronome-bpm');
   bpmInput.value='90';bpmInput.handlers.change();
   assert.equal(playerBpm.value,'90');
   assert.equal(videoBpm.value,'90');
+  source.dataset.source='metronome';bpmInput.handlers.change();
+  assert.equal(playerBpm.value,'90');
   assert.equal(metroBpm.value,'90');
   assert.equal(metronome.tempo,90,'La edición manual también fija el metrónomo');
   bpmInput.value='999';bpmInput.handlers.change();
@@ -74,10 +103,10 @@ test('tempo tap: far-apart taps restart the estimation window',()=>{
 });
 
 test('tempo tap: stepper arrows adjust the BPM by one with the same limits',()=>{
-  const {element}=setup();
+  const {element,source}=setup();
   const up=element('.tempo-tap-step[data-step="1"]'),down=element('.tempo-tap-step[data-step="-1"]');
   const bpmInput=element('#tempo-tap-bpm'),playerBpm=element('#player-bpm'),metroBpm=element('#metronome-bpm');
-  bpmInput.value='90';up.handlers.click();
+  bpmInput.value='90';source.dataset.source='metronome';up.handlers.click();
   assert.equal(bpmInput.value,'91');
   assert.equal(playerBpm.value,'91');
   assert.equal(metroBpm.value,'91');
