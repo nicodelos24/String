@@ -48,6 +48,7 @@
         beats: validBeats(item.beats)
       };
     });
+    if (!chords.length) { status.textContent = 'No hay tarjetas para reproducir. Añade acordes primero.'; return; }
     setBusy(true);
     status.textContent = 'Iniciando…';
     try { await player.start(chords, {bpm: Number(bpm.value), loop: loop.checked,

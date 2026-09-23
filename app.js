@@ -879,8 +879,13 @@ function beatsLabel(value) { return beatLabels[validBeats(value)]; }
 function renderProgression() {
   if (draggingProgressionItem) return;
   const entries=globalThis.StringSections?globalThis.StringSections.visible():progression.map((item,index)=>({item,index}));
+  const list=document.querySelector('#progression');
+  if(!entries.length){
+    list.innerHTML=progression.length?'':'<p class="progression-empty">Sin acordes. Elige una nota y pulsa «añadir acorde» para empezar.</p>';
+    return;
+  }
   let cursor = 0; // Pulsos acumulados: marcan el inicio de cada compás de 4/4.
-  document.querySelector('#progression').innerHTML = entries.map(({item,index}) => {
+  list.innerHTML = entries.map(({item,index}) => {
     const type = chordTypes.find(candidate => candidate.value === item.type);
     const beats = validBeats(item.beats);
     const barNumber = Math.floor(cursor / 4) + 1;
@@ -1023,11 +1028,14 @@ function addProgressionChord() {
 }
 
 function removeProgressionChord(index) {
-  if (progression.length <= 1 || !progression[index]) return;
+  if (!progression[index]) return;
   progressionEdited=true;
   progression.splice(index, 1);
   saveCustomProgression();
-  if (activeProgression === index) {
+  if (progression.length === 0) {
+    activeProgression = -1;
+    renderProgression();
+  } else if (activeProgression === index) {
     selectProgressionChord(Math.min(index, progression.length - 1));
   } else {
     if (activeProgression > index) activeProgression--;

@@ -85,8 +85,10 @@ test('defaults show scale names and triads; duplicated chords are independent co
   assert.equal(run('progression.length'),2);assert.equal(run('activeProgression'),1);
   assert.equal(run('progression[0]===progression[1]'),false);
   assert.equal(run('JSON.stringify(progression[0])'),run('JSON.stringify(progression[1])'));
-  run("progression[1].mode='phrygian';removeProgressionChord(1);removeProgressionChord(0)");
+  run("progression[1].mode='phrygian';removeProgressionChord(1)");
   assert.equal(run('progression.length'),1);assert.equal(run('progression[0].mode'),'dorian');
+  run('removeProgressionChord(0)');
+  assert.equal(run('progression.length'),0);
 });
 
 test('modal chord views highlight only degrees 1-3-5 and 1-3-5-7 of each mode',()=>{
@@ -177,7 +179,25 @@ test('deleting before or at the active chord keeps selection consistent', () => 
   run('removeProgressionChord(1);');
   assert.equal(element('#chord-readout').textContent,'C');
   run('removeProgressionChord(0); removeProgressionChord(0);');
+  assert.equal(run('progression.length'),0);
+  assert.equal(run('activeProgression'),-1);
+});
+
+test('deleting all cards empties the progression and shows the empty hint', () => {
+  const {run,element} = setup();
+  run('progression=[{root:0,type:"maj",beats:4},{root:5,type:"m7",beats:4},{root:7,type:"7",beats:4}]');
+  run('selectProgressionChord(1); removeProgressionChord(1);');
+  assert.equal(run('progression.length'),2);
+  assert.equal(element('#chord-readout').textContent,'G7');
+  run('removeProgressionChord(0); removeProgressionChord(0);');
+  assert.equal(run('progression.length'),0);
+  assert.equal(run('activeProgression'),-1);
+  run('renderProgression()');
+  assert.match(element('#progression').innerHTML,/progression-empty/);
+  run('addProgressionChord();');
   assert.equal(run('progression.length'),1);
+  assert.equal(run('activeProgression'),0);
+  assert.equal(run('progression[0].type'),'7');
 });
 
 test('changing quality detaches the draft without modifying saved chords', () => {
