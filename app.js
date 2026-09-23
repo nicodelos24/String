@@ -189,6 +189,19 @@ let progression = [{ root: 0, type: 'maj' }, { root: 5, type: 'm7' }, { root: 7,
 const initialProgression=progression;
 const initialProgressionSnapshot=JSON.stringify(progression);
 let progressionEdited=false;
+const customProgressionKey='traste.customProgression.v1';
+function saveCustomProgression(){
+  if(typeof localStorage==='undefined')return;
+  try{
+    localStorage.setItem(customProgressionKey, JSON.stringify(progression.map(item=>({
+      root:item.root,
+      rootNoteName:item.rootNoteName||undefined,
+      type:item.type,
+      mode:item.mode,
+      beats:validBeats(item.beats)
+    }))));
+  }catch{/* Sin almacenamiento: la opción «Mi progresión» usa la progresión actual. */}
+}
 let selectedFretMidi=null;
 let activeProgression = 0;
 let playingProgressionItem = null;
@@ -986,6 +999,7 @@ function moveProgressionChord(from, to) {
   const [item] = progression.splice(from, 1);
   progression.splice(to, 0, item);
   activeProgression = selected ? progression.indexOf(selected) : -1;
+  saveCustomProgression();
   renderProgression();
 }
 
@@ -994,6 +1008,7 @@ function duplicateProgressionChord(index) {
   progression.splice(index + 1, 0, {...progression[index]});
   globalThis.StringSections?.include(progression[index],progression[index+1]);
   progressionEdited=true;
+  saveCustomProgression();
   selectProgressionChord(index + 1);
 }
 
@@ -1003,6 +1018,7 @@ function addProgressionChord() {
   progression.push({ root, rootNoteName, type: chordType.value, mode: selectedMode, ghostMode, beats: 4 });
   globalThis.StringSections?.include(null,progression[progression.length-1]);
   activeProgression = progression.length - 1;
+  saveCustomProgression();
   renderProgression();
 }
 
@@ -1010,6 +1026,7 @@ function removeProgressionChord(index) {
   if (progression.length <= 1 || !progression[index]) return;
   progressionEdited=true;
   progression.splice(index, 1);
+  saveCustomProgression();
   if (activeProgression === index) {
     selectProgressionChord(Math.min(index, progression.length - 1));
   } else {
@@ -1033,6 +1050,7 @@ document.querySelector('#progression').addEventListener('change', event => {
   if (!item || validBeats(item.beats) === beats) return;
   item.beats = beats;
   progressionEdited = true;
+  saveCustomProgression();
   renderProgression();
 });
 document.querySelector('#add-chord').addEventListener('click', addProgressionChord);

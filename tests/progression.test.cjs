@@ -390,3 +390,15 @@ test('duraciones: cada tarjeta expone su duración y respeta el predeterminado',
   run('addProgressionChord()');
   assert.equal(run('progression.at(-1).beats'),4);
 });
+
+test('mi progresión: los cambios en las tarjetas se guardan solos en el slot',()=>{
+  const {run}=setup();
+  run("localStorage={_s:{},getItem(k){return this._s[k]??null;},setItem(k,v){this._s[k]=String(v);}}");
+  const saved=()=>JSON.parse(run("localStorage.getItem('traste.customProgression.v1')")||'null');
+  run('addProgressionChord()');
+  assert.equal(saved().length,5,'Añadir una tarjeta guarda el slot');
+  run("progression=[{root:0,type:'maj',beats:4},{root:5,type:'m7',beats:2}];saveCustomProgression()");
+  assert.deepEqual(saved().map(c=>[c.root,c.type,c.beats]),[[0,'maj',4],[5,'m7',2]]);
+  run("progression[0].beats=1;saveCustomProgression()");
+  assert.deepEqual(saved().map(c=>[c.root,c.type,c.beats]),[[0,'maj',1],[5,'m7',2]]);
+});

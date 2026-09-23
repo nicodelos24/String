@@ -68,7 +68,7 @@ El botón **Tempo** junto a ese acceso estima el BPM con dos o más pulsaciones 
 - Plegar Acompañamiento no detiene el audio.
 - Cada tarjeta dura un compás de cuatro pulsos por defecto; su selector ajusta la duración y el acompañamiento la respeta. BPM entre 30 y 240.
 - Estilos: Sin ritmo, Pop / rock, Jazz suave, Trap suave, Funk, Bossa suave, Reggaetón suave, Reggae, Disco y Balada.
-- Plantillas: jazz ii–V–I, blues de 12 compases (La y Fa con turnaround), Autumn Leaves, turnaround I–vi–ii–V, pop, balada, reggae y disco. Usarlas reemplaza las tarjetas y ajusta estilo y tempo.
+- Plantillas: **Mi progresión** (se guarda sola al editar las tarjetas y siempre se puede volver a elegir), jazz ii–V–I, blues de 12 compases (La y Fa con turnaround), Autumn Leaves, turnaround I–vi–ii–V, pop, balada, reggae y disco. Usarlas reemplaza las tarjetas y ajusta estilo y tempo, salvo «Mi progresión», que solo restaura las tarjetas.
 - Volumen general y percusión se pueden ajustar; el metrónomo es independiente.
 
 En **Acompañamiento → Importar acordes MIDI**, elige un archivo de hasta 2 MB. El importador lee MIDI estándar de formato 0/1 con división PPQ y reconoce grupos de notas que empiezan juntas. No deduce acordes de arpegios.

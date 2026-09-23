@@ -24,8 +24,30 @@ const progressionPresets={
   turnaround:{name:'Jazz · I–vi–ii–V en Do',bpm:110,style:'jazz',chords:[{root:0,type:'maj7',mode:'ionian'},{root:9,type:'m7',mode:'aeolian'},{root:2,type:'m7',mode:'dorian'},{root:7,type:'7',mode:'mixolydian'}]}
 };
 if(typeof document!=='undefined')document.querySelector('#apply-preset').addEventListener('click',()=>{
-  const preset=progressionPresets[document.querySelector('#progression-preset').value];
-  if(!preset || draggingProgressionItem)return;
+  const key=document.querySelector('#progression-preset').value;
+  if(draggingProgressionItem)return;
+  if(key==='custom'){
+    let chords=null;
+    if(typeof localStorage!=='undefined'){
+      try{
+        const raw=localStorage.getItem(customProgressionKey);
+        const parsed=raw?JSON.parse(raw):null;
+        if(Array.isArray(parsed)&&parsed.length)chords=parsed.map(item=>({
+          root:item.root,rootNoteName:item.rootNoteName,type:item.type,mode:item.mode,beats:item.beats
+        }));
+      }catch{/* Sin guardado previo: se usa la progresión actual. */}
+    }
+    if(!chords||!chords.length)chords=progression.map(item=>({...item}));
+    window.dispatchEvent(new Event('traste:load-song'));
+    progression=chords;progressionEdited=true;playingProgressionItem=null;
+    selectProgressionChord(0);
+    window.dispatchEvent(new Event('traste:preset-applied'));
+    const compases=Math.round(chords.reduce((sum,chord)=>sum+(Math.abs(Number(chord.beats))||4),0)/4);
+    document.querySelector('#preset-status').textContent=`Mi progresión · ${compases} compases. Se guarda sola cuando editas las tarjetas.`;
+    return;
+  }
+  const preset=progressionPresets[key];
+  if(!preset)return;
   window.dispatchEvent(new Event('traste:load-song'));
   progression=preset.chords.map(chord=>({...chord}));progressionEdited=true;playingProgressionItem=null;
   selectProgressionChord(0);

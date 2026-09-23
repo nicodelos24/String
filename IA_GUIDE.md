@@ -211,3 +211,7 @@ Falta corregir errores de las implementaciones de micrófono
 - Retoque del switch de tema: solo se dibuja el símbolo activo, centrado en la píldora y más grande (12px). Al cambiar de modo, el símbolo saliente se desliza hacia su lado (♭ → izquierda, ♯ → derecha) y el entrante entra desde el suyo, con fade de 0.28s. Se mantienen los colores ♯ ámbar `#d9952a` (claro) y ♭ tono luna `#f1f0e8` (oscuro). `npm test` → 173/173. Pendiente tu revisión visual.
 
 - Retoque del switch de tema: ahora el símbolo activo se posiciona en su lado, como un switch real — ♯ (sol) a la derecha en modo claro y ♭ (luna) a la izquierda en modo oscuro. Al alternar, el símbolo cruza la píldora de un lado al otro con fade (0.28s). `npm test` → 173/173. Pendiente tu revisión visual.
+
+* Quisiera que dentro de las opciones predeterminadas de la página haya una progresión propia que se guarde automáticamente si la cambio y pueda seleccionarla aunque la cambie.
+
+- Implementado: la plantilla «Mi progresión» (primera opción del selector de Progresiones de partida) parte con la progresión por defecto de la página y se guarda sola en `localStorage` (`traste.customProgression.v1`) al editar tarjetas: añadir, duplicar, mover, eliminar, cambiar duración y el acorde añadido por el teclado en vivo. Aplicarla restaura las tarjetas guardadas sin tocar BPM ni estilo; las demás plantillas no sobrescriben el slot. `npm test` → 180/180. Pendiente tu prueba real.

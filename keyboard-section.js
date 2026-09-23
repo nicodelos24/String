@@ -664,6 +664,7 @@ if (typeof document !== 'undefined') (function () {
     var item = { root: keyboardLive.root, rootNoteName: noteName(keyboardLive.root), type: keyboardLive.type, mode: keyboardLive.mode, ghostMode: '', beats: 4 };
     progression.push(item);
     progressionEdited = true;
+    if (typeof saveCustomProgression === 'function') saveCustomProgression();
     if (globalThis.StringSections && globalThis.StringSections.include) globalThis.StringSections.include(null, item);
     if (typeof renderProgression === 'function') renderProgression();
   }
