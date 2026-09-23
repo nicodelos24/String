@@ -219,3 +219,32 @@ Falta corregir errores de las implementaciones de micrófono
 * Quisiera que los controles visibles que voy modificando queden siempre iguales al volver a abrir la página.
 
 - Implementado: `preferences.js` (cargado al final de `index.html`) guarda automáticamente un snapshot en `localStorage` (`traste.preferences.v1`) ante cualquier cambio de los controles visibles: instrumento, nota raíz (tecla del piano) y su armadura, calidad y modo (incluida la vista pentatónica), modo fantasma, fuente de reproducción (Backtrack/MIDI/Metrónomo), vista/notas/grados de las tarjetas y el mástil, disposición de las tarjetas (fila/grid), modos Mástil/Teclado/Ambos, acorde en vivo y escala en vivo, BPM/estilo/loop/percusión y volúmenes del acompañamiento, tempos/compases/acento/volumen del metrónomo, timbre/delay/reverb/volumen del sintetizador, «Seguir acorde MIDI», bloqueo de escala y video flotante. Al cargar se restaura disparando los mismos eventos que maneja cada control; los guardados inválidos se ignoran. El tema ya se persistía por separado (`string.theme`). `npm test` → 185/185 (tests en `tests/preferences.test.cjs`). Pendiente tu prueba real en navegador.
+
+*Me gustaria poder borrar todas las tarjeatas, no veo necesario que deba quedar siempre al menos una
+
+  - Implementado: se permite eliminar todas las tarjetas de la progresión. Al quedar vacía, se muestra un aviso «Sin acordes» en el área de tarjetas y el acompañamiento lo informa si intentas reproducir; los acordes añadidos después se comportan como siempre. Las secciones que quedaban sin tarjetas se depuran automáticamente. `npm test` → 186/186 (tests de estado vacío y selección al borrar). Pendiente tu revisión visual.
+
+*Quisiera reordenar algunas cosas, en primer lugar Que el botón Añadir acorde, se muestre también arriba del teclado cuando estan ambos seleccionados, y que tenga menos alto el botón, mas o menos el mismo que el cuadro a la izquierda donde aparece el acorde que se seleccionó
+
+Quisiera que las teclas del pc se cambien, actualmente es a=c s=d d=e, etc yo quisiera que sea a=a s=b d=c,etc y que se reacomoden las otras con respecto a esto mismo, por ejemplo abajo quedaría z=e x=f, etc y arriba los bemoles q=ab/g# w=a#/bb etc (las téclas que no tengan un # o b correspondiente simplemente asígnale la misma nota que abajo, ej f o c que no tienen tecla negra de por medio)
+
+  - Implementado: las teclas del PC se reasignaron tomando `a` como el la de la 5.ª cuerda de la guitarra (A2). Fila media `a s d f g h j k l ñ` = la si do re mi fa sol la si do; fila grave `z x c v b n m , . -` = mi fa sol la si do re mi fa sol (z = mi de la 6.ª cuerda); fila superior en columnas `q w e r t y u i o p` = ab/g#, a#/bb, … con las que no tienen tecla negra debajo tocando la misma nota natural de su columna (`e`=do, `t`=mi, `y`=fa, `p`=do, como pediste). El piano visible pasó a C3–B6 (4 octavas) y suena por defecto una octava más alta que la guitarra (`a`=A3, 220 Hz, octava por encima del la de la 5.ª cuerda); el modo mástil conserva su base (a=C4 guitarra / C2 bajo). `npm test` → 186/186 (tests de mapeo actualizados en `tests/keyboard-section.test.cjs`). Pendiente tu prueba real en navegador.
+
+Los controles de apagado/ nota/ acorde/ de Escala en vivo, deberían aparecer solo cuando se enciende el micrófono, y en lo posible que se vean más cerca de la sección de micrófono, en cambio el switch de apagado/ nota/ acorde de abajo (el de acorde en vivo) debería mostrarse donde actualmente está el de Escala en vivo, ya que este de abajo es el que está vinculado al teclado del pc, así que tiene sentido que se muestre cerca del teclado en pantalla
+
+  - Implementado: «Acorde en vivo» (teclado del PC) se movió a la fila de controles junto al switch de Pentatónicas y el botón ＋ de añadir acorde; «Escala en vivo» (micrófono) ahora se muestra junto al botón Micrófono y solo aparece (sin el atributo hidden) cuando el micrófono está encendido (`microphone-ui.js`), ocultándose al detenerlo o ante error. `npm test` → 186/186.
+
+Quisiera reasignar algunas teclas (tener en cuenta que tengo el teclado en latam): T= D#/eb
+´= c#/db
++= D#/eb
+}= e
+
+  - Implementado: `t` → d#/eb y las posiciones sin letra fija del latam por código físico: `´` (BracketLeft) = c#/db, `+` (Equal) = d#/eb y `}` (BracketRight) = e. Se conservan la comilla (Quote) = d y `ñ`/`;` = C. Tests de mapeo actualizados; `npm test` → 186/186. Pendiente tu prueba real en navegador con teclado latam.
+
+Además dentro del piano expansible me gustaría ver el switch entre bemol o sostenido para los acordes que pongo y qué nota se muestra en las teclas negras
+
+  - Implementado: switch ♯/♭ en los controles del piano (etiqueta estilo Delay/Reverb). Es un espejo del switch ♯/♭ de la raíz del mástil (`#root-spelling`): cambia los nombres de las teclas negras (C#→Db, D#→Eb, F#→Gb, G#→Ab, A#→Bb) y se guarda con las preferencias. `npm test` → 186/186.
+
+y además en modo oscuro el teclado expansible se ve mal, no respeta el color de las teclas blancas y todas se ven oscuras
+
+  - Implementado: en modo oscuro las teclas blancas del piano mantienen su color claro exactamente igual que el mástil y el piano raíz (`.keyboard-keys` incluido en el reseteo de paleta oscura de `style.css`). `npm test` → 186/186.

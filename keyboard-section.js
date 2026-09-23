@@ -3,19 +3,27 @@
 // izquierdo: «Mástil» (solo el mástil, las teclas lo tocan con el sonido del
 // instrumento), «Teclado» (el piano reemplaza el mástil) y «Ambos» (el piano
 // junto al mástil; las teclas tocan solo el piano y el mástil muestra las notas
-// del micrófono). Teclas naturales: z x c v b n m , . - (fila grave y su cola:
-// sol la si do re mi fa sol la si), a s d f g h j k l ñ { (media y aguda);
-// sostenidos: w e t y u o p ´ +. Shift izquierdo baja una octava y derecho la
-// sube. Sintetizador polifónico con timbres, efectos y control de volumen
+// del micrófono). Teclas naturales de la fila media: a s d f g h j k l ñ ;
+// = A B C D E F G A B C (a suena una octava más alta que el la de la 5.ª
+// cuerda: A3, 220 Hz, octava por defecto del piano).
+// Fila grave: z x c v b n m , . - = E F G A B C D E F G (z usa el mi de la
+// 6.ª cuerda). Accidentales en la fila superior: q w e r t y u i o p, uno por
+// columna sobre cada natural (q=ab/g#, w=a#/bb, …) y las que no tienen tecla
+// negra debajo tocan la misma nota natural de su columna (e, y, p); t queda
+// d#/eb y las posiciones sin letra fija (´, +, }) completan c#/db, d#/eb y e
+// para el teclado latam. Shift izquierdo baja una octava y derecho la sube.
+// Sintetizador polifónico con timbres, efectos y control de volumen
 // (compartido por el piano y el mástil). La lógica pura y el sintetizador se
 // exportan para pruebas sin navegador.
 
 var WHITE_SEMITONES = [0, 2, 4, 5, 7, 9, 11];
 var BLACK_SPECS = [[1, 1], [3, 2], [6, 4], [8, 5], [10, 6]];
-var KEY_OFFSETS = { a: 0, w: 1, s: 2, e: 3, d: 4, f: 5, t: 6, g: 7, y: 8, h: 9, u: 10, j: 11, k: 12, o: 13, l: 14, p: 15, ñ: 16, ';': 16, '{': 17, '´': 18, '+': 20, z: -5, x: -3, c: -1, v: 0, b: 2, n: 4, m: 5, ',': 7, '.': 9, '-': 11 };
+var KEY_OFFSETS = { a: 0, s: 2, d: 3, f: 5, g: 7, h: 8, j: 10, k: 12, l: 14, ñ: 15, ';': 15, q: -1, w: 1, e: 3, r: 4, t: 6, y: 8, u: 9, i: 11, o: 13, p: 15, z: -5, x: -4, c: -2, v: 0, b: 2, n: 3, m: 5, ',': 7, '.': 8, '-': 10 };
 // Posiciones físicas que cambian de carácter según el idioma del teclado y
 // palabras muertas (acentos), identificadas por código en vez de por letra.
-var KEY_CODES = { Semicolon: 16, Quote: 17, BracketLeft: 18, Equal: 20 };
+// Teclado latam: ´ (BracketLeft) = c#/db, + (Equal) = d#/eb y } (BracketRight)
+// = e por encima de la fila media; la comilla (Quote) conserva la natural D4.
+var KEY_CODES = { Semicolon: 15, Quote: 17, BracketLeft: 16, Equal: 18, BracketRight: 19 };
 var KEYBOARD_NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
 // Offset para una tecla según su letra o, si esa posición no tiene letra fija
@@ -432,9 +440,13 @@ if (typeof document !== 'undefined') (function () {
   var volumeIn = document.getElementById('keyboard-volume');
   var mastilVolumeIn = document.getElementById('mastil-volume');
   var closeBtn = document.getElementById('keyboard-close');
+  var spellingIn = document.getElementById('keyboard-spelling');
+  var rootSpelling = document.getElementById('root-spelling');
 
   var OCTAVE_START = 3, OCTAVE_COUNT = 4;
-  var baseMidi = keyboardMidiFor(4, 0);
+  // El piano suena por defecto una octava más alta que la guitarra: la clave
+  // «a» usa el la una octava por encima del de la 5.ª cuerda (A3, 220 Hz).
+  var baseMidi = keyboardMidiFor(3, 9);
   var shiftLeft = false, shiftRight = false;
   var synth = new KeySynth({ timbre: timbreSel ? timbreSel.value : 'piano', volume: volumeIn ? Number(volumeIn.value) / 100 : 0.3 });
   var pressed = new Map();
@@ -459,6 +471,8 @@ if (typeof document !== 'undefined') (function () {
       section.classList.toggle('keyboard-open', layout.open);
       section.classList.toggle('keyboard-split', layout.split);
     }
+    var addRow = document.getElementById('keyboard-add-row');
+    if (addRow) addRow.hidden = !layout.split;
     keyboardModeButtons().forEach(function (button) {
       var active = button.dataset.keyboardMode === mode;
       button.setAttribute('aria-pressed', String(active));
@@ -529,9 +543,19 @@ if (typeof document !== 'undefined') (function () {
     return KEYBOARD_NOTE_NAMES[midi % 12] + (Math.floor(midi / 12) - 1);
   }
 
+  // Nombres de las teclas negras según la elección de bemoles (♭) o
+  // sostenidos (♯), sincronizada con el interruptor raíz de la app.
+  function keyboardKeyLabel(pitchClass) {
+    if (typeof pianoUseFlats !== 'undefined' && pianoUseFlats) {
+      var flat = { 1: 'Db', 3: 'Eb', 6: 'Gb', 8: 'Ab', 10: 'Bb' }[pitchClass];
+      if (flat) return flat;
+    }
+    return KEYBOARD_NOTE_NAMES[pitchClass];
+  }
+
   function keyButton(key) {
     var white = key.pitchClass === 0 || key.pitchClass === 2 || key.pitchClass === 4 || key.pitchClass === 5 || key.pitchClass === 7 || key.pitchClass === 9 || key.pitchClass === 11;
-    var label = KEYBOARD_NOTE_NAMES[key.pitchClass];
+    var label = keyboardKeyLabel(key.pitchClass);
     var hint = key.mapped ? '<small>' + key.mapped + '</small>' : '';
     return '<button type="button" class="kp-key kp-' + (white ? 'white' : 'black')
       + (key.mapped ? ' has-key' : '') + '" data-midi="' + key.midi + '"'
@@ -777,5 +801,18 @@ if (typeof document !== 'undefined') (function () {
   keyboardModeButtons().forEach(function (button) {
     button.addEventListener('click', function () { setMode(button.dataset.keyboardMode || 'mastil'); });
   });
+  // Switch de bemoles/sostenidos del piano: espejo del de la raíz del mástil.
+  if (spellingIn && rootSpelling) {
+    spellingIn.addEventListener('change', function () {
+      rootSpelling.checked = spellingIn.checked;
+      rootSpelling.dispatchEvent(new Event('change'));
+      if (!panel.hidden) render();
+    });
+    rootSpelling.addEventListener('change', function () {
+      spellingIn.checked = rootSpelling.checked;
+      if (!panel.hidden) render();
+    });
+    spellingIn.checked = rootSpelling.checked;
+  }
   window.addEventListener('pagehide', function () { synth.close(); });
 })();

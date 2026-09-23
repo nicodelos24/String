@@ -223,17 +223,20 @@ if (typeof document !== 'undefined') (() => {
       setMicroPhase('note');
       readout.hidden = false;
       readout.textContent = 'esperando nota…';
+      if (liveRoot) liveRoot.hidden = false;
     } else if (state === 'error') {
       toggle.setAttribute('aria-pressed', 'false');
       toggle.title = 'Usar el micrófono para resaltar la nota que tocas';
       label.textContent = 'Micrófono';
       readout.hidden = false;
       readout.textContent = detail || 'No se pudo usar el micrófono.';
+      if (liveRoot) liveRoot.hidden = true;
     } else if (state === 'stopped') {
       toggle.setAttribute('aria-pressed', 'false');
       toggle.title = 'Usar el micrófono para resaltar la nota que tocas';
       label.textContent = 'Micrófono';
       readout.hidden = true;
+      if (liveRoot) liveRoot.hidden = true;
       clearLive();
     }
     if (state === 'stopped' || state === 'error') {

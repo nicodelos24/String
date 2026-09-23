@@ -15,48 +15,61 @@ test('keyboard: the strip builds 7 white and 5 black keys per octave with ascend
   assert.deepEqual(semitones.slice(7), [0, 2, 4, 5, 7, 9, 11]);
 });
 
-test('keyboard: a, s, d map to C, D, E and w, e, t to the sharps at the active base', () => {
+test('keyboard: a, s, d, f, g, h, j map to A, B, C… and q, w, r, u to the accidentals at the active base (a=la de la 5.ª cuerda)', () => {
+  const baseA2 = keyboardMidiFor(2, 9); // 45 = la A2
   assert.equal(KEY_OFFSETS.a, 0);
   assert.equal(KEY_OFFSETS.s, 2);
-  assert.equal(KEY_OFFSETS.d, 4);
-  assert.equal(KEY_OFFSETS.w, 1);
-  assert.equal(KEY_OFFSETS.e, 3);
-  assert.equal(KEY_OFFSETS.t, 6);
-  assert.equal(keyboardMidiFor(4, 0) + KEY_OFFSETS.a, 60);
-  assert.equal(keyboardMidiFor(4, 0) + KEY_OFFSETS.w, 61);
-  assert.equal(keyboardMidiFor(4, 0) + KEY_OFFSETS.s, 62);
+  assert.equal(KEY_OFFSETS.d, 3);
+  assert.equal(KEY_OFFSETS.f, 5);
+  assert.equal(KEY_OFFSETS.g, 7);
+  assert.equal(KEY_OFFSETS.h, 8);
+  assert.equal(KEY_OFFSETS.j, 10);
+  assert.equal(KEY_OFFSETS.q, -1, 'q=ab/g# sobre a');
+  assert.equal(KEY_OFFSETS.w, 1, 'w=a#/bb sobre s');
+  assert.equal(KEY_OFFSETS.e, 3, 'e repite la natural de abajo (c)');
+  assert.equal(KEY_OFFSETS.r, 4, 'r=c#/db sobre f');
+  assert.equal(KEY_OFFSETS.t, 6, 't=d#/eb (teclado latam)');
+  assert.equal(KEY_OFFSETS.u, 9, 'u=fa#/solb sobre j');
+  assert.equal(baseA2 + KEY_OFFSETS.a, 45);
+  assert.equal(baseA2 + KEY_OFFSETS.q, 44); // G#2
+  assert.equal(baseA2 + KEY_OFFSETS.w, 46); // A#2
+  assert.equal(baseA2 + KEY_OFFSETS.s, 47); // B2
 });
 
 test('keyboard: letters are labelled only inside the active window', () => {
-  assert.equal(keyLetter(60, 60), 'a');
-  assert.equal(keyLetter(62, 60), 's');
-  assert.equal(keyLetter(64, 60), 'd');
-  assert.equal(keyLetter(65, 60), 'f');
-  assert.equal(keyLetter(48, 60), '', 'fuera de la ventana activa');
-  assert.equal(keyLetter(76, 60), 'ñ');
+  const baseA2 = keyboardMidiFor(2, 9);
+  assert.equal(keyLetter(baseA2, baseA2), 'a');
+  assert.equal(keyLetter(baseA2 + 2, baseA2), 's');
+  assert.equal(keyLetter(baseA2 + 3, baseA2), 'd');
+  assert.equal(keyLetter(baseA2 + 4, baseA2), 'r');
+  assert.equal(keyLetter(baseA2 + 15, baseA2), 'ñ');
+  assert.equal(keyLetter(baseA2 - 1, baseA2), 'q');
+  assert.equal(keyLetter(76, baseA2), '', 'fuera de la ventana activa');
+  assert.equal(keyLetter(100, baseA2), '');
 });
 
-test('keyboard: la fila grave arranca en sol (z=G3) y las teclas extras se suman a los sostenidos y naturales', () => {
+test('keyboard: la fila grave arranca en mi (z=E2) y la superior añade accidentales y naturales repetidos', () => {
   const { KEY_OFFSETS, KEY_CODES } = require('../keyboard-section.js');
-  assert.equal(KEY_OFFSETS.z, -5); // G3
-  assert.equal(KEY_OFFSETS.x, -3); // A3
-  assert.equal(KEY_OFFSETS.c, -1); // B3
-  assert.equal(KEY_OFFSETS.v, 0);  // C4
-  assert.equal(KEY_OFFSETS.b, 2);  // D4
-  assert.equal(KEY_OFFSETS.n, 4);  // E4
-  assert.equal(KEY_OFFSETS.m, 5);  // F4
-  assert.equal(KEY_OFFSETS[','], 7);  // G4
-  assert.equal(KEY_OFFSETS['.'], 9);  // A4
-  assert.equal(KEY_OFFSETS['-'], 11); // B4
-  assert.equal(KEY_OFFSETS['{'], 17); // F5
-  assert.equal(KEY_OFFSETS['´'], 18);  // F#5
-  assert.equal(KEY_OFFSETS['+'], 20);  // G#5
-  assert.equal(KEY_OFFSETS.p, 15); // D#5, sigue siendo sostenido
+  assert.equal(KEY_OFFSETS.z, -5); // E2
+  assert.equal(KEY_OFFSETS.x, -4); // F2
+  assert.equal(KEY_OFFSETS.c, -2); // G2
+  assert.equal(KEY_OFFSETS.v, 0);  // A2
+  assert.equal(KEY_OFFSETS.b, 2);  // B2
+  assert.equal(KEY_OFFSETS.n, 3);  // C3
+  assert.equal(KEY_OFFSETS.m, 5);  // D3
+  assert.equal(KEY_OFFSETS[','], 7);  // E3
+  assert.equal(KEY_OFFSETS['.'], 8);  // F3
+  assert.equal(KEY_OFFSETS['-'], 10); // G3
+  assert.equal(KEY_OFFSETS.q, -1);  // G#2
+  assert.equal(KEY_OFFSETS.i, 11);  // G#3
+  assert.equal(KEY_OFFSETS.o, 13);  // A#3
+  assert.equal(KEY_OFFSETS.p, 15);  // C4, repite la natural de abajo
   assert.equal(KEY_OFFSETS.ñ, KEY_OFFSETS[';'], 'ñ es la posición de ; en teclado español');
-  assert.equal(KEY_CODES.Semicolon, 16); // ñ → E5
-  assert.equal(KEY_CODES.Quote, 17);     // { → F5
-  assert.equal(KEY_CODES.BracketLeft, 18); // ´ → F#5
-  assert.equal(KEY_CODES.Equal, 20);       // + → G#5
+  assert.equal(KEY_CODES.Semicolon, 15); // ñ → C4
+  assert.equal(KEY_CODES.Quote, 17);     // comilla → D4
+  assert.equal(KEY_CODES.BracketLeft, 16); // ´ → C#4
+  assert.equal(KEY_CODES.Equal, 18);       // + → D#4
+  assert.equal(KEY_CODES.BracketRight, 19); // } → E4
 });
 
 test('keyboard: chordFromNotes con 2 notas reconoce raíz y tercera (mayor o menor)', () => {
@@ -125,13 +138,14 @@ test('keyboard: liveNoteChord detecta el acorde real con dos o más notas y devu
 test('keyboard: keyOffsetFor usa la letra o la posición física como respaldo', () => {
   const { keyOffsetFor } = require('../keyboard-section.js');
   assert.equal(keyOffsetFor({ key: 'a', code: 'KeyA' }), 0);
-  assert.equal(keyOffsetFor({ key: 'ñ', code: 'Semicolon' }), 16);
+  assert.equal(keyOffsetFor({ key: 'ñ', code: 'Semicolon' }), 15);
   assert.equal(keyOffsetFor({ key: 'Z', code: 'KeyZ' }), -5);
   assert.equal(keyOffsetFor({ key: 'z', code: 'KeyZ' }), -5);
-  assert.equal(keyOffsetFor({ key: 'Dead', code: 'BracketLeft' }), 18, 'tecla de acento muerto por posición');
+  assert.equal(keyOffsetFor({ key: 'Dead', code: 'BracketLeft' }), 16, 'tecla de acento muerto ´ por posición');
   assert.equal(keyOffsetFor({ key: '{', code: 'Quote' }), 17);
-  assert.equal(keyOffsetFor({ key: '+', code: 'Equal' }), 20);
-  assert.equal(keyOffsetFor({ key: 'q', code: 'KeyQ' }), undefined);
+  assert.equal(keyOffsetFor({ key: '+', code: 'Equal' }), 18);
+  assert.equal(keyOffsetFor({ key: '}', code: 'BracketRight' }), 19);
+  assert.equal(keyOffsetFor({ key: 'q', code: 'KeyQ' }), -1);
 });
 
 test('keyboard: keyTargetIsTyping deja tocar tras hacer clic en switchs y volumen, pero no sobre campos de texto', () => {
