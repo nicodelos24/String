@@ -1692,6 +1692,8 @@ footer {
 .keyboard-effect input:checked + .spelling-track { background: var(--rust); }
 .keyboard-effect input:checked + .spelling-track::after { transform: translateX(13px); }
 .keyboard-effect input:focus-visible + .spelling-track { outline: 2px solid var(--rust); outline-offset: 3px; }
+.keyboard-volume { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.keyboard-volume input[type=range] { width: 88px; accent-color: var(--rust); cursor: pointer; margin: 0; }
 
 .keyboard-keys {
   position: relative;

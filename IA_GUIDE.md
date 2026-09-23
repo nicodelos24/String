@@ -172,3 +172,5 @@ Falta corregir errores de las implementaciones de micrófono
 
   *Quisiera añadir un control de volumen para las notas que suenan tanto del piano como del mástil de guitarra/bajo
 
+  - Implementado: slider «Volumen» en la fila de controles del teclado expandible (`#keyboard-volume`, 0–100, arranca en 30). Por defecto arranca en el volumen histórico (0.3) y se aplica al `KeySynth` compartido, por lo que cubre el piano (modos Teclado y Ambos) y el mástil de guitarra/bajo (modo Mástil); cambia la ganancia maestra en vivo, sin detener las voces. `npm test` → 169/169 (test nuevo de `setVolume` y la ganancia maestra). Pendiente tu revisión auditiva y visual.
+

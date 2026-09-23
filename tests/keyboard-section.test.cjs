@@ -264,3 +264,30 @@ test('keyboard synth: timbre and effects update even before the context starts',
   assert.equal(synth.reverb, true);
   assert.equal(synth.volume, 0.5);
 });
+
+test('keyboard synth: setVolume define la ganancia maestra al arrancar y la actualiza en vivo', async () => {
+  const parameter = () => ({ value: 1, setValueAtTime() {}, linearRampToValueAtTime() {}, setTargetAtTime() {}, cancelScheduledValues() {} });
+  const oscillators = [];
+  const ctx = {
+    currentTime: 0,
+    destination: {},
+    sampleRate: 44100,
+    resume: async () => {},
+    createGain: () => ({ gain: parameter(), connect() {} }),
+    createOscillator: () => {
+      const osc = { type: '', frequency: { _value: 0, setValueAtTime(v) { this._value = v; } }, connect() {}, start() {}, stop() {} };
+      oscillators.push(osc);
+      return osc;
+    },
+  };
+  const synth = new KeySynth({ createContext: () => ctx, volume: 0.6 });
+  assert.equal(synth.volume, 0.6, 'se guarda el volumen del constructor');
+  await synth.noteOn(60);
+  assert.equal(synth.master.gain.value, 0.6, 'la ganancia maestra arranca con el volumen elegido');
+  synth.setVolume(0.25);
+  assert.equal(synth.volume, 0.25);
+  assert.equal(synth.master.gain.value, 0.25, 'setVolume actualiza la ganancia en vivo');
+  synth.setVolume(0);
+  assert.equal(synth.master.gain.value, 0, 'volumen cero apaga la salida sin bloquear las voces');
+  synth.allOff();
+});

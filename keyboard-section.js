@@ -6,8 +6,9 @@
 // del micrófono). Teclas naturales: z x c v b n m , . - (fila grave y su cola:
 // sol la si do re mi fa sol la si), a s d f g h j k l ñ { (media y aguda);
 // sostenidos: w e t y u o p ´ +. Shift izquierdo baja una octava y derecho la
-// sube. Sintetizador polifónico con timbres y efectos. La lógica pura y el
-// sintetizador se exportan para pruebas sin navegador.
+// sube. Sintetizador polifónico con timbres, efectos y control de volumen
+// (compartido por el piano y el mástil). La lógica pura y el sintetizador se
+// exportan para pruebas sin navegador.
 
 var WHITE_SEMITONES = [0, 2, 4, 5, 7, 9, 11];
 var BLACK_SPECS = [[1, 1], [3, 2], [6, 4], [8, 5], [10, 6]];
@@ -411,12 +412,13 @@ if (typeof document !== 'undefined') (function () {
   var timbreSel = document.getElementById('keyboard-timbre');
   var delayIn = document.getElementById('keyboard-delay');
   var reverbIn = document.getElementById('keyboard-reverb');
+  var volumeIn = document.getElementById('keyboard-volume');
   var closeBtn = document.getElementById('keyboard-close');
 
   var OCTAVE_START = 3, OCTAVE_COUNT = 4;
   var baseMidi = keyboardMidiFor(4, 0);
   var shiftLeft = false, shiftRight = false;
-  var synth = new KeySynth({ timbre: timbreSel ? timbreSel.value : 'piano' });
+  var synth = new KeySynth({ timbre: timbreSel ? timbreSel.value : 'piano', volume: volumeIn ? Number(volumeIn.value) / 100 : 0.3 });
   var pressed = new Map();
   var pointerNotes = [];
 
@@ -733,6 +735,7 @@ if (typeof document !== 'undefined') (function () {
   if (timbreSel) timbreSel.addEventListener('change', function () { synth.setTimbre(timbreSel.value); });
   if (delayIn) delayIn.addEventListener('change', function () { synth.setDelay(delayIn.checked); });
   if (reverbIn) reverbIn.addEventListener('change', function () { synth.setReverb(reverbIn.checked); });
+  if (volumeIn) volumeIn.addEventListener('input', function () { synth.setVolume(Number(volumeIn.value) / 100); });
   if (closeBtn) closeBtn.addEventListener('click', function () {
     setMode('mastil');
     var mastilBtn = modeButtonFor('mastil');
