@@ -186,3 +186,24 @@ Falta corregir errores de las implementaciones de micrófono
   - Al encender el micrófono arranca en «Nota», igual que antes arrancaba activado. Al apagarlo o detenerlo se conserva la última escala.
   - Mientras la fase activa es «Nota» o «Acorde» con el micrófono corriendo, pulsar el mástil ya no cambia la raíz (la escala la lleva el acorde en vivo), igual que con el teclado.
   - La decisión por fase vive en `micLiveChord` (puro, exportado y testeado); `npm test` → 173/173. Pendiente tu prueba real con guitarra y revisión visual del selector.
+
+- Corregido: pulsar «Tempo» con el metrónomo seleccionado no sincronizaba el tempo (solo llegaba al acompañamiento). Ahora el valor pulsado, su edición manual y las flechas también fijan el metrónomo (campo `#metronome-bpm` y `StringMetronome.setTempo`). El MIDI no se toca: conserva su propio tempo. `npm test` → 173/173. Pendiente tu prueba real con el metrónomo.
+* El espacio vertical encima de las tarjetas de la progresión es demasiado; quitar el texto «IDEA DE PROGRESIÓN» y «Tu vuelta armónica», y pasar el switch «Seguir acorde MIDI» a la derecha de las tarjetas, así las tarjetas suben y el mástil/teclado expandible queda más arriba.
+
+- Implementado: se eliminó el encabezado `.progression-header-inline` con el eyebrow y el título. Las tarjetas `.progression` y los controles (`#progression-view`, «Seguir acorde MIDI» y la ayuda «?», que se conservó) ahora viven en un contenedor `.progression-stack`: las tarjetas a la izquierda y los controles apilados a la derecha, alineados arriba. En pantallas ≤700px los controles bajan a una fila bajo las tarjetas. La ayuda se conserva y abre hacia arriba a la derecha. `npm test` → 173/173 y README actualizado. Pendiente tu revisión visual en navegador.
+
+* Quisiera que el control de volumen del teclado expandible se muestre también para el mástil.
+
+- Implementado: el slider «Volumen» ahora también aparece en el pie del mástil (`#mastil-volume`, en `.board-footer`), visible en los modos Mástil y Ambos (en Teclado el pie queda oculto, igual que antes). Ambos sliders quedan sincronizados: mover cualquiera de ellos fija el `KeySynth` compartido y actualiza al otro. `npm test` → 173/173. Pendiente tu revisión auditiva y visual.
+
+* Quisiera que el switch de modo oscuro/claro tenga una luna con un ♭ y un sol con un ♯, minimalista, dentro del switch.
+
+- Implementado: la bolita del switch ahora muestra la luna con ♭ en modo oscuro (a la izquierda) y el sol con ♯ en modo claro (a la derecha), con iconos SVG de trazo simple y la letra musical en 9px. Se eliminaron los rayos del sol y las estrellas de fondo de la versión anterior; la posición de la bolita se invirtió (claro → derecha, oscuro → izquierda). `npm test` → 173/173. Pendiente tu revisión visual y de la metáfora claro/♯ – oscuro/♭.
+
+- Retoque del switch de tema: diseño más minimalista — sin fondo de cielo ni dibujos de sol/luna. La pista y la bolita usan colores de la página (`--paper`/`--paper-light`/`--line`); solo los símbolos se colorean: ♯ en ámbar `#d9952a` (sugiere el sol) en modo claro (bolita a la derecha) y ♭ en tono luna `#f1f0e8` en modo oscuro (bolita a la izquierda). Se quitaron los SVGs. `npm test` → 173/173. Pendiente tu revisión visual.
+
+- Retoque del switch de tema: se quitó también la bolita circular; la píldora muestra ambos símbolos fijos (♭ a la izquierda, ♯ a la derecha) con los colores de la página. El activo se realza: ♯ ámbar `#d9952a` en modo claro y ♭ tono luna `#f1f0e8` en modo oscuro; el inactivo queda en `--muted`. `npm test` → 173/173. Pendiente tu revisión visual.
+
+- Retoque del switch de tema: solo se dibuja el símbolo activo, centrado en la píldora y más grande (12px). Al cambiar de modo, el símbolo saliente se desliza hacia su lado (♭ → izquierda, ♯ → derecha) y el entrante entra desde el suyo, con fade de 0.28s. Se mantienen los colores ♯ ámbar `#d9952a` (claro) y ♭ tono luna `#f1f0e8` (oscuro). `npm test` → 173/173. Pendiente tu revisión visual.
+
+- Retoque del switch de tema: ahora el símbolo activo se posiciona en su lado, como un switch real — ♯ (sol) a la derecha en modo claro y ♭ (luna) a la izquierda en modo oscuro. Al alternar, el símbolo cruza la píldora de un lado al otro con fade (0.28s). `npm test` → 173/173. Pendiente tu revisión visual.
