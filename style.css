@@ -1089,52 +1089,6 @@ html[data-theme="dark"] .board-add-button {
   font-size: 14px;
 }
 
-/* Estética de partitura: cada símbolo se apoya en la línea del compás. */
-.progression {
-  row-gap: 30px;
-  padding-top: 20px;
-}
-.progression-card {
-  padding: 4px 10px 6px;
-  border: 0;
-  border-bottom: 2px solid color-mix(in srgb, var(--ink) 30%, transparent);
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-  transition: border-bottom-color .18s, background-color .18s, box-shadow .18s;
-}
-.progression-card:hover {
-  border-color: transparent;
-  border-bottom-color: var(--rust);
-  background: transparent;
-}
-.progression-card.active {
-  border-color: transparent;
-  border-bottom-color: var(--rust);
-  background: color-mix(in srgb, var(--rust) 8%, transparent);
-  box-shadow: none;
-}
-.progression-card.playing {
-  background: #f8dfce;
-  border-bottom-color: transparent;
-  box-shadow: inset 0 -4px 0 var(--rust);
-}
-.progression-card.bar-start::before {
-  content: '';
-  position: absolute;
-  left: -5px;
-  top: 16px;
-  bottom: 0;
-  width: 2px;
-  background: var(--ink);
-}
-.bar-number {
-  position: absolute;
-  top: -17px;
-  left: -4px;
-  color: var(--rust);
-  font: 600 10px var(--mono);
-}
 .beats-control {
   display: inline-flex;
   align-items: center;

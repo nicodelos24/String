@@ -374,7 +374,7 @@ test('RIT-06: style and percussion controls reach the player and lock only durin
   assert.equal(element('#player-percussion').disabled,false);
 });
 
-test('compases y duraciones: las tarjetas se agrupan por pulsos y exponen su duración',()=>{
+test('duraciones: cada tarjeta expone su duración y respeta el predeterminado',()=>{
   const {run,element}=setup();
   assert.equal(run('validBeats(0)'),4);
   assert.equal(run('validBeats(2)'),2);
@@ -383,10 +383,10 @@ test('compases y duraciones: las tarjetas se agrupan por pulsos y exponen su dur
   assert.equal(run("beatsLabel(2)"),'½');
   run("progression=[{root:0,type:'7',beats:4},{root:5,type:'7',beats:2},{root:0,type:'7',beats:2},{root:7,type:'7',beats:8}];renderProgression()");
   const html=element('#progression').innerHTML;
-  assert.equal((html.match(/bar-start/g)||[]).length,3);
-  assert.equal((html.match(/bar-number/g)||[]).length,3);
-  assert.match(html,/<span class="bar-number" aria-hidden="true">2<\/span>/);
+  assert.equal((html.match(/data-beats="/g)||[]).length,4,'Cada tarjeta expone su duración');
   assert.match(html,/data-beats="1"[\s\S]*?<option value="2" selected>/);
+  assert.equal((html.match(/bar-start/g)||[]).length,0);
+  assert.equal((html.match(/bar-number/g)||[]).length,0);
   run('addProgressionChord()');
   assert.equal(run('progression.at(-1).beats'),4);
 });
