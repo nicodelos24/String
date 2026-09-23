@@ -1,6 +1,7 @@
 // Botón «Tempo» por pulsaciones: con al menos dos clics estima el BPM. El valor
 // se muestra en un campo editable que también aplica cambios manuales y se
-// mantiene sincronizado con el acompañamiento (y con el video si hay referencia).
+// mantiene sincronizado con el acompañamiento, con el metrónomo y con el video
+// si hay referencia. El MIDI no se toca: conserva su propio tempo.
 (() => {
   const button = document.querySelector('#tempo-tap');
   const bpmInput = document.querySelector('#tempo-tap-bpm');
@@ -11,6 +12,12 @@
   const applyBpm = (bpm) => {
     if (playerBpm) playerBpm.value = bpm;
     if (videoBpm) videoBpm.value = bpm;
+    const metroBpm = document.querySelector('#metronome-bpm');
+    const metronome = globalThis.StringMetronome;
+    if (metronome && typeof metronome.setTempo === 'function') {
+      const value = metronome.setTempo(bpm);
+      if (metroBpm) metroBpm.value = value;
+    }
   };
   const clampedBpm = () => Math.min(240, Math.max(30, Math.round(Number(bpmInput.value) || 100)));
   document.querySelectorAll('.tempo-tap-step').forEach(step => step.addEventListener('click', () => {

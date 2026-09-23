@@ -20,18 +20,20 @@ function setup() {
     return elements.get(key);
   }
   const clock={now:0};
+  const metronome={tempo:null,setTempo(value){this.tempo=Number(value);return this.tempo;}};
   const ctx=vm.createContext({
     document:{querySelector:element,querySelectorAll:sel=>['.tempo-tap-step[data-step="1"]','.tempo-tap-step[data-step="-1"]'].map(element)},
     performance:{now:()=>clock.now},
+    StringMetronome:metronome,
   });
   vm.runInContext(fs.readFileSync(path.join(__dirname,'../tempo-tap.js'),'utf8'),ctx);
-  return {element,clock};
+  return {element,clock,metronome};
 }
 
-test('tempo tap: two clicks estimate the BPM and write the editable field, accompaniment and video',()=>{
-  const {element,clock}=setup();
+test('tempo tap: two clicks estimate the BPM and write the editable field, accompaniment, video and metronome',()=>{
+  const {element,clock,metronome}=setup();
   const button=element('#tempo-tap'),bpmInput=element('#tempo-tap-bpm');
-  const playerBpm=element('#player-bpm'),videoBpm=element('#video-bpm');
+  const playerBpm=element('#player-bpm'),videoBpm=element('#video-bpm'),metroBpm=element('#metronome-bpm');
   assert.equal(bpmInput.value,'100');
   clock.now=0;button.handlers.click();
   assert.equal(bpmInput.value,'100');
@@ -39,14 +41,18 @@ test('tempo tap: two clicks estimate the BPM and write the editable field, accom
   assert.equal(bpmInput.value,'120');
   assert.equal(playerBpm.value,'120');
   assert.equal(videoBpm.value,'120');
+  assert.equal(metroBpm.value,'120');
+  assert.equal(metronome.tempo,120,'El metrónomo recibe el tempo pulsado');
 });
 
 test('tempo tap: manual edits apply the BPM with limits and the accompaniment field stays in sync',()=>{
-  const {element}=setup();
-  const bpmInput=element('#tempo-tap-bpm'),playerBpm=element('#player-bpm'),videoBpm=element('#video-bpm');
+  const {element,metronome}=setup();
+  const bpmInput=element('#tempo-tap-bpm'),playerBpm=element('#player-bpm'),videoBpm=element('#video-bpm'),metroBpm=element('#metronome-bpm');
   bpmInput.value='90';bpmInput.handlers.change();
   assert.equal(playerBpm.value,'90');
   assert.equal(videoBpm.value,'90');
+  assert.equal(metroBpm.value,'90');
+  assert.equal(metronome.tempo,90,'La edición manual también fija el metrónomo');
   bpmInput.value='999';bpmInput.handlers.change();
   assert.equal(bpmInput.value,'240');
   assert.equal(playerBpm.value,'240');
@@ -70,10 +76,11 @@ test('tempo tap: far-apart taps restart the estimation window',()=>{
 test('tempo tap: stepper arrows adjust the BPM by one with the same limits',()=>{
   const {element}=setup();
   const up=element('.tempo-tap-step[data-step="1"]'),down=element('.tempo-tap-step[data-step="-1"]');
-  const bpmInput=element('#tempo-tap-bpm'),playerBpm=element('#player-bpm');
+  const bpmInput=element('#tempo-tap-bpm'),playerBpm=element('#player-bpm'),metroBpm=element('#metronome-bpm');
   bpmInput.value='90';up.handlers.click();
   assert.equal(bpmInput.value,'91');
   assert.equal(playerBpm.value,'91');
+  assert.equal(metroBpm.value,'91');
   bpmInput.value='240';up.handlers.click();
   assert.equal(bpmInput.value,'240');
   bpmInput.value='30';down.handlers.click();
