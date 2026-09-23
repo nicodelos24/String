@@ -137,6 +137,14 @@ function scoreAhead(a, b) {
   return false;
 }
 
+// Fase «Nota»: con dos o más notas se detecta el acorde real (mayor, menor y
+// más) igual que en la fase «Acorde»; con una sola nota no alcanza y la
+// detección se delega a la calidad elegida a la izquierda.
+function liveNoteChord(notes, templates) {
+  if (!Array.isArray(notes) || notes.length < 2) return null;
+  return chordFromNotes(notes, templates) || null;
+}
+
 function keyboardImpulse(context, seconds, decay) {
   var length = Math.floor((context.sampleRate || 44100) * seconds);
   var buffer = context.createBuffer(2, length, context.sampleRate || 44100);
@@ -387,6 +395,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = {
   mastilKeyToggle: mastilKeyToggle,
   keyboardLayoutClasses: keyboardLayoutClasses,
   chordFromNotes: chordFromNotes,
+  liveNoteChord: liveNoteChord,
   pluckWave: pluckWave,
   KeySynth: KeySynth,
   noteNames: KEYBOARD_NOTE_NAMES
@@ -532,10 +541,10 @@ if (typeof document !== 'undefined') (function () {
   }
 
   // Acorde en vivo: las tres fases del control del pie del mástil. Apagado:
-  // tocar no cambia la escala. Nota: una nota (tecla o golpe en el mástil)
-  // muestra el acorde mayor o menor según la calidad y el modo elegidos a la
-  // izquierda. Acorde: con la raíz (nota más grave) y su tercera alcanza; toca
-  // más notas para acordes más ricos. Enter agrega a las tarjetas.
+  // tocar no cambia la escala. Nota: con dos o más notas detecta el acorde
+  // real (mayor, menor y más); una sola nota usa la calidad y el modo elegidos
+  // a la izquierda. Acorde: con la raíz (nota más grave) y su tercera alcanza;
+  // toca más notas para acordes más ricos. Enter agrega a las tarjetas.
   var liveRoot = document.getElementById('keyboard-live-chord');
   var keyboardLive = null;      // último acorde detectado
   var keyboardLiveKey = '';     // raíz:tipo:modo ya aplicado en el mástil
@@ -599,7 +608,7 @@ if (typeof document !== 'undefined') (function () {
     var notes = activeNotes();
     var chord = null;
     if (phase === 'note' && notes.length >= 1) {
-      chord = chordFromQuality(notes[0] % 12);
+      chord = liveNoteChord(notes) || chordFromQuality(notes[0] % 12);
     } else if (phase === 'chord' && notes.length >= 2) {
       chord = chordFromNotes(notes);
     }

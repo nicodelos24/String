@@ -96,6 +96,32 @@ test('keyboard: chordFromNotes con 3 o más notas usa las plantillas', () => {
   assert.equal(chordFromNotes([57, 60, 62], templates), null, 'la-do-re sin quinta no da acorde');
 });
 
+test('keyboard: la fase Acorde reconoce séptimas, disminuidos y compuestos con las plantillas del micrófono', () => {
+  const { chordFromNotes } = require('../keyboard-section.js');
+  const { LIVE_CHORD_TEMPLATES } = require('../chord-detection.js');
+  assert.deepEqual(chordFromNotes([60, 64, 67, 70], LIVE_CHORD_TEMPLATES), { root: 0, type: '7', mode: 'mixolydian' }, 'do mi sol sib = C7');
+  assert.deepEqual(chordFromNotes([60, 64, 67, 71], LIVE_CHORD_TEMPLATES), { root: 0, type: 'maj7', mode: 'ionian' }, 'do mi sol si = Cmaj7');
+  assert.deepEqual(chordFromNotes([60, 63, 66], LIVE_CHORD_TEMPLATES), { root: 0, type: 'dim', mode: 'locrian' }, 'do mib solb = Cdim');
+  assert.deepEqual(chordFromNotes([60, 63, 66, 69], LIVE_CHORD_TEMPLATES), { root: 0, type: 'dim7', mode: 'locrian' }, 'do mib solb la = Cdim7');
+  assert.deepEqual(chordFromNotes([60, 63, 66, 70], LIVE_CHORD_TEMPLATES), { root: 0, type: 'm7b5', mode: 'locrian' }, 'do mib solb sib = Cm7b5');
+  assert.deepEqual(chordFromNotes([60, 64, 68], LIVE_CHORD_TEMPLATES), { root: 0, type: 'aug', mode: 'ionian' }, 'do mi sol# = Caug');
+  assert.deepEqual(chordFromNotes([60, 64, 67, 69, 74], LIVE_CHORD_TEMPLATES), { root: 0, type: '6/9', mode: 'ionian' }, 'do mi sol la re = C6/9');
+  assert.deepEqual(chordFromNotes([60, 63, 67, 70, 74], LIVE_CHORD_TEMPLATES), { root: 0, type: 'm9', mode: 'dorian' }, 'do mib sol sib re = Cm9');
+  assert.deepEqual(chordFromNotes([60, 65, 67, 70], LIVE_CHORD_TEMPLATES), { root: 0, type: '7sus4', mode: 'mixolydian' }, 'do fa sol sib = C7sus4');
+});
+
+test('keyboard: liveNoteChord detecta el acorde real con dos o más notas y devuelve null con una sola', () => {
+  const { liveNoteChord } = require('../keyboard-section.js');
+  const { LIVE_CHORD_TEMPLATES } = require('../chord-detection.js');
+  assert.equal(liveNoteChord([60]), null, 'una sola nota no alcanza: delega a la calidad elegida');
+  assert.equal(liveNoteChord([]), null, 'sin notas no hay acorde');
+  assert.deepEqual(liveNoteChord([60, 64], LIVE_CHORD_TEMPLATES), { root: 0, type: 'maj', mode: 'ionian' }, 'do mi = do mayor');
+  assert.deepEqual(liveNoteChord([60, 63], LIVE_CHORD_TEMPLATES), { root: 0, type: 'm', mode: 'aeolian' }, 'do mib = do menor');
+  assert.deepEqual(liveNoteChord([48, 52, 55, 58], LIVE_CHORD_TEMPLATES), { root: 0, type: '7', mode: 'mixolydian' }, 'do mi sol sib = C7');
+  assert.deepEqual(liveNoteChord([60, 63, 66, 69], LIVE_CHORD_TEMPLATES), { root: 0, type: 'dim7', mode: 'locrian' }, 'do mib solb la = Cdim7');
+  assert.equal(liveNoteChord([55, 60], LIVE_CHORD_TEMPLATES), null, 'quinta sin tercera no acertaría; se vuelve a la calidad elegida');
+});
+
 test('keyboard: keyOffsetFor usa la letra o la posición física como respaldo', () => {
   const { keyOffsetFor } = require('../keyboard-section.js');
   assert.equal(keyOffsetFor({ key: 'a', code: 'KeyA' }), 0);

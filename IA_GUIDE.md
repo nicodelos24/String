@@ -160,3 +160,15 @@ Falta corregir errores de las implementaciones de micrófono
 
   - Implementado: el botón «⤢ Teclado» pasó a ser un selector de tres modos cerca del teclado miniatura. «Mástil»: solo el mástil, las teclas del PC lo tocan (comportamiento anterior). «Teclado»: el piano reemplaza el mástil como antes. «Ambos»: el piano se muestra encima del mástil a todo lo ancho; las teclas del PC tocan solo el piano (no marcan el mástil nota a nota), el mástil conserva su ancho completo y sigue mostrando las notas del micrófono. Con «Acorde en vivo» activado (fases Nota o Acorde), el mástil cambia su escala al acorde que formes en el piano, igual que en el modo Mástil. El cierre «✕» vuelve a «Mástil».
   - La lógica vive en `keyboardLayoutClasses` (estado puro), `setMode`, `mastilShown` (el mástil queda visible en Mástil y Ambos) y las clases `keyboard-open`/`keyboard-split` sobre `.fretboard-section`. `npm test` → 166/166 (test de `keyboardLayoutClasses` y smoke headless de los 3 modos). Pendiente tu revisión visual del apilado y de que el mástil siga el acorde del piano.
+
+  *En la parte inferior del mastil quisiera un poquito menos de margen entre el mastil y la información que aparece como "7 notas 22 Trastes Desliza para recorrer" etc
+
+  - Implementado: la separación superior del pie del mástil bajó de 18 px a 8 px (`margin-top` de `.board-footer`), acercando la información al diapasón sin tocar el resto del plegado móvil.
+
+  *Debajo del mastil al poner el switch de "nota" quisiera que funcione como actualmente funciona pero también que capte acordes menores y mayores tal como sucede en acorde, y en la sección Acorde quisiera que funcione igual que ahora pero agregando acordes de septima, disminuidos, y varios acordes compuestos.
+
+  - Implementado: en «Nota» ahora dos o más notas detectan el acorde real (mayor, menor y más) igual que en «Acorde»; una sola nota conserva la calidad y el modo elegidos a la izquierda. La fase «Acorde» ya reconocía séptimas, disminuidos y compuestos con las plantillas del micrófono; se verificó con tests contra esas plantillas (C7, Cmaj7, Cdim, Cdim7, Cm7b5, Caug, C6/9, Cm9, C7sus4).
+  - `npm test` → 168/168. Pendiente tu prueba real con guitarra y revisión visual del margen.
+
+  *Quisiera añadir un control de volumen para las notas que suenan tanto del piano como del mástil de guitarra/bajo
+
