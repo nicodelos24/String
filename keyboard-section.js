@@ -664,10 +664,15 @@ if (typeof document !== 'undefined') (function () {
     keyboardLive = chord;
     setKeyboardPlaying(true);
     if (typeof showProgressionChord === 'function') {
+      // El acorde detectado lleva su propia escritura (círculo de quintas) para
+      // que el switch ♯/♭ y el nombre de la raíz sigan a lo que suena.
+      var preferred = typeof preferredRootSpelling === 'function' ? preferredRootSpelling(chord.root) : null;
+      var rootName = chord.rootNoteName || (preferred ? preferred.rootName : null) || noteName(chord.root);
+      if (preferred && typeof setChordSpelling === 'function') setChordSpelling(preferred.useFlats);
       var key = chord.root + ':' + chord.type + ':' + chord.mode;
       if (key !== keyboardLiveKey) {
         keyboardLiveKey = key;
-        showProgressionChord({ root: chord.root, rootNoteName: chord.rootNoteName || noteName(chord.root), type: chord.type, mode: chord.mode }, -1);
+        showProgressionChord({ root: chord.root, rootNoteName: rootName, type: chord.type, mode: chord.mode }, -1);
       }
     }
   }

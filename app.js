@@ -500,6 +500,21 @@ document.querySelector('#root-spelling').addEventListener('change', event => {
   else renderRootPiano();
 });
 
+// Refleja la escritura ♯/♭ en el switch de la raíz y en su espejo del teclado
+// sin cambiar la raíz ni la escala. Lo usan los acordes en vivo (micrófono y
+// teclado) para que el switch acompañe a la nota que está sonando.
+function setChordSpelling(useFlats) {
+  pianoUseFlats = Boolean(useFlats);
+  const el = document.querySelector('#root-spelling');
+  if (el) {
+    const changed = el.checked !== pianoUseFlats;
+    el.checked = pianoUseFlats;
+    if (changed && typeof el.dispatchEvent === 'function' && typeof Event !== 'undefined') {
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+  }
+}
+
 function populateControls() {
   instrumentSelect.innerHTML = Object.entries(instruments).map(([key, inst]) => `<option value="${key}">${inst.name}</option>`).join('');
 
