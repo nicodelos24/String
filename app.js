@@ -895,7 +895,7 @@ function renderProgression() {
   const entries=globalThis.StringSections?globalThis.StringSections.visible():progression.map((item,index)=>({item,index}));
   const list=document.querySelector('#progression');
   if(!entries.length){
-    list.innerHTML=progression.length?'':'<p class="progression-empty">Sin acordes. Elige una nota y pulsa «añadir acorde» para empezar.</p>';
+    list.innerHTML=progression.length?'':'<p class="progression-empty">Agrega con «añadir acorde».</p>';
     return;
   }
   let cursor = 0; // Pulsos acumulados: marcan el inicio de cada compás de 4/4.

@@ -1006,6 +1006,7 @@ html[data-theme="dark"] .board-add-button {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
   max-height: 310px;
+  min-height: 143px;
   overflow-y: auto;
   align-content: start;
   gap: 8px;
@@ -1015,7 +1016,7 @@ html[data-theme="dark"] .board-add-button {
 }
 .follow-midi { display: flex; gap: 6px; align-items: center; margin: 8px 0; font: 11px var(--mono); color: var(--muted); }
 .follow-midi input { accent-color: var(--rust); }
-.progression-empty { grid-column: 1 / -1; margin: 0; padding: 14px 12px; color: var(--muted); font: 12px var(--sans); border: 1px dashed var(--line); border-radius: 8px; }
+.progression-empty { grid-column: 1 / -1; margin: 0; min-height: 143px; display: flex; align-items: center; justify-content: center; padding: 14px 12px; color: var(--muted); font: 12px var(--sans); text-align: center; border: 1px dashed var(--line); border-radius: 8px; }
 .progression-playback { min-height: 26px; margin: -4px 0 12px; color: var(--rust); font: 11px var(--mono); }
 .section-view-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 10px 0; font: 11px var(--mono); color: var(--muted); }
 .sections-panel #section-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-content: start; gap: 6px; max-height: 250px; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; scrollbar-gutter: stable; margin: 8px 0; padding: 2px; }

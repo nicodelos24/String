@@ -305,6 +305,8 @@ quisiera aprovechar ese espacio para colocar el switch con el candado que dice H
   - Implementado: `#microphone-readout` se movió a la izquierda del botón «Micrófono» dentro de `.mic-control`. Además tiene un ancho mínimo estable (88px, texto centrado y recorte con «…») para que el cambio de texto no desplace el botón. Verificado en headless: la lectura queda a la izquierda del botón. Pendiente tu revisión visual.
 
   *Al quitar todas las tarjetas se deforma la interfaz porque ocupa menos lugar esa parte donde estaban las tarjetas, eso quiero mejorarlo y que al quitar las tarjetas se mantenga la interfaz en el lugar, y de paso quitar el texto que dice "Sin acordes. Elige una nota y pulsa «añadir acorde» para empezar." y que solo diga "Agrega con «añadir acorde»."
+
+  - Implementado: el área de tarjetas conserva la altura de una fila al vaciarse (`.progression` con `min-height` de una tarjeta y el aviso centrado en ese mismo alto), así la interfaz (mástil incluido) no se mueve al quitar todas las tarjetas. El texto pasó a «Agrega con «añadir acorde».». Verificado en headless: con tarjetas y sin ellas `.progression` mide lo mismo (147 px) y el desplazamiento del mástil es 0 px.
   
   *Cuando la página se recarga no se mantienen las tarjetas tal como las estaba modificando
 
