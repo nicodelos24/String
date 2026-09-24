@@ -22,9 +22,9 @@
     const collapsed=disclosure.getAttribute('aria-expanded')==='false';
     if(collapsed && content.contains(document.activeElement))disclosure.focus();
     content.classList.toggle('is-collapsed',collapsed); content.inert=collapsed;
-    const floatingNow=collapsed && floating.checked && !!(player && wrap.children.length);
+    const floatingNow=collapsed && floating.checked && ready && !!(player && wrap.children.length);
     wrap.classList.toggle('is-floating',floatingNow);
-    wrap.hidden=!player || (collapsed && !floating.checked);
+    wrap.hidden=!ready || (collapsed && !floating.checked);
     if(floatingNow){
       document.body.append(wrap);
       if(floatPosition)positionFloat(floatPosition.x,floatPosition.y);
@@ -94,7 +94,7 @@
         onReady:()=>{if(request!==generation)return;clearTimeout(timeout);ready=true;$('youtube-load').disabled=false;layout();tick();poll=setInterval(tick,250);status.textContent='Controla el video aquí o desde YouTube. Guarda su enlace con tu progresión en Mis progresiones.';},
         onStateChange:()=>{if(request===generation)tick();},
         onError:()=>{if(request!==generation)return;ready=false;clearTimeout(timeout);clearInterval(poll);toggle.disabled=true;seek.disabled=true;$('youtube-load').disabled=false;status.textContent='Este video no se pudo reproducir aquí. Prueba otro enlace o ábrelo en YouTube.';}
-      }});layout();
+      }});
     } catch(error) {if(request===generation){$('youtube-load').disabled=false;status.textContent=error.message;}}
   }
   toggle.addEventListener('click',()=>{if(ready){if(player.getPlayerState()===1)player.pauseVideo();else player.playVideo();tick();}});
