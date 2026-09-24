@@ -391,6 +391,30 @@ footer {
   background: var(--paper-light);
 }
 
+/* Botón «añadir acorde» en la parte alta del panel derecho, encima de la
+   armadura de clave: a mano sin bajar al mástil. */
+.legend-add-button {
+  display: block;
+  width: 100%;
+  margin-bottom: 18px;
+  padding: 8px 14px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--rust);
+  border-radius: 6px;
+  background: #f1e8dc;
+  color: var(--ink);
+  font: 11px var(--mono);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  cursor: pointer;
+  box-shadow: 0 2px 0 rgba(201, 87, 53, 0.22);
+  transition: background .15s ease, border-color .15s ease, box-shadow .15s ease;
+}
+.legend-add-button:hover { border-color: var(--rust); box-shadow: 0 0 0 4px rgba(201, 87, 53, 0.16); }
+.legend-add-button:focus-visible { outline: 2px solid var(--rust); outline-offset: 2px; }
+.legend-add-button span { color: var(--rust); }
+html[data-theme="dark"] .legend-add-button { background: var(--paper); border-color: var(--line); }
+
 .legend-heading {
   display: flex;
   align-items: center;

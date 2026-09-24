@@ -313,4 +313,6 @@ quisiera aprovechar ese espacio para colocar el switch con el candado que dice H
   - Implementado: `restoreCustomProgression()` en `app.js` lee al cargar el slot `traste.customProgression.v1` (el mismo que guarda cada edición de tarjetas) y lo muestra automáticamente, así las tarjetas quedan tal como se estaban editando al recargar. Si no hay slot, se mantiene la progresión inicial; no afecta a las plantillas (siguen sin sobrescribir el slot). Verificado en headless: D y G añadidas a mano sobreviven a la recarga. Los BPM/estilo y demás controles ya se conservaban por preferencias.
 
   *El botón añadir acorde en un principio estaba colocado en otra parte (para ejemplo revisar la version 1.0) Quisiera que ahora se coloque otro botón en ese lugar para tenerlo a mano en varias circunstancias en la esquina superior derecha como en la version 1.0
+
+  - Implementado: segundo botón «añadir acorde» (`#legend-add-chord`) en la parte alta del panel derecho (`.legend-panel`), encima de «Armadura de Clave». Ancho completo, mismo estilo óxido que el botón central y misma acción (`addProgressionChord`). Verificado en headless: queda arriba de la armadura y añade la tarjeta al hacer clic.
   
