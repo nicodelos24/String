@@ -315,4 +315,6 @@ quisiera aprovechar ese espacio para colocar el switch con el candado que dice H
   *El botón añadir acorde en un principio estaba colocado en otra parte (para ejemplo revisar la version 1.0) Quisiera que ahora se coloque otro botón en ese lugar para tenerlo a mano en varias circunstancias en la esquina superior derecha como en la version 1.0
 
   - Implementado: segundo botón «añadir acorde» (`#legend-add-chord`) en la parte alta del panel derecho (`.legend-panel`), encima de «Armadura de Clave». Ancho completo, mismo estilo óxido que el botón central y misma acción (`addProgressionChord`). Verificado en headless: queda arriba de la armadura y añade la tarjeta al hacer clic.
+
+  - El encabezado «Armadura de Clave» se eliminó al pasar al panel la lectura de la armadura real («C Mayor · Natural»); el botón de añadir ocupa ahora esa cabecera.
   
