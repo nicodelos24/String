@@ -167,11 +167,11 @@ test('keyboard: keyTargetIsTyping deja tocar tras hacer clic en switchs y volume
   assert.equal(keyTargetIsTyping(el('INPUT', undefined)), true, 'un input sin type se trata como texto');
 });
 
-test('keyboard: left shift lowers a full octave and right shift raises it, clamped to visible octaves', () => {
+test('keyboard: left shift lowers a full octave and right shift raises a full octave without clamping', () => {
   assert.equal(activeBaseMidi(60, -1, 3, 4), 48);
   assert.equal(activeBaseMidi(60, 1, 3, 4), 72);
-  assert.equal(activeBaseMidi(48, -1, 3, 4), 48);
-  assert.equal(activeBaseMidi(72, 1, 3, 4), 72);
+  assert.equal(activeBaseMidi(48, -1, 3, 4), 36, 'baja una octava completa aunque quede fuera de la ventana');
+  assert.equal(activeBaseMidi(72, 1, 3, 4), 84, 'sube una octava completa aunque quede fuera de la ventana');
 });
 
 test('keyboard: los tres modos ocultan o muestran el panel y la clase del mástil', () => {

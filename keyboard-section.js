@@ -4,10 +4,10 @@
 // instrumento), «Teclado» (el piano reemplaza el mástil) y «Ambos» (el piano
 // junto al mástil; las teclas tocan solo el piano y el mástil muestra las notas
 // del micrófono). Teclas naturales de la fila media: a s d f g h j k l ñ ;
-// = A B C D E F G A B C (a suena una octava más alta que el la de la 5.ª
-// cuerda: A3, 220 Hz, octava por defecto del piano).
-// Fila grave: z x c v b n m , . - = E F G A B C D E F G (z usa el mi de la
-// 6.ª cuerda). Accidentales en la fila superior: q w e r t y u i o p, uno por
+// = la si do re mi fa sol la si do (a suena una octava más alta que el la de
+// la 5.ª cuerda: A3, 220 Hz; las mismas teclas en el piano y en el mástil).
+// Fila grave: z x c v b n m , . - = E F G A B C D E F G (fila grave).
+// Accidentales en la fila superior: q w e r t y u i o p, uno por
 // columna sobre cada natural (q=ab/g#, w=a#/bb, …) y las que no tienen tecla
 // negra debajo tocan la misma nota natural de su columna (e, y, p); t queda
 // d#/eb y las posiciones sin letra fija (´, +, }) completan c#/db, d#/eb y e
@@ -80,11 +80,11 @@ function keyLetter(midi, baseMidi) {
 }
 
 // Valor base (MIDI de la tecla 'a') respetando los límites de las octavas visibles.
+// Base efectiva al sostener Shift: baja o sube exactamente una octava (12
+// semitonos), sin recortarla a la ventana visible, para que Shift+izquierdo
+// baje de verdad una octava aunque quede fuera del rango mostrado.
 function activeBaseMidi(base, shiftDir, octaveStart, count) {
-  var next = base + shiftDir * 12;
-  var min = keyboardMidiFor(octaveStart, 0);
-  var max = keyboardMidiFor(octaveStart + Math.max(0, count - 2), 0);
-  return Math.max(min, Math.min(max, next));
+  return Math.max(0, Math.min(127, base + shiftDir * 12));
 }
 
 // Marca o desmarca en el mástil (y cuerdas al aire) las posiciones cuyo MIDI
@@ -443,7 +443,7 @@ if (typeof document !== 'undefined') (function () {
   var spellingIn = document.getElementById('keyboard-spelling');
   var rootSpelling = document.getElementById('root-spelling');
 
-  var OCTAVE_START = 3, OCTAVE_COUNT = 4;
+  var OCTAVE_START = 2, OCTAVE_COUNT = 4;
   // El piano suena por defecto una octava más alta que la guitarra: la clave
   // «a» usa el la una octava por encima del de la 5.ª cuerda (A3, 220 Hz).
   var baseMidi = keyboardMidiFor(3, 9);
@@ -454,6 +454,15 @@ if (typeof document !== 'undefined') (function () {
 
   function shiftDirection() { return shiftRight ? 1 : shiftLeft ? -1 : 0; }
   function effectiveBase() { return activeBaseMidi(baseMidi, shiftDirection(), OCTAVE_START, OCTAVE_COUNT); }
+  // Base para una tecla en concreto: igual en el piano y en el mástil, `a`
+  // suena una octava más alta que el la de la 5.ª cuerda de la guitarra
+  // (A3) y la fila media queda a=la s=si d=do f=re… Las teclas + y } del
+  // teclado latam se escriben con Shift (Shift+= y Shift+]) y ese Shift no
+  // debe sumar la octava del Shift musical, o D# y E sonarían una octava más
+  // arriba.
+  function keyBaseFor(useOctaveShift) {
+    return activeBaseMidi(baseMidi, useOctaveShift ? shiftDirection() : 0, OCTAVE_START, OCTAVE_COUNT);
+  }
 
   function modeButtonFor(modeName) {
     return modesRoot ? modesRoot.querySelector('[data-keyboard-mode="' + modeName + '"]') : null;
@@ -491,15 +500,6 @@ if (typeof document !== 'undefined') (function () {
 
   function mastilTimbre() {
     return typeof instrument !== 'undefined' && instrument === 'bass' ? 'bass' : 'guitar';
-  }
-
-  // Octava base del modo mástil: el bajo necesita notas más graves que la
-  // guitarra para tener posiciones en el diapasón.
-  function mastilBaseMidi() {
-    var isBass = mastilTimbre() === 'bass';
-    var octaveStart = isBass ? 2 : 3;
-    var base = keyboardMidiFor(octaveStart + (isBass ? 0 : 1), 0);
-    return activeBaseMidi(base, shiftDirection(), octaveStart, 4);
   }
 
   function mastilNotes() {
@@ -752,7 +752,8 @@ if (typeof document !== 'undefined') (function () {
     }
     var offset = keyOffsetFor(event);
     if (offset === undefined) return;
-    var base = inMastilMode() ? mastilBaseMidi() : effectiveBase();
+    var shiftCarried = event.shiftKey && (event.code === 'Equal' || event.code === 'BracketRight');
+    var base = keyBaseFor(!shiftCarried);
     var midi = base + offset;
     if (midi < 0 || midi > 127) return;
     if (!pressed.has(event.key)) {
