@@ -759,6 +759,26 @@ footer {
 .tuner-toggle:hover { border-color: var(--rust); color: var(--rust); }
 .tuner-toggle[aria-pressed='true'] { background: var(--rust); border-color: var(--rust); color: var(--paper-light); }
 
+/* Segundo botón «añadir acorde» en la esquina superior derecha de la barra
+   del mástil: siempre a mano, igual que en la versión 1.0. */
+.toolbar-add-button {
+  display: inline-flex;
+  align-items: center;
+  margin-left: auto;
+  padding: 7px 14px;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  background: var(--paper-light);
+  color: var(--ink);
+  font: 700 12px var(--sans);
+  letter-spacing: .02em;
+  cursor: pointer;
+  transition: background .15s ease, color .15s ease, border-color .15s ease;
+}
+.toolbar-add-button:hover { border-color: var(--rust); color: var(--rust); }
+.toolbar-add-button span { color: var(--rust); font-size: 14px; margin-right: 2px; }
+html[data-theme="dark"] .toolbar-add-button { background: var(--paper); border-color: var(--line); }
+
 .tuner {
   flex: 1 1 100%;
   display: flex;

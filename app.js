@@ -1102,6 +1102,7 @@ document.querySelector('#progression').addEventListener('change', event => {
   renderProgression();
 });
 document.querySelector('#add-chord').addEventListener('click', addProgressionChord);
+document.querySelector('#toolbar-add-chord')?.addEventListener('click', addProgressionChord);
 document.querySelector('#keyboard-add-chord')?.addEventListener('click', addProgressionChord);
 function selectFretNote(note) {
   if(!note)return;
