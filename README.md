@@ -112,7 +112,7 @@ Se conservan las pruebas rápidas de Node, sin dependencias adicionales. Comprue
 
 Si PowerShell bloquea `npm.ps1`, usa `npm.cmd test` (o `npm.cmd start` para iniciar), sin cambiar la política del sistema.
 
-Los reportes, casos manuales, Excel, evidencias y scripts de navegador se separaron en un [archivo de QA recuperable](archivo-qa/README.md). No hace falta abrirlo para desarrollar. La documentación de QA se retomará cuando sea necesaria o se solicite.
+Los reportes, casos manuales, Excel, evidencias y scripts de navegador se separaron en el repositorio `portfolio-qa-string` (carpeta `archivo-qa/`). No hace falta abrirlos para desarrollar. La documentación de QA se retomará cuando sea necesaria o se solicite.
 
 - [Guía del proyecto y portfolio](docs/GUIA-DEL-PROYECTO.md)
 - [Revisión técnica y pendientes](docs/REVISION-TECNICA.md)

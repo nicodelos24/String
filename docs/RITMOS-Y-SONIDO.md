@@ -53,6 +53,6 @@ Una misma energía eléctrica no garantiza una misma sonoridad percibida. El bal
 
 - RIT-01 a RIT-06: posiciones rítmicas, BPM compartido, desactivación de percusión, volúmenes independientes, estilos inválidos y controles.
 - MIX-01: normalización entre acordes de distinta cantidad de notas y compensación moderada de agudos.
-- La comprobación de audio en Chrome/Edge está en el [archivo histórico de QA](../archivo-qa/README.md). Para ejecutarla, primero recupera sus scripts siguiendo esas instrucciones.
+- La comprobación de audio en Chrome/Edge está en el archivo histórico de QA del repositorio `portfolio-qa-string` (carpeta `archivo-qa/`). Para ejecutarla, primero recupera sus scripts siguiendo esas instrucciones.
 - La prueba OfflineAudioContext renderiza 12 tríadas y tres patrones, mide energía RMS y picos, y comprueba silencio después del final. Son mediciones técnicas, no una escucha humana ni una garantía de sonoridad idéntica.
 - MAN-14 a MAN-18: aceptación manual de ritmo, volumen y balance. Pendientes hasta que el usuario los ejecute.

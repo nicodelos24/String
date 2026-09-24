@@ -12,7 +12,7 @@ Proyecto sin build: JavaScript clásico (no módulos ES) y sin frameworks. HTML 
 ## Convenciones del repo
 
 - Responder y comentar en español neutro. Explicar brevemente qué cambió y cómo se verificó.
-- No abrir ni extraer `archivo-qa/`: contiene el historial de testing comprimido. No generar reportes, Excel ni capturas de QA salvo petición explícita.
+- No abrir ni extraer `testing-historico-2026-09-12.zip` (reside en el repositorio `portfolio-qa-string`, carpeta `archivo-qa/`): contiene el historial de testing comprimido. No generar reportes, Excel ni capturas de QA salvo petición explícita.
 - `assets/midi/` y `midi-catalog.js` son fixtures de prueba; `midi-catalog.js` no debe cargarse en la página.
 - Compatibilidad de guardado: no romper la clave `traste.songs.v1` ni el formato JSON v1 (campo opcional `sections`); respetar límites: 200 progresiones y 20 MB por respaldo.
 - Cambios visuales: verificar el componente afectado, no toda la batería histórica de navegador. Actualizar el README solo si cambia el uso del proyecto.

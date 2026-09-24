@@ -17,7 +17,7 @@ Actualizada el 2026-09-11. String es un proyecto de portfolio desarrollado con a
 | Escucha de notas y metrónomo | note-preview.js, metronome.js |
 | Ejecución local | server.cjs |
 | Verificación rápida | tests/; `npm test` |
-| QA histórico separado | archivo-qa/ (ZIP recuperable) |
+| QA histórico separado | repositorio `portfolio-qa-string`, carpeta `archivo-qa/` |
 
 Los motores de audio y sus interfaces están separados. No hay base de datos remota: Mis progresiones usa localStorage. La clave histórica `traste.songs.v1` se conserva para no perder datos al cambiar la marca.
 
@@ -52,4 +52,4 @@ No hay integración continua ni publicación verificadas en esta revisión. Tamp
 
 Para una corrección: reproducir el problema, escribir el resultado esperado, encontrar la causa, añadir una regresión, cambiar el código y registrar la evidencia. Una prueba con un DOM simulado no demuestra que un botón se vea bien: para eso se necesitan navegador y revisión manual.
 
-Consulta [la revisión técnica](REVISION-TECNICA.md). El plan QA y los resultados anteriores están en el [archivo de testing](../archivo-qa/README.md). En el portfolio explica qué hizo la IA, qué revisaste, qué comprobaste y qué límites siguen presentes.
+Consulta [la revisión técnica](REVISION-TECNICA.md). El plan QA y los resultados anteriores están en el archivo de testing del repositorio `portfolio-qa-string` (carpeta `archivo-qa/`). En el portfolio explica qué hizo la IA, qué revisaste, qué comprobaste y qué límites siguen presentes.
