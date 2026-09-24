@@ -37,6 +37,8 @@ Errores actuales a corregir por pruebas manuales exploratorias de regresión
 
 - Otro error es el reproductor de youtube en modo ventana flotante, este queda abajo en la página y no se puede ni siquiera mover.
 
+  - Verificado en navegador headless: al minimizar con «Video flotante» activo, el reproductor queda anclado como `position:fixed` abajo a la derecha y se puede mover con el asa «⠿ Mover» (arrastre de puntero y flechas), con clamping al viewport; «↗ Restaurar video» lo devuelve al panel. Prueba automatizada: carga con `YT.Player` simulado, arrastre puntero y flecha izquierda mueven `left/top`. Pendiente tu confirmación en navegador real.
+
 
 
 - Ahora quiero implementar un gran cambio visual en la parte del acompañamiento, me gustaría que en la seccion "secciones del tema" haya como una forma de "maximizar" esa sección, y esta se expanda ocultando la sección de las tarjetas de las progresiones, así puedo ver sólo las tarjetas de cada sección del tema como intro, verso, etc (me gustaría que cada acorde también muestre su grado o modo bajo cada acorde como en las tarjetas del acompañamiento).
