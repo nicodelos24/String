@@ -202,6 +202,32 @@ function saveCustomProgression(){
     }))));
   }catch{/* Sin almacenamiento: la opción «Mi progresión» usa la progresión actual. */}
 }
+// Al recargar se restaura la progresión propia guardada, igual que si se
+// eligiera «Mi progresión»: las tarjetas quedan tal como se estaban editando.
+function restoreCustomProgression(){
+  if(typeof localStorage==='undefined')return;
+  let chords=null;
+  try{
+    const raw=localStorage.getItem(customProgressionKey);
+    const parsed=raw?JSON.parse(raw):null;
+    if(Array.isArray(parsed)&&parsed.length){
+      chords=parsed.map(item=>({
+        root:Number.isInteger(item.root)?((item.root%12)+12)%12:null,
+        rootNoteName:item.rootNoteName,
+        type:item.type,
+        mode:item.mode,
+        beats:validBeats(item.beats)
+      })).filter(item=>item.root!==null&&chordTypes.some(type=>type.value===item.type));
+    }
+  }catch{/* Sin guardado previo: se usa la progresión inicial. */}
+  if(!chords||!chords.length)return;
+  playingProgressionItem=null;
+  progressionEdited=true;
+  progression=chords;
+  activeProgression=progression.length?0:-1;
+  if(activeProgression>=0)selectProgressionChord(0);
+  renderProgression();
+}
 let selectedFretMidi=null;
 let activeProgression = 0;
 let playingProgressionItem = null;
@@ -1109,3 +1135,4 @@ document.querySelector('#open-strings').addEventListener('click', event => {
   selectFretNote(note);
 });
 populateControls(); renderIntervalLegend(); updateModeLegend(); updateView();
+restoreCustomProgression();
