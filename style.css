@@ -183,7 +183,7 @@ footer {
   background: var(--paper-light);
   border: 1px solid var(--line);
   box-shadow: 12px 12px 0 rgba(44, 50, 40, .06);
-  animation: rise .55s ease-out both;
+  animation: rise .55s ease-out backwards;
   gap: 1px;
 }
 
@@ -1616,7 +1616,7 @@ footer {
   border: 4px solid var(--wood-dark);
   border-radius: 10px;
   background: var(--paper);
-  animation: rise .4s ease both;
+  animation: rise .4s ease backwards;
 }
 .keyboard-panel-head {
   display: flex;
