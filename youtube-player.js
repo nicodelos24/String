@@ -14,15 +14,24 @@
   window.addEventListener('resize',()=>{if(wrap.classList.contains('is-floating') && floatPosition)positionFloat(floatPosition.x,floatPosition.y);});
   const label=seconds=>`${Math.floor(seconds/60)}:${String(Math.floor(seconds%60)).padStart(2,'0')}`;
   const setIcon=ticking=>{toggle.innerHTML=ticking?'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>':'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>';toggle.setAttribute('aria-label',ticking?'Pausar':'Reproducir');toggle.title=ticking?'Pausar':'Reproducir';};
+  // Ancestros con `transform` (p. ej. la animación del panel) rompen el
+  // `position:fixed`: el video quedaría anclado a la página entera y el
+  // arrastre se despegaría del puntero. Al volar se mueve al `body` y al
+  // restaurar vuelve junto al panel.
   function layout() {
     const collapsed=disclosure.getAttribute('aria-expanded')==='false';
     if(collapsed && content.contains(document.activeElement))disclosure.focus();
     content.classList.toggle('is-collapsed',collapsed); content.inert=collapsed;
-    wrap.classList.toggle('is-floating',collapsed && floating.checked);
+    const floatingNow=collapsed && floating.checked && !!(player && wrap.children.length);
+    wrap.classList.toggle('is-floating',floatingNow);
     wrap.hidden=!player || (collapsed && !floating.checked);
-    if(collapsed && floating.checked && !wrap.hidden){
+    if(floatingNow){
+      document.body.append(wrap);
       if(floatPosition)positionFloat(floatPosition.x,floatPosition.y);
-    }else ['left','top','right','bottom'].forEach(key=>wrap.style.removeProperty(key));
+    }else{
+      content.after(wrap);
+      ['left','top','right','bottom'].forEach(key=>wrap.style.removeProperty(key));
+    }
     toggle.disabled=!ready || wrap.hidden;
     if(ready && wrap.hidden) player.pauseVideo();
   }

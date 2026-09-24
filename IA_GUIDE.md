@@ -38,6 +38,7 @@ Errores actuales a corregir por pruebas manuales exploratorias de regresión
 - Otro error es el reproductor de youtube en modo ventana flotante, este queda abajo en la página y no se puede ni siquiera mover.
 
   - Verificado en navegador headless: al minimizar con «Video flotante» activo, el reproductor queda anclado como `position:fixed` abajo a la derecha y se puede mover con el asa «⠿ Mover» (arrastre de puntero y flechas), con clamping al viewport; «↗ Restaurar video» lo devuelve al panel. Prueba automatizada: carga con `YT.Player` simulado, arrastre puntero y flecha izquierda mueven `left/top`. Pendiente tu confirmación en navegador real.
+  - Error real encontrado al confirmar: al arrastrar, el video se despegaba del puntero porque quedaba anclado a la página entera, no al viewport. Causa: ancestros con `transform` (la animación `rise` del panel deja `matrix(1,0,0,1,0,0)`) rompen el `position:fixed`, y el `margin: 8px 0` heredado desplazaba la caja de margen. Arreglo: al volar el reproductor se mueve al `document.body` (sin ancestros transformados) y al restaurar vuelve junto al panel; `margin: 0` en `.is-floating`. Comprobado en headless: el wrap sigue al puntero exactamente (delta -200,-120 → -200,-120), conserva el agarre y clampa en los bordes. `npm test` → 186/186.
 
 
 
