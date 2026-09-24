@@ -261,3 +261,52 @@ y además en modo oscuro el teclado expansible se ve mal, no respeta el color de
 quisiera aprovechar ese espacio para colocar el switch con el candado que dice Haz clic en una nota para consultar su intervalo, además ese texto debería ir junto a su burbuja de ?, entonces este switch a la izquierda en esta sección, y en el resto del espacio disponible me gustaría poner los botones de notas, grados, triada en el espacio de la derecha, y el volumen acomodarlo también por ahí en esta sección bien organizada
 
   - Implementado: se eliminó el texto «7 notas · 22 trastes…». El pie quedó en una sola línea: a la izquierda el candado «Haz clic en una nota para consultar su intervalo» con su burbuja «?», y a la derecha los botones notas/grados/tríada y el volumen del mástil. En pantallas estrechas envuelve en filas. `npm test` → 186/186. Pendiente tu revisión visual.
+
+  *La detección de acordes con Micrófono funciona muy bien, pero se podría ajustar un poco más para mejorarlo? 
+
+  *Además hay momentos que al tocar ciertas notas aparecen barras de desplazamiento en el mástil que rompen la vista al desordenar la visual de los trastes, Por ejemplo con D aparece en el lateral derecho del mástil, y por ejemplo con D# aparece una barra de desplazamiento horizontal abajo
+
+  quisiera que estas barras no aparezcan a no ser que se use modo responsive
+
+  - Corregido el desbordamiento del mástil (las barras laterales e inferior con D, D# y al brillar una nota con `.live`): las notas del traste 22 de la 6.ª cuerda con la animación de brillo crecían `fretboard-wrap` 698→705 px (x) y la sección 1515→1530 px (y). Ahora `.fretboard` y `.fretboard-layout > .open-strings` recortan el resplandor en los bordes con `overflow: hidden; overflow: clip;`. Verificado en headless (980 px sin desbordamiento) y el modo responsive conserva su scroll propio a ≤700 px (el desplazamiento de trastes no desaparece).
+  - Mejorado el reconocimiento por micrófono en tres frentes, todos con tests:
+    - **Respuesta más rápida**: `chordFftSize` 16384→8192 (ventana ~341→~170 ms a 48 kHz), análisis cada 60 ms en lugar de 90 ms y confirmación estable 350→240 ms (release 500 ms). El acorde aparece antes (~2×), manteniendo la misma tolerancia de desafinación (-15 cents) porque la resolución de grilla sigue siendo ~5.9 Hz por bin.
+    - **Mejor nombrado de raíz/calidad**: la ventana de empate enarmónico pasó de 0.02 a 0.05, y el desempate ahora usa la nota más grave que suena de verdad (con fallback a la energía del bajo). Así las inversiones (p. ej. Dm7/F → F6) y los empates se nombran por su bajo real en lugar de devolver «incierto». Los empates por debajo de 0.82 vuelven a ser rechazados para no inventar acordes con ruido.
+    - **Ruido y notas sueltas**: compuerta de raíz — si la clase de la raíz no alcanza al menos el 30% del pico máximo de la croma, el acorde no se afirma (una tríada C cuya tónica apenas suena ya no se reporta como Do).
+  - `npm test` → 189/189 (tests nuevos de inversión, raíz débil y confirmación corta del lector). Pendiente tu prueba real con guitarra: rapidez percibida, cejillas al bajarlas y ruido de habitación.
+
+  * El switch de sostenido/bemol no funciona bien al vincularse con qué nota suena, y si lo tengo activado no se realiza bien el cambio a acordes que tengan sostenidos, por ejemplo si tengo el bemol activado, y por microfono toco un D mayor, el switch debería quedar en modo sostenido, y ahora no funciona.
+
+  * En ambos switchs de apagado/ notas/ acorde. quisiera que esté por defecto en acorde
+
+  *Me gustaría además incluir un afinador para bajo y guitarra
+
+  - Implementado, con estos tres ajustes a la vez:
+    - **Los acordes en vivo ajustan el switch ♯/♭ a la escritura de su raíz.** La raíz elige
+      escritura por círculo de quintas: raíces G, D, A, E, B y F# pasan a sostenidos; F, Bb, Eb, Ab y Db
+      a bemoles; Do conserva la elección del usuario. Se aplica tanto por micrófono como por teclado,
+      y el nombre de la raíz y el switch viajan juntos. Corregido además el bug previo: `renderRootPiano`
+      solo actualizaba `pianoUseFlats` cuando la raíz tenía nombre enarmónico, así que las raíces
+      naturales (p. ej. Re) nunca pasaban a sostenidos.
+    - **Los switchs Apagado/Nota/Acorde arrancan en «Acorde»** (teclado y micrófono), también tras
+      un restablecimiento de preferencias.
+    - **Afinador de guitarra y bajo**: botón «Afinador» junto al micrófono despliega el panel con las
+      cuerdas del instrumento, una aguja de cents y el estado. Usa la detección de la nota sostenida;
+      mide contra la cuerda más cercana o la que fijes haciendo clic en su nombre (nuevo clic la suelta).
+      Muestra nota con octava (p. ej. «E2»), desviación en cents (negativa = quedó grave) y «Afinado»
+      dentro de ±5 cents. El switch del micrófono y la fase no se ven afectados.
+  - `npm test` → 189/189 (tests nuevos de escritura por círculo de quintas, default «Acorde» y del
+    afinador). Pendiente tu prueba real con instrumento: afinación de oído, fijar cuerda y que el
+    nombre del acorde y el switch ♯/♭ cambien juntos al tocar (p. ej. Re mayor → sostenido).
+
+
+  *En el botón de micrófono la nota que se escucha aparece a la derecha del botón, y me gustaría que aparezca a la izquierda, ya que al modificarse todo el tiempo el texto de la nota se mueve constantemente el botón de micrófono y eso me jode mucho la visual.
+
+  - Implementado: `#microphone-readout` se movió a la izquierda del botón «Micrófono» dentro de `.mic-control`. Además tiene un ancho mínimo estable (88px, texto centrado y recorte con «…») para que el cambio de texto no desplace el botón. Verificado en headless: la lectura queda a la izquierda del botón. Pendiente tu revisión visual.
+
+  *Al quitar todas las tarjetas se deforma la interfaz porque ocupa menos lugar esa parte donde estaban las tarjetas, eso quiero mejorarlo y que al quitar las tarjetas se mantenga la interfaz en el lugar, y de paso quitar el texto que dice "Sin acordes. Elige una nota y pulsa «añadir acorde» para empezar." y que solo diga "Agrega con «añadir acorde»."
+  
+  *Cuando la página se recarga no se mantienen las tarjetas tal como las estaba modificando
+
+  *El botón añadir acorde en un principio estaba colocado en otra parte (para ejemplo revisar la version 1.0) Quisiera que ahora se coloque otro botón en ese lugar para tenerlo a mano en varias circunstancias en la esquina superior derecha como en la version 1.0
+  
