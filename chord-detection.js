@@ -35,6 +35,12 @@ const CHROMA_TILT = 0.6;
 const CHROMA_TILT_REF = 220;
 const RESIDUAL_FLOOR = 0.05;
 const PRESENCE = 0.2;
+// Cuánta energía debe tener la raíz frente al pico máximo de la croma: evita
+// nombrar acordes cuya raíz apenas suena (ruido, armónicos sueltos).
+const ROOT_MIN_SHARE = 0.3;
+// Ventana de empate para acordes enarmónicos o invertidos. Fuera de ella el
+// acorde debe ser claramente mejor; dentro se decide por la nota más grave.
+const TIE_BREAK_WINDOW = 0.05;
 
 function detectChord(spectrum, sampleRate, fftSize = spectrum.length * 2) {
   if (!Number.isFinite(sampleRate) || sampleRate <= 0 || fftSize < 8192 || spectrum.length !== fftSize / 2) return null;
@@ -98,14 +104,26 @@ function detectChord(spectrum, sampleRate, fftSize = spectrum.length * 2) {
   }
   candidates.sort((a, b) => b.confidence - a.confidence);
   // Los conjuntos enarmónicos (p. ej. Dm7 = F6, Am6 = F#m7b5) y los acordes
-  // simétricos (dim7, aug) empatan en cobertura: la raíz la decide el bajo real.
-  if (candidates.length > 1 && candidates[0].confidence - candidates[1].confidence < 0.02) {
-    const bassOf = root => audible.reduce((sum, peak) => (peak.midi % 12) === root ? sum + peak.amplitude / peak.freq : sum, 0);
-    return [...candidates.filter(candidate => candidates[0].confidence - candidate.confidence < 0.02)]
-      .sort((a, b) => bassOf(b.root) - bassOf(a.root))[0];
+  // simétricos (dim7, aug) empatan en cobertura, y las inversiones se acercan
+  // mucho. La raíz la decide la nota más grave que suena de verdad; si ninguna
+  // coincide, el peso de las cuerdas graves desempata.
+  if (candidates.length > 1 && candidates[0].confidence - candidates[1].confidence < TIE_BREAK_WINDOW) {
+    if (candidates[0].confidence < 0.82) return null;
+    const tied = candidates.filter(candidate => candidates[0].confidence - candidate.confidence < TIE_BREAK_WINDOW);
+    const lowest = [...audible].sort((a, b) => a.freq - b.freq)[0];
+    const lowestClass = lowest ? lowest.midi % 12 : -1;
+    const bassScore = candidate => {
+      let score = lowestClass === candidate.root ? 12 : 0;
+      for (const peak of audible) if (peak.midi % 12 === candidate.root) score += peak.amplitude / peak.freq;
+      return score;
+    };
+    const chosen = [...tied].sort((a, b) => bassScore(b) - bassScore(a))[0];
+    if (chroma[chosen.root] < maximum * ROOT_MIN_SHARE) return null;
+    return chosen;
   }
   const best = candidates[0];
   if (!best || best.confidence < 0.82 || (candidates[1] && best.confidence - candidates[1].confidence < 0.08)) return null;
+  if (chroma[best.root] < maximum * ROOT_MIN_SHARE) return null;
   return best;
 }
 

@@ -35,6 +35,13 @@ test('transposición cromática y desafinación leve', () => {
     assert.equal(found?.root, step); assert.equal(found?.type, 'maj');
   }
 });
+test('inversión: nombra el acorde según el bajo real en lugar de descartarlo', () => {
+  const found = detectChord(audioSpectrum([41, 45, 48, 50], { harmonics: 6 }), 48000);
+  assert.equal(found?.root, 5); assert.equal(found?.type, '6');
+});
+test('si la raíz apenas suena no se afirma la calidad', () => {
+  assert.equal(detectChord(audioSpectrum([48, 52, 55], { amplitudes: [0.06, 0.9, 0.9] }), 48000), null);
+});
 test('silencio, ruido, notas solas y quintas no inventan acordes', () => {
   for (const midis of [[], [40], [45], [48], [52], [57], [64], [40, 47], [48, 55], [48, 49, 54, 58]]) {
     assert.equal(detectChord(audioSpectrum(midis, { harmonics: 9, noise: 0.002 }), 48000), null, String(midis));

@@ -115,7 +115,7 @@ test('permiso denegado o sin micrófono reporta error y no queda activo', async 
 test('micrófono con ambos analizadores inicia, confirma acordes y libera el audio', async () => {
   let frame, now = 0, silent = false, closed = 0, stopped = 0;
   const sizes = [], events = [], states = [];
-  const spectrum = audioSpectrum([48, 52, 55], { harmonics: 6 });
+  const spectrum = audioSpectrum([48, 52, 55], { harmonics: 6, size: 8192 });
   const reader = new MicrophoneReader({
     getUserMedia: async () => ({ getTracks: () => [{ stop() { stopped++; } }] }),
     createContext: () => ({ sampleRate: 48000, resume: async () => {},
@@ -133,7 +133,7 @@ test('micrófono con ambos analizadores inicia, confirma acordes y libera el aud
   await reader.start();
   assert.equal(reader.running, true);
   assert.deepEqual(states, ['requesting', 'ready']);
-  assert.deepEqual(sizes, [2048, 16384]);
+  assert.deepEqual(sizes, [2048, 8192]);
   for (now of [0, 100, 200, 400, 500]) frame();
   assert.equal(events.length, 1);
   assert.equal(events[0].root, 0); assert.equal(events[0].type, 'maj');
@@ -152,11 +152,44 @@ test('si falla el analizador de acordes se cierran el contexto y el micrófono',
   const reader = new MicrophoneReader({
     getUserMedia: async () => ({ getTracks: () => [{ stop() { stopped++; } }] }),
     createContext: () => ({ resume: async () => {}, createMediaStreamSource: () => ({ connect() {} }), close() { closed++; } }),
-    createAnalyser(context, size) { if (size === 16384) throw new Error('Fallo de prueba'); return {}; },
+    createAnalyser(context, size) { if (size === 8192) throw new Error('Fallo de prueba'); return {}; },
     detectChord, followChord: followStableChord, onState: state => states.push(state),
   });
   await reader.start();
   assert.equal(reader.running, false); assert.equal(reader.starting, false);
   assert.equal(states.at(-1), 'error');
   assert.equal(closed, 1); assert.equal(stopped, 1);
+});
+
+test('el lector por defecto confirma acordes con confirmación corta', async () => {
+  let frame, now = 0, silent = false, closed = 0, stopped = 0;
+  const events = [];
+  const spectrum = audioSpectrum([48, 52, 55], { harmonics: 6, size: 8192 });
+  globalThis.followStableChord = followStableChord;
+  try {
+    const reader = new MicrophoneReader({
+      getUserMedia: async () => ({ getTracks: () => [{ stop() { stopped++; } }] }),
+      createContext: () => ({ sampleRate: 48000, resume: async () => {},
+        createMediaStreamSource: () => ({ connect() {} }), close() { closed++; } }),
+      createAnalyser(context, size) {
+        return { fftSize: size, frequencyBinCount: size / 2,
+          getFloatTimeDomainData(buffer) { buffer.fill(0); },
+          getFloatFrequencyData(buffer) { if (silent) buffer.fill(-Infinity); else buffer.set(spectrum); } };
+      },
+      detect: () => null, detectChord, now: () => now,
+      requestFrame(fn) { frame = fn; return 1; }, cancelFrame() {},
+      onChord: chord => events.push(chord), onState: () => {},
+    });
+    await reader.start();
+    for (now of [0, 100, 200, 300, 400]) frame();
+    assert.equal(events.length, 1);
+    assert.equal(events[0].root, 0); assert.equal(events[0].type, 'maj');
+    silent = true;
+    for (now of [900, 1500, 1700]) frame();
+    assert.equal(events.at(-1), null);
+    reader.stop();
+    assert.equal(closed, 1); assert.equal(stopped, 1);
+  } finally {
+    delete globalThis.followStableChord;
+  }
 });

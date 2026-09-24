@@ -4,6 +4,11 @@
 
 const DEFAULT_FFT_SIZE = 2048;
 const DEFAULT_CONFIRM_FRAMES = 3;
+// Análisis de acordes: ventana corta (~170 ms a 48 kHz) para responder rápido.
+const CHORD_FFT_SIZE = 8192;
+// Confirmación estable breve: un acorde claro aparece pronto, sin latencia perceptible.
+const CHORD_CONFIRM_MS = 240;
+const CHORD_RELEASE_MS = 500;
 
 function followStable(detected, state = {}, confirmFrames = DEFAULT_CONFIRM_FRAMES) {
   const record = state && state.pending ? state : { current: null, pending: { midi: null, count: 0 } };
@@ -35,8 +40,9 @@ class MicrophoneReader {
     this.onState = options.onState || (() => {});
     this.detect = options.detect || (typeof detectPitch === 'function' ? detectPitch : () => null);
     this.detectChord = options.detectChord || (typeof detectChord === 'function' ? detectChord : null);
-    this.followChord = options.followChord || (typeof followStableChord === 'function' ? followStableChord : null);
-    this.chordFftSize = options.chordFftSize || 16384;
+    this.followChord = options.followChord || ((detected, state, now) =>
+      typeof followStableChord === 'function' ? followStableChord(detected, state, now, { confirmMs: CHORD_CONFIRM_MS, releaseMs: CHORD_RELEASE_MS }) : null);
+    this.chordFftSize = options.chordFftSize || CHORD_FFT_SIZE;
     this.now = options.now || (() => performance.now());
     this.fftSize = options.fftSize || DEFAULT_FFT_SIZE;
     this.minFreq = options.minFreq;
@@ -128,7 +134,7 @@ class MicrophoneReader {
     this.hysteresis = result.state;
     if (result.note !== undefined) this.onPitch(result.note);
     const now = this.now();
-    if (this.chordAnalyser && this.chordBuffer && now - this.lastChordFrame >= 90) {
+    if (this.chordAnalyser && this.chordBuffer && now - this.lastChordFrame >= 60) {
       this.lastChordFrame = now;
       this.chordAnalyser.getFloatFrequencyData(this.chordBuffer);
       const candidate = this.detectChord(this.chordBuffer, this.sampleRate, this.chordAnalyser.fftSize);
