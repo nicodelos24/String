@@ -657,10 +657,19 @@ footer {
   align-items: center;
   margin-top: 8px;
   color: var(--muted);
+  flex-wrap: wrap;
+}
+
+.board-footer-tools {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-left: auto;
 }
 
 .hint {
-  margin-left: auto;
+  margin-left: 0;
   text-transform: none;
   letter-spacing: 0;
   font-family: var(--sans);
@@ -1056,9 +1065,9 @@ html[data-theme="dark"] .board-add-button {
 .fret-lock .lock-symbol { transition: stroke .22s ease; }
 .fret-lock .lock-symbol path { transform-origin: 14px 9px; transform: rotate(-18deg) translateY(-1px); transition: transform .22s ease; }
 .fret-lock .spelling-switch:has(:checked) .lock-symbol path { transform: rotate(0) translateY(0); }
-.note-feedback { display: flex; align-items: center; justify-content: flex-end; gap: 12px; margin-left: auto; min-width: 0; }
+.note-feedback { display: flex; align-items: center; gap: 12px; min-width: 0; }
 .note-feedback .hint { width: auto; margin: 0; min-width: 0; }
-@media(max-width: 900px) { .note-feedback { flex-basis: 100%; justify-content: space-between; } .note-feedback .hint { flex: 1; } }
+@media(max-width: 900px) { .note-feedback { flex-wrap: wrap; } }
 @media(prefers-reduced-motion: reduce) { .spelling-switch .spelling-track, .spelling-switch .spelling-track::after, .fret-lock .lock-symbol, .fret-lock .lock-symbol path { transition: none; } }
 .board-view-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 8px 0 10px; }
 .pentatonic-control { display: inline-flex; align-items: center; gap: 8px; margin-left: auto; }
@@ -1214,10 +1223,8 @@ footer {
     flex-wrap: wrap;
   }
 
-  .hint {
-    width: 100%;
-    margin-left: 0;
-    margin-top: 6px;
+  .note-feedback {
+    gap: 4px 12px;
   }
 
   .next-section {

@@ -731,7 +731,6 @@ function renderFretboard() {
     return `<div class="inlay-cell ${fret === 12 ? 'octave-inlay' : ''}">${marker}</div>`;
   }).join('');
   fretboard.innerHTML = `<div class="fret-inlays" aria-hidden="true">${inlays}</div>${rows}`;
-  document.querySelector('#note-count').textContent = `${selectedModeNotes.size} notas`;
 }
 function renderOpenStrings() {
   const inst = instruments[instrument];
