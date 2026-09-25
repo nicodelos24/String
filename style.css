@@ -1830,7 +1830,7 @@ footer {
 /* Modo «Ambos»: el piano se muestra debajo del mástil, ambos a todo lo ancho.
    Las teclas del PC tocan solo el piano; el mástil conserva su ancho completo
    y, con «Acorde en vivo», sigue el acorde que formes. */
-.fretboard-section:is(.keyboard-split, .keyboard-band) { display: flex; flex-wrap: wrap; align-items: flex-start; }
+.fretboard-section:is(.keyboard-split, .keyboard-band) { display: flex; flex-wrap: wrap; align-items: flex-start; align-content: flex-start; }
 .fretboard-section:is(.keyboard-split, .keyboard-band) > * { flex: 0 0 100%; }
 /* Pie del mástil y botón de añadir se funden en una sola fila encima del
    diapasón: candado, pista, lectura del acorde + «añadir acorde» y, al final,
