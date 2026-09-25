@@ -338,6 +338,8 @@ quitemos el texto que dice "haz clic en una nota etc" y en donde está este text
 
 *Quisiera que al poner solo mástil también se vea con la misma interfaz ordenada como al poner el modo "ambos" con el boton añadir acorde y volumen en la misma fila arriba del mastil
 
+**Al seleccionar para que se vea solo el mástil se genera un margin que no deberia tener arriba, y los botones de arriba del mastil no quedan de la misma forma compacta como cuando pongo el modo "ambos" donde quedan todos los botones ordenados y compactos arriba del mastil
+
 *En el teclado extendido me gustaría que el añadir acorde que se ve debajo del teclado, ahora lo traslademos dentro del teclado arriba a la derecha que hay un espacio libre, así siempre puedo agregar acordes siempre desde la interfaz del piano teniendo el boton mas a mano
 
 *Me gustaría que el micrófono en guitarra detecte las notas y las muestre sin tanto retardo, además quisiera mejorar la detección de acordes, por ahora en guitarra ya que es con lo que estoy probando actualmente y con bajo ha funcionado bastante bien, aunque también se podría mejorar la detección de acordes
