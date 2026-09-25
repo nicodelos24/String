@@ -1113,11 +1113,9 @@ function selectFretNote(note) {
   if(liveChordActive || document.querySelector('#fret-scale-lock').checked) {
     document.querySelectorAll('.is-picked').forEach(item=>item.classList.remove('is-picked'));
     note.classList?.add('is-picked');
-    document.querySelector('.hint').textContent=`Nota seleccionada: ${displayNote(pitch)}${note.dataset.interval ? ` · ${note.dataset.interval}` : ''}${liveChordActive ? ' · la escala la lleva el acorde en vivo.' : '. Escala fija.'}`;
     return;
   }
   choosePianoRoot(pitch,pianoUseFlats ? noteLabels[notes[pitch]] || notes[pitch] : notes[pitch]);
-  document.querySelector('.hint').textContent=`Nota base: ${rootNoteName}. El modo seleccionado se conserva.`;
 }
 
 function appendMidiChords(chords) {

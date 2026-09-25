@@ -44,7 +44,7 @@ if(typeof document!=='undefined') (()=>{
     const key=event.target.closest('[data-pitch]'),note=event.target.closest('[data-midi]');
     if(!key && !note) return;
     const midi=note?Number(note.dataset.midi):(instrument==='bass'?36:60)+Number(key.dataset.pitch);
-    preview.play(midi,Number(document.querySelector('#player-volume').value)/100,note?instrument:'piano').catch(()=>{document.querySelector('.hint').textContent='No se pudo escuchar la nota. Intenta de nuevo.';});
+    preview.play(midi,Number(document.querySelector('#player-volume').value)/100,note?instrument:'piano').catch(()=>{console.warn('No se pudo escuchar la nota.');});
   });
   window.addEventListener('pagehide',()=>{preview.stop();preview.context?.close();});
 })();
