@@ -317,4 +317,29 @@ quisiera aprovechar ese espacio para colocar el switch con el candado que dice H
   - Implementado: segundo botón «añadir acorde» (`#legend-add-chord`) en la parte alta del panel derecho (`.legend-panel`), encima de «Armadura de Clave». Ancho completo, mismo estilo óxido que el botón central y misma acción (`addProgressionChord`). Verificado en headless: queda arriba de la armadura y añade la tarjeta al hacer clic.
 
   - El encabezado «Armadura de Clave» se eliminó al pasar al panel la lectura de la armadura real («C Mayor · Natural»); el botón de añadir ocupa ahora esa cabecera.
+
+*Quisiera revertir el orden del modo «Ambos»: el piano expandible ya no debe reemplazar ni tapar el mástil, debe quedar debajo.
+
+  - Implementado: en «Ambos» el piano pasó a mostrarse debajo del mástil a todo lo ancho (`.fretboard-section.keyboard-split` reordena: primero mástil, su pie y su botón de añadir, y después el teclado con su propio «+ añadir acorde»). Las teclas del PC siguen tocando solo el piano y el mástil conserva las notas del micrófono y el seguimiento de «Acorde en vivo». Se actualizaron el texto de ayuda del teclado, los comentarios y el README. Verificado en Chromium headless: con «Ambos» activo el piano queda por debajo del mástil (`pianoTop` > `mastilTop`). `npm test` → 192/192. Pendiente tu revisión visual.
+  - Ajuste solicitado: el pie del mástil («? · haz clic en una nota… · Aa scale · grados · 🎨 · Volumen`) ahora se muestra arriba del diapasón y más comprimido (márgenes y gaps reducidos) en el modo «Ambos». Además se separaron los dos botones «+ añadir acorde»: el principal (con la lectura del acorde) queda encima del mástil y el del teclado debajo del piano. Verificado en Chromium headless con el orden pie → añadir(1) → mástil → piano → añadir(2). `npm test` → 192/192. Pendiente tu revisión visual.
+  - Ajuste solicitado: en «Ambos» el botón «+ añadir acorde» con su lectura del acorde quedó en la **misma línea** que los controles del pie del mástil, justo antes de los botones de notas/grados (`? · pista · C · + añadir acorde · Aa escala · grados · 🎨 · Volumen`), todo centrado verticalmente sobre el diapasón. Se logró aplanando el pie y la fila de añadir del mástil (`display: contents` en `.fretboard-section.keyboard-split`) para que sus iconos participen en la fila flexible; el `#keyboard-add-row` conserva su caja (selector `:not(.keyboard-add-row)`) y sigue debajo del piano. La pista se acota (`max-width: min(200px, 15vw)` con elipsis) y los botones del pie se compactan para que la fila no desborde. El modo «Mástil» (normal) no cambia. Verificado en headless a 1440 px: los 5 elementos comparten la misma línea con orden pista → lectura → botón → herramientas → volumen, y debajo mástil → piano → añadir(2). `npm test` → 192/192. Pendiente tu revisión visual.
   
+  *Muchas veces pasa que al tocar la primer nota sale un pop que aturde, y si se usan auriculares puede ser dañino, ya que este pop suena como una nota pero más alto que el volumen máximo, aunque los controles de volumen esten bajos pasa muy seguido
+
+  *Ahora me gusta cómo está la distribución de los botones al poner el modo "ambos", me gustaría que esos controles queden así aunque ponga el mástil solo tambien, eso sí, me gustaria que en la p
+arte donde dice 
+?
+Haz clic en una nota para consultar su intervalo
+Aa escala
+1 grados: escala
+🎨 grados
+Volumen 
+quitemos el texto que dice "haz clic en una nota etc" y en donde está este texto pongamos el volumen, así queda todo en la misma fila, y además dejarlo más pegado al mástil quitando un poco de margen abajo
+
+*Quisiera que al poner solo mástil también se vea con la misma interfaz ordenada como al poner el modo "ambos" con el boton añadir acorde y volumen en la misma fila arriba del mastil
+
+*En el teclado extendido me gustaría que el añadir acorde que se ve debajo del teclado, ahora lo traslademos dentro del teclado arriba a la derecha que hay un espacio libre, así siempre puedo agregar acordes siempre desde la interfaz del piano teniendo el boton mas a mano
+
+*Me gustaría que el micrófono en guitarra detecte las notas y las muestre sin tanto retardo, además quisiera mejorar la detección de acordes, por ahora en guitarra ya que es con lo que estoy probando actualmente y con bajo ha funcionado bastante bien, aunque también se podría mejorar la detección de acordes
+
+  - Implementado (modo «Mástil»): se eliminó el texto «Haz clic en una nota para consultar su intervalo» y el slider «Volumen» (`#mastil-volume`) quedó en ese lugar, junto al candado y la ayuda «?»; los botones Aa escala / grados / 🎨 conservan la derecha. Todo queda en la misma fila y más pegado al mástil (margen superior del pie reducido y fila de añadir más compacta). En «Ambos» la distribución aprobada no cambia (volumen al final de la fila). La pista dinámica que se escribía al pulsar el mástil se retiró con el elemento. Verificado en Chromium headless a 1440 px: en Mástil el volumen queda antes de las herramientas en la misma línea y sin pista; en Ambos se mantiene el orden candado → C → añadir → herramientas → volumen. `npm test` → 192/192. Pendiente tu revisión visual.
