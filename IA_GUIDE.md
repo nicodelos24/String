@@ -371,3 +371,10 @@ También que si está todo pausado y toco una tarjeta por ejemplo, se ponga play
 *Me gustaría retomar la opción de que se guarden automáticamente los acordes que capte por micrófono ahora que está mucho más optimizado el reconocimiento de acordes, aunque me gustaría mejorarlo aún más para que sea más preciso aún, si se puede me gustaría intentar mejorarlo.
 
 * También me gustaría poder optimizar que el micrófono capte y muestre varias notas en simultaneo que se tocan, así sea un acorde por ejemplo o haciendo un solo, para en un futuro poder utilizar la app como método de aprendizaje tanto para principantes como para expertos que quieran explorar
+
+* En este momento la app no está bien adaptada a móviles, habría que mejorar su diseño responsive
+
+* Actualmente me gustaría volver a reasignar las teclas para tocar tanto en el piano como en el mastil, haciendo que vuelva la antigua asignasion de asdfg=cdefg
+  zxcv=g a b c
+
+Al tocar una nota con el Movil en el teclado expansible con el modo "ambos" la nota suena doble, con el sonido del piano y el de guitarra/bajo que haya en el mástil 
