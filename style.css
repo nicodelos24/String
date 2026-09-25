@@ -1834,26 +1834,33 @@ footer {
 .fretboard-section.keyboard-open .fretboard-wrap,
 .fretboard-section.keyboard-open .board-footer { display: none; }
 
-/* Modo «Ambos»: el piano se muestra encima y casi pegado al mástil, ambos a
-   todo lo ancho. Las teclas del PC tocan solo el piano; el mástil conserva su
-   ancho completo y, con «Acorde en vivo», sigue el acorde que formes. */
+/* Modo «Ambos»: el piano se muestra debajo del mástil, ambos a todo lo ancho.
+   Las teclas del PC tocan solo el piano; el mástil conserva su ancho completo
+   y, con «Acorde en vivo», sigue el acorde que formes. */
 .fretboard-section.keyboard-split { display: flex; flex-wrap: wrap; align-items: flex-start; }
 .fretboard-section.keyboard-split > * { flex: 0 0 100%; }
-/* Orden explícito de todos los hijos para que el piano y el mástil queden
-   arriba, justo como en la estética de solo mástil, con el piano encima. */
+/* Pie del mástil y botón de añadir se funden en una sola fila encima del
+   diapasón: candado, pista, lectura del acorde + «añadir acorde» y, al final,
+   los botones de notas/grados/tríada con el volumen. */
+.fretboard-section.keyboard-split .board-footer,
+.fretboard-section.keyboard-split .board-add-row:not(.keyboard-add-row) { display: contents; }
 .fretboard-section.keyboard-split .progression-workspace { order: 2; }
 .fretboard-section.keyboard-split .board-toolbar { order: 3; }
 .fretboard-section.keyboard-split .board-view-row { order: 4; }
-.fretboard-section.keyboard-split .keyboard-panel { order: 5; margin: 16px 0 4px; }
-.fretboard-section.keyboard-split .keyboard-add-row { order: 5; }
-.fretboard-section.keyboard-split .fretboard-wrap { order: 6; }
-.fretboard-section.keyboard-split .board-footer { order: 7; }
-.fretboard-section.keyboard-split .board-add-row { order: 8; }
-.fretboard-section.keyboard-split .scale-summary { order: 9; }
-.fretboard-section.keyboard-split .chord-player { order: 10; }
-.fretboard-section.keyboard-split .youtube-panel { order: 11; }
-.fretboard-section.keyboard-split .metronome { order: 12; }
-.fretboard-section.keyboard-split .library-panel { order: 13; }
+.fretboard-section.keyboard-split .note-feedback { order: 5; align-self: center; min-width: 0; }
+.fretboard-section.keyboard-split .board-add-chord { order: 6; align-self: center; margin-left: 10px; }
+.fretboard-section.keyboard-split .board-add-row:not(.keyboard-add-row) > .board-add-button { order: 7; align-self: center; margin-left: 6px; }
+.fretboard-section.keyboard-split .board-footer-tools { order: 8; align-self: center; margin-left: auto; gap: 4px; flex-wrap: nowrap; }
+.fretboard-section.keyboard-split .board-footer-tools .icon-button { padding: 6px 8px; font-size: 10px; }
+.fretboard-section.keyboard-split .board-volume { order: 9; align-self: center; margin-left: 10px; }
+.fretboard-section.keyboard-split .fretboard-wrap { order: 10; margin-top: 6px; }
+.fretboard-section.keyboard-split .keyboard-panel { order: 11; margin: 14px 0 2px; }
+.fretboard-section.keyboard-split .keyboard-add-row { order: 12; margin: 10px 0 20px; }
+.fretboard-section.keyboard-split .scale-summary { order: 13; }
+.fretboard-section.keyboard-split .chord-player { order: 14; }
+.fretboard-section.keyboard-split .youtube-panel { order: 15; }
+.fretboard-section.keyboard-split .metronome { order: 16; }
+.fretboard-section.keyboard-split .library-panel { order: 17; }
 
 @media (prefers-reduced-motion: reduce) { .keyboard-panel { animation: none; } .kp-key { transition: none; } }
 @media (max-width: 800px) {

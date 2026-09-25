@@ -2,8 +2,8 @@
 // con el teclado físico o con el puntero. Tres modos elegidos en el panel
 // izquierdo: «Mástil» (solo el mástil, las teclas lo tocan con el sonido del
 // instrumento), «Teclado» (el piano reemplaza el mástil) y «Ambos» (el piano
-// junto al mástil; las teclas tocan solo el piano y el mástil muestra las notas
-// del micrófono). Teclas naturales de la fila media: a s d f g h j k l ñ ;
+// junto al mástil, debajo de él; las teclas tocan solo el piano y el mástil
+// muestra las notas del micrófono). Teclas naturales de la fila media: a s d f g h j k l ñ ;
 // = la si do re mi fa sol la si do (a suena una octava más alta que el la de
 // la 5.ª cuerda: A3, 220 Hz; las mismas teclas en el piano y en el mástil).
 // Fila grave: z x c v b n m , . - = E F G A B C D E F G (fila grave).
@@ -607,7 +607,7 @@ if (typeof document !== 'undefined') (function () {
   }
 
   // El mástil está visible en «Mástil» (panel oculto) y en «Ambos» (layout
-  // dividido por abajo del piano); en «Teclado» queda oculto.
+  // dividido con el piano debajo del mástil); en «Teclado» queda oculto.
   function mastilShown() {
     if (panel.hidden) return true;
     var section = document.querySelector('.fretboard-section');
