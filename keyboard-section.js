@@ -479,6 +479,7 @@ if (typeof document !== 'undefined') (function () {
     if (section) {
       section.classList.toggle('keyboard-open', layout.open);
       section.classList.toggle('keyboard-split', layout.split);
+      section.classList.toggle('keyboard-band', mode === 'mastil');
     }
     var addRow = document.getElementById('keyboard-add-row');
     if (addRow) addRow.hidden = !layout.split;
