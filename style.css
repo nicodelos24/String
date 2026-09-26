@@ -1927,8 +1927,10 @@ footer {
 .youtube-external { color: var(--rust); font: 11px var(--mono); }
 .youtube-layout { display: grid; grid-template-columns: minmax(240px, 360px) minmax(0, 1fr); gap: 20px; }
 .youtube-media, .song-library { min-width: 0; }
-.youtube-video-wrap { width: 100%; height: 220px; margin: 12px 0 0; background: #1d2521; border-radius: 8px; overflow: hidden; }
-.youtube-video-wrap iframe { display: block; width: 100%; height: 100%; border: 0; }
+/* La altura del iframe la fija `fit()` (16:9) en youtube-player.js; aquí solo
+   queda el fondo mientras carga. Un alto fijo dejaba bandas grises sobre el video. */
+.youtube-video-wrap { width: 100%; min-height: 180px; margin: 12px 0 0; background: #1d2521; border-radius: 8px; overflow: hidden; }
+.youtube-video-wrap iframe { display: block; width: 100%; border: 0; }
 .youtube-url-row { flex-wrap: nowrap; }
 .youtube-url-row input { min-width: 0; width: 0; }
 .youtube-url-row button { flex-shrink: 0; }
@@ -1969,8 +1971,12 @@ footer {
 .video-transport { display: flex; align-items: center; gap: 12px; font: 10px var(--mono); }
 .video-transport input { flex: 1; min-width: 0; }
 .youtube-form { max-width: 560px; margin: 8px 0; }
-.youtube-video-wrap { max-width: 360px; height: 220px; margin: 8px 0; }
-.youtube-video-wrap.is-floating { position: fixed; bottom: 18px; right: 18px; width: 320px; max-width: calc(100vw - 36px); height: 252px; padding-top: 32px; box-sizing: border-box; margin: 0; z-index: 100; box-shadow: 0 12px 40px #0005; }
+/* La altura la fija `fit()` en youtube-player.js con proporción 16:9; aquí solo
+   queda el mínimo para que el panel no salte mientras carga el iframe. */
+.youtube-video-wrap { max-width: 360px; min-height: 180px; margin: 8px 0; }
+.youtube-video-wrap.is-floating { position: fixed; bottom: 18px; right: 18px; width: 320px; max-width: calc(100vw - 36px); min-height: 0; margin: 0; z-index: 100; box-shadow: 0 12px 40px #0005; }
+/* Los botones «Mover» y «Restaurar» van sobre el video; el degradado los deja legibles. */
+.youtube-video-wrap.is-floating::before { content: ''; position: absolute; inset: 0 0 auto 0; height: 32px; background: linear-gradient(#000a, #0000); pointer-events: none; }
 .video-restore { display: none; }
 .video-sync-panel { margin-top: 10px; padding: 8px; border: 1px solid var(--line); border-radius: 8px; }
 .video-sync-panel > summary { cursor: pointer; margin-bottom: 6px; }
@@ -1984,7 +1990,8 @@ footer {
 .video-drag { display: none; }
 .is-floating .video-drag { display: block; position: absolute; top: 0; left: 0; height: 32px; touch-action: none; cursor: grab; }
 .is-floating .video-drag:active { cursor: grabbing; }
-.youtube-video-wrap.is-floating { max-height: calc(100dvh - 16px); }
+/* En pantallas bajas se limita el ancho para que el 16:9 no se salga de la ventana. */
+.youtube-video-wrap.is-floating { max-width: min(calc(100vw - 36px), calc((100dvh - 16px) * 16 / 9)); }
 .youtube-video-wrap.is-dragging iframe { pointer-events: none; }
 .library-panel, .midi-panel { border: 1px solid var(--line); border-radius: 10px; padding: 14px; background: var(--paper-light); margin-top: 18px; font: 12px/1.6 var(--sans); }
 .library-panel summary, .midi-panel summary { cursor: pointer; font-weight: 700; }

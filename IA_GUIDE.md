@@ -354,6 +354,12 @@ quitemos el texto que dice "haz clic en una nota etc" y en donde está este text
 
 *Cargar video de youtube no está funcionando, algunos videos aparecen en gris, y otros ni siquiera se cargan
 
+  - Causa real encontrada en Chromium con la red de verdad, no era el vídeo: el reproductor no leía el código de error y su `onError` solo cambiaba el texto, así que el `iframe` con la pantalla gris de YouTube se quedaba ahí, y si el vídeo estaba flotando ese recuadro quedaba pegado sobre la página sin forma de cerrarlo. El gris también salía en los vídeos que sí cargan: la caja era fija en 320×220 y un vídeo 16:9 dejaba bandas grises arriba y abajo.
+  - Corregido lo del gris: al fallar se destruye el reproductor, se vacía la caja y se devuelve al panel (nada se queda flotando). El mensaje dice la causa real según el código de YouTube: 2 enlace no válido, 100 vídeo eliminado o privado, 101/150 el canal no permite incrustar, 5 problema de formato o permisos, 153 no se pudo verificar el origen, y para los 15 s sin respuesta se menciona que un bloqueador o una extensión puede estar impidiendo la carga. El 150 también sale con enlaces mal copiados, así que el texto no lo presenta como un caso único. El enlace «Abrir en YouTube» queda a mano para esos casos: hay vídeos que no se pueden ver incrustados en ninguna página.
+  - Corregido lo de la caja: el vídeo se ajusta a 16:9 según el ancho del panel (`fit()` en `youtube-player.js` llama a `setSize` y se reajusta al redimensionar). Verificado en Chromium: 320×180 tanto en el panel como flotante, y 336×189 a 420 px de ancho sin desbordes. El arrastre y «↗ Restaurar video» siguen funcionando (1087,659 → 947,569 con delta exacto de -140,-90).
+  - `npm test` → 199/199 (tests nuevos en `tests/youtube-player.test.cjs`: error 150 y limpieza, error 100, el recuadro que no queda flotando, el `onError` repetido de YouTube, la espera de 15 s, los enlaces no válidos y el ajuste 16:9). Pendiente tu prueba real con los vídeos que te fallaban; si alguno sigue sin cargar, dime el enlace y lo reviso.
+
+
 *Creo que una buena forma de ir armando las canciones es agregar interacciones que sean intuitivas para crear las cosas, por ejemplo:
 
 - Me gustaría poder adaptar que al hacer click en una tarjeta, el backtrack se adapte para comenzar desde ahí, eso haría que se pueda vincular mejor el tempo de una canción que estoy creando con un video por ejemplo.
