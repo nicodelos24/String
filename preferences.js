@@ -68,6 +68,7 @@
       playerBpm: $('#player-bpm')?.value || '',
       playerStyle: $('#player-style')?.value || '',
       playerLoop: $('#player-loop')?.checked || false,
+      playerCardStart: $('#player-card-start')?.checked ?? true,
       playerPercussion: $('#player-percussion')?.checked || false,
       playerVolume: $('#player-volume')?.value || '',
       playerDrumVolume: $('#player-drum-volume')?.value || '',
@@ -170,6 +171,7 @@
     setValue($('#tempo-tap-bpm'), saved.playerBpm);
     setSelectIfOption('#player-style', saved.playerStyle);
     setChecked($('#player-loop'), saved.playerLoop);
+    setChecked($('#player-card-start'), saved.playerCardStart !== false);
     setChecked($('#player-percussion'), saved.playerPercussion);
     const playerVolume = $('#player-volume');
     setValue(playerVolume, saved.playerVolume);

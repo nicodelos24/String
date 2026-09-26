@@ -44,8 +44,9 @@ function setup() {
     MutationObserver:class{constructor(cb){this.cb=cb;} observe(){}},
     Event:class{constructor(type){this.type=type;}},
   };
-  vm.runInContext(fs.readFileSync(path.join(__dirname,'../panel-controls.js'),'utf8'),vm.createContext(context));
-  return {element,switchButtons,metronome,windowStub};
+  const vmContext=vm.createContext(context);
+  vm.runInContext(fs.readFileSync(path.join(__dirname,'../panel-controls.js'),'utf8'),vmContext);
+  return {element,switchButtons,metronome,windowStub,vmContext};
 }
 
 test('selecting Metrónomo routes quick-play to toggle the metronome independently of its panel',()=>{
@@ -87,4 +88,14 @@ test('pressing quick-play with Metrónomo selected publishes the tempo field int
   switchButtons[2].handlers.click();
   element('quick-play').listeners.click();
   assert.equal(windowStub.publishedTempo,true,'Al dar play se publica el tempo del campo en el metrónomo');
+});
+
+test('the active source is published so other modules can respect it',()=>{
+  const {switchButtons,vmContext}=setup();
+  const active=()=>vm.runInContext('globalThis.StringSources.active',vmContext);
+  assert.equal(active(),'progression');
+  switchButtons[1].handlers.click();
+  assert.equal(active(),'midi');
+  switchButtons[2].handlers.click();
+  assert.equal(active(),'metronome');
 });

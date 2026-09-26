@@ -89,7 +89,9 @@ class ProgressionPlayer {
     this.chordWave = this.context.createPeriodicWave(new Float32Array(4), new Float32Array([0,1,0.12,0.04]));
   }
 
-  async start(chords, {bpm = 100, loop = true, style = 'none', percussion = true} = {}) {
+  // `startIndex` permite arrancar en una tarjeta concreta (al pulsarla) sin
+  // recortar la lista: al terminar o al repetir, la vuelta sigue siendo completa.
+  async start(chords, {bpm = 100, loop = true, style = 'none', percussion = true, startIndex = 0} = {}) {
     if (this.running || this.starting) return;
     if (!Array.isArray(chords) || !chords.length || chords.some(chord =>
       !chord || !Array.isArray(chord.notes) || !chord.notes.length || chord.notes.some(note =>
@@ -117,7 +119,9 @@ class ProgressionPlayer {
       if (this.context.state !== 'running') throw new Error('No se pudo activar el audio.');
       this.connectOutput();
       this.master.gain.setValueAtTime(this.volume, this.context.currentTime);
-      this.index = 0;
+      this.index = Number.isInteger(startIndex)
+        ? Math.min(Math.max(startIndex, 0), this.chords.length - 1)
+        : 0;
       this.endTime = null;
       this.nextTime = this.context.currentTime + 0.04;
       this.running = true;

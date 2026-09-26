@@ -292,8 +292,17 @@ function setupPlayerInterface() {
   fixture.element('#player-loop').checked = true;
   fixture.element('#player-style').value = 'none';
   fixture.element('#player-percussion').checked = true;
+  fixture.element('#player-card-start').checked = true;
   fixture.run(fs.readFileSync(path.join(__dirname,'../player-ui.js'),'utf8'));
-  return fixture;
+  // `app.js` delega el clic de las tarjetas con `closest`, así que el objetivo
+  // del evento solo tiene que resolver los tres selectores que usa.
+  const clickCard = (index, part = 'index') => fixture.element('#progression').handlers.click({
+    target: {closest: selector => {
+      if (selector === 'select') return part === 'beats' ? {} : null;
+      return selector === `[data-${part}]` ? {dataset: {[part]: String(index)}} : null;
+    }}
+  });
+  return {...fixture, clickCard};
 }
 
 test('PLY-12: player controls pass saved chords to audio and follow their mode in the editor', async () => {
@@ -422,3 +431,70 @@ test('mi progresión: los cambios en las tarjetas se guardan solos en el slot',(
   run("progression[0].beats=1;saveCustomProgression()");
   assert.deepEqual(saved().map(c=>[c.root,c.type,c.beats]),[[0,'maj',1],[5,'m7',2]]);
 });
+
+test('pulsar una tarjeta arranca el acompañamiento desde ella y la sigue mostrando',async()=>{
+  const {run,element,clickCard}=setupPlayerInterface();
+  await clickCard(2);
+  assert.equal(run('testPlayer.options.startIndex'),2);
+  assert.equal(run('testPlayer.running'),true);
+  assert.equal(run('activeProgression'),2);
+  assert.equal(element('#chord-readout').textContent,'G7');
+  assert.equal(element('#player-status').textContent,'Reproduciendo…');
+  assert.equal(element('#player-bpm').disabled,true);
+});
+
+test('pulsar otra tarjeta mientras suena vuelve a empezar desde esa, sin dejar la anterior sonando',async()=>{
+  const {run,clickCard}=setupPlayerInterface();
+  await clickCard(1);
+  assert.equal(run('testPlayer.options.startIndex'),1);
+  await clickCard(3);
+  assert.equal(run('testPlayer.options.startIndex'),3);
+  assert.equal(run('testPlayer.running'),true);
+  await clickCard(0);
+  assert.equal(run('testPlayer.options.startIndex'),0);
+  assert.equal(run('testPlayer.chords.length'),4,'La lista completa se conserva para la vuelta');
+});
+
+test('con secciones la tarjeta se busca en la lista de reproducción, no en la progresión',async()=>{
+  const {run,clickCard}=setupPlayerInterface();
+  run(`window.StringSections={playback(){return [
+    {source:progression[1],saved:{...progression[1]},section:'Estribillo'},
+    {source:progression[1],saved:{...progression[1]},section:'Estribillo'},
+    {source:progression[3],saved:{...progression[3]},section:'Estribillo'}
+  ];},follow(){}};`);
+  await clickCard(3);
+  assert.equal(run('testPlayer.options.startIndex'),2,'La tercera posición de la lista es la tarjeta 4');
+  assert.equal(run('testPlayer.chords.length'),3);
+  run(`window.StringSections={playback(){return [{source:progression[0],saved:{...progression[0]},section:'Intro'}];},follow(){}};`);
+  await clickCard(2);
+  assert.equal(run('testPlayer.options.startIndex'),0,'Una tarjeta fuera de la sección arranca al principio');
+});
+
+test('el clic en una tarjeta no reproduce con otra fuente activa ni con el interruptor apagado',async()=>{
+  const {run,element,clickCard}=setupPlayerInterface();
+  run("globalThis.StringSources={get active(){return 'midi';}};");
+  await clickCard(1);
+  assert.equal(run('testPlayer.chords'),undefined,'No arranca encima de un MIDI');
+  run("globalThis.StringSources={get active(){return 'metronome';}};");
+  await clickCard(1);
+  assert.equal(run('testPlayer.chords'),undefined,'No pisa el metrónomo');
+  run('globalThis.StringSources=undefined;');
+  element('#player-card-start').checked = false;
+  await clickCard(1);
+  assert.equal(run('testPlayer.chords'),undefined,'El interruptor desactiva la reproducción');
+  assert.equal(run('activeProgression'),1,'La tarjeta sigue seleccionándose para editarla');
+  element('#player-card-start').checked = true;
+  await clickCard(1);
+  assert.equal(run('testPlayer.options.startIndex'),1);
+});
+
+test('quitar una tarjeta o cambiar su duración no dispara la reproducción',async()=>{
+  const {run,clickCard}=setupPlayerInterface();
+  await clickCard(1,'remove');
+  assert.equal(run('testPlayer.chords'),undefined);
+  assert.equal(run('progression.length'),3,'La tarjeta se elimina igual');
+  await clickCard(0,'beats');
+  assert.equal(run('testPlayer.chords'),undefined);
+  assert.equal(run('progression.length'),3);
+});
+

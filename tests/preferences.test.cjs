@@ -98,6 +98,7 @@ function build(seed){
   checkbox('youtube-float',true);
   checkbox('player-loop',false);
   checkbox('player-percussion',false);
+  checkbox('player-card-start',true);
   checkbox('metronome-accent',true);
   checkbox('keyboard-delay',false);
   checkbox('keyboard-reverb',false);
@@ -213,6 +214,7 @@ test('preferencias: restaura los valores guardados disparando los eventos',()=>{
     source:'midi',keyboardMode:'teclado',keyboardLive:'chord',micLive:'off',
     rowView:true,followMidi:false,fretScaleLock:true,youtubeFloat:false,
     playerBpm:'120',playerStyle:'rock',playerLoop:true,playerPercussion:true,playerVolume:'80',playerDrumVolume:'60',
+    playerCardStart:false,
     metronomeBpm:'90',metronomeBeats:'6',metronomeAccent:false,metronomeVolume:'40',
     synthTimbre:'organ',synthDelay:true,synthReverb:false,synthVolume:'55',mastilVolume:'55'
   };
@@ -242,6 +244,7 @@ test('preferencias: restaura los valores guardados disparando los eventos',()=>{
   assert.equal(q('#player-style').value,'rock');
   assert.equal(q('#player-loop').checked,true);
   assert.equal(q('#player-percussion').checked,true);
+  assert.equal(q('#player-card-start').checked,false);
   assert.equal(q('#player-volume').value,'80');
   assert.equal(q('#player-drum-volume').value,'60');
   assert.equal(q('#keyboard-timbre').value,'organ');

@@ -33,6 +33,9 @@
     $('player-status').hidden=source!=='progression';
     syncQuickPlayer();
   }
+  // La fuente activa la consultan otros módulos (p. ej. al pulsar una tarjeta,
+  // para no arrancar el acompañamiento encima de un MIDI o un metrónomo).
+  globalThis.StringSources = {get active(){return currentSource;}};
   quickPlay.addEventListener('click',()=>{
     if(currentSource==='metronome'){
       const metronome=window.StringMetronome;

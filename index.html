@@ -100,8 +100,9 @@
             <label for="player-percussion"><input id="player-percussion" type="checkbox" checked>Percusión</label>
             <label for="player-drum-volume">Volumen percusión <input id="player-drum-volume" type="range" min="0" max="100" value="40"></label>
             <label for="player-loop"><input id="player-loop" type="checkbox" checked>Repetir</label>
+            <label for="player-card-start"><input id="player-card-start" type="checkbox" checked>Reproducir desde la tarjeta pulsada</label>
           </div>
-          <details class="inline-help contextual-help"><summary aria-label="Más información">?</summary><p>Un acorde cada cuatro pulsos. Los cambios de estilo se aplican al volver a reproducir.</p></details></div>
+          <details class="inline-help contextual-help"><summary aria-label="Más información">?</summary><p>Un acorde cada cuatro pulsos. Los cambios de estilo se aplican al volver a reproducir. Al pulsar una tarjeta el acompañamiento empieza en ella; si ya está sonando, vuelve a empezar desde esa tarjeta.</p></details></div>
         <details class="midi-panel"><summary>Importar acordes MIDI <span>· experimental</span></summary>
           <details class="inline-help contextual-help"><summary aria-label="Ayuda de importación MIDI">?</summary><p>Escucha las notas del archivo con su tempo y sigue los acordes reconocidos en el mástil. La detección funciona con notas que empiezan juntas; no interpreta arpegios. El sonido es sintetizado, sin los instrumentos ni la percusión originales.</p></details>
           <label for="midi-file">Archivo MIDI</label><input id="midi-file" type="file" accept=".mid,.midi,audio/midi">

@@ -34,8 +34,12 @@
       status.textContent = running ? 'Reproduciendo…' : 'Detenido';
     }
   });
-  button.addEventListener('click', async () => {
-    if (player.running || player.starting) { player.stop(); return; }
+  // Arranca la lista de reproducción. `fromCard` es el índice de la tarjeta en
+  // `progression` desde la que se quiere empezar; con secciones la lista no
+  // coincide con `progression` (va por secciones y repeticiones), así que se
+  // busca la posición de esa tarjeta dentro de ella.
+  const startPlayback = async fromCard => {
+    if (player.running || player.starting) player.stop();
     if (!bpm.reportValidity()) return;
     window.dispatchEvent?.(new Event('traste:progression-start'));
     try {playbackItems = window.StringSections ? window.StringSections.playback() : progression.map(item => ({source:item, saved:{...item}}));}
@@ -49,12 +53,26 @@
       };
     });
     if (!chords.length) { status.textContent = 'No hay tarjetas para reproducir. Añade acordes primero.'; return; }
+    const from = Number.isInteger(fromCard) ? playbackItems.findIndex(entry => entry.source === progression[fromCard]) : 0;
     setBusy(true);
     status.textContent = 'Iniciando…';
     try { await player.start(chords, {bpm: Number(bpm.value), loop: loop.checked,
-      style: style.value, percussion: percussion.checked}); }
+      style: style.value, percussion: percussion.checked, startIndex: from > 0 ? from : 0}); }
     catch { setBusy(false); status.textContent = 'No se pudo iniciar el audio. Intenta de nuevo.'; }
+  };
+  button.addEventListener('click', async () => {
+    if (player.running || player.starting) { player.stop(); return; }
+    await startPlayback();
   });
+  // `app.js` lo llama al pulsar una tarjeta: si está parado arranca, y si ya
+  // suena vuelve a empezar desde ella. No pisa un MIDI o un metrónomo que el
+  // usuario eligió como fuente, y el interruptor permite desactivarlo.
+  globalThis.playProgressionFrom = card => {
+    if ((globalThis.StringSources?.active ?? 'progression') !== 'progression') return;
+    if (document.querySelector('#player-card-start')?.checked === false) return;
+    if (!Number.isInteger(card) || card < 0 || card >= progression.length) return;
+    return startPlayback(card);
+  };
   document.querySelector('#player-volume').addEventListener('input', event => {
     player.setVolume(Number(event.target.value) / 100);
   });

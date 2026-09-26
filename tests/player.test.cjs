@@ -301,3 +301,27 @@ test('PLY-16: each chord follows its own beat duration and invalid durations are
   for(const beats of [0,17,2.5]) await assert.rejects(other.start([{name:'C',notes:[48,52,55],beats}]));
   assert.equal(others.length,0);
 });
+
+test('PLY-17: startIndex begins at the chosen chord and the loop still closes the whole list',async()=>{
+  const {player,context,oscillators,heard}=setup();
+  await player.start(chords,{bpm:120,startIndex:1});
+  assert.equal(oscillators[0].frequency.value,midiToFrequency(53));
+  context.currentTime=0.05; player.tick();
+  assert.deepEqual(heard[0],[1,'Fm7',2]);
+  context.currentTime=2; player.tick();
+  assert.equal(oscillators[4].frequency.value,midiToFrequency(48));
+  context.currentTime=2.05; player.tick();
+  assert.deepEqual(heard[1],[0,'C',2]);
+  player.stop();
+});
+
+test('PLY-18: a startIndex outside the list is clamped and never skips chords',async()=>{
+  for(const startIndex of [-5,1.5,'1',undefined,null,99]){
+    const {player,context,heard}=setup();
+    await player.start(chords,{bpm:120,startIndex});
+    context.currentTime=0.05; player.tick();
+    assert.equal(heard.length,1);
+    assert.equal(heard[0][0],startIndex===99?1:0);
+    player.stop();
+  }
+});

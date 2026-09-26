@@ -38,7 +38,7 @@ Las fuentes de Google Fonts y YouTube requieren conexión. Las herramientas hist
 - La escucha del mástil usa timbres sintetizados de cuerda pulsada o bajo tipo slap; el piano conserva su timbre suave. No son muestras de instrumentos reales.
 - El selector **Mástil / Teclado / Ambos** junto al teclado miniatura elige la disposición del piano de cuatro octavas. **Mástil**: solo el mástil, y las teclas del PC lo tocan con el sonido del instrumento. **Teclado**: el piano reemplaza el mástil. **Ambos**: el piano se muestra debajo del mástil a todo lo ancho y las teclas del PC tocan solo el piano; el mástil sigue mostrando en tiempo real las notas del micrófono y, con «Acorde en vivo» activado, cambia su escala al acorde que formes en el piano. Se toca con el puntero o con el teclado físico: fila media `a s d f g h j k l ñ` = la si do re mi fa sol la si do (a suena una octava más alta que el la de la 5.ª cuerda, A3; las mismas teclas en el piano y en el modo mástil); fila grave `z x c v b n m , . -` = mi fa sol la si do re mi fa sol; accidentales en las columnas de la fila superior `q w e r t y u i o p` (q=ab/g#, w=a#/bb, …, t=d#/eb) y las posiciones del teclado latam `´ + }` = c#/db, d#/eb y e. **Shift izquierdo** baja una octava y **Shift derecho** la sube. El switch **♯/♭** del piano cambia cómo se nombran las teclas negras y los acordes. Ofrece sintetizador con timbres Piano, Guitarra, Bajo, Órgano y Lead, y efectos Delay y Reverb.
 - El switch sol/luna guarda el tema de interfaz. No cambia los colores musicales ni la madera del mástil.
-- Los controles visibles se guardan en el navegador y se recuperan al volver a abrir la página: instrumento, nota raíz y armadura, calidad y modo, vista pentatónica, fuente de reproducción (Backtrack/MIDI/Metrónomo), vista y etiquetas de las tarjetas y el mástil, disposición de las tarjetas, Mástil/Teclado/Ambos, acorde en vivo y escala en vivo, tempos, estilos y volúmenes del acompañamiento, metrónomo y sintetizador, «Seguir acorde MIDI», bloqueo de escala y video flotante.
+- Los controles visibles se guardan en el navegador y se recuperan al volver a abrir la página: instrumento, nota raíz y armadura, calidad y modo, vista pentatónica, fuente de reproducción (Backtrack/MIDI/Metrónomo), vista y etiquetas de las tarjetas y el mástil, disposición de las tarjetas, Mástil/Teclado/Ambos, acorde en vivo y escala en vivo, «Reproducir desde la tarjeta pulsada», tempos, estilos y volúmenes del acompañamiento, metrónomo y sintetizador, «Seguir acorde MIDI», bloqueo de escala y video flotante.
 
 En móvil, el mástil se desplaza horizontalmente sin comprimir sus proporciones. El acorde seleccionado y la armadura aparecen cerca del mástil. Las explicaciones se abren mediante botones **?**; los errores y estados siguen visibles.
 
@@ -46,10 +46,11 @@ En móvil, el mástil se desplaza horizontalmente sin comprimir sus proporciones
 
 1. Elige un acorde y pulsa **Añadir acorde**.
 2. Arrastra las tarjetas para ordenar, haz doble clic para duplicar o usa clic derecho / × para eliminar. El selector de cada tarjeta ajusta su duración (¼, ½, ¾, 1, 1½, 2, 3 o 4 compases). Puedes eliminar todas las tarjetas y empezar de cero; sin tarjetas no hay nada que reproducir.
-3. Con teclado, Enter o Espacio seleccionan; Alt + flechas mueve el acorde y mantiene el foco.
-4. La flecha de vista alterna entre filas y una sola fila horizontal.
-5. Abre la burbuja **Secciones del tema**, a la derecha de las tarjetas de progresión. Dentro de **Crear sección**, elige nombre, rango de números de tarjeta y repeticiones.
-6. Pulsa una tarjeta de sección para ver sus acordes. **Todos los acordes** recupera la lista completa. Arrastra el asa de una sección o usa sus flechas para cambiar el orden.
+3. Al pulsar una tarjeta, el Acompañamiento arranca en ella; si ya está sonando, vuelve a empezar desde esa tarjeta. Con la fuente MIDI o Metrónomo activa no hace nada, y puedes desactivarlo con el interruptor **Reproducir desde la tarjeta pulsada** del Acompañamiento. Con secciones, la tarjeta se busca dentro de la lista que se está reproduciendo; si no está en ella, empieza por el principio de esa lista.
+4. Con teclado, Enter o Espacio seleccionan; Alt + flechas mueve el acorde y mantiene el foco.
+5. La flecha de vista alterna entre filas y una sola fila horizontal.
+6. Abre la burbuja **Secciones del tema**, a la derecha de las tarjetas de progresión. Dentro de **Crear sección**, elige nombre, rango de números de tarjeta y repeticiones.
+7. Pulsa una tarjeta de sección para ver sus acordes. **Todos los acordes** recupera la lista completa. Arrastra el asa de una sección o usa sus flechas para cambiar el orden.
 
 Con secciones, el acompañamiento sigue esa lista y sus repeticiones, sin duplicar tarjetas. Cambia automáticamente de sección y muestra el acorde y la vuelta debajo de las tarjetas. Sin secciones, reproduce la progresión completa.
 

@@ -1088,7 +1088,11 @@ document.querySelector('#progression').addEventListener('click', event => {
   const remove = event.target.closest('[data-remove]');
   if (remove) { removeProgressionChord(Number(remove.dataset.remove)); return; }
   const card = event.target.closest('[data-index]');
-  if (card) selectProgressionChord(Number(card.dataset.index));
+  if (card) {
+    const index = Number(card.dataset.index);
+    selectProgressionChord(index);
+    globalThis.playProgressionFrom?.(index);
+  }
 });
 document.querySelector('#progression').addEventListener('change', event => {
   const select = event.target.closest('[data-beats]');
