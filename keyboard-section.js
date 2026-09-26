@@ -3,27 +3,25 @@
 // izquierdo: «Mástil» (solo el mástil, las teclas lo tocan con el sonido del
 // instrumento), «Teclado» (el piano reemplaza el mástil) y «Ambos» (el piano
 // junto al mástil, debajo de él; las teclas tocan solo el piano y el mástil
-// muestra las notas del micrófono). Teclas naturales de la fila media: a s d f g h j k l ñ ;
-// = la si do re mi fa sol la si do (a suena una octava más alta que el la de
-// la 5.ª cuerda: A3, 220 Hz; las mismas teclas en el piano y en el mástil).
-// Fila grave: z x c v b n m , . - = E F G A B C D E F G (fila grave).
-// Accidentales en la fila superior: q w e r t y u i o p, uno por
-// columna sobre cada natural (q=ab/g#, w=a#/bb, …) y las que no tienen tecla
-// negra debajo tocan la misma nota natural de su columna (e, y, p); t queda
-// d#/eb y las posiciones sin letra fija (´, +, }) completan c#/db, d#/eb y e
-// para el teclado latam. Shift izquierdo baja una octava y derecho la sube.
+// muestra las notas del micrófono).
+// Asignación de teclas (la clásica, con el do en «a»): fila media
+// a s d f g h j k l ñ { = do re mi fa sol la si do re mi fa; fila grave
+// z x c v b n m , . - = sol la si do re mi fa sol la si; fila superior
+// w e t y u o p y las posiciones sin letra fija (´ y +) = los sostenidos
+// ascendentes, de do#4 a sol#5. Shift izquierdo baja una octava y derecho la
+// sube. Las teclas q, r e i quedan libres.
 // Sintetizador polifónico con timbres, efectos y control de volumen
 // (compartido por el piano y el mástil). La lógica pura y el sintetizador se
 // exportan para pruebas sin navegador.
 
 var WHITE_SEMITONES = [0, 2, 4, 5, 7, 9, 11];
 var BLACK_SPECS = [[1, 1], [3, 2], [6, 4], [8, 5], [10, 6]];
-var KEY_OFFSETS = { a: 0, s: 2, d: 3, f: 5, g: 7, h: 8, j: 10, k: 12, l: 14, ñ: 15, ';': 15, q: -1, w: 1, e: 3, r: 4, t: 6, y: 8, u: 9, i: 11, o: 13, p: 15, z: -5, x: -4, c: -2, v: 0, b: 2, n: 3, m: 5, ',': 7, '.': 8, '-': 10 };
+// La clave «a» es el do central (C4, MIDI 60) y el resto se cuenta en semitonos
+// desde ahí: por eso «asdfg» es do-re-mi-fa-sol y «zxcv» es sol-la-si-do.
+var KEY_OFFSETS = { a: 0, w: 1, s: 2, e: 3, d: 4, f: 5, t: 6, g: 7, y: 8, h: 9, u: 10, j: 11, k: 12, o: 13, l: 14, p: 15, ñ: 16, ';': 16, '{': 17, '´': 18, '+': 20, z: -5, x: -3, c: -1, v: 0, b: 2, n: 4, m: 5, ',': 7, '.': 9, '-': 11 };
 // Posiciones físicas que cambian de carácter según el idioma del teclado y
 // palabras muertas (acentos), identificadas por código en vez de por letra.
-// Teclado latam: ´ (BracketLeft) = c#/db, + (Equal) = d#/eb y } (BracketRight)
-// = e por encima de la fila media; la comilla (Quote) conserva la natural D4.
-var KEY_CODES = { Semicolon: 15, Quote: 17, BracketLeft: 16, Equal: 18, BracketRight: 19 };
+var KEY_CODES = { Semicolon: 16, Quote: 17, BracketLeft: 18, Equal: 20 };
 var KEYBOARD_NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
 // Offset para una tecla según su letra o, si esa posición no tiene letra fija
@@ -444,9 +442,9 @@ if (typeof document !== 'undefined') (function () {
   var rootSpelling = document.getElementById('root-spelling');
 
   var OCTAVE_START = 2, OCTAVE_COUNT = 4;
-  // El piano suena por defecto una octava más alta que la guitarra: la clave
-  // «a» usa el la una octava por encima del de la 5.ª cuerda (A3, 220 Hz).
-  var baseMidi = keyboardMidiFor(3, 9);
+  // La clave «a» es el do central (C4). Las mismas teclas tocan el piano y el
+  // mástil, así que un acorde suena igual en los dos.
+  var baseMidi = keyboardMidiFor(4, 0);
   var shiftLeft = false, shiftRight = false;
   var synth = new KeySynth({ timbre: timbreSel ? timbreSel.value : 'piano', volume: volumeIn ? Number(volumeIn.value) / 100 : 0.3 });
   var pressed = new Map();
@@ -455,11 +453,10 @@ if (typeof document !== 'undefined') (function () {
   function shiftDirection() { return shiftRight ? 1 : shiftLeft ? -1 : 0; }
   function effectiveBase() { return activeBaseMidi(baseMidi, shiftDirection(), OCTAVE_START, OCTAVE_COUNT); }
   // Base para una tecla en concreto: igual en el piano y en el mástil, `a`
-  // suena una octava más alta que el la de la 5.ª cuerda de la guitarra
-  // (A3) y la fila media queda a=la s=si d=do f=re… Las teclas + y } del
-  // teclado latam se escriben con Shift (Shift+= y Shift+]) y ese Shift no
-  // debe sumar la octava del Shift musical, o D# y E sonarían una octava más
-  // arriba.
+  // suena en do central (C4) y la fila media queda a=do s=re d=mi f=fa… Las
+  // teclas + y } del teclado latam se escriben con Shift (Shift+= y Shift+]) y
+  // ese Shift no debe sumar la octava del Shift musical, o fa# y sol sonarían
+  // una octava más arriba.
   function keyBaseFor(useOctaveShift) {
     return activeBaseMidi(baseMidi, useOctaveShift ? shiftDirection() : 0, OCTAVE_START, OCTAVE_COUNT);
   }
