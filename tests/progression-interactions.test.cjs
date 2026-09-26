@@ -66,7 +66,20 @@ test('dos clics separados en el tiempo no duplican',()=>{
   const {click,duplicated}=setup();
   click(1,1000);
   click(1,1600);
-  assert.deepEqual(duplicated(),[],'Con más de 400 ms entre clics es una selección normal');
+  assert.deepEqual(duplicated(),[],'Con más de 250 ms entre clics es una selección normal');
+  click(2,2000);
+  click(2,2250);
+  assert.deepEqual(duplicated(),[],'El par tiene que caber en menos de 250 ms');
+});
+
+test('un par de clics a 300 ms ya no duplica la tarjeta',()=>{
+  const {click,duplicated}=setup();
+  click(1,1000);
+  click(1,1300);
+  assert.deepEqual(duplicated(),[]);
+  click(1,2000);
+  click(1,2200);
+  assert.deepEqual(duplicated(),[1],'Un par a 200 ms sigue duplicando');
 });
 
 test('clics en tarjetas distintas nunca duplican',()=>{

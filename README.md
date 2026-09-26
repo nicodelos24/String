@@ -45,7 +45,7 @@ En móvil, el mástil se desplaza horizontalmente sin comprimir sus proporciones
 ### Tarjetas y secciones
 
 1. Elige un acorde y pulsa **Añadir acorde**.
-2. Arrastra las tarjetas para ordenar, haz doble clic para duplicar o usa clic derecho / × para eliminar. El selector de cada tarjeta ajusta su duración (¼, ½, ¾, 1, 1½, 2, 3 o 4 compases). Puedes eliminar todas las tarjetas y empezar de cero; sin tarjetas no hay nada que reproducir.
+2. Arrastra las tarjetas para ordenar, haz doble clic para duplicar (dos clics con menos de 0,25 s entre ellos) o usa clic derecho / × para eliminar. El selector de cada tarjeta ajusta su duración (¼, ½, ¾, 1, 1½, 2, 3 o 4 compases). Puedes eliminar todas las tarjetas y empezar de cero; sin tarjetas no hay nada que reproducir.
 3. Al pulsar una tarjeta, el Acompañamiento arranca en ella. Si ya está sonando, el interruptor **Reiniciar** (opción por defecto) vuelve a empezar en la tarjeta pulsada y con **Solo pulso** la música sigue sin cortarse. Las tarjetas no cambian el tempo. Con la fuente MIDI o Metrónomo activa el clic no hace nada. Con secciones, la tarjeta se busca dentro de la lista que se está reproduciendo; si no está en ella, empieza por el principio de esa lista.
 4. Con teclado, Enter o Espacio seleccionan; Alt + flechas mueve el acorde y mantiene el foco.
 5. La flecha de vista alterna entre filas y una sola fila horizontal.
@@ -64,7 +64,7 @@ La cabecera conserva el selector **Progresión / MIDI** y el control del reprodu
 
 Junto a las tarjetas hay un acceso rápido con el mismo selector y control de reproducción. Ambos accesos se mantienen sincronizados; MIDI se habilita al cargar un archivo válido. Ese selector incluye una tercera fuente, **Metrónomo**, y el botón de reproducción pasa a iniciar/pausar el metrónomo mientras esté activa.
 
-El botón **Tempo**, a la derecha de las tarjetas junto al interruptor **Seguir acorde MIDI**, estima el BPM con dos o más pulsaciones al ritmo de la canción y lo fija en el acompañamiento; el número que lo acompaña es editable a mano (30–240) y se mantiene sincronizado con el acompañamiento y, con un video cargado, con el BPM para generar sus marcas. Solo cuando la fuente activa es **Metrónomo**, tocar o editar tempo fija también el tempo del metrónomo y, al dar play con esa fuente, se le aplica el tempo mostrado. El MIDI conserva su propio tempo y no cambia. Con la música en marcha, el tempo se aplica sin cortarla: el compás que ya suena termina con su duración y el siguiente entra con el tempo nuevo.
+El botón **Tempo**, en la columna de la derecha de las tarjetas y por encima del interruptor **Seguir acorde MIDI**, estima el BPM con dos o más pulsaciones al ritmo de la canción y lo fija en el acompañamiento; el número que lo acompaña es editable a mano (30–240) y se mantiene sincronizado con el acompañamiento y, con un video cargado, con el BPM para generar sus marcas. Solo cuando la fuente activa es **Metrónomo**, tocar o editar tempo fija también el tempo del metrónomo y, al dar play con esa fuente, se le aplica el tempo mostrado. El MIDI conserva su propio tempo y no cambia. Con la música en marcha, el tempo se aplica sin cortarla: el compás que ya suena termina con su duración y el siguiente entra con el tempo nuevo.
 
 - Cambiar de fuente detiene la anterior. Volver a pulsar la fuente activa no detiene.
 - Plegar Acompañamiento no detiene el audio.

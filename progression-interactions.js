@@ -36,7 +36,9 @@
       if(!card)return;
       const index=Number(card.dataset.index),source=progression[index],now=performance.now();
       // La selección reconstruye las tarjetas: reconocer el segundo clic por el acorde, no por el nodo DOM.
-      if(lastClick?.source===source && now-lastClick.time<400) {
+      // 250 ms: un par de clic deliberado, más corto que la ventana de 400 ms de antes para que
+      // dos pulsaciones sueltas no acaben duplicando la tarjeta.
+      if(lastClick?.source===source && now-lastClick.time<250) {
         event.preventDefault();event.stopImmediatePropagation();lastClick=null;
         duplicateProgressionChord(index);
         list.querySelector(`[data-index="${index+1}"]`)?.focus();
