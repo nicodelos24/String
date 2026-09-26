@@ -58,7 +58,7 @@
       degreeDisplay: degreesIndex(($('#toggle-degrees span')?.textContent || '').trim()),
       displayLabel: $('#display-label')?.textContent || '',
       source: pressedValue('[data-source]', 'progression'),
-      cardMode: pressedValue('[data-card-mode]', 'pulse'),
+      cardMode: pressedValue('[data-card-mode]', 'restart'),
       keyboardMode: pressedValue('#keyboard-modes [data-keyboard-mode]', 'mastil'),
       keyboardLive: pressedValue('#keyboard-live-chord [data-live-mode]', 'chord'),
       micLive: pressedValue('#mic-live-chord [data-mic-live-mode]', 'chord'),
@@ -69,7 +69,6 @@
       playerBpm: $('#player-bpm')?.value || '',
       playerStyle: $('#player-style')?.value || '',
       playerLoop: $('#player-loop')?.checked || false,
-      playerCardStart: $('#player-card-start')?.checked ?? true,
       playerPercussion: $('#player-percussion')?.checked || false,
       playerVolume: $('#player-volume')?.value || '',
       playerDrumVolume: $('#player-drum-volume')?.value || '',
@@ -152,7 +151,7 @@
     }
 
     clickPressedTarget('[data-source]', 'data-source', saved.source);
-    clickPressedTarget('[data-card-mode]', 'data-card-mode', saved.cardMode || 'pulse');
+    clickPressedTarget('[data-card-mode]', 'data-card-mode', saved.cardMode || 'restart');
     clickPressedTarget('#keyboard-modes [data-keyboard-mode]', 'data-keyboard-mode', saved.keyboardMode);
     clickPressedTarget('#keyboard-live-chord [data-live-mode]', 'data-live-mode', saved.keyboardLive);
     clickPressedTarget('#mic-live-chord [data-mic-live-mode]', 'data-mic-live-mode', saved.micLive);
@@ -173,7 +172,6 @@
     setValue($('#tempo-tap-bpm'), saved.playerBpm);
     setSelectIfOption('#player-style', saved.playerStyle);
     setChecked($('#player-loop'), saved.playerLoop);
-    setChecked($('#player-card-start'), saved.playerCardStart !== false);
     setChecked($('#player-percussion'), saved.playerPercussion);
     const playerVolume = $('#player-volume');
     setValue(playerVolume, saved.playerVolume);

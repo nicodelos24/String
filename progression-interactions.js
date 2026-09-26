@@ -36,11 +36,15 @@
       if(!card)return;
       const index=Number(card.dataset.index),source=progression[index],now=performance.now();
       // La selección reconstruye las tarjetas: reconocer el segundo clic por el acorde, no por el nodo DOM.
-      if(lastClick?.source===source && now-lastClick.time<400) {
+      // Duplicar pide dos clics aislados y deliberados: el segundo seguido (menos de 240 ms, más rápido que
+      // el tempo más alto que acepta la app, 240 BPM = 250 ms) y después de una pausa de más de 1,5 s,
+      // para que marcar el ritmo a golpes sobre la misma tarjeta no duplique nada por accidente.
+      const same=lastClick?.source===source;
+      if(same && now-lastClick.time<240 && lastClick.gap>1500) {
         event.preventDefault();event.stopImmediatePropagation();lastClick=null;
         duplicateProgressionChord(index);
         list.querySelector(`[data-index="${index+1}"]`)?.focus();
-      } else lastClick={source,time:now};
+      } else lastClick={source,time:now,gap:same?now-lastClick.time:Infinity};
     }
   }, true);
   list.addEventListener('contextmenu',event=>{

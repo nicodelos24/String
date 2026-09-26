@@ -8,8 +8,8 @@
   const status = document.querySelector('#player-status');
   // Interruptor «Solo pulso» / «Reiniciar»: qué hace pulsar una tarjeta mientras
   // el Acompañamiento ya está sonando.
-  const cardMode = () => document.querySelector('[data-card-mode][aria-pressed="true"]')?.dataset?.cardMode || 'pulse';
-  let playbackItems = [];
+  const cardMode = () => document.querySelector('[data-card-mode][aria-pressed="true"]')?.dataset?.cardMode || 'restart';
+  let playbackItems = [], playingFrom = null;
   const icon = playing => `<svg viewBox="0 0 24 24" aria-hidden="true">${playing ? '<path d="M6 6h12v12H6z"/>' : '<path d="M8 5v14l11-7z"/>'}</svg>`;
   const setBusy = busy => {
     bpm.disabled = busy;
@@ -32,7 +32,7 @@
       status.textContent = `Sonando: ${name} · ${entry?.section ? entry.section+" · " : ""}acorde ${index + 1} de ${total}`;
     },
     onState: running => {
-      if (!running) {playingProgressionItem = null; renderProgression();}
+      if (!running) {playingProgressionItem = null; playingFrom = null; renderProgression();}
       setBusy(running);
       status.textContent = running ? 'Reproduciendo…' : 'Detenido';
     }
@@ -60,25 +60,27 @@
     setBusy(true);
     status.textContent = 'Iniciando…';
     try { await player.start(chords, {bpm: Number(bpm.value), loop: loop.checked,
-      style: style.value, percussion: percussion.checked, startIndex: from > 0 ? from : 0}); }
+      style: style.value, percussion: percussion.checked, startIndex: from > 0 ? from : 0});
+      playingFrom = Number.isInteger(fromCard) ? fromCard : 0; }
     catch { setBusy(false); status.textContent = 'No se pudo iniciar el audio. Intenta de nuevo.'; }
   };
   button.addEventListener('click', async () => {
     if (player.running || player.starting) { player.stop(); return; }
     await startPlayback();
   });
-  // `app.js` lo llama al pulsar una tarjeta. Cada pulsación cuenta como golpe
-  // de ritmo, igual que el botón «Tempo»; después, si el Acompañamiento está
-  // parado arranca en esa tarjeta y, si ya suena, depende del interruptor
-  // «Solo pulso» (no se corta el audio) o «Reiniciar». No pisa un MIDI o un
-  // metrónomo que el usuario eligió como fuente, y el interruptor de
-  // reproducción puede desactivar todo esto.
+  // `app.js` lo llama al pulsar una tarjeta. Si el Acompañamiento está parado,
+  // arranca en esa tarjeta y la pulsación cuenta como primer golpe de ritmo; si
+  // ya está sonando, pulsar otra tarjeta la reinicia desde ella (interruptor en
+  // «Reiniciar», que es lo elegido por defecto) sin mezclarse con la estimación
+  // del tempo. Solo se marca a golpes sobre la misma tarjeta desde la que suena,
+  // y entonces la música no se corta. Con «Solo pulso» ninguna tarjeta interrumpe
+  // lo que está sonando. No pisa un MIDI o un metrónomo que el usuario eligió
+  // como fuente.
   globalThis.playProgressionFrom = card => {
     if ((globalThis.StringSources?.active ?? 'progression') !== 'progression') return;
-    if (document.querySelector('#player-card-start')?.checked === false) return;
     if (!Number.isInteger(card) || card < 0 || card >= progression.length) return;
-    globalThis.tapProgressionTempo?.();
-    if (player.running && cardMode() !== 'restart') return;
+    if (!player.running || card === playingFrom) globalThis.tapProgressionTempo?.(card);
+    if (player.running && (cardMode() !== 'restart' || card === playingFrom)) return;
     return startPlayback(card);
   };
   // El tempo se puede cambiar con la música en marcha (botón «Tempo», las

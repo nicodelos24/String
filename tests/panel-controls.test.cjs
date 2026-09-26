@@ -27,7 +27,7 @@ function setup() {
     getAttribute(name){return this._attrs[name]??null;},
   }));
   const modeButtons=['pulse','restart'].map(mode=>({
-    dataset:{cardMode:mode},handlers:{},_attrs:{'aria-pressed':mode==='pulse'?'true':'false'},
+    dataset:{cardMode:mode},handlers:{},_attrs:{'aria-pressed':mode==='restart'?'true':'false'},
     addEventListener(name,fn){this.handlers[name]=fn;},
     setAttribute(name,value){this._attrs[name]=String(value);},
     getAttribute(name){return this._attrs[name]??null;},
@@ -59,15 +59,16 @@ function setup() {
   return {element,switchButtons,modeButtons,metronome,windowStub,vmContext};
 }
 
-test('«Solo pulso» / «Reiniciar» deja marcada una sola opción',()=>{
+test('«Solo pulso» / «Reiniciar» deja marcada una sola opción y viene en «Reiniciar»',()=>{
   const {modeButtons}=setup();
-  assert.equal(modeButtons[0].getAttribute('aria-pressed'),'true','«Solo pulso» viene elegido');
-  modeButtons[1].handlers.click();
+  assert.equal(modeButtons[1].getAttribute('aria-pressed'),'true','«Reiniciar» viene elegido');
   assert.equal(modeButtons[0].getAttribute('aria-pressed'),'false');
-  assert.equal(modeButtons[1].getAttribute('aria-pressed'),'true');
   modeButtons[0].handlers.click();
   assert.equal(modeButtons[0].getAttribute('aria-pressed'),'true');
   assert.equal(modeButtons[1].getAttribute('aria-pressed'),'false');
+  modeButtons[1].handlers.click();
+  assert.equal(modeButtons[1].getAttribute('aria-pressed'),'true');
+  assert.equal(modeButtons[0].getAttribute('aria-pressed'),'false');
 });
 
 test('selecting Metrónomo routes quick-play to toggle the metronome independently of its panel',()=>{
