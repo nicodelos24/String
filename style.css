@@ -2137,3 +2137,101 @@ html[data-theme="dark"] .fretboard-layout,
 html[data-theme="dark"] .root-piano,
 html[data-theme="dark"] .keyboard-keys { color-scheme: light; --ink: #1d2521; --muted: #78807b; --paper: #f3f0e8; --paper-light: #faf9f5; --line: #d9d5ca; --rust: #c95735; --rust-dark: #a94227; }
 html[data-theme="dark"] .fret-numbers, html[data-theme="dark"] .open-strings-heading { color: #d7dcd2; }
+
+/* ==========================================================================
+   MÓVIL: barra de pestañas (opción 3)
+   En vez de una página larga, una sección cada vez: mástil, progresión,
+   acompañamiento y el resto. La barra va fija abajo, al alcance del pulgar, y
+   el contenido deja libre el sitio que ocupa. En escritorio no se muestra nada
+   de esto y la rejilla de tres columnas sigue igual.
+   ========================================================================== */
+
+.mobile-tabs { display: none; }
+
+@media (max-width: 800px) {
+  body { padding-bottom: 62px; }   /* hueco para la barra fija */
+
+  .mobile-tabs {
+    position: fixed; inset: auto 0 0 0; z-index: 40;
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    background: var(--paper); border-top: 1px solid var(--line);
+    box-shadow: 0 -6px 18px rgba(44, 50, 40, .07);
+  }
+  .mobile-tabs button {
+    display: grid; justify-items: center; align-content: center; gap: 2px;
+    min-height: 58px; padding: 6px 2px; border: 0; background: transparent;
+    color: var(--muted); font: 10px var(--sans); cursor: pointer;
+  }
+  .mobile-tab-glyph { font-size: 15px; line-height: 1; }
+  .mobile-tabs button[aria-pressed="true"] { color: var(--rust); font-weight: 600; }
+  .mobile-tabs button:focus-visible { outline: 2px solid var(--rust); outline-offset: -2px; }
+
+  /* El hero es texto de presentación y con la barra de pestañas no cabe: son
+     100 px de la única pantalla que se ve. El título ya está en la barra. */
+  .intro { display: none; }
+
+  /* Cada pestaña enseña solo su grupo. El estado inicial (sin clase de modo) y
+     los tres modos se cubren con el mismo selector que en la opción 1. */
+  body[data-mobile-tab] .workspace { display: flex; flex-direction: column; }
+  body[data-mobile-tab] .fretboard-section:not(:is(.keyboard-split, .keyboard-band)) { display: flex; flex-direction: column; }
+  body[data-mobile-tab] .workspace > .legend-panel { order: 9; }
+  body[data-mobile-tab] .workspace > .control-panel { order: 8; }
+
+  /* «Mástil»: barra del mástil, diapasón, pie, botón de añadir y escala. */
+  body[data-mobile-tab="mastil"] :is(.progression-workspace, .chord-player, .youtube-panel, .metronome, .library-panel, .legend-panel, .control-panel) { display: none; }
+  /* «Progresión»: solo las tarjetas y su controles. */
+  body[data-mobile-tab="progresion"] :is(.board-toolbar, .board-view-row, .fretboard-wrap, .board-footer, .board-add-row, .scale-summary, .keyboard-panel, .chord-player, .youtube-panel, .metronome, .library-panel, .legend-panel, .control-panel) { display: none; }
+  body[data-mobile-tab="progresion"] .fretboard-section:not(:is(.keyboard-split, .keyboard-band)) { padding-top: 0; }
+  /* «Acompañar»: Acompañamiento, YouTube, metrónomo y biblioteca. */
+  body[data-mobile-tab="acomp"] :is(.board-toolbar, .board-view-row, .fretboard-wrap, .board-footer, .board-add-row, .scale-summary, .keyboard-panel, .progression-workspace, .legend-panel, .control-panel) { display: none; }
+  body[data-mobile-tab="acomp"] .fretboard-section:not(:is(.keyboard-split, .keyboard-band)) { padding-top: 0; }
+  /* «Más»: controles, leyenda, biblioteca, YouTube y metrónomo. */
+  body[data-mobile-tab="mas"] :is(.board-toolbar, .board-view-row, .fretboard-wrap, .board-footer, .board-add-row, .scale-summary, .keyboard-panel, .progression-workspace, .chord-player) { display: none; }
+  body[data-mobile-tab="mas"] .fretboard-section:not(:is(.keyboard-split, .keyboard-band)) { padding-top: 0; }
+
+  /* En el mástil la sección se ordena para que el diapasón esté arriba del
+     todo; el estado inicial y los tres modos, por separado. */
+  body[data-mobile-tab="mastil"] .fretboard-section:not(:is(.keyboard-split, .keyboard-band)) .board-toolbar { order: 1; }
+  body[data-mobile-tab="mastil"] .fretboard-section:not(:is(.keyboard-split, .keyboard-band)) .board-view-row { order: 2; }
+  body[data-mobile-tab="mastil"] .fretboard-section:not(:is(.keyboard-split, .keyboard-band)) .fretboard-wrap { order: 3; }
+  body[data-mobile-tab="mastil"] .fretboard-section:not(:is(.keyboard-split, .keyboard-band)) .board-footer { order: 4; }
+  body[data-mobile-tab="mastil"] .fretboard-section:not(:is(.keyboard-split, .keyboard-band)) .board-add-row:not(.keyboard-add-row) { order: 5; }
+  body[data-mobile-tab="mastil"] .fretboard-section:not(:is(.keyboard-split, .keyboard-band)) .scale-summary { order: 6; }
+  body[data-mobile-tab="mastil"] .fretboard-section:not(:is(.keyboard-split, .keyboard-band)) .keyboard-panel,
+  body[data-mobile-tab="mastil"] .fretboard-section:not(:is(.keyboard-split, .keyboard-band)) .keyboard-add-row { order: 7; }
+
+  body[data-mobile-tab="mastil"] .fretboard-section:is(.keyboard-split, .keyboard-band, .fretboard-section) .board-toolbar { order: 1; }
+  body[data-mobile-tab="mastil"] .fretboard-section:is(.keyboard-split, .keyboard-band, .fretboard-section) .board-view-row { order: 2; }
+  body[data-mobile-tab="mastil"] .fretboard-section:is(.keyboard-split, .keyboard-band, .fretboard-section) .note-feedback { order: 3; }
+  body[data-mobile-tab="mastil"] .fretboard-section:is(.keyboard-split, .keyboard-band, .fretboard-section) .board-add-chord { order: 4; }
+  body[data-mobile-tab="mastil"] .fretboard-section:is(.keyboard-split, .keyboard-band, .fretboard-section) .board-add-row:not(.keyboard-add-row) > .board-add-button { order: 5; }
+  body[data-mobile-tab="mastil"] .fretboard-section:is(.keyboard-split, .keyboard-band, .fretboard-section) .board-footer-tools { order: 6; }
+  body[data-mobile-tab="mastil"] .fretboard-section:is(.keyboard-split, .keyboard-band, .fretboard-section) .board-volume { order: 7; }
+  body[data-mobile-tab="mastil"] .fretboard-section:is(.keyboard-split, .keyboard-band, .fretboard-section) .fretboard-wrap { order: 8; }
+  body[data-mobile-tab="mastil"] .fretboard-section:is(.keyboard-split, .keyboard-band, .fretboard-section) .keyboard-panel { order: 9; }
+  body[data-mobile-tab="mastil"] .fretboard-section:is(.keyboard-split, .keyboard-band, .fretboard-section) .keyboard-add-row { order: 10; }
+  body[data-mobile-tab="mastil"] .fretboard-section:is(.keyboard-split, .keyboard-band, .fretboard-section) .scale-summary { order: 11; }
+
+  /* La fila del micrófono es más ancha que la pantalla: sin esto el chip
+     «Acorde» queda cortado a la derecha. */
+  .board-toolbar { flex-wrap: wrap; align-items: flex-start; }
+  .mic-control, .pentatonic-control, .toolbar-buttons { flex: 1 1 100%; min-width: 0; max-width: 100%; }
+  .tuner-toggle { flex: 0 0 auto; }
+  .live-chord-switch { flex-wrap: wrap; min-width: 0; }
+  .live-chord-switch .inline-help p { max-width: min(76vw, 290px); white-space: normal; }
+  .board-toolbar h2 { font-size: 17px; }
+
+  .scale-summary .chord-readout, .scale-summary .key-signature-info { height: auto; min-height: 0; }
+  .scale-summary { gap: 8px; margin: 12px 0; }
+  .legend-panel { order: 9; }
+  .control-panel { padding: 16px; }
+}
+
+@media (max-width: 800px) and (orientation: landscape) {
+  body { padding-bottom: 54px; }
+  .mobile-tabs button { min-height: 48px; }
+  .intro { padding: 10px 0 8px; }
+  .intro h1 { font-size: 22px; }
+}
+
+@media (prefers-reduced-motion: reduce) { .mobile-tabs button { transition: none; } }
