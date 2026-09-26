@@ -2070,10 +2070,11 @@ footer {
 .progression-workspace > .sections-panel[open] { width: 280px; }
 .progression-workspace > .progression-stack,
 .progression-workspace > .progression-playback { grid-column: 1; min-width: 0; }
-/* Fila propia bajo las tarjetas: el tempo queda a mano de quien está
-   trabajando con la progresión, sin bajar hasta el mástil. */
-.progression-workspace > .progression-tempo { grid-column: 1; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: -6px 0 12px; }
-.progression-workspace > .progression-tempo .tempo-tap { margin-top: 0; }
+/* El tempo vive en la columna de la derecha de las tarjetas, junto al
+   interruptor «Seguir acorde MIDI», para tenerlo a mano al trabajar la
+   progresión sin bajar hasta el mástil. */
+.progression-view-controls > .progression-tempo { display: flex; align-items: center; gap: 8px; }
+.progression-view-controls > .progression-tempo .tempo-tap { margin-top: 0; }
 .progression-workspace .section-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .progression-workspace .section-fields label:first-child { grid-column: 1 / -1; }
 .progression-workspace .section-fields input { box-sizing: border-box; max-width: 100%; min-width: 0; }
