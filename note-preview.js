@@ -40,9 +40,24 @@ class NotePreview {
 if(typeof module!=='undefined' && module.exports) module.exports={NotePreview};
 if(typeof document!=='undefined') (()=>{
   const preview=new NotePreview();
+  // Esta voz breve solo corresponde al piano raíz y al mástil. Las teclas del
+  // piano expandible (`kp-key`) ya suenan con el sintetizador (KeySynth) desde su
+  // propio manejador de puntero, con el timbre y el volumen del panel: si este
+  // delegado las recogiera, al tocar una tecla se oirían dos notas a la vez, el
+  // piano y la del instrumento.
+  // Los selectores son del propio elemento y no de sus ancestros a propósito:
+  // al pulsar una tecla del piano raíz, `app.js` repinta el piano durante la
+  // propagación y para cuando el delegado mira el nodo, este ya está
+  // desconectado. Con `#root-piano [data-pitch]` el selector dejaría de
+  // coincidir y el piano raíz se quedaría mudo; `[data-pitch]` sigue valiendo
+  // porque no depende de dónde esté el elemento.
+  const keySelector='[data-pitch]';
+  const noteSelector='.fret-note, .open-string-note';
   document.addEventListener('click',event=>{
-    const key=event.target.closest('[data-pitch]'),note=event.target.closest('[data-midi]');
-    if(!key && !note) return;
+    const target=event.target;
+    if(!target||!target.closest)return;
+    const key=target.closest(keySelector),note=target.closest(noteSelector);
+    if(!key&&!note)return;
     const midi=note?Number(note.dataset.midi):(instrument==='bass'?36:60)+Number(key.dataset.pitch);
     preview.play(midi,Number(document.querySelector('#player-volume').value)/100,note?instrument:'piano').catch(()=>{console.warn('No se pudo escuchar la nota.');});
   });
