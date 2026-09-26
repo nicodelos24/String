@@ -455,26 +455,21 @@ test('el interruptor viene en «Reiniciar»: otra tarjeta reinicia y la lista se
   assert.equal(run('testPlayer.chords.length'),4,'La lista completa se conserva para la vuelta');
 });
 
-test('pulsar la misma tarjeta marca el ritmo sin cortar la música',async()=>{
-  const {run,element,clickCard}=setupPlayerInterface();
-  run('globalThis.tempoTaps=[];globalThis.tapProgressionTempo=card=>{globalThis.tempoTaps.push(card);};');
+test('pulsar una tarjeta nunca toca el tempo',async()=>{
+  const {run,clickCard}=setupPlayerInterface();
+  run('globalThis.tempoTaps=[];globalThis.tapProgressionTempo=()=>{globalThis.tempoTaps.push(1);};');
   const taps=()=>JSON.parse(run('JSON.stringify(tempoTaps)'));
   await clickCard(1);
-  assert.deepEqual(taps(),[1]);
   await clickCard(1);
-  assert.deepEqual(taps(),[1,1],'La misma tarjeta sigue contando golpes');
-  assert.equal(run('testPlayer.options.startIndex'),1,'No se reinicia: ya suena desde ahí');
-  assert.equal(run('testPlayer.running'),true,'La música sigue sonando');
   await clickCard(3);
-  assert.deepEqual(taps(),[1,1],'Otra tarjeta cambia de acorde y no marca el tempo');
-  assert.equal(run('testPlayer.options.startIndex'),3);
   await clickCard(3);
-  assert.deepEqual(taps(),[1,1,3],'En la nueva tarjeta la estimación vuelve a empezar');
+  assert.deepEqual(taps(),[],'El tempo es solo del botón Tempo, no de las tarjetas');
+  assert.equal(run('testPlayer.options.startIndex'),3,'Con «Reiniciar» vuelve a empezar en la tarjeta pulsada');
+  assert.equal(run('testPlayer.running'),true);
 });
 
-test('el tempo cambia en marcha con el golpe marcado en la tarjeta',async()=>{
+test('el tempo cambia en marcha con el botón Tempo',async()=>{
   const {run,element,clickCard}=setupPlayerInterface();
-  await clickCard(1);
   await clickCard(1);
   element('#player-bpm').value='132';
   run("window.handlers['traste:tempo-applied']();");
@@ -486,15 +481,12 @@ test('el tempo cambia en marcha con el golpe marcado en la tarjeta',async()=>{
 test('con «Solo pulso» ninguna tarjeta corta lo que está sonando',async()=>{
   const {run,element,clickCard}=setupPlayerInterface();
   element('[data-card-mode][aria-pressed="true"]').dataset={cardMode:'pulse'};
-  run('globalThis.tempoTaps=[];globalThis.tapProgressionTempo=card=>{globalThis.tempoTaps.push(card);};');
-  const taps=()=>JSON.parse(run('JSON.stringify(tempoTaps)'));
+  run('globalThis.tempoTaps=0;globalThis.tapProgressionTempo=()=>{globalThis.tempoTaps++;};');
   await clickCard(1);
-  await clickCard(1);
-  assert.deepEqual(taps(),[1,1],'La tarjeta que suena sí marca el ritmo');
   await clickCard(3);
   assert.equal(run('testPlayer.options.startIndex'),1,'No se reinicia desde la otra tarjeta');
   assert.equal(run('testPlayer.running'),true,'La música sigue sonando');
-  assert.deepEqual(taps(),[1,1],'La otra tarjeta tampoco marca el tempo');
+  assert.equal(run('tempoTaps'),0,'Ninguna tarjeta toca el tempo');
   assert.equal(run('activeProgression'),3,'La tarjeta sí se selecciona para editarla');
   assert.equal(element('#player-status').textContent,'Reproduciendo…');
 });
@@ -512,7 +504,7 @@ test('el clic en una tarjeta no reproduce ni marca el tempo con otra fuente acti
   run('globalThis.StringSources=undefined;');
   await clickCard(1);
   assert.equal(run('testPlayer.options.startIndex'),1,'Con la Progresión activa vuelve a funcionar');
-  assert.equal(run('tempoTaps'),1);
+  assert.equal(run('tempoTaps'),0,'Las tarjetas no marcan el tempo en ningún caso');
 });
 
 test('con secciones la tarjeta se busca en la lista de reproducción, no en la progresión',async()=>{

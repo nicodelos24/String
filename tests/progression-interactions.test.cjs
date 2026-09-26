@@ -1,83 +1,95 @@
+// Duplicación de tarjetas con doble clic: al volver a dejar el tempo solo en el
+// botón Tempo, el doble clic recupera su reglas simple de siempre.
 const {test}=require('node:test');
-const assert=require('node:assert/strict');
+const assert=require('node:assert');
 const fs=require('node:fs');
-const vm=require('node:vm');
 const path=require('node:path');
+const vm=require('node:vm');
+
+const source=fs.readFileSync(path.join(__dirname,'../progression-interactions.js'),'utf8');
 
 function setup() {
-  const clock={now:0};
-  const elements=new Map();
+  const progression=[{root:'C',type:'maj'},{root:'D',type:'min'},{root:'E',type:'maj'},{root:'F',type:'maj'}];
+  const cards=progression.map((chord,index)=>({
+    dataset:{index:String(index)},
+    getBoundingClientRect(){return {left:0,top:0,width:100,height:80};},
+    querySelector(selector){return selector.includes('beats')?{value:'1',addEventListener(){}}:null;},
+    querySelectorAll(){return [];},
+    closest(selector){return selector.includes('progression-card')?this:null;},
+    setAttribute(){},classList:{add(){},remove(){},contains(){return false;}},
+    focus(){},contains(){return false;},get textContent(){return '';},set textContent(value){},
+  }));
   const list={
-    handlers:{},cards:[],
-    addEventListener(name,fn){this.handlers[name]=fn;},
-    querySelectorAll(){return this.cards;},
-    getAnimations(){return [];},
-    querySelector(){return {focus(){}};},
-    getBoundingClientRect(){return {top:0,left:0,right:100,bottom:100,width:100,height:100};},
+    querySelectorAll(){return cards;},
+    querySelector(selector){
+      const match=/data-index="(\d+)"/.exec(selector);
+      return match?cards[Number(match[1])]:null;},
+    addEventListener(name,fn){this.handlers[name]=fn;},handlers:{},
+    getAnimations(){return [];},classList:{toggle(){return false;}},scrollTop:0,scrollLeft:0,
+    getBoundingClientRect(){return {left:0,top:0,width:400,height:80};},
   };
-  const card=index=>({dataset:{index:String(index)}});
-  const target=index=>({
-    detail:1,
-    preventDefault(){},stopImmediatePropagation(){},
-    target:{closest:selector=>selector==='.progression-card'?card(index):null},
+  const viewButton={addEventListener(){},setAttribute(){},title:'',getAttribute(){return null;}};
+  const document={
+    querySelector:selector=>selector==='#progression'?list:selector==='#progression-view'?viewButton:null,
+    querySelectorAll:()=>[],
+    addEventListener(){},createElement:()=>({style:{},classList:{add(){},remove(){}},addEventListener(){},appendChild(){},setAttribute(){}}),
+    documentElement:{style:{setProperty(){}}},body:{appendChild(){},classList:{add(){},remove(){}}},
+  };
+  const context=vm.createContext({
+    document,window:{addEventListener(){},innerHeight:800,matchMedia:()=>({matches:false})},
+    performance:{now:()=>0},setTimeout,clearTimeout,requestAnimationFrame:fn=>fn(),
   });
-  const noop={addEventListener(){},getAnimations(){return [];},animate(){}};
-  elements.set('#progression-view',noop);
-  const duplicated=[];
-  const ctx=vm.createContext({
-    document:{querySelector:selector=>selector==='#progression'?list:(elements.get(selector)??noop)},
-    window:{matchMedia:()=>({matches:false}),addEventListener(){}},
-    performance:{now:()=>clock.now},
-    progression:[{id:'a'},{id:'b'},{id:'c'}],
-    draggingProgressionItem:null,
-    duplicateProgressionChord(index){duplicated.push(index);},
-    moveProgressionChord(){},removeProgressionChord(){},renderProgression(){},selectProgressionChord(){},
-  });
-  vm.runInContext(fs.readFileSync(path.join(__dirname,'../progression-interactions.js'),'utf8'),ctx);
-  const click=(index,at)=>{clock.now=at;list.handlers.click(target(index));};
-  return {click,duplicated:()=>duplicated.slice()};
+  context.globalThis=context;
+  // Globales que `app.js` expone y este módulo consume.
+  const log=[];
+  context.progression=progression;
+  context.selectProgressionChord=()=>{};
+  context.duplicateProgressionChord=index=>{log.push(index);};
+  const duplicated=()=>log.slice();
+  vm.runInContext(source,context);
+  const click=(index,now,detail=1)=>{
+    context.performance.now=()=>now;
+    const event={detail,target:cards[index],preventDefault(){},stopImmediatePropagation(){}};
+    list.handlers.click(event);
+  };
+  return {click,duplicated};
 }
 
-test('dos clics aislados y deliberados duplican la tarjeta',()=>{
+test('dos clics seguidos duplican la tarjeta',()=>{
   const {click,duplicated}=setup();
   click(1,1000);
   click(1,1150);
   assert.deepEqual(duplicated(),[1]);
 });
 
-test('marcar el tempo a golpes nunca duplica la tarjeta',()=>{
+test('dos clics separados en el tiempo no duplican',()=>{
   const {click,duplicated}=setup();
-  // 240 BPM es el tempo más alto que acepta la app: 250 ms entre golpes.
-  let now=1000;
-  for (const gap of [250, 300, 400, 500, 600, 800, 1000, 250, 300]) {
-    click(1,now);
-    now+=gap;
-    click(1,now);
-    now+=gap;
-  }
-  assert.deepEqual(duplicated(),[],'Ninguno de esos golpes duplica la tarjeta');
-});
-
-test('un golpe perdido en medio del ritmo tampoco duplica',()=>{
-  const {click,duplicated}=setup();
-  // Dos clics rapidísimos en pleno ritmo no son una intención de duplicar:
-  // hace falta que el primero venga después de una pausa.
-  click(1,0);
-  click(1,400);
-  click(1,630);
-  assert.deepEqual(duplicated(),[]);
-  click(1,1700);
-  click(1,1800);
-  assert.deepEqual(duplicated(),[],'En plena secuencia no se duplica');
-  click(1,5000);
-  click(1,5100);
-  assert.deepEqual(duplicated(),[1],'Tras una pausa, dos clics seguidos sí duplican');
+  click(1,1000);
+  click(1,1600);
+  assert.deepEqual(duplicated(),[],'Con más de 400 ms entre clics es una selección normal');
 });
 
 test('clics en tarjetas distintas nunca duplican',()=>{
   const {click,duplicated}=setup();
-  click(0,0);
-  click(1,50);
-  click(2,100);
+  click(0,1000);
+  click(1,1050);
+  click(2,1100);
+  assert.deepEqual(duplicated(),[]);
+});
+
+test('tras duplicar, el siguiente clic empieza de nuevo',()=>{
+  const {click,duplicated}=setup();
+  click(1,1000);
+  click(1,1100);
+  click(1,1200);
+  assert.deepEqual(duplicated(),[1],'El tercer clic no duplica otra vez');
+  click(1,1300);
+  assert.deepEqual(duplicated(),[1,1]);
+});
+
+test('el clic con detalle 0 (sintético) no cuenta como doble clic',()=>{
+  const {click,duplicated}=setup();
+  click(1,1000,0);
+  click(1,1050,0);
   assert.deepEqual(duplicated(),[]);
 });

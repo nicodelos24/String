@@ -137,34 +137,29 @@ test('tempo tap: the applied tempo is announced so a playing accompaniment can f
     'Editar el campo a mano también avisa');
 });
 
-test('tempo tap: al cambiar de tarjeta la estimación vuelve a empezar',()=>{
+test('tempo tap: una pausa larga entre golpes empieza la cuenta de nuevo',()=>{
   const {element,clock,source,global}=setup();
   source.dataset.source='metronome';
-  clock.now=0;global.tapProgressionTempo(1);
-  clock.now=500;global.tapProgressionTempo(1);
+  clock.now=0;global.tapProgressionTempo();
+  clock.now=500;global.tapProgressionTempo();
   assert.equal(element('#tempo-tap-bpm').value,'120');
-  // Cambiar de tarjeta borra los golpes anteriores: pulsar otro acorde no altera el tempo.
-  clock.now=1000;global.tapProgressionTempo(2);
-  clock.now=1500;global.tapProgressionTempo(2);
-  assert.equal(element('#tempo-tap-bpm').value,'120','En la nueva tarjeta se cuentan dos golpes');
-  // Y volver a la anterior tampoco arrastra los golpes de la otra.
-  clock.now=2000;global.tapProgressionTempo(1);
-  assert.equal(element('#tempo-tap-bpm').value,'120','Un solo golpe no cambia nada');
-  clock.now=2500;global.tapProgressionTempo(1);
-  assert.equal(element('#tempo-tap-bpm').value,'120','Dos golpes separados cuentan como 120 BPM');
+  clock.now=10000;global.tapProgressionTempo();
+  clock.now=10500;global.tapProgressionTempo();
+  assert.equal(element('#tempo-tap-bpm').value,'120','La cuenta nueva también da 120 BPM');
 });
 
-test('tempo tap: el botón no se mezcla con los golpes de una tarjeta',()=>{
+test('tempo tap: el botón es el único que marca el tempo',()=>{
   const {element,clock,global}=setup();
   const button=element('#tempo-tap'),bpmInput=element('#tempo-tap-bpm');
-  clock.now=0;button.handlers.click();
-  clock.now=500;global.tapProgressionTempo(1);
-  assert.equal(bpmInput.value,'100','Un golpe en el botón y otro en una tarjeta no se suman');
-  clock.now=1000;global.tapProgressionTempo(1);
-  assert.equal(bpmInput.value,'120','Los dos golpes de la tarjeta sí cuentan');
-  clock.now=1500;button.handlers.click();
-  clock.now=2000;button.handlers.click();
-  assert.equal(bpmInput.value,'120','El botón empieza su propia cuenta');
+  clock.now=0;button.handlers.click({type:'click'});
+  assert.equal(bpmInput.value,'100','Un solo golpe aún no fija nada');
+  clock.now=500;button.handlers.click({type:'click'});
+  assert.equal(bpmInput.value,'120');
+  clock.now=1000;button.handlers.click({type:'click'});
+  assert.equal(bpmInput.value,'120','El tercero mantiene la estimación');
+  // Nada más llama al estimador: las tarjetas ya no lo usan.
+  assert.equal(typeof global.tapProgressionTempo,'function');
+  assert.equal(global.tapProgressionTempo.length,0,'El estimador no espera ninguna tarjeta');
 });
 
 test('tempo tap: stepper arrows adjust the BPM by one with the same limits',()=>{
