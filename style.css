@@ -1078,6 +1078,16 @@ html[data-theme="dark"] .board-add-button {
 .tempo-tap-step:hover { color: var(--ink); }
 .tempo-tap-step[data-step='1']:active { transform: translate(-50%, 1px); }
 .tempo-tap-step[data-step='-1']:active { transform: translate(-50%, -1px); }
+/* Cuenta de pulsaciones en curso: el botón avisa que todavía no se aplicó nada
+   y el BPM del campo se lee como provisional. El «↺» aparece para descartarla. */
+.tempo-tap.is-tapping { border-color: var(--rust); color: var(--rust); animation: tempo-tap-pulse 1s ease-in-out infinite; }
+.tempo-tap.is-tapping .tempo-tap-bpm,
+.tempo-tap-stepper .tempo-tap-bpm.is-pending { color: var(--muted); text-decoration: underline dotted; text-underline-offset: 3px; }
+.tempo-tap-discard { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; flex: 0 0 auto; padding: 0; border: 1px solid var(--line); border-radius: 6px; background: var(--paper); color: var(--muted); font-size: 12px; line-height: 1; cursor: pointer; visibility: hidden; }
+.tempo-tap-discard.is-ready { visibility: visible; color: var(--rust); border-color: var(--rust); }
+.tempo-tap-discard:hover { color: var(--ink); }
+@keyframes tempo-tap-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(217, 149, 42, 0); } 50% { box-shadow: 0 0 0 3px rgba(217, 149, 42, .18); } }
+@media (prefers-reduced-motion: reduce) { .tempo-tap.is-tapping { animation: none; border-color: var(--rust); } }
 #progression-transport button::after, #midi-transport button::after { content: attr(aria-label); margin-left: 6px; }
 .source-switch button { padding: 6px 8px; border: 0; border-radius: 5px; background: transparent; color: var(--muted); font: 11px var(--sans); cursor: pointer; }
 .source-switch button[aria-pressed="true"] { background: var(--rust); color: var(--paper-light); }
