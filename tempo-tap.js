@@ -4,6 +4,8 @@
 // Solo si la fuente activa es «Metrónomo» se fija también su tempo (al tocar/
 // editar tempo y también al dar play con esa fuente). El MIDI no se toca:
 // conserva su propio tempo.
+// La misma estimación está disponible en `tapProgressionTempo` para que marcar
+// el ritmo pulsando las tarjetas haga lo mismo que este botón.
 (() => {
   const button = document.querySelector('#tempo-tap');
   const bpmInput = document.querySelector('#tempo-tap-bpm');
@@ -26,6 +28,8 @@
     if (playerBpm) playerBpm.value = bpm;
     if (videoBpm) videoBpm.value = bpm;
     syncTempoToMetronome();
+    // Quien esté sonando (el Acompañamiento) ajusta su pulso sin reiniciar.
+    globalThis.window?.dispatchEvent?.(new Event('traste:tempo-applied'));
   };
   const clampedBpm = () => Math.min(240, Math.max(30, Math.round(Number(bpmInput.value) || 100)));
   document.querySelectorAll('.tempo-tap-step').forEach(step => step.addEventListener('click', () => {
@@ -40,7 +44,10 @@
     bpmInput.value = bpm;
     applyBpm(bpm);
   });
-  button.addEventListener('click', () => {
+  // La misma estimación se reutiliza al pulsar una tarjeta: `player-ui.js` llama
+  // a `tapProgressionTempo` para que marcar el ritmo en las tarjetas ajuste el
+  // tempo igual que este botón.
+  const tap = () => {
     const now = performance.now();
     if (taps.length && now - taps.at(-1) > 2500) taps = [];
     taps.push(now); taps = taps.slice(-8);
@@ -49,5 +56,7 @@
     if (bpm < 30 || bpm > 240) return;
     bpmInput.value = bpm;
     applyBpm(bpm);
-  });
+  };
+  globalThis.tapProgressionTempo = tap;
+  button.addEventListener('click', tap);
 })();

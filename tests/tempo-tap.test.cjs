@@ -23,13 +23,17 @@ function setup() {
   }
   const clock={now:0};
   const metronome={tempo:null,setTempo(value){this.tempo=Number(value);return this.tempo;}};
+  const events=[];
+  const windowStub={handlers:{},dispatchEvent(event){events.push(event.type);},addEventListener(name,fn){this.handlers[name]=fn;}};
   const ctx=vm.createContext({
     document:{querySelector:element,querySelectorAll:sel=>['.tempo-tap-step[data-step="1"]','.tempo-tap-step[data-step="-1"]'].map(element)},
     performance:{now:()=>clock.now},
     StringMetronome:metronome,
+    window:windowStub,
+    Event:class{constructor(type){this.type=type;}},
   });
   vm.runInContext(fs.readFileSync(path.join(__dirname,'../tempo-tap.js'),'utf8'),ctx);
-  return {element,clock,metronome,source,global:vm.runInContext('globalThis',ctx)};
+  return {element,clock,events,metronome,source,window:windowStub,global:vm.runInContext('globalThis',ctx)};
 }
 
 test('tempo tap: syncTempoToMetronome publishes the field tempo, only with the metronome source active',()=>{
@@ -100,6 +104,21 @@ test('tempo tap: far-apart taps restart the estimation window',()=>{
   clock.now=10400;button.handlers.click();
   clock.now=10900;button.handlers.click();
   assert.equal(bpmInput.value,'120');
+});
+
+test('tempo tap: the applied tempo is announced so a playing accompaniment can follow',()=>{
+  const {element,clock,events,window:win,global}=setup();
+  clock.now=0;global.tapProgressionTempo();
+  assert.equal(element('#tempo-tap-bpm').value,'100');
+  assert.deepEqual(events,[],'Con un solo golpe aún no hay tempo que aplicar');
+  clock.now=500;global.tapProgressionTempo();
+  assert.equal(element('#tempo-tap-bpm').value,'120');
+  assert.deepEqual(events,['traste:tempo-applied']);
+  assert.equal(element('#tempo-tap').handlers.click,global.tapProgressionTempo,
+    'El botón y las tarjetas comparten la misma estimación');
+  element('#tempo-tap-bpm').value='150';element('#tempo-tap-bpm').handlers.change();
+  assert.deepEqual(events,['traste:tempo-applied','traste:tempo-applied'],
+    'Editar el campo a mano también avisa');
 });
 
 test('tempo tap: stepper arrows adjust the BPM by one with the same limits',()=>{

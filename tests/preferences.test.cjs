@@ -72,6 +72,9 @@ function build(seed){
   ['progression','midi','metronome'].forEach((s,i)=>{
     make(null,{tag:'button',attrs:{'data-source':s,'aria-pressed':i===0?'true':'false'},dataset:{source:s}});
   });
+  ['pulse','restart'].forEach((m,i)=>{
+    make(null,{tag:'button',attrs:{'data-card-mode':m,'aria-pressed':i===0?'true':'false'},dataset:{cardMode:m}});
+  });
   const kbdModes=make('keyboard-modes',{tag:'div'});
   ['mastil','teclado','ambos'].forEach((m,i)=>{
     kbdModes.children.push(make(null,{tag:'button',attrs:{'data-keyboard-mode':m,'aria-pressed':i===0?'true':'false'},dataset:{keyboardMode:m}}));
@@ -202,9 +205,11 @@ test('preferencias: los radios y botones de fuente actualizan el snapshot',()=>{
   const{localStorage,runs,qa}=build();
   runs('document.querySelectorAll(\'#quality-select input[name="quality"]\').forEach((r,i)=>{r.checked=i===1;});document.querySelectorAll(\'#quality-select input[name="quality"]\')[1].dispatchEvent(new Event("change"));');
   runs('document.querySelectorAll(\'[data-source]\')[0].setAttribute("aria-pressed","false");document.querySelectorAll(\'[data-source]\')[2].setAttribute("aria-pressed","true");document.dispatchEvent(new Event("click"));');
+  runs('document.querySelectorAll(\'[data-card-mode]\')[0].setAttribute("aria-pressed","false");document.querySelectorAll(\'[data-card-mode]\')[1].setAttribute("aria-pressed","true");document.dispatchEvent(new Event("click"));');
   const snap=JSON.parse(localStorage.getItem('traste.preferences.v1'));
   assert.equal(snap.quality,'minor');
   assert.equal(snap.source,'metronome');
+  assert.equal(snap.cardMode,'restart');
 });
 
 test('preferencias: restaura los valores guardados disparando los eventos',()=>{
@@ -214,7 +219,7 @@ test('preferencias: restaura los valores guardados disparando los eventos',()=>{
     source:'midi',keyboardMode:'teclado',keyboardLive:'chord',micLive:'off',
     rowView:true,followMidi:false,fretScaleLock:true,youtubeFloat:false,
     playerBpm:'120',playerStyle:'rock',playerLoop:true,playerPercussion:true,playerVolume:'80',playerDrumVolume:'60',
-    playerCardStart:false,
+    playerCardStart:false,cardMode:'restart',
     metronomeBpm:'90',metronomeBeats:'6',metronomeAccent:false,metronomeVolume:'40',
     synthTimbre:'organ',synthDelay:true,synthReverb:false,synthVolume:'55',mastilVolume:'55'
   };
@@ -229,6 +234,7 @@ test('preferencias: restaura los valores guardados disparando los eventos',()=>{
   assert.equal(q('#toggle-degrees span').textContent,'grados: todos');
   assert.equal(q('#display-label').textContent,'7ma');
   assert.ok(clicked.some(n=>n.getAttribute('data-source')==='midi'));
+  assert.ok(clicked.some(n=>n.getAttribute('data-card-mode')==='restart'));
   assert.ok(clicked.some(n=>n.getAttribute('data-keyboard-mode')==='teclado'));
   assert.ok(clicked.some(n=>n.getAttribute('data-live-mode')==='chord'));
   assert.ok(clicked.some(n=>n.getAttribute('data-mic-live-mode')==='off'));

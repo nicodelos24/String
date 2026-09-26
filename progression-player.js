@@ -75,6 +75,19 @@ class ProgressionPlayer {
     return this.drumVolume;
   }
 
+  // Cambia el tempo con la música en marcha, para poder seguir el ritmo de una
+  // canción sin cortar el audio. El compás en curso conserva la duración que ya
+  // tenía programada y el siguiente compás entra con el pulso nuevo, así que el
+  // cambio se nota al terminar la vuelta que ya estaba sonando.
+  setTempo(bpm) {
+    if (!this.running) return null;
+    const value = Number(bpm);
+    if (!Number.isFinite(value) || value < 30 || value > 240) return null;
+    this.beat = 60 / value;
+    this.duration = 4 * this.beat;
+    return value;
+  }
+
   connectOutput() {
     if (this.master) return;
     this.master = this.context.createGain();

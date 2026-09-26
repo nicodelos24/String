@@ -283,6 +283,7 @@ function setupPlayerInterface() {
         this.callbacks.onState(true);
       }
       stop() {this.running = false; this.callbacks.onState(false);}
+      setTempo(bpm) {this.tempo = bpm; return bpm;}
       setVolume(value) {this.volume = value;}
       setDrumVolume(value) {this.drumVolume = value;}
     }
@@ -443,8 +444,20 @@ test('pulsar una tarjeta arranca el acompañamiento desde ella y la sigue mostra
   assert.equal(element('#player-bpm').disabled,true);
 });
 
-test('pulsar otra tarjeta mientras suena vuelve a empezar desde esa, sin dejar la anterior sonando',async()=>{
-  const {run,clickCard}=setupPlayerInterface();
+test('con «Solo pulso» una tarjeta no corta la música: solo marca el ritmo',async()=>{
+  const {run,element,clickCard}=setupPlayerInterface();
+  await clickCard(1);
+  assert.equal(run('testPlayer.options.startIndex'),1);
+  await clickCard(3);
+  assert.equal(run('testPlayer.options.startIndex'),1,'No se reinicia desde la otra tarjeta');
+  assert.equal(run('testPlayer.running'),true,'La música sigue sonando');
+  assert.equal(run('activeProgression'),3,'La tarjeta sí se selecciona para editarla');
+  assert.equal(element('#player-status').textContent,'Reproduciendo…');
+});
+
+test('con «Reiniciar» una tarjeta vuelve a empezar en ella y la lista se conserva',async()=>{
+  const {run,element,clickCard}=setupPlayerInterface();
+  element('[data-card-mode][aria-pressed="true"]').dataset={cardMode:'restart'};
   await clickCard(1);
   assert.equal(run('testPlayer.options.startIndex'),1);
   await clickCard(3);
@@ -455,8 +468,36 @@ test('pulsar otra tarjeta mientras suena vuelve a empezar desde esa, sin dejar l
   assert.equal(run('testPlayer.chords.length'),4,'La lista completa se conserva para la vuelta');
 });
 
+test('cada pulsación de tarjeta cuenta como golpe de ritmo y el tempo cambia en marcha',async()=>{
+  const {run,element,clickCard}=setupPlayerInterface();
+  run('globalThis.tempoTaps=0;globalThis.tapProgressionTempo=()=>{globalThis.tempoTaps++;};');
+  await clickCard(1);
+  assert.equal(run('tempoTaps'),1);
+  await clickCard(2);
+  assert.equal(run('tempoTaps'),2);
+  element('#player-bpm').value='132';
+  run("window.handlers['traste:tempo-applied']();");
+  assert.equal(Number(run('testPlayer.tempo')),132,'El motor adopta el tempo sin reiniciar');
+  assert.equal(run('testPlayer.running'),true);
+  assert.equal(run('testPlayer.options.bpm'),120,'La reproducción sigue con la lista ya iniciada');
+});
+
+test('el pulso de las tarjetas no se registra con otra fuente ni con el interruptor apagado',async()=>{
+  const {run,element,clickCard}=setupPlayerInterface();
+  run('globalThis.tempoTaps=0;globalThis.tapProgressionTempo=()=>{globalThis.tempoTaps++;};');
+  run("globalThis.StringSources={get active(){return 'midi';}};");
+  await clickCard(1);
+  assert.equal(run('tempoTaps'),0,'Con MIDI activo la tarjeta no toca el tempo');
+  run('globalThis.StringSources=undefined;');
+  element('#player-card-start').checked=false;
+  await clickCard(1);
+  assert.equal(run('tempoTaps'),0,'El interruptor desactiva también el pulso');
+  assert.equal(run('testPlayer.chords'),undefined);
+});
+
 test('con secciones la tarjeta se busca en la lista de reproducción, no en la progresión',async()=>{
-  const {run,clickCard}=setupPlayerInterface();
+  const {run,element,clickCard}=setupPlayerInterface();
+  element('[data-card-mode][aria-pressed="true"]').dataset={cardMode:'restart'};
   run(`window.StringSections={playback(){return [
     {source:progression[1],saved:{...progression[1]},section:'Estribillo'},
     {source:progression[1],saved:{...progression[1]},section:'Estribillo'},

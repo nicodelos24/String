@@ -26,6 +26,12 @@ function setup() {
     setAttribute(name,value){this._attrs[name]=String(value);},
     getAttribute(name){return this._attrs[name]??null;},
   }));
+  const modeButtons=['pulse','restart'].map(mode=>({
+    dataset:{cardMode:mode},handlers:{},_attrs:{'aria-pressed':mode==='pulse'?'true':'false'},
+    addEventListener(name,fn){this.handlers[name]=fn;},
+    setAttribute(name,value){this._attrs[name]=String(value);},
+    getAttribute(name){return this._attrs[name]??null;},
+  }));
   const metronome={running:false,starting:false,started:0,stopped:0,
     async start(){this.running=true;this.started++;},stop(){this.running=false;this.stopped++;}};
   const windowStub={
@@ -39,15 +45,30 @@ function setup() {
   const context={window:windowStub,
     document:{
       getElementById:element,querySelector:element,
-      querySelectorAll(sel){return sel==='[data-source]'?switchButtons:[];},
+      querySelectorAll(sel){
+        if(sel==='[data-source]')return switchButtons;
+        if(sel==='[data-card-mode]')return modeButtons;
+        return [];
+      },
     },
     MutationObserver:class{constructor(cb){this.cb=cb;} observe(){}},
     Event:class{constructor(type){this.type=type;}},
   };
   const vmContext=vm.createContext(context);
   vm.runInContext(fs.readFileSync(path.join(__dirname,'../panel-controls.js'),'utf8'),vmContext);
-  return {element,switchButtons,metronome,windowStub,vmContext};
+  return {element,switchButtons,modeButtons,metronome,windowStub,vmContext};
 }
+
+test('«Solo pulso» / «Reiniciar» deja marcada una sola opción',()=>{
+  const {modeButtons}=setup();
+  assert.equal(modeButtons[0].getAttribute('aria-pressed'),'true','«Solo pulso» viene elegido');
+  modeButtons[1].handlers.click();
+  assert.equal(modeButtons[0].getAttribute('aria-pressed'),'false');
+  assert.equal(modeButtons[1].getAttribute('aria-pressed'),'true');
+  modeButtons[0].handlers.click();
+  assert.equal(modeButtons[0].getAttribute('aria-pressed'),'true');
+  assert.equal(modeButtons[1].getAttribute('aria-pressed'),'false');
+});
 
 test('selecting Metrónomo routes quick-play to toggle the metronome independently of its panel',()=>{
   const {element,switchButtons,metronome,windowStub}=setup();

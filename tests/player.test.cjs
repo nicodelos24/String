@@ -325,3 +325,32 @@ test('PLY-18: a startIndex outside the list is clamped and never skips chords',a
     player.stop();
   }
 });
+
+test('PLY-19: the tempo can change while playing and the bar in progress keeps its length',async()=>{
+  const {player,context,oscillators,heard}=setup();
+  await player.start(chords,{bpm:120,style:'none'});
+  context.currentTime=0.05; player.tick();
+  assert.equal(player.setTempo(60),60);
+  assert.equal(oscillators[0].stopTime,2.03,'The bar already sounding keeps its own length');
+  context.currentTime=2; player.tick();
+  assert.equal(oscillators[3].time,2.04,'The pending bar still starts where it was due');
+  assert.equal(oscillators[3].stopTime,6.03,'...but lasts as long as the new tempo');
+  context.currentTime=2.05; player.tick();
+  assert.deepEqual(heard[1],[1,'Fm7',2]);
+  context.currentTime=6; player.tick();
+  assert.equal(oscillators[7].time,6.04,'The next bar follows the new beat');
+  player.stop();
+});
+
+test('PLY-20: an out-of-range tempo is rejected and a stopped player does not change',async()=>{
+  const {player,context,oscillators}=setup();
+  assert.equal(player.setTempo(120),null,'A stopped player keeps its tempo');
+  await player.start(chords,{bpm:120,style:'none'});
+  for(const bpm of [29,241,0,'lento',null,undefined]) assert.equal(player.setTempo(bpm),null);
+  context.currentTime=0.05; player.tick();
+  context.currentTime=2; player.tick();
+  assert.equal(oscillators[3].time,2.04,'The starting tempo is still the one in force');
+  assert.equal(oscillators[3].stopTime,4.03);
+  assert.equal(player.setTempo('90'),90,'A numeric string is accepted too');
+  player.stop();
+});

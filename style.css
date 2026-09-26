@@ -1897,6 +1897,9 @@ footer {
 }
 .player-controls button { cursor: pointer; min-width: 100px; }
 .player-controls button[aria-pressed="true"] { background: var(--rust); color: white; }
+/* «Solo pulso» / «Reiniciar» se leen como un interruptor, no como dos botones más. */
+.player-controls .source-switch button { min-width: 0; padding: 6px 8px; border: 0; border-radius: 5px; background: transparent; color: var(--muted); font: 11px var(--sans); }
+.player-controls .source-switch button[aria-pressed="true"] { background: var(--rust); color: var(--paper-light); }
 .player-controls :focus-visible { outline: 2px solid var(--rust); outline-offset: 3px; }
 .player-controls :disabled { opacity: .6; }
 .chord-player .player-help { color: var(--muted); font-size: 11px; line-height: 1.6; margin-bottom: 0; }

@@ -58,6 +58,7 @@
       degreeDisplay: degreesIndex(($('#toggle-degrees span')?.textContent || '').trim()),
       displayLabel: $('#display-label')?.textContent || '',
       source: pressedValue('[data-source]', 'progression'),
+      cardMode: pressedValue('[data-card-mode]', 'pulse'),
       keyboardMode: pressedValue('#keyboard-modes [data-keyboard-mode]', 'mastil'),
       keyboardLive: pressedValue('#keyboard-live-chord [data-live-mode]', 'chord'),
       micLive: pressedValue('#mic-live-chord [data-mic-live-mode]', 'chord'),
@@ -151,6 +152,7 @@
     }
 
     clickPressedTarget('[data-source]', 'data-source', saved.source);
+    clickPressedTarget('[data-card-mode]', 'data-card-mode', saved.cardMode || 'pulse');
     clickPressedTarget('#keyboard-modes [data-keyboard-mode]', 'data-keyboard-mode', saved.keyboardMode);
     clickPressedTarget('#keyboard-live-chord [data-live-mode]', 'data-live-mode', saved.keyboardLive);
     clickPressedTarget('#mic-live-chord [data-mic-live-mode]', 'data-mic-live-mode', saved.micLive);

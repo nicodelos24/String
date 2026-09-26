@@ -54,6 +54,10 @@
   window.addEventListener('traste:metronome-state',syncQuickPlayer);
   syncQuickPlayer();
   document.querySelectorAll('[data-source]').forEach(button=>button.addEventListener('click',()=>choose(button.dataset.source)));
+  // «Solo pulso» / «Reiniciar»: qué hace pulsar una tarjeta mientras ya suena.
+  document.querySelectorAll('[data-card-mode]').forEach(button=>button.addEventListener('click',()=>{
+    document.querySelectorAll('[data-card-mode]').forEach(other=>other.setAttribute('aria-pressed',String(other===button)));
+  }));
   $('midi-file').addEventListener('change',()=>choose('midi'));
   $('player-toggle').addEventListener('click',()=>choose('progression',false));
   $('midi-play').addEventListener('click',()=>choose('midi',false));
