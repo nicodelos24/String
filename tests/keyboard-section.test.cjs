@@ -1,6 +1,6 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { keyStrip, keyLetter, activeBaseMidi, keyboardMidiFor, KEY_OFFSETS, KeySynth, keyboardLayoutClasses } = require('../keyboard-section.js');
+const { keyStrip, keyLetter, activeBaseMidi, mastilBaseDrop, keyboardMidiFor, KEY_OFFSETS, KeySynth, keyboardLayoutClasses } = require('../keyboard-section.js');
 
 test('keyboard: the strip builds 7 white and 5 black keys per octave with ascending MIDI', () => {
   const strip = keyStrip(3, 2, 60);
@@ -39,6 +39,20 @@ test('keyboard: a, s, d, f, g, h, j map to C, D, E, F, G, A, B and w, e, r, u to
   assert.equal(baseC4 + KEY_OFFSETS.g, 67); // G4
   assert.equal(baseC4 + KEY_OFFSETS.h, 69); // A4
   assert.equal(baseC4 + KEY_OFFSETS.j, 71); // B4
+});
+
+test('keyboard: en el mástil la guitarra suena una octava más abajo y el bajo no se mueve', () => {
+  const baseC4 = keyboardMidiFor(4, 0);
+  // Modo «Mástil»: las teclas tocan el mástil.
+  assert.equal(mastilBaseDrop('guitar', true), 12, 'la guitarra baja una octava');
+  assert.equal(baseC4 - mastilBaseDrop('guitar', true), 48, 'a = do3 en vez de do4');
+  assert.equal(mastilBaseDrop('bass', true), 0, 'el bajo se queda en la base del piano');
+  // Modos «Teclado» y «Ambos»: las teclas tocan el piano, que no se mueve.
+  assert.equal(mastilBaseDrop('guitar', false), 0, 'el piano no baja');
+  assert.equal(mastilBaseDrop('bass', false), 0);
+  // Con la guitarra en el mástil, asdfg queda una octava más abajo.
+  assert.equal(KEY_OFFSETS.a - mastilBaseDrop('guitar', true), -12);
+  assert.equal(KEY_OFFSETS.g - mastilBaseDrop('guitar', true), -5);
 });
 
 test('keyboard: letters are labelled only inside the active window', () => {

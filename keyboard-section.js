@@ -101,6 +101,16 @@ function mastilKeyToggle(notes, midi, on) {
   return changed;
 }
 
+// Cuántos semitonos baja la base cuando las teclas tocan el mástil en vez del
+// piano. Con la guitarra, una octava (la base del piano es el do central y en el
+// mástil la guitarra se toca cómodo unoctava más abajo). El bajo se queda donde
+// está. Solo importa en modo «Mástil»: en «Ambos» y «Teclado» las teclas tocan
+// el piano, que no se mueve.
+function mastilBaseDrop(instrument, inMastil) {
+  if (!inMastil) return 0;
+  return instrument === 'bass' ? 0 : 12;
+}
+
 // Estado visual de un modo del teclado para la lógica pura: si el panel queda
 // oculto o visible y qué clase recibe la sección del mástil.
 function keyboardLayoutClasses(mode) {
@@ -414,6 +424,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = {
   keyStrip: keyStrip,
   keyLetter: keyLetter,
   activeBaseMidi: activeBaseMidi,
+  mastilBaseDrop: mastilBaseDrop,
   keyOffsetFor: keyOffsetFor,
   keyTargetIsTyping: keyTargetIsTyping,
   mastilKeyToggle: mastilKeyToggle,
@@ -459,6 +470,13 @@ if (typeof document !== 'undefined') (function () {
   // una octava más arriba.
   function keyBaseFor(useOctaveShift) {
     return activeBaseMidi(baseMidi, useOctaveShift ? shiftDirection() : 0, OCTAVE_START, OCTAVE_COUNT);
+  }
+
+  // En el mástil la guitarra suena una octava más abajo que el piano. Como la
+  // nota que suena y la que se marca son la misma, lo que se ve en las cuerdas
+  // es lo que se oye.
+  function soundingBaseFor(useOctaveShift) {
+    return keyBaseFor(useOctaveShift) - mastilBaseDrop(instrument, inMastilMode());
   }
 
   function modeButtonFor(modeName) {
@@ -756,7 +774,7 @@ if (typeof document !== 'undefined') (function () {
     var offset = keyOffsetFor(event);
     if (offset === undefined) return;
     var shiftCarried = event.shiftKey && (event.code === 'Equal' || event.code === 'BracketRight');
-    var base = keyBaseFor(!shiftCarried);
+    var base = soundingBaseFor(!shiftCarried);
     var midi = base + offset;
     if (midi < 0 || midi > 127) return;
     if (!pressed.has(event.key)) {
