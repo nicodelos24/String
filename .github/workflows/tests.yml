@@ -1,0 +1,28 @@
+name: Suite
+
+# El proyecto no tiene build ni dependencias: `npm test` es todo. Esta
+# integración continua sirve para que el estado de la suite sea un dato
+# objective y no una afirmación del README.
+#
+# Nota sobre `IA_GUIDE.md`: es el registro de pedidos del autor y se edita a
+# menudo, a veces a la vez que el código. No se valida aquí; la trazabilidad de
+# los pedidos vive en el repositorio portfolio-qa-string.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  pruebas:
+    name: node --test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # No hay `npm install`: package.json no declara dependencias.
+      - name: Suite completa
+        run: npm test

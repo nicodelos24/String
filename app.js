@@ -236,8 +236,11 @@ let selectedFretMidi=null;
 let activeProgression = 0;
 let playingProgressionItem = null;
 let draggingProgressionItem = null;
-let degreeDisplay = 0; // 0 = sin grados, 1 = escala, 2 = todo el mastil
-let showNotes = 1; // 0 = sin notas, 1 = solo notas de escala, 2 = todas las notas
+// Qué se ve en cada traste y cuánto del mástil se muestra. Antes eran dos
+// variables que las dos hablaba del alcance («escala» o «todas»), y por eso los
+// botones se pisaban: ahora cada botón contesta una sola pregunta.
+let verLevel = 0;      // 0 = notas, 1 = grados, 2 = nada
+let mastilScope = 0;  // 0 = solo la escala, 1 = todo el mástil
 let displayModeIndex = 1; // 0 = grados completos, 1 = raíz, 3ra, 5ta, 2 = raíz, 3ra, 5ta, 7ma
 const displayModes = ['full', 'triad', 'seventh', 'modeChord', 'modeSeventh'];
 const displayModeLabels = ['grados', 'tríada', '7ma', 'Acorde', 'Acorde 7ma'];
@@ -661,8 +664,9 @@ function getDegreeLabel(interval, modeKey = selectedMode) {
   return ['1', '♭2', '2', '♭3', '3', '4', '♭5', '5', '♭6', '6', '♭7', '7'][normalized];
 }
 
-function getFretLabel(pitchClass, interval, inSelectedMode, inChord, showNoteName) {
-  if (degreeDisplay === 2 || (degreeDisplay === 1 && inSelectedMode)) return getDegreeLabel(interval);
+function getFretLabel(pitchClass, interval, inSelectedMode, showNoteName) {
+  if (verLevel === 2) return '';
+  if (verLevel === 1) return mastilScope === 1 || inSelectedMode ? getDegreeLabel(interval) : '';
   return showNoteName ? displayNote(pitchClass) : '';
 }
 
@@ -754,17 +758,13 @@ function renderFretboard() {
       
 
       // Determinar si mostrar el nombre de la nota según el modo
+      // Con «VER» en grados o en nada, la etiqueta la decide getFretLabel.
       let showNoteName = false;
-      if (showNotes === 2) {
-        // Modo "todas": mostrar todas las notas
-        showNoteName = true;
-      } else if (showNotes === 1) {
-        // Modo "escala": mostrar solo notas de la escala seleccionada
-        showNoteName = inSelectedMode || (!pentatonicView && (isRoot || inChord));
+      if (verLevel === 0) {
+        showNoteName = mastilScope === 1 || inSelectedMode || (!pentatonicView && (isRoot || inChord));
       }
-      // showNotes === 0: no mostrar ninguna nota
 
-      return `<div class="fret"><span class="${noteClass}" data-midi="${openNote + actualFret}" data-note="${displayNote(pitchClass)}" data-interval="${intervalInfo.name}" style="background-color: ${bgColor}; color: ${textColor};${displayModeIndex >= 3 && !shouldHighlight ? ' opacity: 0;' : ''}" title="${displayNote(pitchClass)} · ${intervalInfo.name}">${getFretLabel(pitchClass, intervalFromRoot, inSelectedMode, inChord, showNoteName)}</span></div>`;
+      return `<div class="fret"><span class="${noteClass}" data-midi="${openNote + actualFret}" data-note="${displayNote(pitchClass)}" data-interval="${intervalInfo.name}" style="background-color: ${bgColor}; color: ${textColor};${displayModeIndex >= 3 && !shouldHighlight ? ' opacity: 0;' : ''}" title="${displayNote(pitchClass)} · ${intervalInfo.name}">${getFretLabel(pitchClass, intervalFromRoot, inSelectedMode, showNoteName)}</span></div>`;
     }).join('');
     return `<div class="string-row" style="--string-width: ${stringIndex < (instrument === 'guitar' ? 3 : 2) ? 2 : 1}px">${frets}</div>`;
   }).join('');
@@ -844,17 +844,13 @@ function renderOpenStrings() {
       
 
       // Determinar si mostrar el nombre de la nota según el modo
+      // Con «VER» en grados o en nada, la etiqueta la decide getFretLabel.
       let showNoteName = false;
-      if (showNotes === 2) {
-        // Modo "todas": mostrar todas las notas
-        showNoteName = true;
-      } else if (showNotes === 1) {
-        // Modo "escala": mostrar solo notas de la escala seleccionada
-        showNoteName = inSelectedMode || (!pentatonicView && (isRoot || inChord));
+      if (verLevel === 0) {
+        showNoteName = mastilScope === 1 || inSelectedMode || (!pentatonicView && (isRoot || inChord));
       }
-      // showNotes === 0: no mostrar ninguna nota
 
-      return `<div class="open-string-row"><span class="${noteClass}" data-midi="${openNote}" data-note="${displayNote(pitchClass)}" data-interval="${intervalInfo.name}" style="background-color: ${bgColor}; color: ${textColor};${displayModeIndex >= 3 && !shouldHighlight ? ' opacity: 0;' : ''}" title="${displayNote(pitchClass)} · ${intervalInfo.name}">${getFretLabel(pitchClass, intervalFromRoot, inSelectedMode, inChord, showNoteName)}</span></div>`;
+      return `<div class="open-string-row"><span class="${noteClass}" data-midi="${openNote}" data-note="${displayNote(pitchClass)}" data-interval="${intervalInfo.name}" style="background-color: ${bgColor}; color: ${textColor};${displayModeIndex >= 3 && !shouldHighlight ? ' opacity: 0;' : ''}" title="${displayNote(pitchClass)} · ${intervalInfo.name}">${getFretLabel(pitchClass, intervalFromRoot, inSelectedMode, showNoteName)}</span></div>`;
     }).join('');
 
   document.querySelector('#open-strings').innerHTML = openStringsHtml;
@@ -986,34 +982,43 @@ document.querySelector('#toggle-display').addEventListener('click', event => {
 
   renderFretboard(); 
 });
-document.querySelector('#toggle-degrees').addEventListener('click', event => {
-  degreeDisplay = (degreeDisplay + 1) % 3;
-  const button = event.currentTarget;
-  const labels = ['grados: no', 'grados: escala', 'grados: todos'];
-  button.querySelector('span').textContent = labels[degreeDisplay];
-  button.setAttribute('aria-pressed', String(degreeDisplay !== 0));
-  button.setAttribute('aria-label', labels[degreeDisplay] + '. Clic para cambiar.');
+// Los dos botones del pie responden a preguntas distintas:
+//   VER     -> qué pone en cada traste: notas, grados o nada.
+//   MÁSTIL  -> cuánto del mástil se ve: solo la escala o todas las cuerdas.
+// El resalte marca cuando el valor no es el de siempre, no «el botón activo»:
+// antes «Aa escala» salía siempre encendido y llevaba a pensar que era un modo
+// especial cuando era el normal.
+const VER_LABELS = ['notas', 'grados', 'nada'];
+const MASTIL_LABELS = ['escala', 'todo'];
+const VER_HELP = 'Qué pone en cada traste: el nombre de la nota, el grado dentro de la escala o nada.';
+const MASTIL_HELP = 'Cuánto del mástil se ve: solo las notas de la escala o todas las cuerdas.';
+
+function paintFretLabelButtons() {
+  const ver = document.querySelector('#toggle-notes'), mastil = document.querySelector('#toggle-degrees');
+  const verText = VER_LABELS[verLevel], mastilText = MASTIL_LABELS[mastilScope];
+  ver.querySelector('span').textContent = verText;
+  mastil.querySelector('span').textContent = mastilText;
+  ver.setAttribute('aria-pressed', String(verLevel !== 0));
+  mastil.setAttribute('aria-pressed', String(mastilScope !== 0));
+  ver.setAttribute('aria-label', 'Ver: ' + verText + '. Clic para cambiar. ' + VER_HELP);
+  mastil.setAttribute('aria-label', 'Mastil: ' + mastilText + '. Clic para cambiar. ' + MASTIL_HELP);
+  ver.title = VER_HELP;
+  mastil.title = MASTIL_HELP;
+}
+
+document.querySelector('#toggle-notes').addEventListener('click', () => {
+  verLevel = (verLevel + 1) % VER_LABELS.length;
+  paintFretLabelButtons();
   renderFretboard();
 });
-document.querySelector('#toggle-notes').addEventListener('click', event => { 
-  showNotes = (showNotes + 1) % 3; // Ciclar entre 0, 1, 2
-  const button = event.currentTarget;
-  const buttonText = button.querySelector('span');
 
-  // Actualizar el texto del botón según el modo
-  if (showNotes === 0) {
-    button.setAttribute('aria-pressed', 'false');
-    buttonText.textContent = 'notas';
-  } else if (showNotes === 1) {
-    button.setAttribute('aria-pressed', 'true');
-    buttonText.textContent = 'escala';
-  } else {
-    button.setAttribute('aria-pressed', 'true');
-    buttonText.textContent = 'todas';
-  }
-
-  renderFretboard(); 
+document.querySelector('#toggle-degrees').addEventListener('click', () => {
+  mastilScope = (mastilScope + 1) % MASTIL_LABELS.length;
+  paintFretLabelButtons();
+  renderFretboard();
 });
+
+paintFretLabelButtons();
 function defaultChordMode(item) {
   const type = chordTypes.find(candidate => candidate.value === item.type) || chordTypes[0];
   if (item.type === '7' || item.type === '7sus4' || item.type === '9' || item.type === 'sus2' || item.type === 'sus4') return 'mixolydian';

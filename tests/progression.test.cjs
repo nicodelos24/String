@@ -78,9 +78,36 @@ test('pentatonic selection respects explicit choice and follows modal chord qual
   assert.doesNotMatch(html,/>B<\/span>/);
 });
 
+test('los botones VER y MÁSTIL controlan dos cosas distintas',()=>{
+  const {run,element}=setup();
+  // VER responde a qué pone en cada traste; MÁSTIL, a cuánto del mástil se ve.
+  assert.equal(run('verLevel'),0);assert.equal(run('mastilScope'),0);
+  const html=()=>element('#fretboard').innerHTML+element('#open-strings').innerHTML;
+  const enEscala=m=>new RegExp('data-midi="'+m+'"[^>]*>\\s*([A-G#♭]|[0-9])');
+  // MÁSTIL=todo con VER=notas rotula también el Fa#3, que no es de Do mayor.
+  run('mastilScope=1;verLevel=0;updateView()');
+  assert.match(html(),enEscala(54),'con MÁSTIL=todo se rotula también lo que no es de la escala');
+  // VER=grados cambia lo que pone, no cuántas notas se ven.
+  run('mastilScope=0;verLevel=1;updateView()');
+  assert.doesNotMatch(html(),enEscala(54),'con MÁSTIL=escala los grados no salen fuera de la escala');
+  assert.match(html(),enEscala(48),'pero sí dentro');
+  // MÁSTIL=todo con VER=grados: grados en todas las cuerdas.
+  run('mastilScope=1;verLevel=1;updateView()');
+  assert.match(html(),enEscala(54),'con MÁSTIL=todo también los grados llegan a todo el mástil');
+  // VER=nada no rotula nada, esté en el alcance que esté.
+  run('verLevel=2;updateView()');
+  assert.doesNotMatch(html(),enEscala(48),'con VER=nada no hay rótulo en ninguna nota de la escala');
+  // Al final los rótulos de los botones son los de las fases.
+  run('verLevel=0;mastilScope=0;paintFretLabelButtons()');
+  assert.equal(element('#toggle-notes').querySelector('span').textContent,'notas');
+  assert.equal(element('#toggle-degrees').querySelector('span').textContent,'escala');
+});
+
 test('defaults show scale names and triads; duplicated chords are independent complete copies',()=>{
   const {run}=setup();
-  assert.equal(run('showNotes'),1);assert.equal(run('displayModeIndex'),1);
+  // Por defecto se ven los nombres de nota de la escala y solo la escala.
+  assert.equal(run('verLevel'),0);assert.equal(run('mastilScope'),0);
+  assert.equal(run('displayModeIndex'),1);
   run("progression=[{root:2,type:'m7',mode:'dorian',ghostMode:'aeolian',rootNoteName:'D'}];duplicateProgressionChord(0)");
   assert.equal(run('progression.length'),2);assert.equal(run('activeProgression'),1);
   assert.equal(run('progression[0]===progression[1]'),false);

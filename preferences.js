@@ -19,8 +19,16 @@
 
   // Leyendas de los botones cíclicos: el texto se usa como estado para
   // capturar y para restaurar pulsando hasta alcanzar el objetivo.
-  const NOTES_LABELS = ['notas', 'escala', 'todas'];
-  const DEGREE_LABELS = ['grados: no', 'grados: escala', 'grados: todos'];
+  const NOTES_LABELS = ['notas', 'grados', 'nada'];
+  const DEGREE_LABELS = ['escala', 'todo'];
+  // Guardados de la versión anterior: showNotes (0 sin, 1 escala, 2 todas) y
+  // degreeDisplay (0 no, 1 escala, 2 todas).
+  const fromLegacy = saved => {
+    if (saved.degreeDisplay) return 1;         // había grados -> VER = grados
+    if (saved.showNotes === 0) return 2;       // no había ni notas -> VER = nada
+    return 0;                                  // notas
+  };
+  const fromLegacyScope = saved => (saved.degreeDisplay === 2 || saved.showNotes === 2) ? 1 : 0;
   const notesIndex = text => {
     const index = NOTES_LABELS.indexOf(text);
     return index >= 0 ? index : 1;
@@ -54,8 +62,8 @@
       mode: all('#mode-selector input[name="mode"]').find(r => r.checked)?.value || '',
       ghostMode: $('#ghost-mode-select')?.value || '',
       pentatonicView: $('#pentatonic-view')?.checked || false,
-      showNotes: notesIndex(($('#toggle-notes span')?.textContent || '').trim()),
-      degreeDisplay: degreesIndex(($('#toggle-degrees span')?.textContent || '').trim()),
+      verLevel: notesIndex(($('#toggle-notes span')?.textContent || '').trim()),
+      mastilScope: degreesIndex(($('#toggle-degrees span')?.textContent || '').trim()),
       displayLabel: $('#display-label')?.textContent || '',
       source: pressedValue('[data-source]', 'progression'),
       cardMode: pressedValue('[data-card-mode]', 'restart'),
@@ -140,12 +148,18 @@
       const number = Number(value);
       return Number.isFinite(number) ? Math.min(Math.max(Math.round(number), 0), max) : fallback;
     };
+    // Los botones se reconstruyeron (VER y MÁSTIL), así que un guardado de la
+    // versión anterior trae `showNotes` y `degreeDisplay`. Se traducen: los
+    // grados de antes pasaban a VER=grados y su alcance a MÁSTIL, y sin grados,
+    // «todas» era VER=notas con MÁSTIL=todo.
+    const ver = saved.verLevel === undefined ? fromLegacy(saved) : clampIndex(saved.verLevel, 0, 2);
+    const alcance = saved.mastilScope === undefined ? fromLegacyScope(saved) : clampIndex(saved.mastilScope, 0, 1);
     clickUntil('#toggle-notes',
       () => ($('#toggle-notes span')?.textContent || '').trim(),
-      NOTES_LABELS[clampIndex(saved.showNotes, 1, 2)]);
+      NOTES_LABELS[ver]);
     clickUntil('#toggle-degrees',
       () => ($('#toggle-degrees span')?.textContent || '').trim(),
-      DEGREE_LABELS[clampIndex(saved.degreeDisplay, 0, 2)]);
+      DEGREE_LABELS[alcance]);
     if (saved.displayLabel) {
       clickUntil('#toggle-display', () => $('#display-label')?.textContent || '', String(saved.displayLabel));
     }
@@ -222,8 +236,15 @@
       try { apply(saved); } finally { applying = false; }
     }
     lastText = JSON.stringify(readSnapshot());
+    // El clic se escucha en fase de captura para que ningún `stopPropagation`
+    // de un control se lleve la guardado por delante, pero eso tiene un precio:
+    // en captura el manejador del propio botón todavía no ha corrido, así que
+    // se guardaba el valor de ANTES del clic. Con los botones cíclicos (VER,
+    // MÁSTIL, el modo de visualización) eso dejaba el snapshot un paso atrasado
+    // y al recargar salía la fase anterior. Se aplaza la captura un turno para
+    // que corra cuando todos los manejadores ya han pintado sus etiquetas.
     ['change', 'input', 'click'].forEach(type =>
-      document.addEventListener(type, () => capture(), true));
+      document.addEventListener(type, () => setTimeout(capture, 0), true));
   };
 
   load();

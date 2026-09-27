@@ -2,13 +2,13 @@ const {test}=require('node:test');const assert=require('node:assert/strict');
 const fs=require('node:fs');const vm=require('node:vm');const path=require('node:path');
 const SRC=fs.readFileSync(path.join(__dirname,'../preferences.js'),'utf8');
 
-const NOTES=['notas','escala','todas'];
-const DEGREES=['grados: no','grados: escala','grados: todos'];
+const NOTES=['notas','grados','nada'];
+const DEGREES=['escala','todo'];
 const DISPLAY=['grados','tríada','7ma','Acorde','Acorde 7ma'];
 
 function build(seed){
   const byId=new Map();const allNodes=[];const clicked=[];
-  let noteIndex=1,degreeIndex=0,displayIndex=1;
+  let noteIndex=0,degreeIndex=0,displayIndex=1;
   function make(id,cfg={}){
     const n={
       id, tag:cfg.tag||null, type:cfg.type||null, name:cfg.name||null,
@@ -47,10 +47,10 @@ function build(seed){
   const range=(id,value)=>make(id,{tag:'input',type:'range',value});
   const span=(id,text)=>make(id,{tag:'span',text});
 
-  const notesLabel=span(null,'escala');const degreeLabel=span(null,'grados: no');
+  const notesLabel=span(null,'notas');const degreeLabel=span(null,'escala');
   const displayLabel=span('display-label','tríada');
   const notesBtn=make('toggle-notes',{tag:'button',children:[notesLabel],onClick:()=>{noteIndex=(noteIndex+1)%3;notesLabel.textContent=NOTES[noteIndex];}});
-  make('toggle-degrees',{tag:'button',children:[degreeLabel],onClick:()=>{degreeIndex=(degreeIndex+1)%3;degreeLabel.textContent=DEGREES[degreeIndex];}});
+  make('toggle-degrees',{tag:'button',children:[degreeLabel],onClick:()=>{degreeIndex=(degreeIndex+1)%2;degreeLabel.textContent=DEGREES[degreeIndex];}});
   make('toggle-display',{tag:'button',children:[displayLabel],onClick:()=>{displayIndex=(displayIndex+1)%DISPLAY.length;displayLabel.textContent=DISPLAY[displayIndex];}});
 
   const picker=make('instrument-picker',{tag:'div'});
@@ -161,10 +161,19 @@ function build(seed){
     addEventListener:(type,fn)=>{document.handlers[type]=fn;},
     dispatchEvent:ev=>{if(document.handlers[ev.type])document.handlers[ev.type](ev);},
   };
-  const ctx=vm.createContext({document,localStorage,window:{},Event:class{constructor(type){this.type=type;this.bubbles=true;}},clicked});
+  // El guardado se aplaza un turno a propósito (así se mide el estado ya
+  // pintado y no el anterior), así que el doble necesita un setTimeout que se
+  // pueda vaciar a mano en vez de esperar de verdad.
+  const pendientes=[];
+  const ctx=vm.createContext({document,localStorage,window:{},
+    Event:class{constructor(type){this.type=type;this.bubbles=true;}},
+    clicked,
+    setTimeout:fn=>{pendientes.push(fn);return pendientes.length;},
+    clearTimeout:()=>{}});
   vm.runInContext(SRC,ctx);
+  const flush=()=>{while(pendientes.length)pendientes.shift()();};
   return {
-    document,localStorage,ctx,clicked,
+    document,localStorage,ctx,clicked,flush,
     runs:code=>vm.runInContext(code,ctx),
     q:sel=>ctx.document.querySelector(sel),
     qa:sel=>ctx.document.querySelectorAll(sel),
@@ -177,9 +186,10 @@ test('preferencias: sin guardado previo no escribe nada al cargar',()=>{
 });
 
 test('preferencias: un cambio de cualquier control visible guarda el snapshot',()=>{
-  const{localStorage,runs,qa}=build();
+  const{localStorage,runs,qa,flush}=build();
   if(!qa('#instrument-picker input[name="string-instrument"]')[0].checked)throw new Error('mock');
   runs('document.querySelector("#metronome-volume").value="75";document.dispatchEvent(new Event("click"));');
+  flush();  // el guardado se aplaza un turno
   const snap=JSON.parse(localStorage.getItem('traste.preferences.v1'));
   assert.equal(snap.instrument,'guitar');
   assert.equal(snap.quality,'major');
@@ -193,27 +203,50 @@ test('preferencias: un cambio de cualquier control visible guarda el snapshot',(
   assert.equal(snap.playerBpm,'100');
   assert.equal(snap.synthVolume,'30');
   assert.equal(snap.pentatonicView,false);
-  assert.equal(snap.showNotes,1);
-  assert.equal(snap.degreeDisplay,0);
+  assert.equal(snap.verLevel,0);
+  assert.equal(snap.mastilScope,0);
   assert.equal(snap.displayLabel,'tríada');
   assert.equal(snap.followMidi,true);
   assert.equal(snap.youtubeFloat,true);
 });
 
 test('preferencias: los radios y botones de fuente actualizan el snapshot',()=>{
-  const{localStorage,runs,qa}=build();
+  const{localStorage,runs,qa,flush}=build();
   runs('document.querySelectorAll(\'#quality-select input[name="quality"]\').forEach((r,i)=>{r.checked=i===1;});document.querySelectorAll(\'#quality-select input[name="quality"]\')[1].dispatchEvent(new Event("change"));');
   runs('document.querySelectorAll(\'[data-source]\')[0].setAttribute("aria-pressed","false");document.querySelectorAll(\'[data-source]\')[2].setAttribute("aria-pressed","true");document.dispatchEvent(new Event("click"));');
   runs('document.querySelectorAll(\'[data-card-mode]\')[0].setAttribute("aria-pressed","false");document.querySelectorAll(\'[data-card-mode]\')[1].setAttribute("aria-pressed","true");document.dispatchEvent(new Event("click"));');
+  flush();  // el guardado se aplaza un turno
   const snap=JSON.parse(localStorage.getItem('traste.preferences.v1'));
   assert.equal(snap.quality,'minor');
   assert.equal(snap.source,'metronome');
   assert.equal(snap.cardMode,'restart');
 });
 
+test('el guardado se mide después del clic, no antes (si no, va un paso atrasado)',()=>{
+  // El clic se escucha en captura para que ningún stopPropagation se lleve el
+  // guardado, pero así el botón todavía no ha pintado su etiqueta. Si se
+  // guardara en el momento, con los botones cíclicos el snapshot quedaría un
+  // paso atrasado y al recargar saldría la fase anterior.
+  const{localStorage,runs,flush}=build();
+  const estado=()=>JSON.parse(localStorage.getItem('traste.preferences.v1')||'{}');
+  // El clic del botón tiene que llegar al documento, como en el DOM.
+  const clic=()=>runs('document.querySelector("#toggle-notes").click();document.dispatchEvent(new Event("click"));');
+  clic();
+  assert.equal(estado().verLevel,undefined,'antes de que corra el turno no se ha escrito nada');
+  flush();
+  assert.equal(estado().verLevel,1,'tras el turno guarda el valor que el botón acaba de pintar (grados)');
+  clic();
+  flush();
+  assert.equal(estado().verLevel,2,'y en el siguiente, nada');
+  clic();
+  flush();
+  assert.equal(estado().verLevel,0,'y al volver, notas');
+});
+
 test('preferencias: restaura los valores guardados disparando los eventos',()=>{
   const saved={
     instrument:'bass',rootPitch:5,useFlats:true,quality:'minor',mode:'aeolian',ghostMode:'',
+    // Claves de la versión anterior, a propósito: la migración debe traducirlas.
     pentatonicView:false,showNotes:0,degreeDisplay:2,displayLabel:'7ma',
     source:'midi',keyboardMode:'teclado',keyboardLive:'chord',micLive:'off',
     rowView:true,followMidi:false,fretScaleLock:true,youtubeFloat:false,
@@ -229,8 +262,10 @@ test('preferencias: restaura los valores guardados disparando los eventos',()=>{
   assert.equal(qa('#mode-selector input[name="mode"]').find(r=>r.value==='aeolian').checked,true);
   assert.equal(q('#root-spelling').checked,true);
   assert.equal(qa('#root-piano .piano-key').find(k=>k.dataset.pitch==='5').clicked,1);
-  assert.equal(q('#toggle-notes span').textContent,'notas');
-  assert.equal(q('#toggle-degrees span').textContent,'grados: todos');
+  // showNotes 0 = sin notas y degreeDisplay 2 = grados en todo el mástil:
+  // el equivalente nuevo es VER=grados con MÁSTIL=todo.
+  assert.equal(q('#toggle-notes span').textContent,'grados');
+  assert.equal(q('#toggle-degrees span').textContent,'todo');
   assert.equal(q('#display-label').textContent,'7ma');
   assert.ok(clicked.some(n=>n.getAttribute('data-source')==='midi'));
   assert.ok(clicked.some(n=>n.getAttribute('data-card-mode')==='pulse'));

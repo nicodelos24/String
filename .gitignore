@@ -1,0 +1,18 @@
+# Sistema operativo y editores
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*~
+.idea/
+.vscode/
+
+# Node: el proyecto no tiene dependencias de paquete, pero si algún día las
+# tuviera no deben filtrarse nunca.
+node_modules/
+npm-debug.log*
+
+# El proyecto no se compila: no hay dist/ ni build/. Lo que se versiona es el
+# código fuente, tal cual se sirve desde server.cjs.
+*.log
+*.tmp
