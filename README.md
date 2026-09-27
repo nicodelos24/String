@@ -40,7 +40,7 @@ Las fuentes de Google Fonts y YouTube requieren conexión. Las herramientas hist
 - El switch sol/luna guarda el tema de interfaz. No cambia los colores musicales ni la madera del mástil.
 - Los controles visibles se guardan en el navegador y se recuperan al volver a abrir la página: instrumento, nota raíz y armadura, calidad y modo, vista pentatónica, fuente de reproducción (Backtrack/MIDI/Metrónomo), vista y etiquetas de las tarjetas y el mástil, disposición de las tarjetas, Mástil/Teclado/Ambos, acorde en vivo y escala en vivo, «Solo pulso» o «Reiniciar», tempos, estilos y volúmenes del acompañamiento, metrónomo y sintetizador, «Seguir acorde MIDI», bloqueo de escala y video flotante.
 
-En móvil, el mástil se desplaza horizontalmente sin comprimir sus proporciones. El acorde seleccionado y la armadura aparecen cerca del mástil. Las explicaciones se abren mediante botones **?**; los errores y estados siguen visibles.
+En móvil, el mástil se desplaza horizontalmente sin comprimir sus proporciones. El acorde seleccionado y la armadura aparecen cerca del mástil. Las explicaciones se abren mediante botones **?**; los errores y estados siguen visibles. La página se divide en cuatro secciones con una barra fija abajo, al alcance del pulgar: **Mástil** (diapasón, controles del mástil y lecturas de escala), **Progresión** (tarjetas y tempo), **Acompañar** (Acompañamiento, YouTube, metrónomo y Mis progresiones) y **Más** (controles, leyenda de intervalos y modos, YouTube, metrónomo y biblioteca). Solo se ve una sección a la vez. En escritorio la barra no aparece y la rejilla de tres columnas es la de siempre.
 
 ### Tarjetas y secciones
 
