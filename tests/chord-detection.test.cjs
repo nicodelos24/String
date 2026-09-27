@@ -62,3 +62,100 @@ test('confirma cambios sostenidos, filtra transitorios y libera en silencio', ()
   }
   assert.deepEqual(events, [c, am, null, am]);
 });
+
+// --- Lo que se midió al revisar el detector, para que no se rompa en silencio ---
+
+// Voz realista: la cuerda más grave de cada clase del acorde, sin repetir.
+function voicingFor(root, intervals) {
+  const usados = new Set();
+  const out = [];
+  for (const interval of intervals) {
+    const objetivo = (root + interval) % 12;
+    let elegido = null;
+    for (let midi = 40; midi <= 84 && elegido === null; midi++) {
+      if (midi % 12 === objetivo && !usados.has(midi)) elegido = midi;
+    }
+    if (elegido === null) return null;
+    usados.add(elegido);
+    out.push(elegido);
+  }
+  return out;
+}
+
+// Las cuerdas graves suenan más que las agudas, pero siempre por encima de cero:
+// una amplitud negativa invierte la fase y la medición no mide nada.
+const ampliada = midis => {
+  const base = midis[0] < 48 ? 0.19 : 0.16;
+  return midis.map(m => base * Math.pow(0.965, Math.max(0, m - 40)));
+};
+const oye = (midis, harmonics = 6) =>
+  detectChord(audioSpectrum(midis, { harmonics, noise: 0.005, amplitudes: ampliada(midis) }), 48000);
+
+test('cejillas y acordes de 6 cuerdas con octavas duplicadas', () => {
+  // Cada nota aparece dos veces en la misma clase: si se sumaran mal las
+  // octavas, la croma quedaría torcida y el acorde no se nombraría.
+  for (const [nombre, midis, raiz, tipo] of [
+    ['cejilla de Do en la 8', [52, 60, 64, 67, 72, 76], 0, 'maj'],
+    ['cejilla de Fa en la 1', [53, 57, 60, 65, 69, 72], 5, 'maj'],
+    ['cejilla de Re menor en la 5', [50, 57, 62, 65, 69, 74], 2, 'm'],
+    ['cejilla de Sol en la 3', [55, 59, 62, 67, 71, 74], 7, 'maj'],
+    ['Re mayor abierto', [50, 57, 62, 66], 2, 'maj'],
+  ]) {
+    const found = oye(midis);
+    assert.ok(found, nombre + ': debe reconocer el acorde');
+    assert.equal(found.root, raiz, nombre);
+    assert.equal(found.type, tipo, nombre);
+  }
+});
+
+test('acordes que se pisan entre sí se nombran por la nota más grave', () => {
+  // Disminuidos, aumentados y suspendidos los explican varias plantillas con
+  // la misma cobertura; el desempate tiene que quedarse con la correcta.
+  for (const [nombre, midis, raiz, tipo] of [
+    ['Do[#dim]', [48, 51, 54], 0, 'dim'],
+    ['Do[#dim]7', [48, 51, 54, 57], 0, 'dim7'],
+    ['Do♯[#dim]7', [49, 52, 55, 58], 1, 'dim7'],
+    ['Mi[#dim]7', [51, 54, 57, 60], 3, 'dim7'],
+    ['Do[#aug]', [48, 52, 56], 0, 'aug'],
+    ['Do♯[#aug]', [49, 53, 57], 1, 'aug'],
+    ['Mi[#aug]', [52, 56, 60], 4, 'aug'],
+    ['Do[sus]4', [48, 53, 55], 0, 'sus4'],
+    ['Do[sus]2', [48, 50, 55], 0, 'sus2'],
+    ['Do7[sus]4', [48, 53, 55, 58], 0, '7sus4'],
+    ['Si[sus]menor[♭]5', [47, 50, 53, 57], 11, 'm7b5'],
+  ]) {
+    const found = oye(midis);
+    assert.ok(found, nombre + ': debe reconocer el acorde');
+    assert.equal(found.root, raiz, nombre);
+    assert.equal(found.type, tipo, nombre);
+  }
+});
+
+test('cuartas y sextas: antes no había plantilla y se rechazaban enteras', () => {
+  for (const [nombre, midis, raiz, tipo] of [
+    ['C11', [48, 52, 55, 58, 62, 65], 0, '11'],
+    ['G11', [43, 47, 50, 53, 57, 60], 7, '11'],
+    ['Am11', [45, 48, 52, 55, 59, 62], 9, 'm11'],
+    ['Dm11', [50, 53, 57, 60, 64, 67], 2, 'm11'],
+    ['G13', [43, 47, 50, 53, 57, 59, 64], 7, '13'],
+  ]) {
+    const found = oye(midis);
+    assert.ok(found, nombre + ': debe reconocer el acorde');
+    assert.equal(found.root, raiz, nombre);
+    assert.equal(found.type, tipo, nombre);
+  }
+});
+
+test('una cuerda muy por debajo de las demás hace dudar de la raíz', () => {
+  // Con la raíz al 3% el detector no se aventura: es el comportamiento que ya
+  // se probó y conviene que siga siendo así.
+  const midis = [48, 52, 55];
+  const weak = ampliada(midis); weak[0] = 0.03;
+  assert.equal(detectChord(audioSpectrum(midis, { harmonics: 6, amplitudes: weak }), 48000), null);
+});
+
+test('potencias y dos notas nunca se nombran como acorde', () => {
+  for (const midis of [[48, 55], [43, 50], [45, 52], [50, 57], [40, 47], [48, 52], [48, 54]]) {
+    assert.equal(oye(midis, 8), null, midis.join('/'));
+  }
+});

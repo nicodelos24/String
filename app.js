@@ -130,6 +130,10 @@ const chordTypes = [
   { value: 'add9', label: 'Novena añadida', suffix: 'add9', intervals: [0, 4, 7, 2] },
   { value: '6/9', label: 'Novenas 6/9', suffix: '6/9', intervals: [0, 4, 7, 9, 2] },
   { value: '9', label: 'Novena', suffix: '9', intervals: [0, 4, 7, 10, 2] },
+  { value: 'm11', label: 'Menor 11', suffix: 'm11', intervals: [0, 3, 7, 10, 2, 5] },
+  { value: '11', label: 'Once', suffix: '11', intervals: [0, 4, 7, 10, 2, 5] },
+  { value: 'maj13', label: 'Mayor 13', suffix: 'maj13', intervals: [0, 4, 7, 11, 2, 9] },
+  { value: '13', label: 'Dominante 13', suffix: '13', intervals: [0, 4, 7, 10, 2, 9] },
   { value: 'sus2', label: 'Suspendido 2', suffix: 'sus2', intervals: [0, 2, 7] },
   { value: 'sus4', label: 'Suspendido 4', suffix: 'sus4', intervals: [0, 5, 7] },
 ];
@@ -1013,7 +1017,10 @@ document.querySelector('#toggle-notes').addEventListener('click', event => {
 function defaultChordMode(item) {
   const type = chordTypes.find(candidate => candidate.value === item.type) || chordTypes[0];
   if (item.type === '7' || item.type === '7sus4' || item.type === '9' || item.type === 'sus2' || item.type === 'sus4') return 'mixolydian';
-  if (item.type === 'm6' || item.type === 'm9') return 'dorian';
+  // La 11 es la dominante con la Once puesta: también mixolidio. La 13 sobre
+  // fundamental mayor también; sobre menor, dórico como las novenas.
+  if (item.type === '11' || item.type === '13') return 'mixolydian';
+  if (item.type === 'm6' || item.type === 'm9' || item.type === 'm11') return 'dorian';
   return type.intervals.includes(6) ? 'locrian'
     : type.intervals.includes(3) ? 'aeolian' : 'ionian';
 }

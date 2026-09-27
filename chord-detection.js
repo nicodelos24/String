@@ -22,6 +22,14 @@ const LIVE_CHORD_TEMPLATES = [
   { type: '7sus4', intervals: [0, 5, 7, 10], mode: 'mixolydian' },
   { type: 'aug', intervals: [0, 4, 8], mode: 'ionian' },
   { type: 'dim7', intervals: [0, 3, 6, 9], mode: 'locrian' },
+  // Cuartas y sextas: son las que faltaban. Sin ellas, cualquier voicing con
+  // 11 o 13 (G13, Cmaj13…) se rechazaba entero por no tener plantilla que lo
+  // explicara, no por ser ruido. Se prueban a la cola porque son las que más
+  // encajan con otras (una 11 es una 7 con la 11 puesta).
+  { type: 'm11', intervals: [0, 3, 7, 10, 2, 5], mode: 'dorian' },
+  { type: '11', intervals: [0, 4, 7, 10, 2, 5], mode: 'mixolydian' },
+  { type: 'maj13', intervals: [0, 4, 7, 11, 2, 9], mode: 'ionian' },
+  { type: '13', intervals: [0, 4, 7, 10, 2, 9], mode: 'mixolydian' },
 ];
 
 // Umbral del espectro relativo al máximo (funciona con volumen alto o bajo).
@@ -88,7 +96,10 @@ function detectChord(spectrum, sampleRate, fftSize = spectrum.length * 2) {
   const maximum = Math.max(...chroma);
   if (!maximum) return null;
   const present = [...chroma].map((energy, pitch) => energy >= maximum * PRESENCE ? pitch : -1).filter(pitch => pitch >= 0);
-  if (present.length < 3 || present.length > 5) return null;
+  // Hasta seis clases: las cuartas y sextas tienen seis notas distintas. Con
+  // cinco, un G13 completo se rechazaba siempre. El penalizador por «extra»
+  // de más abajo y el suelo de confianza siguen impidiendo que se inventen.
+  if (present.length < 3 || present.length > 6) return null;
   const total = chroma.reduce((sum, value) => sum + value, 0);
   const candidates = [];
   for (let root = 0; root < 12; root++) {
