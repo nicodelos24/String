@@ -842,15 +842,17 @@ html[data-theme="dark"] .legend-add-button { background: var(--paper); border-co
 .tuner-cents { font: 600 11px var(--mono); color: var(--muted); min-width: 3.2em; text-align: right; }
 .tuner-status { flex: 1 1 100%; margin: 0; font: 500 11px var(--sans); color: var(--muted); }
 
+/* Nota que está sonando por el micrófono. Antes se pintaba de doradomacizo con
+   `background: #ffc107 !important` y tapaba el color propio de la nota, que
+   viene en un estilo en línea (`app.js` lo escribe al pintar el mástil). Con el
+   relleno dorado no se veía si la nota estaba dentro de la escala o fuera, que
+   es justo lo que hace falta mirar al tocar. Ahora se respeta ese color y la
+   señal de «esto está sonando» la dan el aro dorado y el pulso, no el relleno. */
 .fret-note.live,
 .open-string-note.live {
   position: relative;
   z-index: 3;
-  background: #ffc107 !important;
-  color: #1d2521 !important;
-  font-weight: 800;
-  transform: scale(1.18);
-  box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.55), 0 0 24px 6px rgba(255, 193, 7, 0.65);
+  box-shadow: 0 0 0 2px #ffc107, 0 0 0 5px rgba(255, 193, 7, .3), 0 0 16px 3px rgba(255, 193, 7, .45);
   animation: live-bounce 1s ease-in-out infinite;
 }
 
@@ -858,7 +860,7 @@ html[data-theme="dark"] .legend-add-button { background: var(--paper); border-co
 .open-string-note.live::after {
   content: '';
   position: absolute;
-  inset: -6px;
+  inset: -3px;
   border-radius: inherit;
   border: 2px solid #ffc107;
   animation: live-ring 1s ease-out infinite;
@@ -875,15 +877,13 @@ html[data-theme="dark"] .legend-add-button { background: var(--paper); border-co
   transition: opacity 0.3s ease;
 }
 
+/* Lo mismo que la nota dorada, pero para las teclas del PC: el violeta marca de
+   dónde viene la nota, no tiene por qué tapar el color de la escala. */
 .fret-note.keyboard-live,
 .open-string-note.keyboard-live {
   position: relative;
   z-index: 3;
-  background: #6c5ce7 !important;
-  color: #ffffff !important;
-  font-weight: 800;
-  transform: scale(1.18);
-  box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.55), 0 0 24px 6px rgba(108, 92, 231, 0.65);
+  box-shadow: 0 0 0 2px #6c5ce7, 0 0 0 5px rgba(108, 92, 231, .3), 0 0 16px 3px rgba(108, 92, 231, .45);
   animation: live-bounce 1s ease-in-out infinite;
 }
 
@@ -891,7 +891,7 @@ html[data-theme="dark"] .legend-add-button { background: var(--paper); border-co
 .open-string-note.keyboard-live::after {
   content: '';
   position: absolute;
-  inset: -6px;
+  inset: -3px;
   border-radius: inherit;
   border: 2px solid #6c5ce7;
   animation: live-ring 1s ease-out infinite;
