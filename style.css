@@ -964,8 +964,6 @@ html[data-theme="dark"] .legend-add-button { background: var(--paper); border-co
 
 /* Fila superior del botón de añadir: solo visible en el modo «Ambos», encima
    del piano. display flex heredado de .board-add-row no debe anular el oculto. */
-.keyboard-add-row[hidden] { display: none; }
-.keyboard-add-row { margin: 10px 0 4px; }
 
 /* Indicador del acorde seleccionado, a la izquierda del botón. */
 .board-add-chord {
@@ -1749,6 +1747,10 @@ footer {
 .keyboard-panel-head strong { font: 700 13px var(--sans); letter-spacing: -.02em; }
 .keyboard-range { font: 10px var(--mono); color: var(--muted); }
 .keyboard-octave-load { font: 10px var(--mono); color: var(--rust); margin-left: auto; }
+/* El boton de «anadir acorde» del piano se hizo caber en la cabecera del panel: es el
+   hueco de la derecha que estaba vacio, asi se anade un acorde sin bajar al pie. */
+.keyboard-panel-head .keyboard-add-chord { min-height: 26px; padding: 0 8px; font-size: 10px; margin-left: auto; }
+.keyboard-panel-head .keyboard-add-chord span { font-size: 12px; }
 #keyboard-close {
   border: 0;
   background: none;
@@ -1848,19 +1850,18 @@ footer {
    se replica (clase keyboard-band) para que el mástil solo tenga la misma
    interfaz ordenada, con el añadir y el volumen arriba del diapasón. */
 .fretboard-section:is(.keyboard-split, .keyboard-band) .board-footer,
-.fretboard-section:is(.keyboard-split, .keyboard-band) .board-add-row:not(.keyboard-add-row) { display: contents; }
+.fretboard-section:is(.keyboard-split, .keyboard-band) .board-add-row { display: contents; }
 .fretboard-section:is(.keyboard-split, .keyboard-band) .progression-workspace { order: 2; }
 .fretboard-section:is(.keyboard-split, .keyboard-band) .board-toolbar { order: 3; }
 .fretboard-section:is(.keyboard-split, .keyboard-band) .board-view-row { order: 4; }
 .fretboard-section:is(.keyboard-split, .keyboard-band) .note-feedback { order: 5; align-self: center; min-width: 0; }
 .fretboard-section:is(.keyboard-split, .keyboard-band) .board-add-chord { order: 6; align-self: center; margin-left: 10px; }
-.fretboard-section:is(.keyboard-split, .keyboard-band) .board-add-row:not(.keyboard-add-row) > .board-add-button { order: 7; align-self: center; margin-left: 6px; }
+.fretboard-section:is(.keyboard-split, .keyboard-band) .board-add-row > .board-add-button { order: 7; align-self: center; margin-left: 6px; }
 .fretboard-section:is(.keyboard-split, .keyboard-band) .board-footer-tools { order: 8; align-self: center; margin-left: auto; gap: 4px; flex-wrap: nowrap; }
 .fretboard-section:is(.keyboard-split, .keyboard-band) .board-footer-tools .icon-button { padding: 6px 8px; font-size: 10px; }
 .fretboard-section:is(.keyboard-split, .keyboard-band) .board-volume { order: 9; align-self: center; margin-left: 10px; }
 .fretboard-section:is(.keyboard-split, .keyboard-band) .fretboard-wrap { order: 10; margin-top: 6px; }
 .fretboard-section:is(.keyboard-split, .keyboard-band) .keyboard-panel { order: 11; margin: 14px 0 2px; }
-.fretboard-section:is(.keyboard-split, .keyboard-band) .keyboard-add-row { order: 12; margin: 10px 0 20px; }
 .fretboard-section:is(.keyboard-split, .keyboard-band) .scale-summary { order: 13; }
 .fretboard-section:is(.keyboard-split, .keyboard-band) .chord-player { order: 14; }
 .fretboard-section:is(.keyboard-split, .keyboard-band) .youtube-panel { order: 15; }
@@ -2195,21 +2196,19 @@ html[data-theme="dark"] .fret-numbers, html[data-theme="dark"] .open-strings-hea
   body[data-mobile-tab="mastil"] .fretboard-section:not(:is(.keyboard-split, .keyboard-band)) .board-view-row { order: 2; }
   body[data-mobile-tab="mastil"] .fretboard-section:not(:is(.keyboard-split, .keyboard-band)) .fretboard-wrap { order: 3; }
   body[data-mobile-tab="mastil"] .fretboard-section:not(:is(.keyboard-split, .keyboard-band)) .board-footer { order: 4; }
-  body[data-mobile-tab="mastil"] .fretboard-section:not(:is(.keyboard-split, .keyboard-band)) .board-add-row:not(.keyboard-add-row) { order: 5; }
+  body[data-mobile-tab="mastil"] .fretboard-section:not(:is(.keyboard-split, .keyboard-band)) .board-add-row { order: 5; }
   body[data-mobile-tab="mastil"] .fretboard-section:not(:is(.keyboard-split, .keyboard-band)) .scale-summary { order: 6; }
   body[data-mobile-tab="mastil"] .fretboard-section:not(:is(.keyboard-split, .keyboard-band)) .keyboard-panel,
-  body[data-mobile-tab="mastil"] .fretboard-section:not(:is(.keyboard-split, .keyboard-band)) .keyboard-add-row { order: 7; }
 
   body[data-mobile-tab="mastil"] .fretboard-section:is(.keyboard-split, .keyboard-band, .fretboard-section) .board-toolbar { order: 1; }
   body[data-mobile-tab="mastil"] .fretboard-section:is(.keyboard-split, .keyboard-band, .fretboard-section) .board-view-row { order: 2; }
   body[data-mobile-tab="mastil"] .fretboard-section:is(.keyboard-split, .keyboard-band, .fretboard-section) .note-feedback { order: 3; }
   body[data-mobile-tab="mastil"] .fretboard-section:is(.keyboard-split, .keyboard-band, .fretboard-section) .board-add-chord { order: 4; }
-  body[data-mobile-tab="mastil"] .fretboard-section:is(.keyboard-split, .keyboard-band, .fretboard-section) .board-add-row:not(.keyboard-add-row) > .board-add-button { order: 5; }
+  body[data-mobile-tab="mastil"] .fretboard-section:is(.keyboard-split, .keyboard-band, .fretboard-section) .board-add-row > .board-add-button { order: 5; }
   body[data-mobile-tab="mastil"] .fretboard-section:is(.keyboard-split, .keyboard-band, .fretboard-section) .board-footer-tools { order: 6; }
   body[data-mobile-tab="mastil"] .fretboard-section:is(.keyboard-split, .keyboard-band, .fretboard-section) .board-volume { order: 7; }
   body[data-mobile-tab="mastil"] .fretboard-section:is(.keyboard-split, .keyboard-band, .fretboard-section) .fretboard-wrap { order: 8; }
   body[data-mobile-tab="mastil"] .fretboard-section:is(.keyboard-split, .keyboard-band, .fretboard-section) .keyboard-panel { order: 9; }
-  body[data-mobile-tab="mastil"] .fretboard-section:is(.keyboard-split, .keyboard-band, .fretboard-section) .keyboard-add-row { order: 10; }
   body[data-mobile-tab="mastil"] .fretboard-section:is(.keyboard-split, .keyboard-band, .fretboard-section) .scale-summary { order: 11; }
 
   /* La fila del micrófono es más ancha que la pantalla: sin esto el chip

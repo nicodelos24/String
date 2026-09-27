@@ -496,8 +496,6 @@ if (typeof document !== 'undefined') (function () {
       section.classList.toggle('keyboard-split', layout.split);
       section.classList.toggle('keyboard-band', mode === 'mastil');
     }
-    var addRow = document.getElementById('keyboard-add-row');
-    if (addRow) addRow.hidden = !layout.split;
     keyboardModeButtons().forEach(function (button) {
       var active = button.dataset.keyboardMode === mode;
       button.setAttribute('aria-pressed', String(active));
