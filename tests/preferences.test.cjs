@@ -88,6 +88,10 @@ function build(seed){
   ['off','note','chord'].forEach((m,i)=>{
     micRoot.children.push(make(null,{tag:'button',attrs:{'data-mic-live-mode':m,'aria-pressed':i===1?'true':'false'},dataset:{micLiveMode:m}}));
   });
+  const micLabelRoot=make('mic-note-label',{tag:'div'});
+  ['note','degree'].forEach((m,i)=>{
+    micLabelRoot.children.push(make(null,{tag:'button',attrs:{'data-mic-label-mode':m,'aria-pressed':i===1?'true':'false'},dataset:{micLabelMode:m}}));
+  });
 
   select('instrument-select',[{value:'guitar'},{value:'bass'}]);
   select('root-select',[{value:'0',dataset:{note:'C'}},{value:'1',dataset:{note:'Db'}}]);
@@ -204,6 +208,7 @@ test('preferencias: un cambio de cualquier control visible guarda el snapshot',(
   assert.equal(snap.keyboardMode,'mastil');
   assert.equal(snap.keyboardLive,'off');
   assert.equal(snap.micLive,'note');
+  assert.equal(snap.micLabel,'degree','el rótulo del micrófono también se guarda, y por defecto es Grado');
   assert.equal(snap.metronomeVolume,'75');
   assert.equal(snap.playerBpm,'100');
   assert.equal(snap.synthVolume,'30');
@@ -295,7 +300,7 @@ test('preferencias: restaura los valores guardados disparando los eventos',()=>{
     instrument:'bass',rootPitch:5,useFlats:true,quality:'minor',mode:'aeolian',ghostMode:'',
     // Claves de la versión anterior, a propósito: la migración debe traducirlas.
     pentatonicView:false,showNotes:0,degreeDisplay:2,displayLabel:'7ma',
-    source:'midi',keyboardMode:'teclado',keyboardLive:'chord',micLive:'off',
+    source:'midi',keyboardMode:'teclado',keyboardLive:'chord',micLive:'off',micLabel:'note',
     rowView:true,followMidi:false,fretScaleLock:true,youtubeFloat:false,
     playerBpm:'120',playerStyle:'rock',playerLoop:true,playerPercussion:true,playerVolume:'80',playerDrumVolume:'60',
     cardMode:'pulse',
@@ -320,6 +325,7 @@ test('preferencias: restaura los valores guardados disparando los eventos',()=>{
   assert.ok(clicked.some(n=>n.getAttribute('data-keyboard-mode')==='teclado'));
   assert.ok(clicked.some(n=>n.getAttribute('data-live-mode')==='chord'));
   assert.ok(clicked.some(n=>n.getAttribute('data-mic-live-mode')==='off'));
+  assert.ok(clicked.some(n=>n.getAttribute('data-mic-label-mode')==='note'));
   assert.ok(clicked.includes(q('#progression-view')));
   assert.equal(q('#metronome-bpm').value,'90');
   assert.equal(q('#metronome-beats').value,'6');

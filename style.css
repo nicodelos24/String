@@ -1178,6 +1178,10 @@ html[data-theme="dark"] .board-add-button {
 .fret-lock .lock-symbol { display: block; order: -1; flex: 0 0 16px; width: 16px; height: 16px; fill: none; stroke: var(--muted); stroke-width: 1.6; }
 .fret-lock .spelling-switch:has(:checked) .lock-symbol { stroke: var(--rust); }
 .live-chord-switch { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; margin: 0; }
+/* `display: flex` de la fila gana al `display: none` que el navegador da al
+   atributo `hidden`, así que sin esto los interruptores del micrófono se veían
+   también con el micrófono apagado. */
+.live-chord-switch[hidden] { display: none; }
 .live-chord-switch .live-chord-switch-label { color: var(--muted); font-size: 9px; }
 .live-chord-modes { display: inline-flex; align-items: center; gap: 2px; padding: 2px; background: rgba(255,255,255,.04); border: 1px solid var(--line); border-radius: 6px; }
 .live-chord-modes button { appearance: none; border: 0; background: transparent; color: var(--muted); font: inherit; font-size: 10px; line-height: 1.2; padding: 3px 9px; border-radius: 4px; cursor: pointer; }

@@ -4,6 +4,28 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const path = require('node:path');
 
+test('micFretLabel: el micrófono escribe el nombre de la nota o su grado', () => {
+  const { micFretLabel } = require('../microphone-ui.js');
+  // Grado: el intervalo se mide contra la raíz de la escala, con el mismo
+  // vocabulario de las tablas de app.js.
+  const degrees = ['1', '♭2', '2', '♭3', '3', '4', '♭5', '5', '♭6', '6', '♭7', '7'];
+  const ctx = { root: 0, degreeFor: interval => degrees[interval] };
+  assert.equal(micFretLabel({ midi: 60, name: 'C' }, 'degree', ctx), '1');
+  assert.equal(micFretLabel({ midi: 64, name: 'E' }, 'degree', ctx), '3');
+  assert.equal(micFretLabel({ midi: 63, name: 'Eb' }, 'degree', ctx), '♭3', 'una nota ajena a la escala también tiene grado');
+  assert.equal(micFretLabel({ midi: 75, name: 'Eb' }, 'degree', ctx), '♭3', 'la octava no cambia el grado');
+  assert.equal(micFretLabel({ midi: 57, name: 'A' }, 'degree', { root: 9, degreeFor: ctx.degreeFor }), '1', 'con otra raíz el grado se recalcula');
+  // Nota: se reutiliza el nombre que la página ya pintó en esa posición, con la
+  // grafía de su armadura, y sin octava.
+  assert.equal(micFretLabel({ midi: 63, name: 'Eb' }, 'note', ctx), 'Eb');
+  assert.equal(micFretLabel({ midi: 58, name: 'A#' }, 'note', ctx), 'A#', 'no se reescribe la grafía: la decide la armadura');
+  assert.equal(micFretLabel({ midi: 58, name: 'A#' }, undefined, ctx), 'A#', 'sin modo escrito se lee como nota');
+  // Sin nota o sin contexto no se inventa nada.
+  assert.equal(micFretLabel(null, 'degree', ctx), '');
+  assert.equal(micFretLabel({ name: 'C' }, 'degree', ctx), '');
+  assert.equal(micFretLabel({ midi: 60, name: 'C' }, 'degree', {}), '', 'sin getDegreeLabel no hay grado que escribir');
+});
+
 function liveButton(mode, pressed) {
   return {
     dataset: { micLiveMode: mode },
@@ -173,7 +195,136 @@ test('tunerReading: apunta la cuerda más cercana, su nota objetivo y los cents'
   assert.equal(tunerReading({ midi: 40, cents: 0 }, 'piano', table), null, 'Instrumento desconocido no afina');
 });
 
+function fakeNote(midi, name, label) {
+  const classes = new Set();
+  // `dataset` en el navegador es un DOMStringMap y rechaza las claves con
+  // guion: escribir `dataset['data-mic-label']` lanza. El doble lo imita para
+  // que ese fallo tampoco pase por aquí.
+  const data = new Proxy({ midi: String(midi), note: name }, {
+    set(target, key, value) {
+      if (typeof key === 'string' && key.includes('-')) {
+        throw new TypeError(`'${key}' no es una propiedad válida de DOMStringMap`);
+      }
+      target[key] = value;
+      return true;
+    },
+  });
+  return {
+    dataset: data, textContent: label,
+    classList: {
+      add: c => classes.add(c), remove: c => classes.delete(c),
+      contains: c => classes.has(c), toggle: (c, on) => (on ? classes.add(c) : classes.delete(c)),
+    },
+    isLive: () => classes.has('live'),
+  };
+}
+
+// Arnés del rótulo del micrófono: hace falta un mástil de verdad (notas con
+// `data-midi`, `data-note` y su rótulo) para ver qué escribe y qué devuelve.
+function setupLabels() {
+  const DEGREES = ['1', '♭2', '2', '♭3', '3', '4', '♭5', '5', '♭6', '6', '♭7', '7'];
+  const notes = [fakeNote(64, 'E', ''), fakeNote(65, 'F', '4'), fakeNote(66, 'F#', ''), fakeNote(60, 'C', '1')];
+  const labelButtons = [liveButton('note', false), liveButton('degree', true)]
+    .map(b => ({ ...b, dataset: { micLabelMode: b.dataset.micLiveMode }, attributes: { ...b.attributes } }));
+  const micButtons = [liveButton('off', false), liveButton('note', false), liveButton('chord', true)];
+  const elements = new Map();
+  function element(id) {
+    if (!elements.has(id)) elements.set(id, {
+      checked: false, hidden: true, handlers: {}, attributes: {}, dataset: {},
+      textContent: '',
+      addEventListener(event, fn) { this.handlers[event] = fn; },
+      setAttribute(key, value) { this.attributes[key] = value; },
+      getAttribute(key) { return this.attributes[key]; },
+      querySelector: () => element('label'),
+      querySelectorAll(sel) {
+        if (sel === '[data-mic-live-mode]') return micButtons;
+        if (sel === '[data-mic-label-mode]') return labelButtons;
+        return [];
+      },
+    });
+    return elements.get(id);
+  }
+  let callbacks;
+  const context = vm.createContext({
+    document: {
+      getElementById: element,
+      querySelectorAll(sel) {
+        if (sel.includes('[data-midi]')) return notes;
+        if (sel.includes('.live')) return notes.filter(n => n.isLive());
+        return [];
+      },
+    },
+    window: { addEventListener() {} }, MutationObserver: class { observe() {} },
+    MicrophoneReader: class { constructor(options) { callbacks = options; } },
+    setTimeout, root: 0, selectedMode: 'ionian', quality: 'major', activeProgression: 0,
+    rootNoteName: 'C', chordType: { value: 'maj' }, ghostMode: '',
+    progression: [], progressionEdited: false, draggingProgressionItem: null,
+    chordTypes: [{ value: 'maj', suffix: '' }],
+    noteName: () => 'C', isInTune: () => true,
+    getDegreeLabel: interval => DEGREES[interval],
+    renderProgression() {}, showProgressionChord() {},
+  });
+  vm.runInContext(fs.readFileSync(path.join(__dirname, '../microphone-ui.js'), 'utf8'), context);
+  return {
+    context, notes, element, labelButtons,
+    get callbacks() { return callbacks; },
+    pressedMode() {
+      const on = labelButtons.find(b => b.getAttribute('aria-pressed') === 'true');
+      return on ? on.dataset.micLabelMode : null;
+    },
+  };
+}
+
+test('el rótulo del micrófono aparece con el micrófono encendido y arranca en «Grado»', () => {
+  const { callbacks, element, pressedMode } = setupLabels();
+  assert.equal(element('mic-note-label').hidden, true, 'encendido no, el switch está escondido');
+  callbacks.onState('ready');
+  assert.equal(element('mic-note-label').hidden, false, 'encendido sí, junto al botón');
+  assert.equal(pressedMode(), 'degree');
+  callbacks.onState('stopped');
+  assert.equal(element('mic-note-label').hidden, true, 'al detenerlo se esconde otra vez');
+});
+
+test('el micrófono escribe el grado en la nota que suena y devuelve el rótulo de la página al soltarla', () => {
+  const { callbacks, notes, labelButtons } = setupLabels();
+  callbacks.onState('ready');
+  // El Fa#4 (66) está fuera de Do mayor: con el grado pone ♭5 y no el rótulo
+  // que tuviera puesto la página.
+  callbacks.onPitch({ midi: 66, freq: 369.99, cents: 0 });
+  const faS = notes.find(n => n.dataset.midi === '66');
+  const do4 = notes.find(n => n.dataset.midi === '60');
+  assert.equal(faS.textContent, '♭5', 'la nota que suena lleva su grado');
+  assert.equal(faS.isLive(), true);
+  assert.equal(do4.isLive(), false);
+  assert.equal(do4.textContent, '1', 'lo que no suena conserva el rótulo de la página');
+  // Cambiar a «Nota» reescribe lo que está sonando, sin tocar el resto.
+  labelButtons[0].click();
+  assert.equal(faS.textContent, 'F#', 'con Nota se escribe el nombre de la nota');
+  assert.equal(do4.textContent, '1', 'y fuera de la nota que suena nada cambia');
+  // Al apagar el micrófono, cada nota vuelve a su rótulo original.
+  callbacks.onState('stopped');
+  assert.equal(faS.textContent, '', 'el mástil recupera el rótulo que tenía');
+  assert.equal(faS.dataset.micLabel, undefined, 'y no queda rastro del rótulo del micrófono');
+  assert.equal(faS.isLive(), false);
+});
+
+test('el grado se recalcula cuando cambia la raíz de la escala', () => {
+  const { context, callbacks, notes, labelButtons } = setupLabels();
+  callbacks.onState('ready');
+  callbacks.onPitch({ midi: 66, freq: 369.99, cents: 0 });
+  const faS = notes.find(n => n.dataset.midi === '66');
+  assert.equal(faS.textContent, '♭5', 'contra Do mayor el Fa# es la quinta disminuida');
+  // Si la escala pasa a Fa mayor, la misma nota deja de estar dentro: el mástil
+  // se repinta y el micrófono reescribe el rótulo con el criterio vigente.
+  context.root = 5;
+  callbacks.onPitch({ midi: 66, freq: 369.99, cents: 0 });
+  assert.equal(faS.textContent, '♭2', 'contra Fa mayor la misma nota es una segunda menor');
+  labelButtons[0].click();
+  assert.equal(faS.textContent, 'F#', 'el nombre de la nota no depende de la escala');
+});
+
 function setupPitch() {
+
   const timers = [];
   let fakeNow = 0;
   const elements = new Map();

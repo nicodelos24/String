@@ -84,6 +84,7 @@
       keyboardMode: pressedValue('#keyboard-modes [data-keyboard-mode]', 'mastil'),
       keyboardLive: pressedValue('#keyboard-live-chord [data-live-mode]', 'chord'),
       micLive: pressedValue('#mic-live-chord [data-mic-live-mode]', 'chord'),
+      micLabel: pressedValue('#mic-note-label [data-mic-label-mode]', 'degree'),
       rowView: $('#progression')?.classList.contains('single-row') || false,
       followMidi: $('#follow-midi')?.checked || false,
       fretScaleLock: $('#fret-scale-lock')?.checked || false,
@@ -189,6 +190,7 @@
     clickPressedTarget('#keyboard-modes [data-keyboard-mode]', 'data-keyboard-mode', saved.keyboardMode);
     clickPressedTarget('#keyboard-live-chord [data-live-mode]', 'data-live-mode', saved.keyboardLive);
     clickPressedTarget('#mic-live-chord [data-mic-live-mode]', 'data-mic-live-mode', saved.micLive);
+    clickPressedTarget('#mic-note-label [data-mic-label-mode]', 'data-mic-label-mode', saved.micLabel || 'degree');
 
     const metronomeBpm = $('#metronome-bpm');
     setValue(metronomeBpm, saved.metronomeBpm);

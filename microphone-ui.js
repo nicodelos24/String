@@ -42,6 +42,58 @@ function micLiveChord(phase, chord, pitch, ctx) {
   return { root: pitchClass, rootNoteName: spelling, type: type, mode: mode };
 }
 
+// Dónde se dibuja un acorde en el mástil: una posición por cada nota que suena,
+// en la octava más cercana a la nota más grave que se oye y siempre dentro del
+// alcance del instrumento. Así se ve una forma plausible en un punto del mástil,
+// en vez de las mismas clases de altura repetidas por las seis cuerdas y 22
+// trastes. La forma no baja del bajo: en una posición real ninguna nota suena
+// por debajo de la más grave, y medir la distancia sin esa condición elegía
+// clases de la octava de abajo. Si una nota no tiene ninguna posición en el
+// mástil, no se dibuja: no hay donde marcarla.
+function chordFretMidis(pitches, bass, bounds) {
+  if (!Array.isArray(pitches) || !pitches.length) return [];
+  const low = Number.isInteger(bounds && bounds.low) ? bounds.low : 0;
+  const high = Number.isInteger(bounds && bounds.high) ? bounds.high : 127;
+  if (high < low) return [];
+  // Sin nota grave conocida, la forma se dibuja en la parte media del mástil.
+  const anchor = Number.isInteger(bass) ? bass : (low + high) / 2;
+  const chosen = [];
+  for (const pitch of pitches) {
+    if (!Number.isInteger(pitch)) continue;
+    const pitchClass = ((pitch % 12) + 12) % 12;
+    // La primera aparición de esa clase en o por encima de `low`.
+    let best = null, bestDistance = Infinity;
+    let highestBelow = null;
+    for (let midi = low + ((pitchClass - (low % 12) + 12) % 12); midi <= high; midi += 12) {
+      if (midi < anchor) { highestBelow = midi; continue; }
+      const away = midi - anchor;
+      if (away < bestDistance) { bestDistance = away; best = midi; }
+    }
+    // Si solo hay posiciones por debajo del bajo (caso raro: la nota más grave
+    // se oye en una octava que el mástil no cubre), se dibuja la más alta.
+    if (best === null) best = highestBelow;
+    if (best !== null && !chosen.includes(best)) chosen.push(best);
+  }
+  // De grave a agudo: la forma se lee como una posición, no como el orden en
+  // que el acordelista las nombró.
+  return chosen.sort((a, b) => a - b);
+}
+
+// Rótulo que el micrófono escribe en las posiciones que están sonando. Es un
+// estado propio del micrófono, aparte de los botones AA y MÁSTIL: estos siguen
+// decidiendo el resto del mástil. «Nota» reutiliza el nombre que la página ya
+// pintó en esa posición, con la grafía de su armadura, y «Grado» usa el grado
+// respecto a la escala actual, el mismo vocabulario que el botón AA GRADOS.
+function micFretLabel(note, mode, ctx) {
+  ctx = ctx || {};
+  if (!note || !Number.isInteger(note.midi)) return '';
+  if (mode !== 'degree') return note.name || '';
+  if (typeof ctx.degreeFor !== 'function') return '';
+  const pitch = ((note.midi % 12) + 12) % 12;
+  const rootPitch = Number.isInteger(ctx.root) ? ((ctx.root % 12) + 12) % 12 : 0;
+  return ctx.degreeFor(((pitch - rootPitch) + 12) % 12) || '';
+}
+
 // Afinador: lee una nota sostenida y la mide contra la afinación estándar del
 // instrumento. Devuelve la cuerda más cercana (o la fijada con lockedIndex),
 // su nota objetivo con octava y la desviación en cents (negativa = quedó
@@ -79,6 +131,7 @@ if (typeof document !== 'undefined') (() => {
   const toggle = document.getElementById('microphone-toggle');
   const readout = document.getElementById('microphone-readout');
   const liveRoot = document.getElementById('mic-live-chord');
+  const labelRoot = document.getElementById('mic-note-label');
   if (!toggle || !readout) return;
 
   let liveChord = null;   // último acorde estable detectado por el micrófono
@@ -157,6 +210,74 @@ if (typeof document !== 'undefined') (() => {
     });
   }
 
+  // --- Rótulo de las notas que suenan ---------------------------------------
+  // «Nota» o «Grado», a la derecha del botón del micrófono y visible solo con
+  // el micrófono encendido, como «Escala en vivo». Escribe únicamente en las
+  // posiciones resaltadas; el resto del mástil sigue hablando con AA y MÁSTIL.
+  // `dataset` es un DOMStringMap: sus claves van en camelCase. Escribir
+  // `dataset['data-mic-label']` lanza en el navegador, así que el nombre se
+  // escribe como `dataset.micLabel`.
+  const MIC_LABEL_SLOT = 'micLabel';
+  let micLabelChosen = false;
+
+  function micLabelButtons() {
+    if (!labelRoot || typeof labelRoot.querySelectorAll !== 'function') return [];
+    return [].slice.call(labelRoot.querySelectorAll('[data-mic-label-mode]'));
+  }
+
+  function micLabelMode() {
+    const buttons = micLabelButtons();
+    for (let i = 0; i < buttons.length; i++) {
+      if (buttons[i].getAttribute('aria-pressed') === 'true') return buttons[i].dataset.micLabelMode || 'degree';
+    }
+    return 'degree';
+  }
+
+  function setMicLabelMode(mode) {
+    micLabelButtons().forEach(button => {
+      const active = button.dataset.micLabelMode === mode;
+      button.setAttribute('aria-pressed', String(active));
+      if (button.classList && typeof button.classList.toggle === 'function') button.classList.toggle('is-active', active);
+    });
+  }
+
+  // El rótulo de la página se guarda aparte (MIC_LABEL_SLOT) para poder
+  // devolverlo tal cual cuando la nota deja de sonar. Se escribe solo si cambia:
+  // el observer del mástil vigila este mismo árbol y una escritura idéntica
+  // seguiría disparándolo.
+  function applyMicLabel(element) {
+    if (!element || !element.dataset) return;
+    const label = micFretLabel(
+      { midi: Number(element.dataset.midi), name: element.dataset.note },
+      micLabelMode(),
+      {
+        root: typeof root !== 'undefined' ? root : 0,
+        degreeFor: typeof getDegreeLabel === 'function' ? getDegreeLabel : null,
+      });
+    if (element.dataset[MIC_LABEL_SLOT] === undefined) element.dataset[MIC_LABEL_SLOT] = element.textContent;
+    if (element.textContent !== label) element.textContent = label;
+  }
+
+  function restoreMicLabel(element) {
+    if (!element || !element.dataset || element.dataset[MIC_LABEL_SLOT] === undefined) return;
+    element.textContent = element.dataset[MIC_LABEL_SLOT];
+    delete element.dataset[MIC_LABEL_SLOT];
+  }
+
+  function repaintMicLabels() {
+    document.querySelectorAll('.fret-note.live, .open-string-note.live').forEach(applyMicLabel);
+  }
+
+  micLabelButtons().forEach(button => {
+    button.addEventListener('click', () => {
+      micLabelChosen = true;
+      setMicLabelMode(button.dataset.micLabelMode || 'degree');
+      // Lo que ya está sonando se reescribe con el criterio nuevo; lo que esté
+      // apagado conserva el rótulo de la página.
+      repaintMicLabels();
+    });
+  });
+
   function applyMicroChord(chord) {
     if (!chord || typeof showProgressionChord !== 'function') return;
     if (chord.useFlats !== undefined && typeof setChordSpelling === 'function') setChordSpelling(chord.useFlats);
@@ -223,6 +344,7 @@ if (typeof document !== 'undefined') (() => {
   function fadeOut(note) {
     note.classList.remove('live');
     note.classList.add('live-fade');
+    restoreMicLabel(note);
     setTimeout(() => note.classList.remove('live-fade'), 300);
   }
 
@@ -232,6 +354,17 @@ if (typeof document !== 'undefined') (() => {
     liveMidi = null;
   }
 
+  // El alcance del mástil con el instrumento elegido: la cuerda más grave por
+  // el primer traste y la más aguda por el vigésimo segundo. Es lo que decide
+  // qué posiciones existen para colocar la forma de un acorde.
+  function fretboardBounds() {
+    const table = typeof instruments !== 'undefined' ? instruments : null;
+    const key = typeof instrument !== 'undefined' ? instrument : 'guitar';
+    const strings = table && table[key] && table[key].strings;
+    if (!Array.isArray(strings) || !strings.length) return { low: 40, high: 88 };
+    return { low: Math.min(...strings) + 1, high: Math.max(...strings) + 22 };
+  }
+
   // La nota suena mientras su pulso permanece: se mantiene hasta una nota
   // distinta o el silencio, y las posiciones que dejan de sonar se atenúan.
   function applyLive(midi) {
@@ -239,6 +372,7 @@ if (typeof document !== 'undefined') (() => {
       if (Number(note.dataset.midi) === midi) {
         note.classList.remove('live-fade');
         note.classList.add('live');
+        applyMicLabel(note);
       } else if (note.classList.contains('live')) {
         fadeOut(note);
       }
@@ -249,6 +383,18 @@ if (typeof document !== 'undefined') (() => {
     if (!Number.isInteger(midi)) return;
     liveMidi = midi;
     applyLive(midi);
+  }
+
+  // Con un acorde estable, la forma manda. Medido en Chromium con acordes
+  // sintéticos: la forma del acorde acertó en 4 de 5 y la nota de YIN en 0 de
+  // 5 (F3 sobre un Do, E1 sobre un Cmaj7, A1 sobre un Am7), así que dejarla
+  // dibujada a la vez añadía un resaltado que no estaba sonando. La nota
+  // monofónica sigue llegando en cada fotograma, así que la elección no puede
+  // ser solo la de llegar: mientras haya forma, `applyLive` dibuja la forma y
+  // descarta la nota. Al soltarse el acorde, esta vuelve a dibujar sola.
+  function highlightChord(midis) {
+    liveChordMidis = Array.isArray(midis) && midis.length ? midis : null;
+    applyLive();
   }
 
   // El mástil se reconstruye al cambiar de acorde/modo; reaplicar si sigue activo.
@@ -275,9 +421,13 @@ if (typeof document !== 'undefined') (() => {
       // acorde detectado cambia la escala. Se puede pasar a «Nota» (una nota
       // suelta también) o «Apagado» (escala fija).
       setMicroPhase('chord');
+      // El rótulo de las notas arranca en «Grado», pero solo si no lo has
+      // tocado: si las preferencias lo trajeron, gana lo elegido antes.
+      if (!micLabelChosen) setMicLabelMode('degree');
       readout.hidden = false;
       readout.textContent = 'esperando nota…';
       if (liveRoot) liveRoot.hidden = false;
+      if (labelRoot) labelRoot.hidden = false;
       if (tunerOn) setTunerIdle('esperando nota…');
     } else if (state === 'error') {
       toggle.setAttribute('aria-pressed', 'false');
@@ -286,6 +436,8 @@ if (typeof document !== 'undefined') (() => {
       readout.hidden = false;
       readout.textContent = detail || 'No se pudo usar el micrófono.';
       if (liveRoot) liveRoot.hidden = true;
+      if (labelRoot) labelRoot.hidden = true;
+      clearLive();
       if (tunerOn) setTunerIdle('Enciende el micrófono para afinar.');
     } else if (state === 'stopped') {
       toggle.setAttribute('aria-pressed', 'false');
@@ -293,6 +445,7 @@ if (typeof document !== 'undefined') (() => {
       label.textContent = 'Micrófono';
       readout.hidden = true;
       if (liveRoot) liveRoot.hidden = true;
+      if (labelRoot) labelRoot.hidden = true;
       clearLive();
       if (tunerOn) setTunerIdle('Enciende el micrófono para afinar.');
     }
@@ -416,4 +569,4 @@ if (typeof document !== 'undefined') (() => {
   window.addEventListener('pagehide', () => reader.stop());
 })();
 
-if (typeof module !== 'undefined' && module.exports) module.exports = { micLiveChord, preferredRootSpelling, tunerReading };
+if (typeof module !== 'undefined' && module.exports) module.exports = { micLiveChord, preferredRootSpelling, tunerReading, micFretLabel };
