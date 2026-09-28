@@ -2,6 +2,14 @@
 // temporal (.live) en las posiciones del mástil y las cuerdas al aire.
 // Depende de pitch-detection.js (globals detectPitch, isInTune) y app.js (noteName).
 //
+// Fase siguiente de «Escala en vivo» cuando se alterna con un toque de Shift:
+// Nota <-> Acorde. Desde «Apagado» se va a «Nota», que es la primera de las dos
+// que hacen que el mástil siga lo que suena; «Apagado» se vuelve a elegir con su
+// botón, que es donde se ve.
+function nextMicLivePhase(phase) {
+  return phase === 'note' ? 'chord' : 'note';
+}
+
 // Escala en vivo: igual que el selector «Acorde en vivo» del teclado, tres
 // fases controlan si el mástil sigue al micrófono. «Apagado» no cambia la
 // escala; «Nota» usa el tipo y el modo elegidos a la izquierda para una sola
@@ -310,6 +318,20 @@ if (typeof document !== 'undefined') (() => {
     });
   });
 
+  // Un toque de Shift alterna Nota y Acorde. Se cambia pulsando el botón de la
+  // fase nueva en vez de escribiendo el atributo a mano: así corre el mismo
+  // manejador que el ratón y preferences.js guarda el cambio igual que si se
+  // hubiera pulsado a mano. Funciona con el micrófono apagado (el control está
+  // oculto, pero el clic sintético sí dispara), para poder dejar la fase
+  // preparada antes de encenderlo.
+  window.StringMicrophone = {
+    toggleLivePhase() {
+      const button = microButtons().find(el => el.dataset.micLiveMode === nextMicLivePhase(microPhase()));
+      if (button && typeof button.click === 'function') button.click();
+      return !!button;
+    }
+  };
+
   // Las dos detecciones van por separado: la nota que YIN confirma y las notas
   // del acorde reconocido, que se dibujan a la vez.
   let liveMidi = null;
@@ -581,4 +603,4 @@ if (typeof document !== 'undefined') (() => {
   window.addEventListener('pagehide', () => reader.stop());
 })();
 
-if (typeof module !== 'undefined' && module.exports) module.exports = { micLiveChord, preferredRootSpelling, tunerReading, micFretLabel, chordFretMidis };
+if (typeof module !== 'undefined' && module.exports) module.exports = { micLiveChord, preferredRootSpelling, tunerReading, micFretLabel, chordFretMidis, nextMicLivePhase };

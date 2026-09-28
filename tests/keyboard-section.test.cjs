@@ -185,11 +185,56 @@ test('keyboard: keyTargetIsTyping deja tocar tras hacer clic en switchs y volume
   assert.equal(keyTargetIsTyping(el('INPUT', undefined)), true, 'un input sin type se trata como texto');
 });
 
-test('keyboard: left shift lowers a full octave and right shift raises a full octave without clamping', () => {
+test('keyboard: Re Pág baja una octava completa y Av Pág la sube, sin recortar a la ventana', () => {
   assert.equal(activeBaseMidi(60, -1, 3, 4), 48);
   assert.equal(activeBaseMidi(60, 1, 3, 4), 72);
   assert.equal(activeBaseMidi(48, -1, 3, 4), 36, 'baja una octava completa aunque quede fuera de la ventana');
   assert.equal(activeBaseMidi(72, 1, 3, 4), 84, 'sube una octava completa aunque quede fuera de la ventana');
+});
+
+test('keyboard: la octava se mueve con Re Pág y Av Pág, y ya no con Shift', () => {
+  const { isOctaveKey, isShiftKey } = require('../keyboard-section.js');
+  assert.equal(isOctaveKey('PageDown'), true, 'Re Pág baja la octava');
+  assert.equal(isOctaveKey('PageUp'), true, 'Av Pág sube la octava');
+  assert.equal(isOctaveKey('ShiftLeft'), false, 'Shift ya no mueve la octava: alterna el micrófono');
+  assert.equal(isOctaveKey('ShiftRight'), false);
+  assert.equal(isOctaveKey('KeyA'), false, 'una letra no mueve la octava');
+  assert.equal(isOctaveKey('ArrowUp'), false, 'las flechas belonged al video flotante');
+  assert.equal(isShiftKey('ShiftLeft'), true);
+  assert.equal(isShiftKey('ShiftRight'), true);
+  assert.equal(isShiftKey('KeyA'), false);
+});
+
+test('keyboard: un toque de Shift alterna el micrófono, pero Shift+letra no', () => {
+  const { shiftTapToggles } = require('../keyboard-section.js');
+  assert.equal(shiftTapToggles(true, false), true, 'Shift solo, sin tocar nada más: es un toque');
+  assert.equal(shiftTapToggles(true, true), false, 'en el latam, Shift+letra escribe «+» o «}»: no alterna nada');
+  assert.equal(shiftTapToggles(false, false), false, 'sin Shift no hay toque');
+  assert.equal(shiftTapToggles(false, true), false);
+});
+
+test('keyboard: Enter y Espacio se apartan donde el navegador ya les da otro significado', () => {
+  const { keyTargetOwnsChordAdd } = require('../keyboard-section.js');
+  const el = (tagName, extra) => Object.assign({ tagName, isContentEditable: false, getAttribute: () => null }, extra || {});
+  assert.equal(keyTargetOwnsChordAdd(el('BUTTON')), true, 'un botón se activa con Espacio o Enter');
+  assert.equal(keyTargetOwnsChordAdd(el('A')), true, 'un enlace se activa con Enter');
+  assert.equal(keyTargetOwnsChordAdd(el('SUMMARY')), true, 'el «?» de la ayuda se despliega con Espacio');
+  assert.equal(keyTargetOwnsChordAdd(el('INPUT', { type: 'checkbox' })), true, 'un switch se marca con Espacio');
+  assert.equal(keyTargetOwnsChordAdd(el('INPUT', { type: 'text' })), true, 'un campo de texto escribe un espacio');
+  assert.equal(keyTargetOwnsChordAdd(el('SELECT')), true, 'un select ya lo cubre keyTargetIsTyping');
+  assert.equal(keyTargetOwnsChordAdd(el('DIV', { getAttribute: () => 'switch' })), true, 'un rol de switch se marca con Espacio');
+  assert.equal(keyTargetOwnsChordAdd(el('DIV', { getAttribute: () => 'button' })), true);
+  assert.equal(keyTargetOwnsChordAdd(el('DIV')), false, 'una tarjeta o el mástil no activan nada con Espacio');
+  assert.equal(keyTargetOwnsChordAdd(el('BODY')), false, 'sin nada enfocado, el atajo manda');
+  assert.equal(keyTargetOwnsChordAdd(null), false);
+});
+
+test('keyboard: el acorde que añaden Enter y Espacio es el del teclado en vivo si lo hay, y si no el seleccionado', () => {
+  const { recognizedChordSource } = require('../keyboard-section.js');
+  assert.equal(recognizedChordSource(true, true), 'live', 'con «Acorde en vivo» activo y notas se añade ese acorde');
+  assert.equal(recognizedChordSource(true, false), 'selected', '«Acorde en vivo» activo pero sin notas: el seleccionado');
+  assert.equal(recognizedChordSource(false, true), 'selected', 'acorde en vivo apagado: manda el seleccionado, no el del teclado');
+  assert.equal(recognizedChordSource(false, false), 'selected');
 });
 
 test('keyboard: los tres modos ocultan o muestran el panel y la clase del mástil', () => {

@@ -8,8 +8,11 @@
 // a s d f g h j k l ñ { = do re mi fa sol la si do re mi fa; fila grave
 // z x c v b n m , . - = sol la si do re mi fa sol la si; fila superior
 // w e t y u o p y las posiciones sin letra fija (´ y +) = los sostenidos
-// ascendentes, de do#4 a sol#5. Shift izquierdo baja una octava y derecho la
+// ascendentes, de do#4 a sol#5. Re Pág (mantenida) baja una octava y Av Pág la
 // sube. Las teclas q, r e i quedan libres.
+// Atajos de creación: Enter y Espacio agregan a las tarjetas el acorde que el
+// mástil está reconociendo, y un toque de Shift alterna la fase de «Escala en
+// vivo» del micrófono entre Nota y Acorde.
 // Sintetizador polifónico con timbres, efectos y control de volumen
 // (compartido por el piano y el mástil). La lógica pura y el sintetizador se
 // exportan para pruebas sin navegador.
@@ -50,6 +53,50 @@ function keyTargetIsTyping(target) {
 
 function keyboardMidiFor(octave, semitone) { return 12 * (octave + 1) + semitone; }
 
+// Teclas que mueven la octava del teclado mientras se mantienen. Antes eran
+// Shift izquierdo y Shift derecho, pero Shift alterna la fase del micrófono y
+// en el teclado latam hace falta Shift para teclear «+» y «}»; con Re Pág y
+// Av Pág la octava se mantiene igual que antes (se pulsan, se tocan las notas y
+// se sueltan) y las dos cosas dejan de pisarse.
+var OCTAVE_DOWN_CODE = 'PageDown';
+var OCTAVE_UP_CODE = 'PageUp';
+
+function isOctaveKey(code) { return code === OCTAVE_DOWN_CODE || code === OCTAVE_UP_CODE; }
+
+// Tecla de espacio por su código físico, que no cambia con el idioma del
+// teclado (a diferencia de la letra, que depende de la distribución).
+var SPACE_CODE = 'Space';
+
+function isShiftKey(code) { return code === 'ShiftLeft' || code === 'ShiftRight'; }
+
+// ¿Un toque de Shift alterna Nota/Acorde del micrófono? Solo si no se tocó
+// ninguna otra tecla mientras estaba mantenido: en el teclado latam «+» y «}»
+// se escriben con Shift, así que tocar un sostenido es Shift + letra y no debe
+// cambiar nada. Un Shift mantenido sin más teclas sí cuenta como toque.
+function shiftTapToggles(shiftHeld, usedAnotherKey) {
+  return !!shiftHeld && !usedAnotherKey;
+}
+
+// Qué acorde añaden Enter y Espacio: el que forman las teclas del PC cuando
+// «Acorde en vivo» está activo y hay notas, y si no el que esté seleccionado.
+// Devuelve 'live' o 'selected'.
+function recognizedChordSource(liveEnabled, hasLiveChord) {
+  if (liveEnabled && hasLiveChord) return 'live';
+  return 'selected';
+}
+
+// ¿El foco está en un control donde Enter o Espacio ya significan otra cosa?
+// Los campos de escritura y los select quedan fuera por `keyTargetIsTyping`.
+function keyTargetOwnsChordAdd(target) {
+  if (keyTargetIsTyping(target)) return true;
+  if (!target || typeof target.tagName !== 'string') return false;
+  var tagname = target.tagName.toUpperCase();
+  if (tagname === 'BUTTON' || tagname === 'A' || tagname === 'SUMMARY' || tagname === 'INPUT') return true;
+  if (typeof target.getAttribute !== 'function') return false;
+  var role = target.getAttribute('role');
+  return role === 'button' || role === 'switch' || role === 'radio' || role === 'menuitem' || role === 'link';
+}
+
 // Genera las teclas visibles. Las blancas llevan índice 0-based dentro del
 // pentagrama total; las negras llevan la columna (1-based) entre blancas,
 // igual que #root-piano, para posicionarse con translateX(-50%).
@@ -78,9 +125,9 @@ function keyLetter(midi, baseMidi) {
 }
 
 // Valor base (MIDI de la tecla 'a') respetando los límites de las octavas visibles.
-// Base efectiva al sostener Shift: baja o sube exactamente una octava (12
-// semitonos), sin recortarla a la ventana visible, para que Shift+izquierdo
-// baje de verdad una octava aunque quede fuera del rango mostrado.
+// Base efectiva al mantener Re Pág o Av Pág: baja o sube exactamente una octava
+// (12 semitonos), sin recortarla a la ventana visible, para que la octava baje
+// de verdad aunque quede fuera del rango mostrado.
 function activeBaseMidi(base, shiftDir, octaveStart, count) {
   return Math.max(0, Math.min(127, base + shiftDir * 12));
 }
@@ -427,6 +474,11 @@ if (typeof module !== 'undefined' && module.exports) module.exports = {
   mastilBaseDrop: mastilBaseDrop,
   keyOffsetFor: keyOffsetFor,
   keyTargetIsTyping: keyTargetIsTyping,
+  isOctaveKey: isOctaveKey,
+  isShiftKey: isShiftKey,
+  shiftTapToggles: shiftTapToggles,
+  keyTargetOwnsChordAdd: keyTargetOwnsChordAdd,
+  recognizedChordSource: recognizedChordSource,
   mastilKeyToggle: mastilKeyToggle,
   keyboardLayoutClasses: keyboardLayoutClasses,
   chordFromNotes: chordFromNotes,
@@ -456,20 +508,23 @@ if (typeof document !== 'undefined') (function () {
   // La clave «a» es el do central (C4). Las mismas teclas tocan el piano y el
   // mástil, así que un acorde suena igual en los dos.
   var baseMidi = keyboardMidiFor(4, 0);
-  var shiftLeft = false, shiftRight = false;
+  var octaveDown = false, octaveUp = false;
+  // Un toque de Shift alterna la fase del micrófono. Se lleva la cuenta de si
+  // durante el mantenimiento se tocó otra tecla: en el latam, Shift+letra es la
+  // forma de escribir «+» y «}», y eso no es un toque.
+  var shiftHeld = false, shiftUsedAnotherKey = false;
   var synth = new KeySynth({ timbre: timbreSel ? timbreSel.value : 'piano', volume: volumeIn ? Number(volumeIn.value) / 100 : 0.3 });
   var pressed = new Map();
   var pointerNotes = [];
 
-  function shiftDirection() { return shiftRight ? 1 : shiftLeft ? -1 : 0; }
-  function effectiveBase() { return activeBaseMidi(baseMidi, shiftDirection(), OCTAVE_START, OCTAVE_COUNT); }
+  function octaveDirection() { return octaveUp ? 1 : octaveDown ? -1 : 0; }
+  function effectiveBase() { return activeBaseMidi(baseMidi, octaveDirection(), OCTAVE_START, OCTAVE_COUNT); }
   // Base para una tecla en concreto: igual en el piano y en el mástil, `a`
   // suena en do central (C4) y la fila media queda a=do s=re d=mi f=fa… Las
-  // teclas + y } del teclado latam se escriben con Shift (Shift+= y Shift+]) y
-  // ese Shift no debe sumar la octava del Shift musical, o fa# y sol sonarían
-  // una octava más arriba.
+  // teclas + y } del teclado latam se escriben con Shift, que ya no mueve la
+  // octava, así que aquí no hace falta ninguna excepción.
   function keyBaseFor(useOctaveShift) {
-    return activeBaseMidi(baseMidi, useOctaveShift ? shiftDirection() : 0, OCTAVE_START, OCTAVE_COUNT);
+    return activeBaseMidi(baseMidi, useOctaveShift ? octaveDirection() : 0, OCTAVE_START, OCTAVE_COUNT);
   }
 
   // En el mástil la guitarra suena una octava más abajo que el piano. Como la
@@ -712,6 +767,28 @@ if (typeof document !== 'undefined') (function () {
     if (typeof renderProgression === 'function') renderProgression();
   }
 
+  // Enter y Espacio agregan a las tarjetas lo que el mástil está reconociendo:
+  // el acorde que forman las teclas del PC cuando «Acorde en vivo» está activo
+  // y hay notas, y si no el acorde que esté seleccionado (elijan por clic, por
+  // el micrófono o por el teclado). Es el mismo criterio que el botón
+  // «+ añadir acorde» cuando no hay nada en vivo.
+  function addRecognizedChord() {
+    var source = recognizedChordSource(keyboardLiveEnabled(), !!keyboardLive);
+    if (source === 'live') { addKeyboardLiveChord(); return true; }
+    if (typeof addProgressionChord !== 'function') return false;
+    addProgressionChord();
+    return true;
+  }
+
+  // Un toque de Shift alterna la fase de «Escala en vivo» del micrófono. La
+  // decisión de la siguiente fase es de microphone-ui.js, que es quien tiene el
+  // control; aquí solo se le pide que la cambie.
+  function toggleMicrophonePhase() {
+    if (globalThis.StringMicrophone && typeof globalThis.StringMicrophone.toggleLivePhase === 'function') {
+      globalThis.StringMicrophone.toggleLivePhase();
+    }
+  }
+
   function onLiveButtonClick(button) {
     var next = button.dataset.liveMode || 'off';
     liveButtons().forEach(function (other) {
@@ -754,9 +831,10 @@ if (typeof document !== 'undefined') (function () {
     button.addEventListener('click', function () { onLiveButtonClick(button); });
   });
 
+  // En fase de captura, para que Enter y Espacio se resuelvan antes que la
+  // tarjeta que tenga el foco: si la tarjeta se seleccionara primero, el acorde
+  // que se añade sería el suyo y no el que se está reconociendo.
   window.addEventListener('keydown', function (event) {
-    if (event.code === 'ShiftLeft') { shiftLeft = true; if (!panel.hidden) render(); return; }
-    if (event.code === 'ShiftRight') { shiftRight = true; if (!panel.hidden) render(); return; }
     var target = event.target;
     // Los campos de escritura (y los select) no interceptan las teclas para
     // que se pueda tipear; los switchs y el slider de volumen se dejan pasar.
@@ -764,15 +842,40 @@ if (typeof document !== 'undefined') (function () {
     if (target && target.tagName === 'INPUT'
       && (event.key === ' ' || event.code === 'Enter' || /^Arrow/.test(event.key))) return;
     if (event.altKey || event.metaKey || event.ctrlKey) return;
-    if (event.code === 'Enter' && keyboardLiveEnabled()) {
-      if (keyboardLive) addKeyboardLiveChord();
+    // Re Pág y Av Pág mueven la octava mientras se mantienen.
+    if (isOctaveKey(event.code)) {
+      if (event.code === OCTAVE_DOWN_CODE) octaveDown = true; else octaveUp = true;
+      if (!panel.hidden) render();
       event.preventDefault();
+      return;
+    }
+    // Shift se anota aparte: al soltarlo, si no se tocó nada más con él
+    // mantenido, es un toque y alterna la fase del micrófono. En el teclado
+    // latam «+» y «}» se escriben con Shift, así que tocar un sostenido es
+    // Shift + letra y no debe cambiar nada.
+    if (isShiftKey(event.code)) {
+      if (!shiftHeld) shiftUsedAnotherKey = false;
+      shiftHeld = true;
+      return;
+    }
+    if (shiftHeld) shiftUsedAnotherKey = true;
+    // Enter y Espacio agregan a las tarjetas el acorde que está reconociendo el
+    // mástil. Antes solo lo hacía Enter, y únicamente con «Acorde en vivo» del
+    // teclado activo; ahora ambas teclas funcionan siempre y, sin acorde en
+    // vivo, añaden el acorde que esté seleccionado. Se acepta también el Enter
+    // del teclado numérico, que es una tecla distinta con su propio código.
+    if (event.code === 'Enter' || event.code === 'NumpadEnter' || event.code === SPACE_CODE) {
+      if (keyTargetOwnsChordAdd(target)) return;
+      if (!addRecognizedChord()) return;
+      event.preventDefault();
+      // La tarjeta enfocada no selecciona nada: el acorde se acaba de añadir y
+      // la selección pasa a la tarjeta nueva.
+      event.stopPropagation();
       return;
     }
     var offset = keyOffsetFor(event);
     if (offset === undefined) return;
-    var shiftCarried = event.shiftKey && (event.code === 'Equal' || event.code === 'BracketRight');
-    var base = soundingBaseFor(!shiftCarried);
+    var base = soundingBaseFor(true);
     var midi = base + offset;
     if (midi < 0 || midi > 127) return;
     if (!pressed.has(event.key)) {
@@ -782,11 +885,18 @@ if (typeof document !== 'undefined') (function () {
       recomputeKeyboardLive();
     }
     event.preventDefault();
-  });
+  }, true);
   window.addEventListener('keyup', function (event) {
-    if (event.code === 'ShiftLeft' || event.code === 'ShiftRight') {
-      if (event.code === 'ShiftLeft') shiftLeft = false; else shiftRight = false;
+    if (isOctaveKey(event.code)) {
+      if (event.code === OCTAVE_DOWN_CODE) octaveDown = false; else octaveUp = false;
       if (!panel.hidden) render();
+      return;
+    }
+    if (isShiftKey(event.code)) {
+      if (shiftTapToggles(shiftHeld, shiftUsedAnotherKey)) toggleMicrophonePhase();
+      // Se marca para que, si were las dos teclas Shift, la segunda no alterne.
+      shiftUsedAnotherKey = true;
+      shiftHeld = false;
       return;
     }
     if (!pressed.has(event.key)) return;
@@ -834,5 +944,16 @@ if (typeof document !== 'undefined') (function () {
     });
     spellingIn.checked = rootSpelling.checked;
   }
+  // Al perder el foco pueden quedar mantenidas teclas sin que llegue su
+  // keyup (cambiar de ventana con Re Pág pulsada, por ejemplo), y la octava se
+  // quedaría desplazada para siempre. Se sueltan todas.
+  window.addEventListener('blur', function () {
+    var wasShifted = octaveDown || octaveUp;
+    octaveDown = false; octaveUp = false;
+    // Un Shift que se quedó pulsado al perder el foco no cuenta como toque.
+    shiftUsedAnotherKey = true;
+    shiftHeld = false;
+    if (wasShifted && !panel.hidden) render();
+  });
   window.addEventListener('pagehide', function () { synth.close(); });
 })();

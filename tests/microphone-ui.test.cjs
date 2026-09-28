@@ -35,7 +35,7 @@ function liveButton(mode, pressed) {
     addEventListener(event, fn) { this.handlers[event] = fn; },
     setAttribute(key, value) { this.attributes[key] = value; },
     getAttribute(key) { return this.attributes[key]; },
-    click() { if (this.handlers.click) this.handlers.click({ currentTarget: this }); },
+    click() { this.clickCount = (this.clickCount || 0) + 1; if (this.handlers.click) this.handlers.click({ currentTarget: this }); },
   };
 }
 
@@ -76,6 +76,31 @@ function phaseOf(element) {
   const pressed = element.buttons.filter(button => button.getAttribute('aria-pressed') === 'true');
   return pressed.length ? pressed[0].dataset.micLiveMode : 'off';
 }
+
+test('un toque de Shift alterna «Escala en vivo» entre Nota y Acorde, y desde Apagado va a Nota', () => {
+  const { nextMicLivePhase } = require('../microphone-ui.js');
+  assert.equal(nextMicLivePhase('note'), 'chord');
+  assert.equal(nextMicLivePhase('chord'), 'note');
+  assert.equal(nextMicLivePhase('off'), 'note', 'con la escala en vivo apagada se va a Nota, no a Acorde');
+});
+
+test('el atajo de Shift cambia la fase del micrófono pulsando su botón, para que se guarde', () => {
+  const { context, callbacks, element } = setup();
+  const toggle = () => context.window.StringMicrophone.toggleLivePhase();
+  callbacks.onState('ready');
+  assert.equal(phaseOf(element('mic-live-chord')), 'chord', 'con el micrófono encendido arranca en Acorde');
+  toggle();
+  assert.equal(phaseOf(element('mic-live-chord')), 'note', 'un toque pasa a Nota');
+  toggle();
+  assert.equal(phaseOf(element('mic-live-chord')), 'chord', 'y otro toque vuelve a Acorde');
+  // preferences.js captura el cambio por el clic, así que el atajo tiene que
+  // pasar por el botón y no escribir el atributo por su cuenta.
+  element('mic-live-chord').buttons.forEach(button => button.clickCount = 0);
+  toggle();
+  const clicked = element('mic-live-chord').buttons.filter(button => button.clickCount === 1);
+  assert.equal(clicked.length, 1, 'pulsa exactamente un botón');
+  assert.equal(clicked[0].dataset.micLiveMode, 'note');
+});
 
 test('al activar el micrófono la escala en vivo arranca en «Acorde» y un acorde cambiado marca el mástil', () => {
   const { context, callbacks, element } = setup();
