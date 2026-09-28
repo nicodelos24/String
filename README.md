@@ -67,6 +67,15 @@ En cada primer tiempo se abre la escucha y el primer acorde que el micrófono co
 
 El compás es de 4/4. El interruptor se apaga solo al recargar la página, para que no empiece a escribir tarjetas solo; las tarjetas que añada sí se conservan, como las demás, en «Mi progresión» y en «Mis progresiones». No reproduce el Acompañamiento: arma las tarjetas y luego le das a Reproducir.
 
+### Seguir la canción con el micrófono
+
+Dos controles más en la misma columna, debajo de **Improvisar**:
+
+- **♪ Tempo con notas** — enciéndelo y toca dos o más notas al ritmo de la canción, una por pulso. La cuenta se cierra sola y el tempo se aplica al Acompañamiento, al metrónomo si lo tienes seleccionado y al video. Es el mismo cálculo que el botón Tempo, con la misma pausa para reiniciar la cuenta, y la ancla en la primera nota, de modo que la cuadrícula de Improvisar queda alineada con la canción. Mientras cuenta, el BPM es una previsualización. Volver a pulsarlo cancela y devuelve el tempo anterior. El micrófono es monofónico, así que un rasgueo cuenta como un golpe.
+- **Entrar al tocar** — en cuanto el micrófono capta la primera nota, arranca **con sonido** lo que estés usando: el Acompañamiento o el metrónomo. El MIDI no se toca. Entra una sola vez: si paras la música a mano, no se vuelve a encender sola, hay que desmarcar y volver a marcar el interruptor. No cambia el Silencio que tengas puesto.
+
+Los dos necesitan el micrófono encendido. La nota tiene que llegar a confirmarse (unos 470 ms), así que si tocas muy flojo no cuentan.
+
 ### Acompañamiento y MIDI
 
 La cabecera conserva el selector **Progresión / MIDI** y el control del reproductor elegido, incluso plegada. El triángulo inicia; el cuadrado detiene. Volver a reproducir comienza desde el inicio: estos motores no tienen pausa reanudable.

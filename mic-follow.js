@@ -68,7 +68,10 @@ if (typeof document !== 'undefined') (() => {
   // El estimador y el que aplica viven en tempo-tap.js: se le piden, para que no
   // haya una segunda versión del cálculo que se pueda quedar vieja.
   const estimate = () => typeof globalThis.estimateTempo === 'function' ? globalThis.estimateTempo(taps) : null;
-  const applyEstimate = () => typeof globalThis.applyTappedTempo === 'function' && globalThis.applyTappedTempo(estimate());
+  // Se pasa la primera nota de la cuenta como ancla, para que el tempo quede
+  // anclado a donde empezó el autor a marcar y la cuadrícula de la improvisación
+  // caiga en el primer tiempo de verdad, no donde se encendió su interruptor.
+  const applyEstimate = () => typeof globalThis.applyTappedTempo === 'function' && globalThis.applyTappedTempo(estimate(), taps.length ? taps[0] : null);
 
   // ---------- Tempo marcando con notas ----------
 
@@ -79,11 +82,14 @@ if (typeof document !== 'undefined') (() => {
   let shownTempo = '';
   let shownEnter = '';
 
-  // Un mensaje que se borra solo, o null para limpiarlo de inmediato.
-  const flash = (state, text, ms) => {
+  // Un mensaje que se borra solo, o texto vacío para limpiarlo. Pinta siempre:
+  // sin esto el texto se guardaba y no llegaba a verse, que es como se coló un
+  // fallo en el que el aviso de «tempo aplicado» no aparecía nunca.
+  const flash = (state, text, ms, paint) => {
     if (state.timer) { clearTimeout(state.timer); state.timer = null; }
     state.text = text || '';
-    if (text && ms) state.timer = setTimeout(() => { state.text = ''; state.timer = null; paintTempo(); }, ms);
+    if (state.text && ms) state.timer = setTimeout(() => { state.text = ''; state.timer = null; paint(); }, ms);
+    paint();
   };
   const tempoNote = {text: '', timer: null};
   const enterNote = {text: '', timer: null};
@@ -109,8 +115,7 @@ if (typeof document !== 'undefined') (() => {
     if (restore && before !== null && bpmField) bpmField.value = before;
     taps = [];
     if (bpmField) bpmField.classList.remove('is-pending');
-    flash(tempoNote, '');
-    paintTempo();
+    flash(tempoNote, '', 0, paintTempo);
   };
 
   const arm = () => {
@@ -119,7 +124,7 @@ if (typeof document !== 'undefined') (() => {
     armed = true;
     // Se puede dejar armed sin micrófono: la cuenta no empieza hasta que lo haya
     // y no hay que pulsar el botón dos veces. Se avisa y se sigue esperando.
-    flash(tempoNote, micRunning() ? '' : 'Enciende el micrófono para marcar con notas', micRunning() ? 0 : 2600);
+    flash(tempoNote, micRunning() ? '' : 'Enciende el micrófono para marcar con notas', micRunning() ? 0 : 2600, paintTempo);
     stopWatching();
     // Se mira el reloj cada 120 ms: solo hace falta llegar al momento de aplicar,
     // y 120 ms es una fracción del pulso más rápido que se acepta.
@@ -130,9 +135,8 @@ if (typeof document !== 'undefined') (() => {
       if (bpm === null) return;
       const applied = applyEstimate();
       disarm(false);
-      flash(tempoNote, applied ? bpm + ' BPM aplicados desde las notas' : 'No se pudo aplicar el tempo', 2600);
+      flash(tempoNote, applied ? bpm + ' BPM aplicados desde las notas' : 'No se pudo aplicar el tempo', 2600, paintTempo);
     }, 120);
-    paintTempo();
   };
 
   armButton.addEventListener('click', () => { if (armed) disarm(true); else arm(); });
@@ -176,14 +180,12 @@ if (typeof document !== 'undefined') (() => {
     // pase por el mismo camino que el ratón, con el mismo arreglo del metrónomo
     // y las mismas guardas.
     quickPlay.click();
-    flash(enterNote, 'Entrando ' + (source === 'metronome' ? 'con el metrónomo' : 'con el Acompañamiento'), 2600);
-    paintEnter();
+    flash(enterNote, 'Entrando ' + (source === 'metronome' ? 'con el metrónomo' : 'con el Acompañamiento'), 2600, paintEnter);
   });
 
   enterBox.addEventListener('change', () => {
     entered = false;
-    flash(enterNote, enterBox.checked && !micRunning() ? 'Enciende el micrófono para entrar al tocar' : (enterBox.checked ? 'Sonando a la primera nota' : ''), enterBox.checked ? 2600 : 0);
-    paintEnter();
+    flash(enterNote, enterBox.checked && !micRunning() ? 'Enciende el micrófono para entrar al tocar' : (enterBox.checked ? 'Sonando a la primera nota' : ''), enterBox.checked ? 2600 : 0, paintEnter);
   });
 
   // El micrófono se puede encender después de dejar el interruptor marcado.

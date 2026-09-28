@@ -97,14 +97,15 @@ function tempoFromTaps(taps) {
   };
   // Aplica un tempo ya decidido (cuenta cerrada, edición a mano o flechas):
   // cierra cualquier cuenta en curso y publica el valor.
-  const commit = bpm => {
-    // De dónde sale este tempo decide si hay ancla: si salió de una cuenta, el
-    // primer golpe es un punto de partida conocido; si se escribió a mano o con
-    // las flechas, no lo hay y quien use la ancla tiene que saberlo.
+  // `anchorTime` es opcional y lo trae quien no es el botón. De dónde sale el tempo
+  // decide si hay ancla: si salió de una cuenta, el primer golpe es un punto de
+  // partida conocido; si se escribió a mano o con las flechas, no lo hay y quien use
+  // la ancla tiene que saberlo.
+  const commit = (bpm, anchorTime) => {
     const source = taps.length ? taps[0] : null;
     clearCount();
     applied = bpm;
-    anchor = source;
+    anchor = Number.isFinite(anchorTime) ? anchorTime : source;
     bpmInput.value = bpm;
     if (playerBpm) playerBpm.value = bpm;
     if (videoBpm) videoBpm.value = bpm;
@@ -162,10 +163,15 @@ function tempoFromTaps(taps) {
   // escribir, para que no haya dos versiones que se puedan quedar viejas: una
   // versión del cálculo, dos maneras de darle golpes.
   globalThis.estimateTempo = tempoFromTaps;
-  globalThis.applyTappedTempo = bpm => {
+  // Quien marca el tempo tocando notas (mic-follow.js) pasa aquí su propia ancla: la
+  // primera nota de la cuenta. Sin ella el tempo se aplicaría sin punto de partida y
+  // la cuadrícula de la improvisación arrancaría donde se encendió su interruptor,
+  // corrida respecto a la canción. Aplicar pasa por `commit`, el mismo camino que el
+  // botón, para que no haya dos versiones de «aplicar un tempo».
+  globalThis.applyTappedTempo = (bpm, anchorTime) => {
     const value = Math.round(Number(bpm));
     if (!Number.isFinite(value) || value < 30 || value > 240) return false;
-    commit(value);
+    commit(value, anchorTime);
     return true;
   };
   // El primer golpe de la última cuenta, en la misma base de tiempo que usa el

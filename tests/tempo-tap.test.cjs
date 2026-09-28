@@ -339,3 +339,20 @@ test('el estimador y el que aplica se exponen para marcar el tempo con notas',()
   assert(events.includes('traste:tempo-applied'),
     'aplicar desde las notas avisa igual que el botón, para que el Acompañamiento lo recoja');
 });
+
+test('el tempo que llega con ancla propia deja la rejilla alineada',()=>{
+  // Es lo que marca el tempo tocando notas: no pasa por el botón, así que sin
+  // que le pasen la primera nota, el tempo se aplicaría sin punto de partida y la
+  // cuadrícula de la improvisación arrancaría corrida respecto a la canción.
+  const {global,element}=setup();
+  assert.equal(global.tempoTapAnchor(),null,'al principio no hay ancla');
+  assert.equal(global.applyTappedTempo(120),true);
+  assert.equal(global.tempoTapAnchor(),null,'sin ancla no se inventa una: quien la use lo decide');
+  // Con ancla, la ancla es exactamente la que le dieron.
+  assert.equal(global.applyTappedTempo(120,54321),true);
+  assert.equal(global.tempoTapAnchor(),54321);
+  assert.equal(String(element('#tempo-tap-bpm').value),'120');
+  // Y una ancla que no es un número se ignora, en vez de dejar el estado cojo.
+  assert.equal(global.applyTappedTempo(120,'x'),true);
+  assert.equal(global.tempoTapAnchor(),null,'una ancla que no es un número no es una ancla');
+});
