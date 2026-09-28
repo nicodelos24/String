@@ -239,8 +239,20 @@ let draggingProgressionItem = null;
 // Qué se ve en cada traste y cuánto del mástil se muestra. Antes eran dos
 // variables que las dos hablaba del alcance («escala» o «todas»), y por eso los
 // botones se pisaban: ahora cada botón contesta una sola pregunta.
-let verLevel = 0;      // 0 = notas, 1 = grados, 2 = nada
-let mastilScope = 0;  // 0 = solo la escala, 1 = todo el mástil
+// Los dos botones del pie no se cruzan: cada uno rotula una zona del mástil y
+// solo él. VER escribe en la escala dibujada (las notas del modo y, con la
+// pentatónica apagada, las del acorde) y MÁSTIL en el resto del mástil, que es
+// lo que queda fuera de la escala.
+// Las fases se nombran, no se escriben con números: se reordenaron un par de
+// veces al cambiar los rótulos, y con números sueltas el resalte y el valor de
+// arranque se quedaban apuntando a la fase equivocada. FRET_OFF es la apagada
+// en los dos botones.
+// La escala arranca en grados, que es lo que pediste; con un clic pasa a
+// apagada. Cambiar el arranque es cambiar esta línea y el `span` de
+// `index.html`, para que el HTML estático no contradiga a lo que se pinta.
+const FRET_OFF = 0, FRET_NOTES = 1, FRET_DEGREES = 2;
+let verLevel = FRET_DEGREES;    // qué pone en cada nota de la escala dibujada
+let mastilScope = FRET_OFF;     // qué pone en el resto del mástil
 let displayModeIndex = 1; // 0 = grados completos, 1 = raíz, 3ra, 5ta, 2 = raíz, 3ra, 5ta, 7ma
 const displayModes = ['full', 'triad', 'seventh', 'modeChord', 'modeSeventh'];
 const displayModeLabels = ['grados', 'tríada', '7ma', 'Acorde', 'Acorde 7ma'];
@@ -530,7 +542,9 @@ document.querySelector('#root-spelling').addEventListener('change', event => {
   pianoUseFlats = event.target.checked;
   const spelling = pianoUseFlats ? noteLabels[notes[root]] || notes[root] : notes[root];
   if (spelling !== rootNoteName) choosePianoRoot(root, spelling);
-  else renderRootPiano();
+  // Mover el switch a mano también cambia cómo MÁSTIL escribe el resto del
+  // mástil, así que hay que repintarlo aunque la raíz no cambie de nombre.
+  else { renderRootPiano(); renderFretboard(); }
 });
 
 // Refleja la escritura ♯/♭ en el switch de la raíz y en su espejo del teclado
@@ -546,6 +560,20 @@ function setChordSpelling(useFlats) {
       el.dispatchEvent(new Event('change', { bubbles: true }));
     }
   }
+}
+// El switch ♯/♭ acompaña a lo que está sonando: al elegir un acorde o un modo
+// se coloca en la armadura de su clave (Re mayor → sostenidos, Fa mayor →
+// bemoles), igual que ya hacían los acordes en vivo del micrófono y del
+// teclado. Solo se mueve cuando la clave tiene accidentales: en Do no hay
+// nada que seguir y el switch queda como lo deje el autor, que es donde hace
+// falta para nombrar a mano las notas que no son de la escala.
+// Devuelve si se movió, para que quien llama sepa si la armadura cambió.
+function syncSpellingToKeySignature(keySignature) {
+  if (!keySignature || (keySignature.flats === 0 && keySignature.sharps === 0)) return false;
+  const useFlats = keySignature.flats > 0;
+  if (useFlats === pianoUseFlats) return false;
+  setChordSpelling(useFlats);
+  return true;
 }
 
 function populateControls() {
@@ -664,10 +692,27 @@ function getDegreeLabel(interval, modeKey = selectedMode) {
   return ['1', '♭2', '2', '♭3', '3', '4', '♭5', '5', '♭6', '6', '♭7', '7'][normalized];
 }
 
-function getFretLabel(pitchClass, interval, inSelectedMode, showNoteName) {
-  if (verLevel === 2) return '';
-  if (verLevel === 1) return mastilScope === 1 || inSelectedMode ? getDegreeLabel(interval) : '';
-  return showNoteName ? displayNote(pitchClass) : '';
+// Las notas que MÁSTIL escribe fuera de la escala se nombran con el switch
+// ♯/♭, no con la armadura de la escala: así el mástil entero se lee con la
+// misma grafía que el switch. La escala dibujada sigue la armadura, que es lo
+// que corresponde a cada modo.
+function displayNoteSpelled(index) {
+  const name = noteName(index);
+  if (pianoUseFlats) return sharpToFlat[name] || name;
+  return flatToSharp[name] || name;
+}
+
+// Una sola función decide el rótulo de cada nota, y cada nota solo depende de
+// su botón: las de la escala de VER y las de fuera del mástil de MÁSTIL.
+function getFretLabel(pitchClass, interval, inScaleZone) {
+  if (inScaleZone) {
+    if (verLevel === FRET_OFF) return '';
+    if (verLevel === FRET_DEGREES) return getDegreeLabel(interval);
+    return displayNote(pitchClass);
+  }
+  if (mastilScope === FRET_OFF) return '';
+  if (mastilScope === FRET_DEGREES) return getDegreeLabel(interval);
+  return displayNoteSpelled(pitchClass);
 }
 
 let pentatonicView=false;
@@ -757,14 +802,11 @@ function renderFretboard() {
 
       
 
-      // Determinar si mostrar el nombre de la nota según el modo
-      // Con «VER» en grados o en nada, la etiqueta la decide getFretLabel.
-      let showNoteName = false;
-      if (verLevel === 0) {
-        showNoteName = mastilScope === 1 || inSelectedMode || (!pentatonicView && (isRoot || inChord));
-      }
+      // La zona de VER: la escala dibujada. Con la pentatónica apagada también
+      // entran las notas del acorde que quedan fuera de la escala.
+      const inScaleZone = inSelectedMode || (!pentatonicView && (isRoot || inChord));
 
-      return `<div class="fret"><span class="${noteClass}" data-midi="${openNote + actualFret}" data-note="${displayNote(pitchClass)}" data-interval="${intervalInfo.name}" style="background-color: ${bgColor}; color: ${textColor};${displayModeIndex >= 3 && !shouldHighlight ? ' opacity: 0;' : ''}" title="${displayNote(pitchClass)} · ${intervalInfo.name}">${getFretLabel(pitchClass, intervalFromRoot, inSelectedMode, showNoteName)}</span></div>`;
+      return `<div class="fret"><span class="${noteClass}" data-midi="${openNote + actualFret}" data-note="${displayNote(pitchClass)}" data-interval="${intervalInfo.name}" style="background-color: ${bgColor}; color: ${textColor};${displayModeIndex >= 3 && !shouldHighlight ? ' opacity: 0;' : ''}" title="${displayNote(pitchClass)} · ${intervalInfo.name}">${getFretLabel(pitchClass, intervalFromRoot, inScaleZone)}</span></div>`;
     }).join('');
     return `<div class="string-row" style="--string-width: ${stringIndex < (instrument === 'guitar' ? 3 : 2) ? 2 : 1}px">${frets}</div>`;
   }).join('');
@@ -843,14 +885,10 @@ function renderOpenStrings() {
 
       
 
-      // Determinar si mostrar el nombre de la nota según el modo
-      // Con «VER» en grados o en nada, la etiqueta la decide getFretLabel.
-      let showNoteName = false;
-      if (verLevel === 0) {
-        showNoteName = mastilScope === 1 || inSelectedMode || (!pentatonicView && (isRoot || inChord));
-      }
+      // La zona de VER: la escala dibujada (ver renderFretboard).
+      const inScaleZone = inSelectedMode || (!pentatonicView && (isRoot || inChord));
 
-      return `<div class="open-string-row"><span class="${noteClass}" data-midi="${openNote}" data-note="${displayNote(pitchClass)}" data-interval="${intervalInfo.name}" style="background-color: ${bgColor}; color: ${textColor};${displayModeIndex >= 3 && !shouldHighlight ? ' opacity: 0;' : ''}" title="${displayNote(pitchClass)} · ${intervalInfo.name}">${getFretLabel(pitchClass, intervalFromRoot, inSelectedMode, showNoteName)}</span></div>`;
+      return `<div class="open-string-row"><span class="${noteClass}" data-midi="${openNote}" data-note="${displayNote(pitchClass)}" data-interval="${intervalInfo.name}" style="background-color: ${bgColor}; color: ${textColor};${displayModeIndex >= 3 && !shouldHighlight ? ' opacity: 0;' : ''}" title="${displayNote(pitchClass)} · ${intervalInfo.name}">${getFretLabel(pitchClass, intervalFromRoot, inScaleZone)}</span></div>`;
     }).join('');
 
   document.querySelector('#open-strings').innerHTML = openStringsHtml;
@@ -864,7 +902,10 @@ function updateView() {
   const selectedModeData = modes[mode];
 
   // Calcular la armadura de clave según el modo efectivo (la pentatónica tiene su propia referencia)
-  const keySignature = calculateKeySignature(mode, root);
+  // El switch ♯/♭ se coloca en esa armadura; si al colocarse cambia el nombre
+  // de la raíz, la armadura se recalcula con la grafía ya corregida.
+  let keySignature = calculateKeySignature(mode, root);
+  if (syncSpellingToKeySignature(keySignature)) keySignature = calculateKeySignature(mode, root);
 
   const chordSuffix = chordType.suffix;
 
@@ -982,26 +1023,40 @@ document.querySelector('#toggle-display').addEventListener('click', event => {
 
   renderFretboard(); 
 });
-// Los dos botones del pie responden a preguntas distintas:
-//   VER     -> qué pone en cada traste: notas, grados o nada.
-//   MÁSTIL  -> cuánto del mástil se ve: solo la escala o todas las cuerdas.
-// El resalte marca cuando el valor no es el de siempre, no «el botón activo»:
-// antes «Aa escala» salía siempre encendido y llevaba a pensar que era un modo
-// especial cuando era el normal.
-const VER_LABELS = ['notas', 'grados', 'nada'];
-const MASTIL_LABELS = ['escala', 'todo'];
-const VER_HELP = 'Qué pone en cada traste: el nombre de la nota, el grado dentro de la escala o nada.';
-const MASTIL_HELP = 'Cuánto del mástil se ve: solo las notas de la escala o todas las cuerdas.';
+// Los dos botones del pie responden a preguntas distintas y no se cruzan:
+//   VER     -> qué pone en cada nota de la escala dibujada: nada, notas o grados.
+//   MÁSTIL  -> qué pone en el resto del mástil, lo que no es la escala:
+//              nada, notas o grados.
+// Los dos botones se leen igual: el nombre va fijo en el HTML («AA» y «MÁSTIL»)
+// y el `span` de dentro lleva la fase, que es lo único que cambia. Con el
+// botón apagado el `span` queda vacío y solo se ve el nombre, que es la forma
+// de decir que no está escribiendo nada. El resalte separa la fase apagada de
+// las otras dos, que son las que se ven distinto de lo de siempre.
+const VER_LABELS = ['', 'notas', 'grados'];
+const MASTIL_LABELS = ['', 'notas', 'grados'];
+// El nombre visible de cada botón, que el `aria-label` tiene que contener.
+const VER_PREFIX = 'AA', MASTIL_PREFIX = 'MÁSTIL';
+// Lo que se lee en voz alta, que no es lo mismo que lo que se ve: en pantalla
+// «AA» a secas no diría que el botón está apagado.
+const VER_SPOKEN = ['apagado: no escribe nada en la escala', 'el nombre de la nota', 'el grado dentro de la escala'];
+const MASTIL_SPOKEN = ['apagado: nada fuera de la escala', 'el nombre de la nota', 'el grado dentro de la escala'];
+const VER_HELP = 'Qué pone en cada nota de la escala dibujada: el nombre de la nota, el grado dentro de la escala o nada.';
+const MASTIL_HELP = 'Qué pone en el resto del mástil, fuera de la escala: nada, el nombre de la nota o su grado. En modo notas se escriben con el switch de bemoles o sostenidos.';
+// El nombre accesible tiene que contener el texto que se ve (criterio «Label in
+// Name»), así que se arma con el rótulo de la fase y no con una palabra
+// inventada; por eso la fase apagada, que no tiene palabra, pone solo el nombre.
+const fretLabel = (prefix, word, spoken, help) =>
+  prefix + (word ? ' ' + word : '') + ': ' + spoken + '. Clic para cambiar. ' + help;
 
 function paintFretLabelButtons() {
   const ver = document.querySelector('#toggle-notes'), mastil = document.querySelector('#toggle-degrees');
   const verText = VER_LABELS[verLevel], mastilText = MASTIL_LABELS[mastilScope];
   ver.querySelector('span').textContent = verText;
   mastil.querySelector('span').textContent = mastilText;
-  ver.setAttribute('aria-pressed', String(verLevel !== 0));
-  mastil.setAttribute('aria-pressed', String(mastilScope !== 0));
-  ver.setAttribute('aria-label', 'Ver: ' + verText + '. Clic para cambiar. ' + VER_HELP);
-  mastil.setAttribute('aria-label', 'Mastil: ' + mastilText + '. Clic para cambiar. ' + MASTIL_HELP);
+  ver.setAttribute('aria-pressed', String(verLevel !== FRET_OFF));
+  mastil.setAttribute('aria-pressed', String(mastilScope !== FRET_OFF));
+  ver.setAttribute('aria-label', fretLabel(VER_PREFIX, verText, VER_SPOKEN[verLevel], VER_HELP));
+  mastil.setAttribute('aria-label', fretLabel(MASTIL_PREFIX, mastilText, MASTIL_SPOKEN[mastilScope], MASTIL_HELP));
   ver.title = VER_HELP;
   mastil.title = MASTIL_HELP;
 }

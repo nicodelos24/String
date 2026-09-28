@@ -18,17 +18,28 @@
   };
 
   // Leyendas de los botones cíclicos: el texto se usa como estado para
-  // capturar y para restaurar pulsando hasta alcanzar el objetivo.
-  const NOTES_LABELS = ['notas', 'grados', 'nada'];
-  const DEGREE_LABELS = ['escala', 'todo'];
+  // capturar y para restaurar pulsando hasta alcanzar el objetivo. La fase
+  // apagada de los dos botones no pone palabra (solo el nombre fijo del
+  // botón), así que su estado es el texto vacío, y por eso los dos índices
+  // caen en 0 cuando no reconocen el rótulo.
+  const NOTES_LABELS = ['', 'notas', 'grados'];
+  const DEGREE_LABELS = ['', 'notas', 'grados'];
   // Guardados de la versión anterior: showNotes (0 sin, 1 escala, 2 todas) y
   // degreeDisplay (0 no, 1 escala, 2 todas).
   const fromLegacy = saved => {
-    if (saved.degreeDisplay) return 1;         // había grados -> VER = grados
-    if (saved.showNotes === 0) return 2;       // no había ni notas -> VER = nada
-    return 0;                                  // notas
+    if (saved.degreeDisplay) return 2;         // había grados -> VER = «AA GRADOS»
+    if (saved.showNotes === 0) return 0;       // no había ni notas -> VER apagado
+    return 1;                                  // notas -> VER = «AA NOTAS»
   };
   const fromLegacyScope = saved => (saved.degreeDisplay === 2 || saved.showNotes === 2) ? 1 : 0;
+  // Los rótulos de VER se reordenaron al ponerles nombre propio: antes 0 = notas,
+  // 1 = grados y 2 = apagado; ahora 0 = apagado («AA» a secas), 1 = «AA NOTAS» y
+  // 2 = «AA GRADOS». Como el snapshot guarda el número de fase, un guardado
+  // anterior hay que desplazarlo o el botón se abriría en otra fase. Se marca
+  // con `fretPhases` para no desplazar dos veces los que ya son de esta versión.
+  // MÁSTIL no lo necesita: su orden (apagado, notas, grados) no cambió.
+  const FRET_PHASES = 2;
+  const VER_OLD_TO_NEW = [1, 2, 0];
   const notesIndex = text => {
     const index = NOTES_LABELS.indexOf(text);
     return index >= 0 ? index : 1;
@@ -62,6 +73,9 @@
       mode: all('#mode-selector input[name="mode"]').find(r => r.checked)?.value || '',
       ghostMode: $('#ghost-mode-select')?.value || '',
       pentatonicView: $('#pentatonic-view')?.checked || false,
+      // Marca de la nomenclatura de las fases de VER, para saber si un guardado
+      // hay que desplazarlo al restaurarlo.
+      fretPhases: FRET_PHASES,
       verLevel: notesIndex(($('#toggle-notes span')?.textContent || '').trim()),
       mastilScope: degreesIndex(($('#toggle-degrees span')?.textContent || '').trim()),
       displayLabel: $('#display-label')?.textContent || '',
@@ -148,12 +162,17 @@
       const number = Number(value);
       return Number.isFinite(number) ? Math.min(Math.max(Math.round(number), 0), max) : fallback;
     };
-    // Los botones se reconstruyeron (VER y MÁSTIL), así que un guardado de la
+    // Los botones se reconstruyeron (AA y MÁSTIL), así que un guardado de la
     // versión anterior trae `showNotes` y `degreeDisplay`. Se traducen: los
-    // grados de antes pasaban a VER=grados y su alcance a MÁSTIL, y sin grados,
-    // «todas» era VER=notas con MÁSTIL=todo.
-    const ver = saved.verLevel === undefined ? fromLegacy(saved) : clampIndex(saved.verLevel, 0, 2);
-    const alcance = saved.mastilScope === undefined ? fromLegacyScope(saved) : clampIndex(saved.mastilScope, 0, 1);
+    // grados de antes pasaban a AA GRADOS y su alcance a MÁSTIL, y sin grados
+    // «todas» era MÁSTIL=notas, que es lo más cercano que hay ahora (MÁSTIL en
+    // grados muestra todas las cuerdas con su grado, no su nombre).
+    const ver = saved.verLevel === undefined
+      ? fromLegacy(saved)
+      : (saved.fretPhases === FRET_PHASES
+        ? clampIndex(saved.verLevel, 0, 2)
+        : VER_OLD_TO_NEW[clampIndex(saved.verLevel, 0, 2)]);
+    const alcance = saved.mastilScope === undefined ? fromLegacyScope(saved) : clampIndex(saved.mastilScope, 0, 2);
     clickUntil('#toggle-notes',
       () => ($('#toggle-notes span')?.textContent || '').trim(),
       NOTES_LABELS[ver]);

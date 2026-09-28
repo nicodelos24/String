@@ -9,4 +9,15 @@ test('active HTML has unique IDs, unique scripts and existing local entrypoints'
   assert.equal(new Set(scripts).size,scripts.length,'Script loaded twice');
   for(const script of scripts)assert(fs.existsSync(path.join(root,script)),script);
   assert(!scripts.includes('midi-catalog.js'),'Historical MIDI fixtures must not be loaded by the app');
+  // Los rótulos de los botones cíclicos se pintan desde app.js, pero el nombre
+  // fijo que los acompaña vive aquí: «AA» y «MÁSTIL». Si se añadiera otra
+  // palabra, en pantalla saldría «VER AA NOTAS» en vez de «AA NOTAS».
+  const notasButton=html.match(/<button[^>]*id="toggle-notes"[^>]*>([\s\S]*?)<\/button>/);
+  const mastilButton=html.match(/<button[^>]*id="toggle-degrees"[^>]*>([\s\S]*?)<\/button>/);
+  assert(notasButton,'the NOTAS button is missing');
+  assert(mastilButton,'the MÁSTIL button is missing');
+  // Lo que hay antes del <span> es el nombre fijo, y lo de dentro es la fase
+  // que pinta app.js. El estado de arranque es AA GRADOS.
+  assert(/^AA\s*<span>grados<\/span>$/.test(notasButton[1].trim()),'the first button is AA and starts on AA GRADOS');
+  assert(/^MÁSTIL\s*<span><\/span>$/.test(mastilButton[1].trim()),'the MÁSTIL button is MÁSTIL and starts off');
 });

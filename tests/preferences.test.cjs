@@ -2,13 +2,14 @@ const {test}=require('node:test');const assert=require('node:assert/strict');
 const fs=require('node:fs');const vm=require('node:vm');const path=require('node:path');
 const SRC=fs.readFileSync(path.join(__dirname,'../preferences.js'),'utf8');
 
-const NOTES=['notas','grados','nada'];
-const DEGREES=['escala','todo'];
+const NOTES=['','notas','grados'];
+const DEGREES=['','notas','grados'];
 const DISPLAY=['grados','tríada','7ma','Acorde','Acorde 7ma'];
 
 function build(seed){
   const byId=new Map();const allNodes=[];const clicked=[];
-  let noteIndex=0,degreeIndex=0,displayIndex=1;
+  // De arranque la app está en AA GRADOS y MÁSTIL apagado, como el doble.
+  let noteIndex=2,degreeIndex=0,displayIndex=1;
   function make(id,cfg={}){
     const n={
       id, tag:cfg.tag||null, type:cfg.type||null, name:cfg.name||null,
@@ -47,10 +48,10 @@ function build(seed){
   const range=(id,value)=>make(id,{tag:'input',type:'range',value});
   const span=(id,text)=>make(id,{tag:'span',text});
 
-  const notesLabel=span(null,'notas');const degreeLabel=span(null,'escala');
+  const notesLabel=span(null,'grados');const degreeLabel=span(null,'');
   const displayLabel=span('display-label','tríada');
   const notesBtn=make('toggle-notes',{tag:'button',children:[notesLabel],onClick:()=>{noteIndex=(noteIndex+1)%3;notesLabel.textContent=NOTES[noteIndex];}});
-  make('toggle-degrees',{tag:'button',children:[degreeLabel],onClick:()=>{degreeIndex=(degreeIndex+1)%2;degreeLabel.textContent=DEGREES[degreeIndex];}});
+  make('toggle-degrees',{tag:'button',children:[degreeLabel],onClick:()=>{degreeIndex=(degreeIndex+1)%3;degreeLabel.textContent=DEGREES[degreeIndex];}});
   make('toggle-display',{tag:'button',children:[displayLabel],onClick:()=>{displayIndex=(displayIndex+1)%DISPLAY.length;displayLabel.textContent=DISPLAY[displayIndex];}});
 
   const picker=make('instrument-picker',{tag:'div'});
@@ -203,8 +204,9 @@ test('preferencias: un cambio de cualquier control visible guarda el snapshot',(
   assert.equal(snap.playerBpm,'100');
   assert.equal(snap.synthVolume,'30');
   assert.equal(snap.pentatonicView,false);
-  assert.equal(snap.verLevel,0);
+  assert.equal(snap.verLevel,2);
   assert.equal(snap.mastilScope,0);
+  assert.equal(snap.fretPhases,2);
   assert.equal(snap.displayLabel,'tríada');
   assert.equal(snap.followMidi,true);
   assert.equal(snap.youtubeFloat,true);
@@ -234,13 +236,37 @@ test('el guardado se mide después del clic, no antes (si no, va un paso atrasad
   clic();
   assert.equal(estado().verLevel,undefined,'antes de que corra el turno no se ha escrito nada');
   flush();
-  assert.equal(estado().verLevel,1,'tras el turno guarda el valor que el botón acaba de pintar (grados)');
+  assert.equal(estado().verLevel,0,'tras el turno guarda el valor que el botón acaba de pintar (solo AA, la apagada)');
   clic();
   flush();
-  assert.equal(estado().verLevel,2,'y en el siguiente, nada');
+  assert.equal(estado().verLevel,1,'y en el siguiente, AA NOTAS');
   clic();
   flush();
-  assert.equal(estado().verLevel,0,'y al volver, notas');
+  assert.equal(estado().verLevel,2,'y al volver, AA GRADOS');
+  assert.equal(estado().fretPhases,2,'el guardado queda marcado con la nomenclatura de las fases');
+});
+
+test('preferencias: un guardado de antes del renombrado se desplaza a la fase que le toca',()=>{
+  // Las fases de VER se reordenaron al ponerles nombre propio: antes 0 = notas,
+  // 1 = grados y 2 = apagado; ahora 0 = apagado («AA» a secas), 1 = «AA NOTAS» y
+  // 2 = «AA GRADOS». Sin desplazar, quien tuviera los grados guardados abriría
+  // el botón en «AA NOTAS», que es justo lo contrario de lo que había elegido.
+  for(const [guardado,esperado] of [[0,'notas'],[1,'grados'],[2,'']]){
+    const{q}=build({verLevel:guardado,displayLabel:'tríada'});
+    assert.equal(q('#toggle-notes span').textContent,esperado,'un guardado antiguo con verLevel '+guardado);
+  }
+  // Uno ya escrito con la nomenclatura nueva se queda donde está, sin desplazar.
+  for(const [guardado,esperado] of [[0,''],[1,'notas'],[2,'grados']]){
+    const{q}=build({verLevel:guardado,fretPhases:2,displayLabel:'tríada'});
+    assert.equal(q('#toggle-notes span').textContent,esperado,'un guardado nuevo con verLevel '+guardado);
+  }
+  // MÁSTIL no se reordenó: su guardado vale tal cual.
+  const{ q:qMastil1 }=build({verLevel:1,fretPhases:2,mastilScope:1,displayLabel:'tríada'});
+  assert.equal(qMastil1('#toggle-degrees span').textContent,'notas','mastilScope 1 sigue siendo notas');
+  const{ q:qMastil2 }=build({verLevel:2,fretPhases:2,mastilScope:2,displayLabel:'tríada'});
+  assert.equal(qMastil2('#toggle-degrees span').textContent,'grados','mastilScope 2 sigue siendo grados');
+  const{ q:qMastil0 }=build({verLevel:0,fretPhases:2,mastilScope:0,displayLabel:'tríada'});
+  assert.equal(qMastil0('#toggle-degrees span').textContent,'','mastilScope 0 sigue siendo la apagada, sin rótulo');
 });
 
 test('preferencias: restaura los valores guardados disparando los eventos',()=>{
@@ -263,9 +289,10 @@ test('preferencias: restaura los valores guardados disparando los eventos',()=>{
   assert.equal(q('#root-spelling').checked,true);
   assert.equal(qa('#root-piano .piano-key').find(k=>k.dataset.pitch==='5').clicked,1);
   // showNotes 0 = sin notas y degreeDisplay 2 = grados en todo el mástil:
-  // el equivalente nuevo es VER=grados con MÁSTIL=todo.
+  // el equivalente nuevo es VER=grados con MÁSTIL=notas (el nombre de la nota
+  // en todo el mástil es lo más cercano que hay a «grados en todas»).
   assert.equal(q('#toggle-notes span').textContent,'grados');
-  assert.equal(q('#toggle-degrees span').textContent,'todo');
+  assert.equal(q('#toggle-degrees span').textContent,'notas');
   assert.equal(q('#display-label').textContent,'7ma');
   assert.ok(clicked.some(n=>n.getAttribute('data-source')==='midi'));
   assert.ok(clicked.some(n=>n.getAttribute('data-card-mode')==='pulse'));

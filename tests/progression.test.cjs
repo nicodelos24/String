@@ -19,11 +19,16 @@ function setup() {
       addEventListener(name, fn) { this.handlers[name] = fn; },
       querySelectorAll() { return []; },
       querySelector(selector) { return element(key + selector); },
-      setAttribute() {},
+      attrs: {},
+      setAttribute(name, value) { this.attrs[name] = String(value); },
+      // Con dispatchEvent, setChordSpelling recorre de verdad el manejador del
+      // switch en vez de solo dejar el checkbox marcado.
+      dispatchEvent(event) { if (this.handlers[event.type]) this.handlers[event.type]({target: this}); return true; },
     });
     return elements.get(key);
   }
-  const ctx = vm.createContext({document:{querySelector:element,querySelectorAll:()=>[]}});
+  class FakeEvent { constructor(type, init) { this.type = type; Object.assign(this, init); } }
+  const ctx = vm.createContext({document:{querySelector:element,querySelectorAll:()=>[]},Event:FakeEvent});
   vm.runInContext(fs.readFileSync(path.join(__dirname,'../app.js'),'utf8'),ctx);
   const run = code => vm.runInContext(code,ctx);
   const change = (key,value) => element(key).handlers.change({target:{value}});
@@ -78,35 +83,96 @@ test('pentatonic selection respects explicit choice and follows modal chord qual
   assert.doesNotMatch(html,/>B<\/span>/);
 });
 
-test('los botones VER y MÁSTIL controlan dos cosas distintas',()=>{
+test('los botones VER y MÁSTIL rotulan zonas distintas sin cruzarse',()=>{
   const {run,element}=setup();
-  // VER responde a qué pone en cada traste; MÁSTIL, a cuánto del mástil se ve.
-  assert.equal(run('verLevel'),0);assert.equal(run('mastilScope'),0);
+  // VER responde a la escala dibujada; MÁSTIL, a lo que queda fuera de ella.
+  // De arranque la escala se rotula con grados (AA GRADOS) y el resto del
+  // mástil sin rotular (MÁSTIL apagado).
+  assert.equal(run('verLevel'),2);assert.equal(run('mastilScope'),0);
   const html=()=>element('#fretboard').innerHTML+element('#open-strings').innerHTML;
-  const enEscala=m=>new RegExp('data-midi="'+m+'"[^>]*>\\s*([A-G#♭]|[0-9])');
-  // MÁSTIL=todo con VER=notas rotula también el Fa#3, que no es de Do mayor.
-  run('mastilScope=1;verLevel=0;updateView()');
-  assert.match(html(),enEscala(54),'con MÁSTIL=todo se rotula también lo que no es de la escala');
-  // VER=grados cambia lo que pone, no cuántas notas se ven.
-  run('mastilScope=0;verLevel=1;updateView()');
-  assert.doesNotMatch(html(),enEscala(54),'con MÁSTIL=escala los grados no salen fuera de la escala');
-  assert.match(html(),enEscala(48),'pero sí dentro');
-  // MÁSTIL=todo con VER=grados: grados en todas las cuerdas.
+  // Rótulo exacto de una nota ('' si no lleva ninguno), para distinguir nombre de grado.
+  const labelOf=m=>{const found=html().match(new RegExp('data-midi="'+m+'"[^>]*>\\s*([^<]*)<'));return found?found[1]:null;};
+  // El Fa#3 (54) no es de Do mayor; el Do3 (48) sí.
+  // MÁSTIL=notas con VER=notas: nombre en la escala y también fuera de ella.
   run('mastilScope=1;verLevel=1;updateView()');
-  assert.match(html(),enEscala(54),'con MÁSTIL=todo también los grados llegan a todo el mástil');
-  // VER=nada no rotula nada, esté en el alcance que esté.
-  run('verLevel=2;updateView()');
-  assert.doesNotMatch(html(),enEscala(48),'con VER=nada no hay rótulo en ninguna nota de la escala');
-  // Al final los rótulos de los botones son los de las fases.
-  run('verLevel=0;mastilScope=0;paintFretLabelButtons()');
-  assert.equal(element('#toggle-notes').querySelector('span').textContent,'notas');
-  assert.equal(element('#toggle-degrees').querySelector('span').textContent,'escala');
+  assert.equal(labelOf(54),'F#','con MÁSTIL=notas se rotula también lo que no es de la escala');
+  assert.equal(labelOf(48),'C','y la escala sigue con su nombre de nota');
+  // MÁSTIL=apagado con VER=grados: los grados no salen de la escala.
+  run('mastilScope=0;verLevel=2;updateView()');
+  assert.equal(labelOf(54),'','con MÁSTIL apagado no hay rótulo fuera de la escala');
+  assert.equal(labelOf(48),'1','pero sí dentro, con su grado');
+  // MÁSTIL=grados: los grados llegan a todo el mástil.
+  run('mastilScope=2;verLevel=1;updateView()');
+  assert.equal(labelOf(54),'♭5','con MÁSTIL=grados también los grados llegan a todo el mástil');
+  // Y no depende de VER: con VER apagado el mástil sigue escribiendo lo suyo.
+  run('mastilScope=2;verLevel=0;updateView()');
+  assert.equal(labelOf(54),'♭5','VER apagado no calla a MÁSTIL: cada botón va a lo suyo');
+  assert.equal(labelOf(48),'','con VER apagado no hay rótulo en ninguna nota de la escala');
+  // Los rótulos de los botones son los de las fases, y la apagada no pone
+  // palabra: el nombre fijo del botón («AA», «MÁSTIL») queda solo. No es solo
+  // pintura: preferences.js restaura pulsando hasta alcanzar el texto guardado,
+  // así que un rótulo que se cambiara sin cambiar las listas de preferences.js
+  // dejaría el botón sin restaurar en silencio.
+  for(const [ver,mastil,textoVer,textoMastil] of [[0,0,'',''],[1,1,'notas','notas'],[2,2,'grados','grados']]){
+    run(`verLevel=${ver};mastilScope=${mastil};paintFretLabelButtons()`);
+    assert.equal(element('#toggle-notes').querySelector('span').textContent,textoVer,'VER fase '+ver);
+    assert.equal(element('#toggle-degrees').querySelector('span').textContent,textoMastil,'MÁSTIL fase '+mastil);
+    // El nombre accesible tiene que contener lo que se ve (criterio «Label in
+    // Name»): si no, un lector de pantalla oíría una etiqueta que no está en
+    // el botón. En la fase apagada de MÁSTIL solo se comprueba el nombre.
+    const ariaVer=element('#toggle-notes').attrs['aria-label'];
+    const ariaMastil=element('#toggle-degrees').attrs['aria-label'];
+    assert(ariaVer.toLowerCase().includes(textoVer||'aa'),'el aria-label de VER («'+ariaVer+'») no contiene lo que se ve («AA'+(textoVer?' '+textoVer:'')+'»)');
+    assert(ariaMastil.toLowerCase().includes(textoMastil||'mástil'),'el aria-label de MÁSTIL («'+ariaMastil+'») no contiene lo que se ve («MÁSTIL'+(textoMastil?' '+textoMastil:'')+'»)');
+  }
+  // El resalte: la fase apagada es la única sin resaltar en los dos botones.
+  // Ojo al orden: la apagada es la primera (FRET_OFF = 0) en los dos, y el
+  // resalte la tiene que seguir aunque las fases se reordenen.
+  for(const [ver,mastil,pressedVer,pressedMastil] of [[0,0,'false','false'],[1,1,'true','true'],[2,2,'true','true']]){
+    run(`verLevel=${ver};mastilScope=${mastil};paintFretLabelButtons()`);
+    assert.equal(element('#toggle-notes').attrs['aria-pressed'],pressedVer,'VER fase '+ver);
+    assert.equal(element('#toggle-degrees').attrs['aria-pressed'],pressedMastil,'MÁSTIL fase '+mastil);
+  }
 });
 
-test('defaults show scale names and triads; duplicated chords are independent complete copies',()=>{
+test('el switch de bemoles y sostenidos sigue la armadura de lo que suena',()=>{
+  const {run,element}=setup();
+  const html=()=>element('#fretboard').innerHTML+element('#open-strings').innerHTML;
+  const labelOf=m=>{const found=html().match(new RegExp('data-midi="'+m+'"[^>]*>\\s*([^<]*)<'));return found?found[1]:null;};
+  // El Fa#3 (54) y el Sol#3 (56): en Do mayor ninguno es de la escala, y en Re
+  // mayor el 54 sí (es su tercera) y el 56 no. Se eligen por eso, para no mirar
+  // la zona de AA cuando lo que se quiere comprobar es lo que escribe MÁSTIL.
+  // Re mayor lleva dos sostenidos: el switch pasa a sostenidos solo.
+  run("rootNoteName='D';root=2;selectedMode='ionian';verLevel=1;mastilScope=1;updateView()");
+  assert.equal(element('#root-spelling').checked,false,'Re mayor deja el switch en sostenidos');
+  assert.equal(labelOf(56),'G#','y las notas de fuera de la escala se escriben en sostenidos');
+  assert.equal(labelOf(54),'F#','la escala, con la armadura de su modo');
+  // Fa mayor lleva un bemol: al revés.
+  run("rootNoteName='F';root=5;selectedMode='ionian';verLevel=1;mastilScope=1;updateView()");
+  assert.equal(element('#root-spelling').checked,true,'Fa mayor deja el switch en bemoles');
+  assert.equal(labelOf(56),'Ab','y las de fuera de la escala se escriben en bemoles');
+  assert.equal(labelOf(53),'F','la escala, con la armadura de su modo');
+  // Do no tiene accidentales: el switch se queda donde lo puso el autor.
+  run("rootNoteName='C';root=0;selectedMode='ionian';verLevel=1;mastilScope=1;updateView()");
+  assert.equal(element('#root-spelling').checked,true,'en Do el switch no se mueve solo');
+  assert.equal(labelOf(54),'Gb','pero MÁSTIL sigue escribiendo con el switch elegido');
+  // La escala dibujada no se mezcla con la grafía del switch: sigue la armadura.
+  run("rootNoteName='C';root=0;selectedMode='ionian';verLevel=1;mastilScope=1;updateView()");
+  const scaleLabel=html().match(new RegExp('data-midi="48"[^>]*>\\s*([^<]*)<'))[1];
+  assert.equal(scaleLabel,'C','la escala conserva su grafía aunque el switch esté en bemoles');
+  // Mover el switch a mano repinta el mástil: si no, los rótulos se quedan viejos.
+  const spellSwitch=element('#root-spelling');
+  spellSwitch.checked=false;spellSwitch.handlers.change({target:spellSwitch});
+  assert.equal(labelOf(54),'F#','al pasar a sostenidos el Fa# se escribe con sostenido');
+  spellSwitch.checked=true;spellSwitch.handlers.change({target:spellSwitch});
+  assert.equal(labelOf(54),'Gb','y al volver a bemoles, con bemol');
+});
+
+test('defaults show scale degrees and triads; duplicated chords are independent complete copies',()=>{
   const {run}=setup();
-  // Por defecto se ven los nombres de nota de la escala y solo la escala.
-  assert.equal(run('verLevel'),0);assert.equal(run('mastilScope'),0);
+  // Por defecto se ven los grados de la escala (AA GRADOS) y el resto del
+  // mástil sin rotular (MÁSTIL apagado).
+  assert.equal(run('verLevel'),2);assert.equal(run('mastilScope'),0);
   assert.equal(run('displayModeIndex'),1);
   run("progression=[{root:2,type:'m7',mode:'dorian',ghostMode:'aeolian',rootNoteName:'D'}];duplicateProgressionChord(0)");
   assert.equal(run('progression.length'),2);assert.equal(run('activeProgression'),1);
@@ -236,12 +302,18 @@ test('changing quality detaches the draft without modifying saved chords', () =>
   assert.equal(run('JSON.stringify(progression)'),before);
 });
 
-test('piano accidental switch updates black keys and keeps preference across natural notes', () => {
+test('piano accidental switch updates black keys and follows the key signature', () => {
   const {run,element} = setup();
   element('#root-spelling').handlers.change({target:{checked:true}});
   assert(element('#root-piano').innerHTML.includes('D♭'));
   assert(!element('#root-piano').innerHTML.includes('C♯'));
+  // Re mayor lleva dos sostenidos: el switch pasa a sostenidos por sí solo.
   run("choosePianoRoot(2, 'D');");
+  assert.equal(element('#root-spelling').checked,false);
+  // Do no tiene accidentales: aquí el switch conserva lo que eligió el autor.
+  run("choosePianoRoot(0, 'C');");
+  assert.equal(element('#root-spelling').checked,false);
+  element('#root-spelling').handlers.change({target:{checked:true}});
   assert.equal(element('#root-spelling').checked,true);
   run("choosePianoRoot(1, 'Db'); addProgressionChord();");
   const saved = run('activeProgression');
