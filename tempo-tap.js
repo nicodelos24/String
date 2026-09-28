@@ -157,6 +157,17 @@ function tempoFromTaps(taps) {
   };
   globalThis.tapProgressionTempo = tap;
   globalThis.discardTempoTap = discard;
+  // El estimador y el que aplica, para quien marque el tempo tocando notas con el
+  // micrófono (mic-follow.js). Se le pide el cálculo de aquí y no se vuelve a
+  // escribir, para que no haya dos versiones que se puedan quedar viejas: una
+  // versión del cálculo, dos maneras de darle golpes.
+  globalThis.estimateTempo = tempoFromTaps;
+  globalThis.applyTappedTempo = bpm => {
+    const value = Math.round(Number(bpm));
+    if (!Number.isFinite(value) || value < 30 || value > 240) return false;
+    commit(value);
+    return true;
+  };
   // El primer golpe de la última cuenta, en la misma base de tiempo que usa el
   // reloj. La improvisación lo toma como punto uno de su compás, para que la
   // cuadrícula caiga donde el autor empezó a marcar y no donde encendió el

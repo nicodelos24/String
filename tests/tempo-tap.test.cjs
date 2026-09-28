@@ -318,3 +318,24 @@ test('tempo tap: editar el tempo del Acompañamiento o aplicar una plantilla cie
   settle(2000);
   assert.equal(videoBpm.value,'100');
 });
+
+test('el estimador y el que aplica se exponen para marcar el tempo con notas',()=>{
+  const {global,element,events}=setup();
+  // mic-follow.js no estima el BPM por su cuenta: usa estas dos, para que no
+  // haya dos versiones del cálculo. Aquí se comprueba que hacen lo que deben.
+  assert.equal(typeof global.estimateTempo,'function','el estimador está expuesto');
+  assert.equal(global.estimateTempo([0,500]),120);
+  assert.equal(global.estimateTempo([0]),null);
+  // Aplicar un tempoImposible no cambia nada y lo dice, para que quien llama no
+  // se quede creyendo que se aplicó.
+  assert.equal(global.applyTappedTempo(29),false,'por debajo de 30 no se aplica');
+  assert.equal(global.applyTappedTempo(241),false,'por encima de 240 tampoco');
+  assert.equal(global.applyTappedTempo(null),false);
+  assert.equal(global.applyTappedTempo('x'),false);
+  assert.equal(global.applyTappedTempo(120),true);
+  assert.equal(String(element('#tempo-tap-bpm').value),'120','el campo queda con el tempo aplicado');
+  // Y pasa por el mismo camino que el botón: publica el evento que escucha el
+  // Acompañamiento, que es lo que hace que el tempo cambie en marcha.
+  assert(events.includes('traste:tempo-applied'),
+    'aplicar desde las notas avisa igual que el botón, para que el Acompañamiento lo recoja');
+});

@@ -156,6 +156,11 @@ if (typeof document !== 'undefined') (() => {
       const now = Date.now();
       if (detection && Number.isInteger(detection.midi)) {
         micPitch = detection.midi;
+        // Cada nota confirmada es un golpe, y el micrófono solo avisa cuando la
+        // nota cambia (o se calla), no en cada fotograma: por eso esto sirve tanto
+        // para marcar el tempo tocando notas como para entrar a la canción al
+        // tocar. Una nota sostenida no vuelve a contar.
+        globalThis.window?.dispatchEvent?.(new Event('traste:mic-note'));
         highlightPitch(detection.midi);
         heldMidi = detection.midi;
         heldSince = now;

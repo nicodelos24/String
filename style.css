@@ -2114,6 +2114,26 @@ footer {
 .improvisation-status.is-live { color: var(--rust); }
 .improvisation-control .inline-help { align-self: flex-end; }
 .improvisation-control .inline-help p { top: auto; bottom: calc(100% + 8px); left: auto; right: 0; white-space: normal; width: 290px; }
+
+/* Los dos controles que hacen que el micrófono lleve la canción: el tempo
+   marcando con notas y la entrada al tocar. Van en la misma columna, debajo del
+   bloque de Improvisar, alineados a la derecha como el resto. Cada uno con su
+   línea de estado, porque uno cuenta golpes y el otro avisa de que ha entrado:
+   con una sola línea, uno taparía al otro. */
+.mic-follow-control { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; max-width: 100%; }
+.tempo-tap-mic { display: inline-flex; align-items: center; gap: 6px; padding: 5px 9px; border: 1px solid var(--line); border-radius: 6px; background: var(--paper); color: var(--ink); font: 11px var(--mono); cursor: pointer; }
+.tempo-tap-mic:hover { border-color: var(--rust); }
+.tempo-tap-mic[aria-pressed="true"] { background: var(--rust); border-color: var(--rust); color: #fff; }
+.tempo-tap-mic:focus-visible { outline: 2px solid var(--rust); outline-offset: 2px; }
+.enter-on-note { display: inline-flex; align-items: center; gap: 6px; margin: 2px 0 0; font: 11px var(--mono); color: var(--muted); cursor: pointer; }
+.enter-on-note input { accent-color: var(--rust); }
+.mic-follow-status { margin: 0; font: 10px var(--mono); color: var(--muted); text-align: right; max-width: 30ch; }
+/* Mientras se cuenta, el tempo es una estimación: se dice con el color, para que
+   nadie lo tome por el tempo ya aplicado. */
+.mic-follow-status.is-counting { color: var(--rust); }
+.mic-follow-control .inline-help { align-self: flex-end; }
+.mic-follow-control .inline-help p { top: auto; bottom: calc(100% + 8px); left: auto; right: 0; white-space: normal; width: 300px; }
+.mic-follow-control .inline-help p + p { margin-top: 8px; }
 .progression-workspace .section-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .progression-workspace .section-fields label:first-child { grid-column: 1 / -1; }
 .progression-workspace .section-fields input { box-sizing: border-box; max-width: 100%; min-width: 0; }

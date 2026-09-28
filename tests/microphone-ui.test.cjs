@@ -56,8 +56,9 @@ function setup() {
   }
   let callbacks;
   const context = vm.createContext({
+    events: [], Event: class { constructor(type) { this.type = type; } },
     document: { getElementById: element, querySelectorAll: () => [] },
-    window: { addEventListener() {} }, MutationObserver: class { observe() {} },
+    window: { addEventListener() {}, dispatchEvent(event) { context.events.push(event.type); } }, MutationObserver: class { observe() {} },
     MicrophoneReader: class { constructor(options) { callbacks = options; } },
     setTimeout, root: 0, quality: 'major', selectedMode: 'ionian', activeProgression: 2,
     rootNoteName: 'C', chordType: { value: 'maj' }, ghostMode: 'lydian',
@@ -271,6 +272,7 @@ function setupLabels() {
   }
   let callbacks;
   const context = vm.createContext({
+    events: [], Event: class { constructor(type) { this.type = type; } },
     document: {
       getElementById: element,
       querySelectorAll(sel) {
@@ -279,7 +281,7 @@ function setupLabels() {
         return [];
       },
     },
-    window: { addEventListener() {} }, MutationObserver: class { observe() {} },
+    window: { addEventListener() {}, dispatchEvent(event) { context.events.push(event.type); } }, MutationObserver: class { observe() {} },
     MicrophoneReader: class { constructor(options) { callbacks = options; } },
     setTimeout, root: 0, selectedMode: 'ionian', quality: 'major', activeProgression: 0,
     rootNoteName: 'C', chordType: { value: 'maj' }, ghostMode: '',
@@ -432,8 +434,9 @@ function setupPitch() {
   let callbacks;
   class FakeDate extends Date { static now() { return fakeNow; } }
   const context = vm.createContext({
+    events: [], Event: class { constructor(type) { this.type = type; } },
     document: { getElementById: element, querySelectorAll: () => [] },
-    window: { addEventListener() {} }, MutationObserver: class { observe() {} },
+    window: { addEventListener() {}, dispatchEvent(event) { context.events.push(event.type); } }, MutationObserver: class { observe() {} },
     MicrophoneReader: class { constructor(options) { callbacks = options; } },
     Date: FakeDate,
     setTimeout(fn, ms) { timers.push({ fn, ms }); return timers.length; },
@@ -488,4 +491,24 @@ test('una nota nueva durante el sostén reemplaza al instante y extiende el relo
   delay(700);
   fire(hold);
   assert.equal(readout.textContent, 'esperando nota…');
+});
+test('cada nota confirmada avisa con un evento, y el silencio no', () => {
+  // De este evento dependen las dos cosas que hacen que el micrófono lleve la
+  // canción: marcar el tempo tocando notas y entrar a la canción al tocar. Si no
+  // saliera, las dos no medirían el tiempo.
+  // Lo que NO se comprueba aquí es que una nota sostenida no repita el evento:
+  // eso no lo decide microphone-ui.js, sino el deduplicado de followStable
+  // (microphone.js), que ya tiene sus pruebas en tests/microphone.test.cjs. Aquí
+  // el doble llama a onPitch directamente, que es justo saltarse ese filtro.
+  const { context, callbacks } = setup();
+  callbacks.onState('ready');
+  assert.deepEqual(context.events, [], 'sin notas no hay eventos');
+  callbacks.onPitch({ midi: 60, freq: 261.63, cents: 0 });
+  assert.deepEqual(context.events, ['traste:mic-note'], 'una nota confirmada, un evento');
+  callbacks.onPitch({ midi: 64, freq: 329.63, cents: 0 });
+  assert.deepEqual(context.events, ['traste:mic-note', 'traste:mic-note'], 'otra nota es otro golpe');
+  // Y el silencio no es un golpe: es lo que separa dos de ellos. Si contara,
+  // marcar el tempo con notas mediría el doble de lo que toca.
+  callbacks.onPitch(null);
+  assert.equal(context.events.length, 2, 'el silencio no emite evento');
 });
