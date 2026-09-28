@@ -115,7 +115,19 @@ Se conservan las pruebas rápidas de Node, sin dependencias adicionales. Comprue
 
 Si PowerShell bloquea `npm.ps1`, usa `npm.cmd test` (o `npm.cmd start` para iniciar), sin cambiar la política del sistema.
 
-Los reportes, casos manuales, Excel, evidencias y scripts de navegador se separaron en el repositorio `portfolio-qa-string` (carpeta `archivo-qa/`). No hace falta abrirlos para desarrollar. La documentación de QA se retomará cuando sea necesaria o se solicite.
+### Testing y QA
+
+El control de calidad de este proyecto está documentado aparte, en **[nicodelos24/portfolio-qa-string](https://github.com/nicodelos24/portfolio-qa-string)**: historias de usuario, casos de prueba, reportes de defectos y registro de ejecuciones, cada documento en CSV (tabla interactiva en GitHub), Markdown y Excel. A fecha de 2026-09-28 son 45 historias, 162 casos (114 automatizados y 48 manuales), 40 reportes y 9 ejecuciones. La carpeta `archivo-qa/` de ese repositorio guarda el histórico comprimido: capturas, evidencias, scripts de navegador y casos manuales anteriores. No hace falta abrir nada de eso para desarrollar.
+
+Los dos repositorios se reparten el trabajo:
+
+| | En este repositorio | En `portfolio-qa-string` |
+| --- | --- | --- |
+| Qué es | El código de String y sus pruebas de Node | La documentación de QA: qué se pidió, qué se probó, qué falló y en qué estado queda |
+| Cómo se prueba | `npm test`, sin dependencias, en cada commit | Casos automatizados y manuales con evidencia, entorno y revisión de la aplicación |
+| Qué no incluye | La revisión visual, la percepción auditiva y el instrumento real | El código de la aplicación |
+
+Los dos repositorios editan `IA_GUIDE.md`: aquí se registra cada pedido con su implementación y sus pruebas, y en el otro la evidencia de las comprobaciones manuales. Si los dos se tocan a la vez, conviene terminar un cambio y hacer `git pull` en el otro antes de seguir, porque el archivo se edita desde los dos lados.
 
 - [Guía del proyecto y portfolio](docs/GUIA-DEL-PROYECTO.md)
 - [Revisión técnica y pendientes](docs/REVISION-TECNICA.md)
