@@ -64,6 +64,7 @@ function tempoFromTaps(taps) {
   let taps = [];
   let commitTimer = null;
   let applied = null;
+  let anchor = null;
   const syncTempoToMetronome = () => {
     const sourceButton = document.querySelector('[data-source][aria-pressed="true"]');
     if (!sourceButton || sourceButton.dataset.source !== 'metronome') return;
@@ -97,8 +98,13 @@ function tempoFromTaps(taps) {
   // Aplica un tempo ya decidido (cuenta cerrada, edición a mano o flechas):
   // cierra cualquier cuenta en curso y publica el valor.
   const commit = bpm => {
+    // De dónde sale este tempo decide si hay ancla: si salió de una cuenta, el
+    // primer golpe es un punto de partida conocido; si se escribió a mano o con
+    // las flechas, no lo hay y quien use la ancla tiene que saberlo.
+    const source = taps.length ? taps[0] : null;
     clearCount();
     applied = bpm;
+    anchor = source;
     bpmInput.value = bpm;
     if (playerBpm) playerBpm.value = bpm;
     if (videoBpm) videoBpm.value = bpm;
@@ -151,6 +157,12 @@ function tempoFromTaps(taps) {
   };
   globalThis.tapProgressionTempo = tap;
   globalThis.discardTempoTap = discard;
+  // El primer golpe de la última cuenta, en la misma base de tiempo que usa el
+  // reloj. La improvisación lo toma como punto uno de su compás, para que la
+  // cuadrícula caiga donde el autor empezó a marcar y no donde encendió el
+  // interruptor (si se encendió después de contar, la rejilla quedaría corrida).
+  // Sin cuenta, no hay ancla: quien la use decide qué hacer con ese null.
+  globalThis.tempoTapAnchor = function () { return anchor; };
   button.addEventListener('click', tap);
   // Escape es la vía de teclado para descartar la cuenta, sin ratón.
   document.addEventListener('keydown', event => {

@@ -2101,6 +2101,19 @@ footer {
    progresión sin bajar hasta el mástil. */
 .progression-view-controls > .progression-tempo { display: flex; align-items: center; gap: 8px; }
 .progression-view-controls > .progression-tempo .tempo-tap { margin-top: 0; }
+
+/* Improvisar: el interruptor y su estado, en la columna de al lado de las
+   tarjetas, debajo del Tempo. Va alineado a la derecha como el resto de la
+   columna, y el estado se aparta un poco para que el texto largo de los pasos
+   («1. Enciende el micrófono») no dispute con el interruptor. Cuando está
+   escuchando, el texto se pone en el color de acento y deja de ser una
+   instrucción para pasar a ser una lectura. */
+.improvisation-control { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; max-width: 100%; }
+.improvisation-switch { margin: 0; }
+.improvisation-status { margin: 0; font: 11px var(--mono); color: var(--muted); text-align: right; }
+.improvisation-status.is-live { color: var(--rust); }
+.improvisation-control .inline-help { align-self: flex-end; }
+.improvisation-control .inline-help p { top: auto; bottom: calc(100% + 8px); left: auto; right: 0; white-space: normal; width: 290px; }
 .progression-workspace .section-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .progression-workspace .section-fields label:first-child { grid-column: 1 / -1; }
 .progression-workspace .section-fields input { box-sizing: border-box; max-width: 100%; min-width: 0; }

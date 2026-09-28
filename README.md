@@ -59,6 +59,14 @@ En la vista de una sección, ordenar acordes cambia su orden interno; añadir o 
 
 Límites: 4096 tarjetas, 64 secciones, entre 1 y 8 repeticiones por sección y 32768 entradas en la ejecución expandida. Los índices dentro de una sección deben ser únicos; las repeticiones se expresan con ×N. Para cambiar nombre, rango o repeticiones, quita la sección y créala nuevamente.
 
+### Improvisar
+
+Para armar la progresión mientras tocas, sin parar a pulsar «añadir acorde». La página indica el orden: **1. Enciende el micrófono. 2. Marca el tempo con el botón Tempo**, al ritmo de la canción. Con eso, enciende **Improvisar** (está en la columna de al lado de las tarjetas, bajo el Tempo).
+
+En cada primer tiempo se abre la escucha y el primer acorde que el micrófono confirme desde ahí se añade como tarjeta nueva, y el mástil pasa a mostrarlo con su modo. La cuadrícula arranca donde empezaste a marcar el tempo, así que el primer tiempo es el primero de verdad. Un compás añade **una sola** tarjeta: si en el primer tiempo no ha sonado nada nuevo, ese compás no añade ninguna, y hay que rasguear en el tiempo. Mantener un acorde sin volver a rasguearlo no añade una segunda tarjeta idéntica, porque no se puede saber si la querías.
+
+El compás es de 4/4. El interruptor se apaga solo al recargar la página, para que no empiece a escribir tarjetas solo; las tarjetas que añada sí se conservan, como las demás, en «Mi progresión» y en «Mis progresiones». No reproduce el Acompañamiento: arma las tarjetas y luego le das a Reproducir.
+
 ### Acompañamiento y MIDI
 
 La cabecera conserva el selector **Progresión / MIDI** y el control del reproductor elegido, incluso plegada. El triángulo inicia; el cuadrado detiene. Volver a reproducir comienza desde el inicio: estos motores no tienen pausa reanudable.

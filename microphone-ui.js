@@ -200,6 +200,29 @@ if (typeof document !== 'undefined') (() => {
     return reader.running && (phase === 'note' || phase === 'chord');
   };
 
+  // Si el micrófono está encendido. La improvisación lo necesita aparte del
+  // acorde: encendido y en silencio no es lo mismo que apagado, y sin esta
+  // pregunta no se puede decir «enciende el micrófono».
+  window.__microRunning = function () { return reader.running; };
+
+  // Lo que el micrófono tiene confirmado ahora, con la grafía de la tónica ya
+  // resuelta. Lo consulta la improvisación, que no pasa por los botones de fase
+  // porque no quiere cambiar la escala: quiere leer el acorde.
+  // Con la fase en «Apagado» se lee como si fuera «Nota», porque apagar la escala
+  // en vivo no significa que el micrófono deje de oír: quien activa la
+  // improvisación la ha pedido explícitamente.
+  window.__microCurrentChord = function () {
+    if (!reader.running) return null;
+    const phase = microPhase();
+    return micLiveChord(phase === 'off' ? 'note' : phase, liveChord, micPitch, {
+      chordType: typeof chordType !== 'undefined' ? chordType : undefined,
+      selectedMode: typeof selectedMode !== 'undefined' ? selectedMode : undefined,
+      notes: typeof notes !== 'undefined' ? notes : undefined,
+      pianoUseFlats: typeof pianoUseFlats !== 'undefined' ? pianoUseFlats : undefined,
+      noteLabels: typeof noteLabels !== 'undefined' ? noteLabels : undefined,
+    });
+  };
+
   function microButtons() {
     if (!liveRoot || typeof liveRoot.querySelectorAll !== 'function') return [];
     return [].slice.call(liveRoot.querySelectorAll('[data-mic-live-mode]'));

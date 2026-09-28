@@ -1139,14 +1139,36 @@ function duplicateProgressionChord(index) {
   selectProgressionChord(index + 1);
 }
 
-function addProgressionChord() {
-  if(draggingProgressionItem || progression.length>=4096)return;
+// La tarjeta que se añade. Sin `item` es la de siempre: lo que está elegido a la
+// izquierda. Con `item` es la que trae el micrófono o el teclado, y entonces el
+// tipo y el modo son los de esa detección y no los de los controles, que es lo
+// único que hace que «improvisar» pueda añadir lo que se está tocando y no lo
+// que estaba seleccionado de antes.
+function progressionChordEntry(item) {
+  if (!item || !Number.isInteger(item.root)) return {root, rootNoteName, type: chordType.value, mode: selectedMode, ghostMode, beats: 4};
+  const type = chordTypes.find(candidate => candidate.value === item.type);
+  if (!type) return {root, rootNoteName, type: chordType.value, mode: selectedMode, ghostMode, beats: 4};
+  const rootIndex = ((item.root % 12) + 12) % 12;
+  // Un modo que la app no conoce (un guardado raro, o una detección nueva) cae al
+  // que le corresponde al acorde: pintar el mástil hace modes[mode].color y una
+  // clave inventada lo reventaría.
+  const mode = item.mode && modes[item.mode] ? item.mode : defaultChordMode({root: rootIndex, type: type.value});
+  return {root: rootIndex, rootNoteName: item.rootNoteName || displayNoteSpelled(rootIndex), type: type.value, mode, beats: 4};
+}
+
+function addProgressionChord(item) {
+  if(draggingProgressionItem || progression.length>=4096)return false;
   progressionEdited=true;
-  progression.push({ root, rootNoteName, type: chordType.value, mode: selectedMode, ghostMode, beats: 4 });
+  progression.push(progressionChordEntry(item));
   globalThis.StringSections?.include(null,progression[progression.length-1]);
   activeProgression = progression.length - 1;
   saveCustomProgression();
+  // Un acorde explícito puede no ser el que estaba sonando, así que se selecciona
+  // para que el mástil lo muestre. Sin item no hace falta: los controles ya lo
+  // son, y volver a pintar sería trabajo de más.
+  if(item)selectProgressionChord(activeProgression);
   renderProgression();
+  return true;
 }
 
 function removeProgressionChord(index) {
