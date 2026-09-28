@@ -71,14 +71,7 @@
       useFlats: $('#root-spelling')?.checked || false,
       quality: all('#quality-select input[name="quality"]').find(r => r.checked)?.value || '',
       mode: all('#mode-selector input[name="mode"]').find(r => r.checked)?.value || '',
-      // La tonalidad viaja como un bloque, que es como la valida tonality.js:
-      // un guardado viejo o tocado a mano nunca rompe la restauración.
-      tonality: {
-        on: $('#tonality-toggle')?.checked || false,
-        root: Number($('#tonality-root')?.value ?? 0),
-        scale: $('#tonality-scale')?.value || 'ionian',
-        label: pressedValue('#tonality-label [data-tonality-label]', 'degree'),
-      },
+      ghostMode: $('#ghost-mode-select')?.value || '',
       pentatonicView: $('#pentatonic-view')?.checked || false,
       // Marca de la nomenclatura de las fases de VER, para saber si un guardado
       // hay que desplazarlo al restaurarlo.
@@ -159,20 +152,9 @@
     setSelectIfOption('#instrument-select', saved.instrument);
     setRadio('#quality-select', 'quality', saved.quality);
     setRadio('#mode-selector', 'mode', saved.mode);
-    // La tonalidad se restaura por su bloque: tonality.js valida lo que llega
-    // (un guardado viejo no trae el campo y se queda apagada) y el switch se
-    // pulsa de verdad, que es lo que repinta el mástil.
-    if (saved.tonality && typeof saved.tonality === 'object') {
-      const tonalitySaved = normalizeTonality(saved.tonality);
-      setSelectIfOption('#tonality-root', String(tonalitySaved.root));
-      setSelectIfOption('#tonality-scale', tonalitySaved.scale);
-    }
-    setChecked($('#tonality-toggle'), saved.tonality && saved.tonality.on === true);
-    fire($('#tonality-toggle'), 'change');
-    clickPressedTarget('#tonality-label [data-tonality-label]', 'data-tonality-label',
-      (saved.tonality && normalizeTonality(saved.tonality).label) || 'degree');
     setChecked($('#pentatonic-view'), saved.pentatonicView);
     fire($('#pentatonic-view'), 'change');
+    setSelectIfOption('#ghost-mode-select', saved.ghostMode || '');
     setChecked($('#root-spelling'), saved.useFlats);
     fire($('#root-spelling'), 'change');
     if (saved.rootPitch !== undefined) {

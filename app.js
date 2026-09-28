@@ -271,10 +271,7 @@ let mastilScope = FRET_OFF;     // qué pone en el resto del mástil
 let displayModeIndex = 1; // 0 = grados completos, 1 = raíz, 3ra, 5ta, 2 = raíz, 3ra, 5ta, 7ma
 const displayModes = ['full', 'triad', 'seventh', 'modeChord', 'modeSeventh'];
 const displayModeLabels = ['grados', 'tríada', '7ma', 'Acorde', 'Acorde 7ma'];
-let ghostMode = ''; // Modo fantasma de la tarjeta. Su selector se retiró de la
-// interfaz (la tonalidad lo sustituye), pero las tarjetas que ya lo tuvieran
-// guardado —y las canciones v1— se siguen pintando igual que hasta ahora.
-let tonalitySignature = null; // Armadura de la tonalidad mientras está encendida.
+let ghostMode = ''; // Modo fantasma seleccionado (vacío = ninguno)
 
 // Inicializar el tipo de acorde según la calidad
 if (quality === 'major') chordType = chordTypes[0]; // Mayor
@@ -322,7 +319,7 @@ const flatToSharp = {
   'Bb': 'A#'
 };
 
-function displayNote(index, signature) { 
+function displayNote(index) { 
   const name = noteName(index); 
 
   // Si es la raíz, usar el nombre exacto seleccionado por el usuario
@@ -331,9 +328,7 @@ function displayNote(index, signature) {
   }
 
   // Obtener la armadura de clave actual; con la vista pentatónica se usa la referencia de la pentatónica
-  // Con la tonalidad activa, lo que se escribe en el mástil es una escala de la
-  // tonalidad, así que la grafía la decide su armadura y no la del acorde.
-  const keySignature = signature || calculateKeySignature(viewMode(), root);
+  const keySignature = calculateKeySignature(viewMode(), root);
 
   // Determinar si usar bemoles o sostenidos según la armadura
   let useFlats = keySignature.flats > 0;
@@ -474,14 +469,10 @@ function findClosestMode(targetRoot, majorRoot, qualityValue) {
   return closestMode;
 }
 
-// Función para calcular la armadura de clave según modo y nota.
-// `spellingName` es con qué grafía se nombra esa nota; por defecto, la del
-// acorde. La tonalidad pasa la suya, para que la armadura del tema no dependa
-// de cómo esté escrito el acorde que está sonando.
-function calculateKeySignature(modeKey, rootNote, spellingName) {
+// Función para calcular la armadura de clave según modo y nota
+function calculateKeySignature(modeKey, rootNote) {
   const mode = modes[modeKey];
   if (!mode) return { sharps: 0, flats: 0, key: 'C' };
-  const spelling = spellingName === undefined ? rootNoteName : spellingName;
 
   // La pentatónica menor usa como referencia su relativa mayor.
   const degree = modeKey === 'minorPentatonic' ? 9 : mode.degree;
@@ -492,7 +483,7 @@ function calculateKeySignature(modeKey, rootNote, spellingName) {
 
   if (matchingTonality) {
     // Si el usuario seleccionó una nota con bemol (Db, Eb, etc.), priorizar tonalidades con bemoles
-    if (spelling && (spelling.includes('b') || spelling === 'Cb')) {
+    if (rootNoteName && (rootNoteName.includes('b') || rootNoteName === 'Cb')) {
       const flatTonality = tonalities.find(ton => 
         noteToIndex(ton.key) === majorRoot && ton.flats > 0
       );
@@ -505,7 +496,7 @@ function calculateKeySignature(modeKey, rootNote, spellingName) {
       }
     }
     // Si el usuario seleccionó una nota con sostenido (C#, F#, etc.), priorizar tonalidades con sostenidos
-    else if (spelling && (spelling.includes('#') || spelling === 'C#')) {
+    else if (rootNoteName && (rootNoteName.includes('#') || rootNoteName === 'C#')) {
       const sharpTonality = tonalities.find(ton => 
         noteToIndex(ton.key) === majorRoot && ton.sharps > 0
       );
@@ -640,6 +631,7 @@ function chooseMode(modeKey) {
   const type = types[modeKey] || ({major:'maj',minor:'m',diminished:'dim'})[quality];
   chordType = chordTypes.find(candidate => candidate.value === type);
   activeProgression = -1;
+  updateGhostModeSelector();
   updateView();
 }
 
@@ -685,10 +677,34 @@ function updateModeSelector() {
       chooseMode(e.target.value);
     });
   });
+
+  // Actualizar el selector de modo fantasma
+  updateGhostModeSelector();
 }
 
+function updateGhostModeSelector() {
+  const ghostModeSelect = document.querySelector('#ghost-mode-select');
+  if (!ghostModeSelect) return;
+
+  const availableModes = getAvailableModes(quality);
+
+  if (ghostMode === selectedMode || !availableModes.includes(ghostMode)) ghostMode = '';
+
+  // Generar opciones: "Ninguna" + todos los modos disponibles excepto el seleccionado
+  const options = availableModes
+    .filter(modeKey => modeKey !== selectedMode)
+    .map(modeKey => {
+      const mode = modes[modeKey];
+      return `<option value="${modeKey}" ${ghostMode === modeKey ? 'selected' : ''}>${mode.name}</option>`;
+    }).join('');
+
+  ghostModeSelect.innerHTML = `<option value="" ${ghostMode === '' ? 'selected' : ''}>Ninguna</option>` + options;
+}
 function getDegreeLabel(interval, modeKey = selectedMode) {
-  return degreeLabel(interval, { modeKey, chordValue: chordType.value });
+  const normalized = ((interval % 12) + 12) % 12;
+  if (normalized === 6 && modeKey === 'lydian') return '♯4';
+  if (normalized === 8 && chordType.value === 'aug') return '♯5';
+  return ['1', '♭2', '2', '♭3', '3', '4', '♭5', '5', '♭6', '6', '♭7', '7'][normalized];
 }
 
 // Las notas que MÁSTIL escribe fuera de la escala se nombran con el switch
@@ -722,91 +738,26 @@ function pentatonicMode(){
 // Respeta la elección explícita; en modos diatónicos adapta la pentatónica al acorde.
 function viewMode(){return pentatonicView?pentatonicMode():selectedMode;}
 document.querySelector('#pentatonic-view').addEventListener('change',event=>{pentatonicView=event.target.checked;updateView();});
-
-function tonalityOn(){return Boolean(tonality && tonality.on);}
-
-// Lo que hay que saber de una nota antes de pintarla, calculado una vez por
-// pintado. Antes cada pintor repetía estos cálculos y bastaba con que uno de
-// los dos cambiara para que el mástil y las cuerdas al aire dejaran de
-// contarlo igual; ahora los dos llaman a `noteStyle` con el mismo contexto.
-function noteContext(){
-  const chordIntervals=new Set(chordType.intervals);
-  const modeNotes=new Set(getModeNotes(viewMode(),root));
-  const key=tonalityOn();
-  // La escala de la tonalidad es la que se dibuja detrás, con su propio color
-  // de grado. Sin tonalidad, la nota fantasma es la de la tarjeta (el antiguo
-  // modo fantasma), que sigue guardándose y pintándose.
-  const keyNotes=key?new Set(tonalityNotes(tonality.root,tonality.scale)):null;
-  const ghostNotes=new Map();
-  if(!key&&!pentatonicView&&ghostMode&&ghostMode!==selectedMode){
-    getModeNotes(ghostMode,root).forEach(note=>{if(!ghostNotes.has(note))ghostNotes.set(note,modes[ghostMode].color);});
-  }
-  // El modo que representa este acorde dentro de la tonalidad. Si el acorde no
-  // es diatónico no lo hay, y entonces los grados y colores son los de la
-  // tonalidad contados desde ella, sin inventar un modo.
-  const keyMode=key?modeForTonality(root,chordType.intervals,tonality.root,modes):null;
-  return {chordIntervals,modeNotes,key,keyNotes,ghostNotes,keyMode:keyMode||selectedMode};
-}
-
-// Decide color, clase, rótulo y visibilidad de una nota. Con la tonalidad
-// apagada es exactamente lo de siempre; encendida, el color y el grado salen
-// de la tonalidad y su escala queda detrás, también en las vistas Acorde y
-// Acorde 7ma, donde antes la escala fantasma no se veía.
-function noteStyle(pitchClass,context){
-  const {chordIntervals,modeNotes,key,keyNotes,ghostNotes,keyMode}=context;
-  const isRoot=pitchClass===root;
-  const intervalFromRoot=((pitchClass-root)%12+12)%12;
-  const inChord=chordIntervals.has(intervalFromRoot);
-  const inMode=modeNotes.has(pitchClass);
-  const inKey=Boolean(keyNotes&&keyNotes.has(pitchClass));
-  const shouldHighlight=shouldHighlightInterval(intervalFromRoot,displayModeIndex);
-  const intervalFromKey=key?((pitchClass-tonality.root)%12+12)%12:intervalFromRoot;
-  const intervalInfo=getIntervalClass(key?intervalFromKey:intervalFromRoot,keyMode);
-  let bgColor;let textColor;let noteClass='';
-  if(isRoot){
-    bgColor=intervalInfo.color;textColor='#f3f0e8';noteClass='root-note scale-note'+(key?' key-root':'');
-  }else if(inChord&&shouldHighlight){
-    bgColor=intervalInfo.color;textColor='#f3f0e8';noteClass='chord-note scale-note';
-  }else if(inMode&&shouldHighlight){
-    bgColor=intervalInfo.color;textColor='#1d2521';noteClass='scale-note';
-  }else if(inMode){
-    // Nota de la escala pero no resaltada en este modo - gris
-    bgColor='#bbb';textColor='#666';noteClass='scale-note';
-  }else if(inKey){
-    // La escala de la tonalidad por detrás, con el color de su grado y atenuada
-    bgColor=intervalInfo.color;textColor='rgba(29, 37, 33, 0.5)';noteClass='tonality-note ghost-note';
-  }else if(ghostNotes.has(pitchClass)&&displayModeIndex<3){
-    bgColor=ghostNotes.get(pitchClass);textColor='rgba(29, 37, 33, 0.5)';noteClass='ghost-note';
-  }else{
-    bgColor='transparent';textColor=null;
-  }
-  // La zona de VER: la escala dibujada. Con la pentatónica apagada también
-  // entran las notas del acorde que quedan fuera de la escala.
-  const inScaleZone=inMode||(!pentatonicView&&(isRoot||inChord));
-  // En las vistas de acorde se ocultaba todo lo que no es del acorde. Con la
-  // tonalidad encendida su escala se queda a la vista, que es de lo que se
-  // trata: ver la escala del tema detrás de la del acorde.
-  const hidden=displayModeIndex>=3&&!shouldHighlight&&!inKey;
-  return {bgColor,textColor,noteClass,inScaleZone,hidden,intervalName:intervalInfo.name,label:fretLabelFor(pitchClass,intervalFromRoot,intervalFromKey,keyMode,key,inScaleZone||inKey)};
-}
-
-// El rótulo de cada nota. Con la tonalidad encendida, dentro de las escalas
-// dibujadas manda su triple (S/E, Nota o Grado) y los grados se cuentan desde
-// la tonalidad; fuera de ellas sigue mandando el botón MÁSTIL, y con la
-// tonalidad apagada los dos botones se portan como siempre.
-function fretLabelFor(pitchClass,intervalFromRoot,intervalFromKey,keyMode,key,inDrawnScale){
-  if(key&&inDrawnScale){
-    if(tonality.label==='off')return '';
-    if(tonality.label==='note')return displayNote(pitchClass,tonality.scale,tonality.root);
-    return degreeLabel(intervalFromKey,{modeKey:keyMode,chordValue:chordType.value});
-  }
-  return getFretLabel(pitchClass,intervalFromRoot,inDrawnScale);
-}
-
 function renderFretboard() {
-  const context=noteContext();
-  renderOpenStrings(context);
+  renderOpenStrings();
   const inst = instruments[instrument];
+  const scaleNotes = new Set(selectedTonality.scaleNotes);
+  const chordIntervals = new Set(chordType.intervals);
+
+  // Calcular notas del modo seleccionado
+  const selectedModeNotes = new Set(getModeNotes(pentatonicView?pentatonicMode():selectedMode, root));
+
+  // Crear mapa de notas fantasmas con sus colores (solo si hay un modo fantasma seleccionado)
+  const ghostNotesMap = new Map();
+  if (!pentatonicView && ghostMode && ghostMode !== selectedMode) {
+    const modeNotes = getModeNotes(ghostMode, root);
+    const modeColor = modes[ghostMode].color;
+    modeNotes.forEach(note => {
+      if (!ghostNotesMap.has(note)) {
+        ghostNotesMap.set(note, modeColor);
+      }
+    });
+  }
 
   // Generar números de traste (1-22)
   const fretColumns = Array.from({ length: 22 }, (_, i) => `${Math.pow(2, -i / 24).toFixed(6)}fr`).join(' ');
@@ -821,8 +772,56 @@ function renderFretboard() {
       const actualFret = fret + 1; // Trastes 1-22
       const pitch = openNote + actualFret;
       const pitchClass = pitch % 12;
-      const style = noteStyle(pitchClass, context);
-      return `<div class="fret"><span class="fret-note ${style.noteClass}" data-midi="${openNote + actualFret}" data-note="${displayNote(pitchClass)}" data-interval="${style.intervalName}" style="background-color: ${style.bgColor}; color: ${style.textColor || '#999'};${style.hidden ? ' opacity: 0;' : ''}" title="${displayNote(pitchClass)} · ${style.intervalName}">${style.label}</span></div>`;
+      const inScale = scaleNotes.has(pitchClass);
+      const isRoot = pitchClass === root;
+      const intervalFromRoot = (pitchClass - root + 12) % 12;
+      const inChord = chordIntervals.has(intervalFromRoot);
+      const inSelectedMode = selectedModeNotes.has(pitchClass);
+
+      const intervalInfo = getIntervalClass(intervalFromRoot, !inSelectedMode && ghostNotesMap.has(pitchClass) ? ghostMode : selectedMode);
+
+      // Determinar color de fondo y clase CSS
+      let bgColor;
+      let textColor;
+      let noteClass = 'fret-note';
+
+      // Verificar si el intervalo debe ser resaltado según el modo de visualización
+      const shouldHighlight = shouldHighlightInterval(intervalFromRoot, displayModeIndex);
+
+      if (isRoot) {
+        bgColor = intervalInfo.color;
+        textColor = '#f3f0e8';
+        noteClass += ' root-note scale-note';
+      } else if (inChord && shouldHighlight) {
+        bgColor = intervalInfo.color;
+        textColor = '#f3f0e8';
+        noteClass += ' chord-note scale-note';
+      } else if (inSelectedMode && shouldHighlight) {
+        bgColor = intervalInfo.color;
+        textColor = '#1d2521';
+        noteClass += ' scale-note';
+      } else if (inSelectedMode && !shouldHighlight) {
+        // Nota de la escala pero no resaltada en este modo - gris
+        bgColor = '#bbb';
+        textColor = '#666';
+        noteClass += ' scale-note';
+      } else if (ghostNotesMap.has(pitchClass) && displayModeIndex < 3) {
+        // Nota fantasma de otro modo
+        bgColor = ghostNotesMap.get(pitchClass);
+        textColor = 'rgba(29, 37, 33, 0.5)';
+        noteClass += ' ghost-note';
+      } else {
+        bgColor = 'transparent';
+        textColor = '#999';
+      }
+
+      
+
+      // La zona de VER: la escala dibujada. Con la pentatónica apagada también
+      // entran las notas del acorde que quedan fuera de la escala.
+      const inScaleZone = inSelectedMode || (!pentatonicView && (isRoot || inChord));
+
+      return `<div class="fret"><span class="${noteClass}" data-midi="${openNote + actualFret}" data-note="${displayNote(pitchClass)}" data-interval="${intervalInfo.name}" style="background-color: ${bgColor}; color: ${textColor};${displayModeIndex >= 3 && !shouldHighlight ? ' opacity: 0;' : ''}" title="${displayNote(pitchClass)} · ${intervalInfo.name}">${getFretLabel(pitchClass, intervalFromRoot, inScaleZone)}</span></div>`;
     }).join('');
     return `<div class="string-row" style="--string-width: ${stringIndex < (instrument === 'guitar' ? 3 : 2) ? 2 : 1}px">${frets}</div>`;
   }).join('');
@@ -835,14 +834,76 @@ function renderFretboard() {
   }).join('');
   fretboard.innerHTML = `<div class="fret-inlays" aria-hidden="true">${inlays}</div>${rows}`;
 }
-function renderOpenStrings(context) {
+function renderOpenStrings() {
   const inst = instruments[instrument];
-  const contextData = context || noteContext();
+  const scaleNotes = new Set(selectedTonality.scaleNotes);
+  const chordIntervals = new Set(chordType.intervals);
+
+  // Calcular notas del modo seleccionado
+  const selectedModeNotes = new Set(getModeNotes(pentatonicView?pentatonicMode():selectedMode, root));
+
+  // Crear mapa de notas fantasmas con sus colores (solo si hay un modo fantasma seleccionado)
+  const ghostNotesMap = new Map();
+  if (!pentatonicView && ghostMode && ghostMode !== selectedMode) {
+    const modeNotes = getModeNotes(ghostMode, root);
+    const modeColor = modes[ghostMode].color;
+    modeNotes.forEach(note => {
+      if (!ghostNotesMap.has(note)) {
+        ghostNotesMap.set(note, modeColor);
+      }
+    });
+  }
+
   const openStringsHtml =
     inst.strings.slice().reverse().map((openNote, reversedIdx) => {
       const pitchClass = openNote % 12;
-      const style = noteStyle(pitchClass, contextData);
-      return `<div class="open-string-row"><span class="open-string-note ${style.noteClass}" data-midi="${openNote}" data-note="${displayNote(pitchClass)}" data-interval="${style.intervalName}" style="background-color: ${style.bgColor}; color: ${style.textColor || '#1d2521'};${style.hidden ? ' opacity: 0;' : ''}" title="${displayNote(pitchClass)} · ${style.intervalName}">${style.label}</span></div>`;
+      const inScale = scaleNotes.has(pitchClass);
+      const isRoot = pitchClass === root;
+      const intervalFromRoot = (pitchClass - root + 12) % 12;
+      const inChord = chordIntervals.has(intervalFromRoot);
+      const inSelectedMode = selectedModeNotes.has(pitchClass);
+      const intervalInfo = getIntervalClass(intervalFromRoot, !inSelectedMode && ghostNotesMap.has(pitchClass) ? ghostMode : selectedMode);
+
+      let bgColor;
+      let textColor;
+      let noteClass = 'open-string-note';
+
+      // Verificar si el intervalo debe ser resaltado según el modo de visualización
+      const shouldHighlight = shouldHighlightInterval(intervalFromRoot, displayModeIndex);
+
+      if (isRoot) {
+        bgColor = '#E53935';
+        textColor = '#f3f0e8';
+        noteClass += ' root-note scale-note';
+      } else if (inChord && shouldHighlight) {
+        bgColor = intervalInfo.color;
+        textColor = '#f3f0e8';
+        noteClass += ' chord-note scale-note';
+      } else if (inSelectedMode && shouldHighlight) {
+        bgColor = intervalInfo.color;
+        textColor = '#1d2521';
+        noteClass += ' scale-note';
+      } else if (inSelectedMode && !shouldHighlight) {
+        // Nota de la escala pero no resaltada en este modo - gris
+        bgColor = '#bbb';
+        textColor = '#666';
+        noteClass += ' scale-note';
+      } else if (ghostNotesMap.has(pitchClass) && displayModeIndex < 3) {
+        // Nota fantasma de otro modo
+        bgColor = ghostNotesMap.get(pitchClass);
+        textColor = 'rgba(29, 37, 33, 0.5)';
+        noteClass += ' ghost-note';
+      } else {
+        bgColor = 'transparent';
+        textColor = '#1d2521';
+      }
+
+      
+
+      // La zona de VER: la escala dibujada (ver renderFretboard).
+      const inScaleZone = inSelectedMode || (!pentatonicView && (isRoot || inChord));
+
+      return `<div class="open-string-row"><span class="${noteClass}" data-midi="${openNote}" data-note="${displayNote(pitchClass)}" data-interval="${intervalInfo.name}" style="background-color: ${bgColor}; color: ${textColor};${displayModeIndex >= 3 && !shouldHighlight ? ' opacity: 0;' : ''}" title="${displayNote(pitchClass)} · ${intervalInfo.name}">${getFretLabel(pitchClass, intervalFromRoot, inScaleZone)}</span></div>`;
     }).join('');
 
   document.querySelector('#open-strings').innerHTML = openStringsHtml;
@@ -869,18 +930,6 @@ function updateView() {
     selectedTonality = matchingTonality;
   }
 
-  // Con la tonalidad encendida, la armadura que se muestra y con la que se
-  // nombran las notas es la del tema, no la del acorde. Se reapunta la misma
-  // variable para que todo lo que viene abajo hable de la tonalidad sin
-  // repetir el cálculo. El switch ♯/♭ no se mueve con esto: sigue siguiendo al
-  // acorde, y el nombre que se le pasa es el que el switch ya tiene puesto.
-  if (tonalityOn()) {
-    keySignature = calculateKeySignature(tonality.scale, tonality.root, displayNoteSpelled(tonality.root));
-    tonalitySignature = keySignature;
-  } else {
-    tonalitySignature = null;
-  }
-
   // Mostrar la armadura de clave calculada
   const keySignatureText = keySignature.sharps > 0 
     ? `${keySignature.sharps} sostenidos` 
@@ -895,29 +944,9 @@ function updateView() {
   document.querySelector('#board-title').textContent = `${rootNoteName}${chordSuffix} · ${selectedModeData.name}`;
   document.querySelector('#board-add-chord').textContent = `${rootNoteName}${chordSuffix}`.replace(/#/g, '♯').replace(/b/g, '♭');
   document.querySelector('.board-eyebrow').textContent = `MÁSTIL / ${instruments[instrument].name.toUpperCase()}`;
-  renderTonalitySummary();
 
   updateModeLegend();
-  globalThis.StringTonality?.paint?.();
   renderFretboard(); renderProgression();
-}
-
-// Qué es este acorde dentro de la tonalidad, dicho en una línea. Cuando el
-// acorde no es diatónico se dice, en vez de forzar un modo: el Do mayor con
-// tonalidad La es el ♭III tomado del menor paralelo, no el IV.
-function renderTonalitySummary() {
-  const summary = document.querySelector('#tonality-summary');
-  if (!summary) return;
-  if (!tonalityOn()) { summary.hidden = true; return; }
-  const scaleNames = { ionian: 'mayor', majorPentatonic: 'pentatónica mayor', minorPentatonic: 'pentatónica menor' };
-  const keyName = displayNoteSpelled(tonality.root);
-  const relation = tonalityRelation(root, chordType.intervals, tonality.root, modes);
-  const chordName = `${rootNoteName}${chordType.suffix}`;
-  const relationText = relation.diatonic
-    ? `el ${chordName} de ahora es ${modes[relation.modeKey].name} de ${keyName}`
-    : `el ${chordName} de ahora es el ${relation.degreeLabel} de ${keyName}, que no es un modo de ella`;
-  summary.hidden = false;
-  summary.innerHTML = `<strong>Tonalidad ${keyName} ${scaleNames[tonality.scale]}</strong> · ${relationText}.`;
 }
 
 function updateModeLegend() {
@@ -987,10 +1016,16 @@ qualitySelect.addEventListener('change', event => {
   updateView(); 
 });
 
-// El selector de modo fantasma se retiró de la interfaz: la tonalidad es
-// ahora la escala que se dibuja detrás del mástil, y la de cada tarjeta solo
-// se sigue pintando si la tarjeta ya la tenía guardada. La línea de arriba
-// (cambiar de calidad la vacía) se conserva por lo mismo.
+// Event listener para el selector de modo fantasma
+const ghostModeSelect = document.querySelector('#ghost-mode-select');
+if (ghostModeSelect) {
+  ghostModeSelect.addEventListener('change', event => {
+    ghostMode = event.target.value;
+    activeProgression = -1;
+    renderProgression();
+    renderFretboard();
+  });
+}
 
 // Event listener para el botón de ciclo de modo de visualización
 document.querySelector('#toggle-display').addEventListener('click', event => { 

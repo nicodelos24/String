@@ -4,11 +4,11 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const path = require('node:path');
 
-function setup(prepare) {
+function setup() {
   const elements = new Map();
   function element(key) {
     if (!elements.has(key)) elements.set(key, {
-      options: [], selectedIndex: 0, handlers: {}, style: {setProperty() {}}, dataset: {},
+      options: [], selectedIndex: 0, handlers: {}, style: {setProperty() {}},
       set innerHTML(html) {
         this.html = html;
         this.options = [...html.matchAll(/<option value="([^"]*)"(?: data-note="([^"]*)")?/g)].map(m => ({value:m[1], dataset:{note:m[2]}}));
@@ -28,12 +28,7 @@ function setup(prepare) {
     return elements.get(key);
   }
   class FakeEvent { constructor(type, init) { this.type = type; Object.assign(this, init); } }
-  const ctx = vm.createContext({document:{querySelector:element,getElementById:element,querySelectorAll:()=>[]},Event:FakeEvent});
-  // Los controles del triple de la tonalidad existen antes de que corra el
-  // script, como en la página: si no, sus manejadores nunca se registrarían.
-  if (typeof prepare === 'function') prepare(element);
-  // La tonalidad se carga antes que app.js, como en index.html: app.js la lee al pintar.
-  vm.runInContext(fs.readFileSync(path.join(__dirname,'../tonality.js'),'utf8'),ctx);
+  const ctx = vm.createContext({document:{querySelector:element,querySelectorAll:()=>[]},Event:FakeEvent});
   vm.runInContext(fs.readFileSync(path.join(__dirname,'../app.js'),'utf8'),ctx);
   const run = code => vm.runInContext(code,ctx);
   const change = (key,value) => element(key).handlers.change({target:{value}});
@@ -576,14 +571,13 @@ test('mi progresión: la escala fantasma también se guarda y se restaura',()=>{
   assert.deepEqual(saved.map(c=>c.ghostMode),['lydian',''],'el slot guarda la escala fantasma de cada acorde');
   const leido=run('JSON.stringify(readCustomProgression().map(c=>[c.root,c.ghostMode,c.beats]))');
   assert.equal(leido,JSON.stringify([[0,'lydian',4],[5,'',2]]),'y el lector la devuelve');
-  // Al restaurar, la escala fantasma se aplica al acorde. Su selector se
-  // retiró de la interfaz (la tonalidad lo sustituye), así que lo que se
-  // comprueba es que el dato sigue llegando al acorde y que no toca la
-  // tonalidad, que es la que manda en el mástil ahora.
+  // Al restaurar, la escala fantasma se aplica al acorde y sale en el selector.
   run('progression=[];restoreCustomProgression()');
   assert.equal(run('activeProgression'),0);
   assert.equal(run('ghostMode'),'lydian');
-  assert.equal(run('tonality.on'),false,'restaurar una tarjeta con fantasma no enciende la tonalidad');
+  // El doble de DOM no mantiene el `value` de un <select> al repintar sus
+  // opciones, así que se mira el HTML: la opción tiene que salir marcada.
+  assert.match(element('#ghost-mode-select').innerHTML,/value="lydian" selected/);
   // Una escala fantasma que no exista no puede colarse: se descarta.
   run("localStorage.setItem('traste.customProgression.v1','[{\"root\":0,\"type\":\"maj\",\"ghostMode\":\"inventado\"}]')");
   assert.equal(run("JSON.stringify(readCustomProgression().map(c=>c.ghostMode))"),'[""]');
@@ -736,220 +730,3 @@ test('quitar una tarjeta o cambiar su duración no dispara la reproducción',asy
   assert.equal(run('progression.length'),3);
 });
 
-
-// --- Tonalidad del tema -----------------------------------------------------
-// Antes se calculaba el color de cada nota en los dos pintores por separado
-// (los trastes y las cuerdas al aire) y cada uno repetía la decisión. Ahora la
-// comparten, y estas pruebas leen lo pintado para comprobar que la tonalidad
-// manda de verdad en el color, en el rótulo y en la visibilidad.
-
-const fretOf=(element,midi)=>{
-  const html=element.innerHTML;
-  const at=html.indexOf(`data-midi="${midi}"`);
-  if(at<0)return null;
-  const open=html.lastIndexOf('<span',at);
-  const close=html.indexOf('</span>',at);
-  const tag=html.slice(open,close);
-  // El rótulo es el texto del <span>, que va antes de su cierre: desde el
-  // final de la etiqueta de apertura hasta donde empieza `</span>`.
-  const contentStart=html.indexOf('>',open)+1;
-  return {
-    classes:(tag.match(/class="(?:fret-note|open-string-note) ?([^"]*)"/)||['',''])[1],
-    bg:(tag.match(/background-color: ([^;]*)/)||['',''])[1].trim(),
-    interval:(tag.match(/data-interval="([^"]*)"/)||['',''])[1],
-    label:html.slice(contentStart,close),
-    hidden:/opacity: 0;/.test(tag),
-  };
-}
-
-// La tonalidad de La contra un acorde: cuál se prueba en cada sitio.
-function tonalitySetup(){
-  const {run,element}=setup();
-  // Los trastes del diapasón: 48 = Do3, 49 = Do#3, 50 = Re3, 51 = Re#3, 54 = Fa#3, 56 = Sol#3.
-  run("root=0;rootNoteName='C';chordType=chordTypes[0];quality='major';selectedMode='ionian';displayModeIndex=0;updateView()");
-  return {run,element};
-}
-
-test('con la tonalidad encendida los colores y los grados se cuentan desde ella',()=>{
-  const {run,element}=tonalitySetup();
-  // Apagada, cada nota se cuenta desde el acorde: la raíz en rojo y su grado 1.
-  const antes=fretOf(element('#fretboard'),48);
-  assert.equal(antes.bg,'#E53935');
-  assert.equal(antes.label,'1');
-  assert.doesNotMatch(antes.classes,/key-root/);
-  assert.equal(fretOf(element('#fretboard'),49).bg,'transparent','sin tonalidad no hay nada detrás');
-
-  run("tonality.on=true;tonality.root=9;updateView()");
-  const c=fretOf(element('#fretboard'),48);   // Do: en Do mayor, pero ♭3 de La
-  assert.equal(c.bg,'#66BB6A','el Do se pinta con el color de su grado en La (3ª menor)');
-  assert.equal(c.label,'♭3','y con su grado en La, no el 1 del acorde');
-  assert.match(c.classes,/key-root/,'la raíz del acorde se sigue señalando con el aro');
-  assert.equal(fretOf(element('#fretboard'),49).bg,'#4CAF50','el Do# solo está en La: 3º grado');
-  assert.equal(fretOf(element('#fretboard'),50).bg,'#00897B','el Re está en las dos escalas: 4º grado de La');
-  assert.equal(fretOf(element('#fretboard'),50).label,'4');
-  assert.equal(fretOf(element('#fretboard'),54).bg,'#FF9800','el Fa# es el 6º de La');
-  assert.equal(fretOf(element('#fretboard'),56).bg,'#AB47BC','el Sol# es el 7º de La');
-  assert.equal(fretOf(element('#fretboard'),51).bg,'transparent','el Re# no está en ninguna de las dos');
-  // La nota de la tonalidad que no es del acorde va marcada como tal, atenuada.
-  assert.match(fretOf(element('#fretboard'),49).classes,/tonality-note/);
-  // Las cuerdas al aire cuentan lo mismo que los trastes: si se separaran, el
-  // mástil y la columna de al aire dirían cosas distintas del mismo acorde.
-  const aire=fretOf(element('#open-strings'),64); // Mi4
-  assert.equal(aire.bg,'#E6B800','el Mi al aire es el 5º de La');
-  assert.equal(aire.label,'5');
-  // El Sol al aire no está en La (allí va el Sol#), pero sí en Do mayor: sale
-  // con el color de su grado en la tonalidad, no con el del acorde.
-  const sol=fretOf(element('#open-strings'),55);
-  assert.equal(sol.bg,'#9C27B0');
-  assert.equal(sol.label,'♭7');
-  assert.doesNotMatch(sol.classes,/tonality-note/,'es nota de la escala que suena, no de la tonalidad');
-});
-
-test('apagar la tonalidad devuelve el mástil a pintarse desde el acorde',()=>{
-  const {run,element}=tonalitySetup();
-  run("tonality.on=true;tonality.root=9;updateView()");
-  run('tonality.on=false;updateView()');
-  assert.equal(fretOf(element('#fretboard'),48).bg,'#E53935');
-  assert.equal(fretOf(element('#fretboard'),48).label,'1');
-  assert.equal(fretOf(element('#fretboard'),49).bg,'transparent');
-  assert.doesNotMatch(fretOf(element('#fretboard'),48).classes,/key-root/);
-  assert.equal(element('#tonality-summary').hidden,true,'la lectura de la tonalidad se esconde');
-  assert.equal(element('#key-signature-display').textContent,'C Mayor · Natural');
-});
-
-test('S/E, Nota y Grado deciden lo que se escribe en las escalas dibujadas, y fuera sigue mandando MÁSTIL',()=>{
-  let botones;
-  const {run,element}=setup(el=>{
-    // Los tres botones, sembrados antes de que corra tonality.js: es lo que
-    // hace la página, y sin ellos sus manejadores no quedarían registrados.
-    const off=el('tonality-label-off'),nota=el('tonality-label-note'),grado=el('tonality-label-degree');
-    off.dataset.tonalityLabel='off';nota.dataset.tonalityLabel='note';grado.dataset.tonalityLabel='degree';
-    el('tonality-label').querySelectorAll=()=>[off,nota,grado];
-    botones={off,nota,grado};
-  });
-  const pulsa=button=>{button.handlers.click();};
-  run("root=0;rootNoteName='C';chordType=chordTypes[0];quality='major';selectedMode='ionian';displayModeIndex=0;mastilScope=1;tonality.on=true;tonality.root=9;updateView()");
-  // Grado (lo que arranca): el grado dentro de la tonalidad.
-  assert.equal(run('tonality.label'),'degree');
-  assert.equal(fretOf(element('#fretboard'),48).label,'♭3');
-  assert.equal(fretOf(element('#fretboard'),49).label,'3');
-  // Nota: el nombre, escrito con la armadura de la tonalidad (La: sostenidos).
-  pulsa(botones.nota);
-  assert.equal(run('tonality.label'),'note');
-  assert.equal(fretOf(element('#fretboard'),49).label,'C#');
-  assert.equal(fretOf(element('#fretboard'),48).label,'C');
-  // S/E: sin etiqueta en las escalas dibujadas... pero fuera de ellas manda
-  // MÁSTIL, que aquí está en notas: el Re# no está en Do mayor ni en La.
-  pulsa(botones.off);
-  assert.equal(run('tonality.label'),'off');
-  assert.equal(fretOf(element('#fretboard'),48).label,'');
-  assert.equal(fretOf(element('#fretboard'),49).label,'');
-  assert.equal(fretOf(element('#fretboard'),51).label,'D#','fuera de las escalas, MÁSTIL sigue mandando');
-  assert.equal(botones.off.attrs['aria-pressed'],'true','el botón pulsado se marca');
-  assert.equal(botones.nota.attrs['aria-pressed'],'false');
-  // Con la tonalidad apagada, S/E no toca nada: AA y MÁSTIL siguen igual.
-  run('tonality.on=false;updateView()');
-  assert.equal(fretOf(element('#fretboard'),48).label,'1');
-  assert.equal(fretOf(element('#fretboard'),51).label,'D#');
-});
-
-test('la escala de la tonalidad también se ve en las vistas Acorde y Acorde 7ma',()=>{
-  const {run,element}=tonalitySetup();
-  run('tonality.on=true;tonality.root=9;displayModeIndex=3;updateView()');
-  const csharp=fretOf(element('#fretboard'),49);   // Do#: en la tonalidad, no en el acorde
-  assert.equal(csharp.hidden,false,'la escala de la tonalidad no se esconde detrás del acorde');
-  assert.match(csharp.classes,/tonality-note/);
-  assert.equal(csharp.bg,'#4CAF50');
-  assert.equal(fretOf(element('#fretboard'),51).hidden,true,'lo que no está en ninguna sigue oculto');
-  assert.equal(fretOf(element('#fretboard'),48).hidden,false,'y la tónica del acorde se ve');
-  // Con la tonalidad apagada, la vista de acorde se queda como estaba: solo
-  // las notas del acorde.
-  run('tonality.on=false;updateView()');
-  assert.equal(fretOf(element('#fretboard'),49).hidden,true);
-  assert.equal(fretOf(element('#fretboard'),48).hidden,false);
-});
-
-test('la lectura dice qué es este acorde dentro de la tonalidad',()=>{
-  const {run,element}=tonalitySetup();
-  const resumen=()=>element('#tonality-summary').innerHTML;
-  run("tonality.on=true;tonality.root=9;updateView()");
-  assert.match(resumen(),/Tonalidad A mayor/);
-  // El Do mayor no es un modo de La: es el ♭III del menor paralelo, y decirlo
-  // es mejor que forzar un lidio que no es.
-  assert.match(resumen(),/no es un modo de ella/);
-  assert.equal(element('#key-signature-display').textContent,'A Mayor · 3 sostenidos');
-  // El Re mayor sí es el IV de La: lidio.
-  run("root=2;rootNoteName='D';chordType=chordTypes[0];quality='major';updateView()");
-  assert.match(resumen(),/Lidio \(IV\) de A/);
-  assert.doesNotMatch(resumen(),/no es un modo/);
-  // Tonalidad bemol: la armadura se lee con la grafía del switch, no con la
-  // del acorde que esté sonando. (Fa# y Sol♭ son la misma tónica y suenan
-  // distinto en el nombre; 6 sostenidos o 6 bemoles.)
-  run("root=0;rootNoteName='C';tonality.root=6;updateView()");
-  assert.equal(element('#key-signature-display').textContent,'F# Mayor · 6 sostenidos');
-  run('pianoUseFlats=true;updateView()');
-  assert.equal(element('#key-signature-display').textContent,'Gb Mayor · 6 bemoles');
-  run('pianoUseFlats=false;updateView()');
-  // La pentatónica de la tonalidad también es una tonalidad válida.
-  run("tonality.root=9;tonality.scale='minorPentatonic';updateView()");
-  assert.match(resumen(),/Tonalidad A pentatónica menor/);
-  assert.equal(fretOf(element('#fretboard'),56).bg,'transparent','la pentatónica menor de La no tiene el Sol#');
-  assert.equal(fretOf(element('#fretboard'),58).bg,'transparent','ni el La#');
-  assert.equal(fretOf(element('#fretboard'),59).bg,'#00BCD4','pero sí el Si, que es el 2º de la tonalidad');
-  assert.equal(fretOf(element('#fretboard'),59).label,'2');
-});
-
-test('la escala fantasma de la tarjeta no pisa a la tonalidad, y sin ella se sigue pintando',()=>{
-  const {run,element}=tonalitySetup();
-  // La fantasma de la tarjeta es un modo de la raíz del acorde: con la tonalidad
-  // apagada sigue igual que antes (el selector se retiró, el dato no). El lidio
-  // de Do mayor añade el Fa#.
-  run("ghostMode='lydian';updateView()");
-  assert.equal(fretOf(element('#fretboard'),54).bg,'rgba(0, 188, 212, 0.35)');
-  assert.match(fretOf(element('#fretboard'),54).classes,/ghost-note/);
-  assert.doesNotMatch(fretOf(element('#fretboard'),54).classes,/tonality-note/);
-  assert.equal(fretOf(element('#fretboard'),49).bg,'transparent','el Do# no es del lidio de Do');
-  // Encendida la tonalidad, manda la de la tonalidad: el Fa# es el 6º de La.
-  run("tonality.on=true;tonality.root=9;updateView()");
-  assert.equal(fretOf(element('#fretboard'),54).bg,'#FF9800');
-  assert.match(fretOf(element('#fretboard'),54).classes,/tonality-note/);
-  // Y al apagarla, la fantasma de la tarjeta vuelve a su sitio.
-  run('tonality.on=false;updateView()');
-  assert.equal(fretOf(element('#fretboard'),54).bg,'rgba(0, 188, 212, 0.35)');
-});
-
-test('el interruptor de la tonalidad y su guardado la devuelven tal cual al abrir la página',()=>{
-  const {run,element}=setup();
-  // El switch: se marca y repinta el mástil con la misma mano que el ratón.
-  run("tonality.root=9;updateView()");
-  assert.equal(fretOf(element('#fretboard'),48).bg,'#E53935');
-  const toggle=element('tonality-toggle');
-  toggle.checked=true;
-  toggle.handlers.change();
-  assert.equal(run('tonality.on'),true);
-  assert.equal(fretOf(element('#fretboard'),48).bg,'#66BB6A','encender el switch repinta el mástil');
-  assert.equal(element('tonality-settings').hidden,false,'y enseña la raíz, la escala y el triple');
-  toggle.checked=false;
-  toggle.handlers.change();
-  assert.equal(element('tonality-settings').hidden,true);
-  // El selector de raíz y de escala.
-  const raiz=element('tonality-root'),escala=element('tonality-scale');
-  toggle.checked=true;toggle.handlers.change();
-  // Como en el navegador: el valor está en el control y el manejador lo lee ahí.
-  raiz.value='5';raiz.handlers.change();
-  assert.equal(run('tonality.root'),5);
-  raiz.value='99';raiz.handlers.change();
-  assert.equal(run('tonality.root'),0,'una tónica imposible cae en Do');
-  raiz.value='10';raiz.handlers.change();
-  assert.equal(run('tonality.root'),10);
-  escala.value='majorPentatonic';escala.handlers.change();
-  assert.equal(run('tonality.scale'),'majorPentatonic');
-  escala.value='lydian';escala.handlers.change();
-  assert.equal(run('tonality.scale'),'ionian','una escala que no es de la tonalidad no se cuela');
-  // Abrir una canción guardada la aplica por su bloque.
-  run("globalThis.StringTonality.apply({on:true,root:7,scale:'majorPentatonic',label:'note'})");
-  assert.equal(run('JSON.stringify(tonality)'),JSON.stringify({on:true,root:7,scale:'majorPentatonic',label:'note'}));
-  run("globalThis.StringTonality.apply(undefined)");
-  assert.equal(run('tonality.on'),false,'una canción vieja sin tonalidad la deja apagada');
-  assert.equal(fretOf(element('#fretboard'),48).bg,'#E53935');
-});

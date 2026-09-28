@@ -1,9 +1,6 @@
 const {test}=require('node:test');const assert=require('node:assert/strict');
 const fs=require('node:fs');const vm=require('node:vm');const path=require('node:path');
 const SRC=fs.readFileSync(path.join(__dirname,'../preferences.js'),'utf8');
-// preferences.js valida el bloque de la tonalidad con la misma función pura que
-// la pinta, así que el doble carga el módulo real y no una copia de su lógica.
-const TONALITY=fs.readFileSync(path.join(__dirname,'../tonality.js'),'utf8');
 
 const NOTES=['','notas','grados'];
 const DEGREES=['','notas','grados'];
@@ -25,13 +22,6 @@ function build(seed){
     n.classList={contains:c=>n.classes.has(c),add:(...cs)=>cs.forEach(c=>n.classes.add(c)),
       remove:(...cs)=>cs.forEach(c=>n.classes.delete(c)),toggle:c=>n.classes.has(c)?(n.classes.delete(c),false):(n.classes.add(c),true)};
     n.addEventListener=(t,fn)=>{n.handlers[t]=fn;};
-    // Los controles de la tonalidad buscan sus botones dentro de sí mismos
-    // (`tonality-label` es el grupo y los tres van dentro), igual que en la
-    // página, así que el doble tiene que resolver también hacia abajo.
-    n.querySelectorAll=sel=>{
-      const spec=parsePart(sel.split(/\s+/).filter(Boolean).join(' '));
-      return n.children.filter(child=>matches(child,spec));
-    };
     n.getAttribute=name=>{
       if(name==='name'&&n.name)return n.name;
       return Object.prototype.hasOwnProperty.call(n.attrs,name)?n.attrs[name]:null;
@@ -105,15 +95,7 @@ function build(seed){
 
   select('instrument-select',[{value:'guitar'},{value:'bass'}]);
   select('root-select',[{value:'0',dataset:{note:'C'}},{value:'1',dataset:{note:'Db'}}]);
-  checkbox('tonality-toggle',false);
-  make('tonality-settings',{tag:'div'});
-  select('tonality-root',[...Array.from({length:12},(_,p)=>({value:String(p)}))]);
-  select('tonality-scale',[{value:'ionian'},{value:'majorPentatonic'},{value:'minorPentatonic'}]);
-  const tonalityLabel=make('tonality-label',{tag:'div'});
-  ['off','note','degree'].forEach((m,i)=>{
-    tonalityLabel.children.push(make(null,{tag:'button',attrs:{'data-tonality-label':m,'aria-pressed':i===2?'true':'false'},dataset:{tonalityLabel:m},
-      onClick:n=>{tonalityLabel.children.forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.tonalityLabel===m)));}}));
-  });
+  make('ghost-mode-select',{tag:'select',options:[{value:''}],value:''});
   make('player-style',{tag:'select',options:[{value:'pop'},{value:'rock'},{value:'ballad'}],value:'pop'});
   make('keyboard-timbre',{tag:'select',options:[{value:'piano'},{value:'organ'},{value:'guitar'},{value:'bass'}],value:'piano'});
 
@@ -184,7 +166,6 @@ function build(seed){
   const document={
     querySelector:sel=>{const r=resolveAll(sel);return r[0]||null;},
     querySelectorAll:sel=>resolveAll(sel),
-    getElementById:id=>byId.get(id)||null,
     handlers:{},
     addEventListener:(type,fn)=>{document.handlers[type]=fn;},
     dispatchEvent:ev=>{if(document.handlers[ev.type])document.handlers[ev.type](ev);},
@@ -198,7 +179,6 @@ function build(seed){
     clicked,
     setTimeout:fn=>{pendientes.push(fn);return pendientes.length;},
     clearTimeout:()=>{}});
-  vm.runInContext(TONALITY,ctx);
   vm.runInContext(SRC,ctx);
   const flush=()=>{while(pendientes.length)pendientes.shift()();};
   return {
@@ -375,48 +355,4 @@ test('preferencias: restaura los valores guardados disparando los eventos',()=>{
 test('preferencias: los guardados inválidos se ignoran sin romper la carga',()=>{
   const{q}=build('{no es json');
   assert.equal(q('#player-bpm').value,'100');
-});
-test('preferencias: la tonalidad se guarda y se recupera entera',()=>{
-  const{localStorage,runs,q,qa,flush,clicked}=build();
-  // De arranque, apagada y en «Grado»: lo que se ve sin haber tocado nada.
-  const salida=()=>JSON.parse(localStorage.getItem('traste.preferences.v1'));
-  assert.deepEqual(JSON.parse(runs('JSON.stringify(window.StringPreferences.readSnapshot())')).tonality,
-    {on:false,root:0,scale:'ionian',label:'degree'});
-  // Encenderla y mover sus tres cosas se guarda como un bloque.
-  runs('document.querySelector("#tonality-toggle").checked=true;document.querySelector("#tonality-toggle").dispatchEvent(new Event("change"));');
-  runs('document.querySelector("#tonality-root").value="9";document.querySelector("#tonality-root").dispatchEvent(new Event("change"));');
-  runs('document.querySelector("#tonality-scale").value="minorPentatonic";document.querySelector("#tonality-scale").dispatchEvent(new Event("change"));');
-  runs('document.querySelector(\'#tonality-label [data-tonality-label="note"]\').click();');
-  flush();
-  assert.deepEqual(salida().tonality,{on:true,root:9,scale:'minorPentatonic',label:'note'});
-  assert.equal(salida().ghostMode,undefined,'la escala fantasma de la tarjeta ya no se guarda desde aquí');
-  // Y al abrir la página con ese guardado, cada control se recupera por su
-  // evento, que es lo que repinta el mástil: el switch marcado, los dos
-  // selectores con su valor y el triple pulsado de verdad (no escrito a mano,
-  // que dejaría la etiqueta desincronizada con el estado).
-  const abiertos=build(salida());
-  const note=abiertos.qa('#tonality-label [data-tonality-label="note"]')[0];
-  assert.equal(abiertos.q('#tonality-toggle').checked,true);
-  assert.equal(abiertos.q('#tonality-toggle').events.includes('change'),true);
-  assert.equal(abiertos.q('#tonality-root').value,'9');
-  assert.equal(abiertos.q('#tonality-root').events.includes('change'),true);
-  assert.equal(abiertos.q('#tonality-scale').value,'minorPentatonic');
-  assert.equal(abiertos.runs('JSON.stringify(tonality)'),
-    JSON.stringify({on:true,root:9,scale:'minorPentatonic',label:'note'}));
-  assert.equal(note.clicked,1,'el botón S/E/Nota/Grado se pulsa, no se escribe a mano');
-  assert.equal(abiertos.qa('#tonality-label [data-tonality-label="note"]')[0].getAttribute('aria-pressed'),'true');
-});
-
-test('preferencias: un guardado viejo o corrupto deja la tonalidad apagada y no rompe la carga',()=>{
-  // Una canción guardada antes de que existiera la tonalidad no trae el campo.
-  const viejo=build({instrument:'guitar',quality:'major',mode:'ionian'});
-  assert.equal(viejo.q('#tonality-toggle').checked,false);
-  assert.equal(viejo.runs('tonality.on'),false);
-  // Y si viene con basura, la validación la deja en los valores de partida.
-  const roto=build({instrument:'guitar',quality:'major',mode:'ionian',tonality:'tonalidad'});
-  assert.equal(roto.runs('JSON.stringify(tonality)'),
-    JSON.stringify({on:false,root:0,scale:'ionian',label:'degree'}));
-  const medio=build({instrument:'guitar',quality:'major',mode:'ionian',tonality:{on:true,root:99,scale:'lydian',label:3}});
-  assert.equal(medio.runs('JSON.stringify(tonality)'),
-    JSON.stringify({on:true,root:0,scale:'ionian',label:'degree'}),'lo que no se puede usar no llega al mástil');
 });

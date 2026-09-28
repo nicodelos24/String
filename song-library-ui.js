@@ -36,7 +36,7 @@
       else if(typeof value!=='number' || !Number.isInteger(value) || value<Number(control.min) || value>Number(control.max)) throw new Error('Valor fuera de rango.');
       settings[id]=value;
     }
-    return {id:song.id,title:song.title.trim(),video:song.video,chordUrl:chordReference(song.chordUrl),videoMarks:validateVideoMarks(song.videoMarks,chords.length),chords,settings,sections:validateSections(song.sections,chords.length),tonality:normalizeTonality(song.tonality)};
+    return {id:song.id,title:song.title.trim(),video:song.video,chordUrl:chordReference(song.chordUrl),videoMarks:validateVideoMarks(song.videoMarks,chords.length),chords,settings,sections:validateSections(song.sections,chords.length)};
   }
   // El acceso puede fallar si el usuario bloquea el almacenamiento.
   const library=new SongLibrary({getItem:key=>localStorage.getItem(key),setItem:(key,value)=>localStorage.setItem(key,value)},validate);
@@ -51,7 +51,7 @@
   function snapshot(id) {
     const settings={};
     for(const key of settingIds) {const control=$(key); settings[key]=control.type==='checkbox'?control.checked:control.tagName==='SELECT'?control.value:Number(control.value);}
-    return validate({id,title:title.value,video:$('youtube-url').value.trim(),videoMarks:window.StringVideoSync.save($('youtube-url').value.trim()),chordUrl:$('song-chord-url').value,chords:progression,settings,sections:window.StringSections.serialize(),tonality:Object.assign({},tonality)});
+    return validate({id,title:title.value,video:$('youtube-url').value.trim(),videoMarks:window.StringVideoSync.save($('youtube-url').value.trim()),chordUrl:$('song-chord-url').value,chords:progression,settings,sections:window.StringSections.serialize()});
   }
   function save(update) {run(()=>{
     const song=snapshot(update?openedId:crypto.randomUUID());
@@ -66,9 +66,6 @@
     if(draggingProgressionItem) return;
     window.dispatchEvent(new Event('traste:load-song'));
     progression=song.chords.map(chord=>({...chord})); playingProgressionItem=null; selectProgressionChord(0);window.StringSections.load(song.sections);
-    // La tonalidad del tema se abre con la canción. Se aplica por su bloque
-    // validado, que repinta el mástil igual que cuando la enciende el autor.
-    window.StringTonality.apply(song.tonality);
     for(const id of settingIds) {const control=$(id);if(control.type==='checkbox') control.checked=song.settings[id];else control.value=song.settings[id];control.dispatchEvent(new Event('input'));}
     title.value=song.title; openedId=song.id; refresh(song.id);
     $('song-chord-url').value=song.chordUrl;updateChordLink();
