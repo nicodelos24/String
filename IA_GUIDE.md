@@ -1,19 +1,29 @@
-Revisión de pedidos — 2026-09-27
+Revisión de marcas — validación manual del autor — 2026-09-27
 
-- `. [x]` indica implementación vigente con pruebas específicas aprobadas (automatizadas o de navegador), considerando los ajustes posteriores del autor. No equivale a aprobación visual/auditiva del autor ni a validación con instrumento o teléfono real.
-- Se revisaron los 83 comentarios: **51 con x y 32 sin x**. Sin x puede significar pendiente, parcial, reemplazado o sin evidencia suficiente; no necesariamente que falte todo el desarrollo.
-- Base: `main`, commit `4fecc36`, más los cambios locales existentes. Se contrastaron código, pruebas, mensajes y diffs de commits. Se conservaron los comentarios y las notas históricas, incluidas sus menciones a «+» y a validaciones pendientes.
-- Verificación actual: `npm test` aprobó los 23 archivos de pruebas; la última ejecución con `node --test --test-isolation=none tests/*.test.cjs` aprobó **249/249 casos**. Chromium headless aprobó 17 comprobaciones de pentatónicas, secciones, teclado, volumen y controles. Sin excepciones de JavaScript; sin desborde horizontal de la página a 320, 390, 768 y 1440 px en la vista examinada. Las pruebas de navegador descritas más abajo en commits anteriores son evidencia histórica, salvo estas comprobaciones repetidas hoy.
+- `. [x]` significa que el pedido está implementado y hay constancia suficiente de una prueba manual satisfactoria del autor para ese pedido. Un commit de implementación, una suite aprobada o una medición automatizada en Chromium no bastan para añadir la x.
+- **84 comentarios revisados: 3 con x y 81 sin x.** Se retiran 50 marcas de la revisión anterior, se conserva la del sonido doble y se añaden las de los dos comentarios sobre el pop. Los tres comentarios marcados corresponden a dos defectos.
+- Sin x significa que no se encontró confirmación manual suficiente para cerrar el pedido completo, o que el pedido es parcial, pendiente o fue reemplazado. No significa que no esté implementado ni que el autor nunca lo haya usado. Una observación general de que algo funciona bien tampoco confirma todos los puntos de un pedido más amplio.
+- Fuentes: código e historial de String hasta `f411806`; documentación e historial del portfolio hasta `eb59be2`, incluyendo los cambios locales de los casos. Se priorizaron el tipo de ejecución, su alcance y su resultado sobre las etiquetas generales «Implementada», «Corregido» o «Aprobado».
 
-Aclaraciones sobre los pedidos sin x:
+Marcas respaldadas por pruebas manuales registradas:
 
-- **Guardado automático y recarga:** `saveCustomProgression()` omite `ghostMode` y `restoreCustomProgression()` no restaura una lista vacía. Reproducido en un perfil temporal de Chromium: el modo fantasma desaparece del JSON automático y, después de guardar `[]` y recargar, vuelven 4 tarjetas. Por eso no se cierran los pedidos de «Mi progresión» y de conservar las tarjetas tal como se editaron. La biblioteca guardada manualmente es un flujo distinto.
-- **Pedidos reemplazados:** rojo/verde fue sustituido por colores por grado (`3024631`); las posiciones antiguas del botón Añadir y del pie del mástil cambiaron con la banda común (`61b13ab`, `5401e24`); el tema terminó con símbolos ♭/♯, sin los dibujos de luna/sol; los remapeos a=la y LATAM fueron reemplazados por a=do (`7576eae`). Las tarjetas dejaron de marcar tempo (`4667ae6`); ahora lo hace el botón. La primera propuesta de VER/MÁSTIL fue corregida por el comentario siguiente. Estos pedidos originales no se marcan como comportamiento vigente.
-- **Micrófono:** la detección de acordes y las fases Apagado/Nota/Acorde tienen pruebas sintéticas y de lógica. Los pedidos de mejorar precisión, volumen y latencia, el afinador y la corrección general de errores requieren pruebas concretas con instrumento real. Siguen existiendo umbrales de silencio/confianza: la tolerancia al volumen no significa eliminación de todos los límites.
-- **Captura automática:** la tarjeta de acorde del micrófono y «Auto añadir» se retiraron en `8b668df`. `93e9d94` amplió las plantillas, pero no restituyó la captura automática. Los dos pedidos que la incluyen permanecen abiertos. También faltan el selector nota/grado propio del micrófono y mostrar varias alturas detectadas simultáneamente: reconocer un acorde no implementa ese resaltado polifónico.
-- **Audio y móvil:** el pop tiene una corrección en `f91ecce`, pero no una reproducción y confirmación auditiva del síntoma original. El diseño móvil por pestañas está integrado (`3c04b38`) y medido en navegador; las dos solicitudes generales de adaptación móvil siguen pendientes de la prueba en teléfono indicada por el autor. La corrección concreta de la doble voz sí tiene pruebas del delegado y evidencia histórica de conteo de voces.
-- **YouTube y biblioteca:** existen biblioteca local, enlace a página de acordes, marcas y sincronización por BPM. Falta validar el seguimiento con video real y volver a probar los enlaces que fallaban; no hay detección automática del tempo del video ni biblioteca compartida. El pedido de play más switch Mute está incompleto: hay reproducción, pero no ese switch. El párrafo introductorio sobre interacciones no define por sí solo una implementación cerrable.
-- **Escalas y variantes:** no se confirmó el caso exacto de F en Cmaj7 pentatónico. Se guardan modos y escala fantasma en la biblioteca manual, pero no está completa la edición de variantes por vuelta del backtrack solicitado.
+| Comentario del autor | Evidencia de su comprobación | Implementación |
+| --- | --- | --- |
+| «Al tocar una nota con el Movil… la nota suena doble…» | CP-100, BUG-040 y EJ-08: retest satisfactorio en Android, en modos Ambos y Teclado, registrado el 2026-09-26. Commit del portfolio `b3957d8`. | `9272141`; la exclusión de las teclas del piano en el delegado de vista previa sigue vigente. |
+| «Muchas veces pasa que al tocar la primer nota sale un pop…» | BUG-035 es duplicado de BUG-048. EJ-09 registra retest satisfactorio del pop con auriculares y volumen bajo, en tres recargas, el 2026-09-26. Commit del portfolio `005eb27`. | `f91ecce`; la corrección continúa en `note-preview.js`. |
+| «Al tocar el pianito miniatura… hace una especie de pop…» | BUG-048 y el mismo EJ-09 incluyen expresamente el piano miniatura. Es el mismo defecto del comentario anterior, no otra prueba independiente. | `f91ecce`. |
+
+Referencias: [casos de prueba](../portfolio-qa-string/casos-de-prueba.md), [registro de ejecuciones](../portfolio-qa-string/registro-de-ejecuciones.md) y [reportes de bugs](../portfolio-qa-string/reportes-de-bugs.md).
+
+Criterio aplicado a los demás comentarios:
+
+- Los casos manuales de micrófono/afinador (CP-82 y CP-85), video y sincronización (CP-83, CP-88 y CP-98), biblioteca/enlace (CP-87), secciones (CP-89 y CP-106), móvil (CP-99), colores/pentatónicas (CP-102 y CP-103), banda y disposición del teclado (CP-104 y CP-105), accesos/controles (CP-107 a CP-115) y tarjetas/tempo (CP-101, CP-124 a CP-129) siguen pendientes en el portfolio. Las pruebas automáticas o de navegador registradas no cierran esos pedidos con este criterio.
+- CP-84 documenta una comprobación parcial del color de las teclas blancas, pero conserva pendiente la revisión manual y no identifica un retest del autor con el alcance y el resultado de EJ-08/EJ-09. Se deja ese comentario sin x por evidencia insuficiente, conservando esa comprobación parcial. Tampoco se extiende el retest de sonido doble a todas las funciones del teclado o al diseño responsive.
+- Las preferencias, el mapeo de teclas, la octava de guitarra, los nuevos botones AA/MÁSTIL y los demás pedidos con pruebas de lógica conservan esas pruebas como evidencia técnica; no se deduce de ellas una aprobación manual. En particular, EJ-08 solo documenta un caso manual, CP-100: no confirma el mapeo ni la octava.
+- **Autoguardado:** los dos fallos señalados en la revisión anterior están corregidos en `d54b8f7` y documentados en `f411806`; el autor también indicó que los solucionó. Se retira la afirmación anterior de que seguían presentes. Los comentarios relacionados quedan sin x porque no hay una confirmación explícita de prueba manual del autor; el registro de pruebas automáticas y Chromium del cambio no la sustituye.
+- Los pedidos retirados o sustituidos, los parciales y los aún no implementados conservan su texto y quedan sin x. Las notas antiguas bajo los comentarios se mantienen como historial: una mención histórica a «pendiente tu prueba» del pop queda resuelta por EJ-09, según la tabla anterior.
+
+Esta revisión cambia únicamente las marcas y esta aclaración. Se conserva íntegro el texto de los comentarios y sus continuaciones.
 
 ---
 
@@ -24,8 +34,8 @@ Errores actuales a corregir por pruebas manuales exploratorias de regresión
   - Implementado en las vistas Acorde y Acorde 7ma, incluidas pentatónicas, tanto en trastes como en cuerdas al aire. Texto blanco para facilitar la lectura en ambos temas.
   - Las vistas de intervalos, tríada y séptima conservan sus colores por intervalo. Pendiente de revisión visual.
 
-. [x] Al colocar el switch para ver las escalas en modo de pentatónica, cuando el acorde cambia, no se muestra en la sección "Pentatonicas"(debajo de los modos de la escala) que se está seleccionando, si se muestran arriba para ver si la escala es Jonica, dorica, etc, pero abajo donde aparece pentatonica mayor y menor no se marca la que está sonando o mostrandose en el mastil actualmente.
-. [x] Tampoco se cambia la escala a pentatonica mayor o menor al seleccionar la pentatonica en esa sección
+. Al colocar el switch para ver las escalas en modo de pentatónica, cuando el acorde cambia, no se muestra en la sección "Pentatonicas"(debajo de los modos de la escala) que se está seleccionando, si se muestran arriba para ver si la escala es Jonica, dorica, etc, pero abajo donde aparece pentatonica mayor y menor no se marca la que está sonando o mostrandose en el mastil actualmente.
+. Tampoco se cambia la escala a pentatonica mayor o menor al seleccionar la pentatonica en esa sección
 
 .También hay notas random que aparecen en el mastil en algunas situaciones, por ejemplo si pongo para ver la pentatonica de CMAJ7 se muestran notas random en el mastil que ni siquiera van con la escala como un F.
 
@@ -38,14 +48,14 @@ Errores actuales a corregir por pruebas manuales exploratorias de regresión
 - Siguiente pendiente: distribución de controles de reproducción. YouTube flotante y biblioteca de canciones continúan pendientes.
 
 
-. [x] Me gustaría reorganizar los botones de reproducir el acompañamiento, me gustaría que esa sección tenga su propio botón de reproducir y detener, pero que arriba cerca de las cartas de los acordes se muestre ese símbolo de reproducción que tiene actualmente, además me gustaría que ese "acceso directo" a reproducir tambien tenga la opción de seleccionar entre la progresion y el midi.
+. Me gustaría reorganizar los botones de reproducir el acompañamiento, me gustaría que esa sección tenga su propio botón de reproducir y detener, pero que arriba cerca de las cartas de los acordes se muestre ese símbolo de reproducción que tiene actualmente, además me gustaría que ese "acceso directo" a reproducir tambien tenga la opción de seleccionar entre la progresion y el midi.
 
 - Implementado: acceso junto a las tarjetas con selector Progresión/MIDI, icono reproducir/detener y tiempo MIDI.
 - Acompañamiento conserva sus controles, ahora con texto visible Reproducir/Detener. Ambos accesos comparten fuente y estado, incluso con el panel plegado.
 - Pendiente de tu revisión visual; puedes marcar este pedido con «+» cuando lo confirmes. No se modificaron tus marcas anteriores.
 
 
-. [x] Me gustaría reorganizar la sección de "secciones del tema" para que se vean a la derecha de las tarjetas de acordes, también como una burbuja que despliegue un menú hacia abajo
+. Me gustaría reorganizar la sección de "secciones del tema" para que se vean a la derecha de las tarjetas de acordes, también como una burbuja que despliegue un menú hacia abajo
 
   - Implementado: burbuja a la derecha de las tarjetas en escritorio; al abrirla, las secciones y su editor se despliegan hacia abajo en una columna lateral.
   - En móvil se coloca arriba, alineada a la derecha, y abierta ocupa el ancho disponible para no comprimir los acordes.
@@ -54,7 +64,7 @@ Errores actuales a corregir por pruebas manuales exploratorias de regresión
   - La lista tiene un alto máximo de 250 px y desplazamiento interno: añadir más secciones ya no hace crecer indefinidamente el panel. Pendiente de tu revisión visual.
   - Ajuste solicitado: ahora se muestran dos tarjetas de sección por fila, cada una con aproximadamente la mitad del ancho anterior; información arriba y controles abajo, conservando el límite de altura.
 
-. [x] Otro error es el reproductor de youtube en modo ventana flotante, este queda abajo en la página y no se puede ni siquiera mover.
+. Otro error es el reproductor de youtube en modo ventana flotante, este queda abajo en la página y no se puede ni siquiera mover.
 
   - Verificado en navegador headless: al minimizar con «Video flotante» activo, el reproductor queda anclado como `position:fixed` abajo a la derecha y se puede mover con el asa «⠿ Mover» (arrastre de puntero y flechas), con clamping al viewport; «↗ Restaurar video» lo devuelve al panel. Prueba automatizada: carga con `YT.Player` simulado, arrastre puntero y flecha izquierda mueven `left/top`. Pendiente tu confirmación en navegador real.
   - Error real encontrado al confirmar: al arrastrar, el video se despegaba del puntero porque quedaba anclado a la página entera, no al viewport. Causa: ancestros con `transform` (la animación `rise` del panel deja `matrix(1,0,0,1,0,0)`) rompen el `position:fixed`, y el `margin: 8px 0` heredado desplazaba la caja de margen. Arreglo: al volar el reproductor se mueve al `document.body` (sin ancestros transformados) y al restaurar vuelve junto al panel; `margin: 0` en `.is-floating`; además `rise` ahora usa `fill-mode: backwards` para que el transform no persista al terminar la animación. Comprobado en headless: el wrap sigue al puntero exactamente (delta -200,-120 → -200,-120), conserva el agarre y clampa en los bordes. `npm test` → 186/186.
@@ -62,7 +72,7 @@ Errores actuales a corregir por pruebas manuales exploratorias de regresión
 
 
 
-. [x] Ahora quiero implementar un gran cambio visual en la parte del acompañamiento, me gustaría que en la seccion "secciones del tema" haya como una forma de "maximizar" esa sección, y esta se expanda ocultando la sección de las tarjetas de las progresiones, así puedo ver sólo las tarjetas de cada sección del tema como intro, verso, etc (me gustaría que cada acorde también muestre su grado o modo bajo cada acorde como en las tarjetas del acompañamiento).
+. Ahora quiero implementar un gran cambio visual en la parte del acompañamiento, me gustaría que en la seccion "secciones del tema" haya como una forma de "maximizar" esa sección, y esta se expanda ocultando la sección de las tarjetas de las progresiones, así puedo ver sólo las tarjetas de cada sección del tema como intro, verso, etc (me gustaría que cada acorde también muestre su grado o modo bajo cada acorde como en las tarjetas del acompañamiento).
 Quiero que se vea lindo y las tarjetas tengan un tamaño mas parecido a las tarjetas del acompañamiento pero mas chicas asi cabe todo sin desplazar mucho la pantalla, pero aprovechando el espacio extra.
 
 Pero además noto que hay un boton que dice "Todos los acordes" y quisiera que ese botón adapte la función de expandir la sección de las tarjetas del acompañamiento principal, entonces ahí se puedan ver los acordes ya de todo el tema también, pero más amplio, quisiera que haya una animación al desplegar y ocultar estas dos secciones.
@@ -72,13 +82,13 @@ Pero además noto que hay un boton que dice "Todos los acordes" y quisiera que e
   - «Todos los acordes» elimina el filtro, pliega el panel de secciones y muestra la progresión completa a ancho completo. El cambio tiene un fundido breve que respeta movimiento reducido.
   - Pendiente de revisión visual del autor; no se añade «+» automáticamente.
 
-. [x] Me gustaría además saber si se puede implementar algun vinculo con alguna pagina que ya muestre los acordes de canciones
+. Me gustaría además saber si se puede implementar algun vinculo con alguna pagina que ya muestre los acordes de canciones
 
   - Implementado: campo opcional «Página de acordes» en Mis progresiones y enlace «Consultar acordes». Se guarda, actualiza y viaja en los respaldos; las progresiones anteriores sin ese campo siguen siendo compatibles.
   - Es una referencia externa: no importa acordes ni tiempos automáticamente. Solo admite enlaces HTTP/HTTPS.
   - Investigación: Chordify documenta un reproductor insertable, que no equivale a una API de importación para las tarjetas de String: https://support.chordify.net/hc/en-us/articles/360002155838-How-to-embed-Chordify-on-your-website-or-blog
 
-. [x] De esta forma podía tener una biblioteca de canciones conocidas con sus acompañamientos. Y hasta su video de youtube con la canción original, me gustaría saber si hay forma de implementar algo así
+. De esta forma podía tener una biblioteca de canciones conocidas con sus acompañamientos. Y hasta su video de youtube con la canción original, me gustaría saber si hay forma de implementar algo así
 
 .Averiguar más sobre la implementacion de tener canciones en una biblioteca con su video de youtube y que se puedan ver los cambios de acorde a medida que avanza la cancion, puede ser con youtube o cualquier otra cosa como el programa Nuclear que es musica libre creo
 
@@ -108,7 +118,7 @@ Pero además noto que hay un boton que dice "Todos los acordes" y quisiera que e
   - La interfaz muestra la tarjeta «Acorde en vivo», ofrece «＋ Añadir» y «Auto añadir», y añade «Escala en vivo» junto al switch de pentatónicas.
   - La confirmación temporal evita añadir repetidamente el mismo acorde. Pendiente de prueba manual con guitarra real, inversiones, arpegios y ruido.
 
-  . [x] Me gustaría avanzar en el reconocimiento de acordes: que se vea en tiempo real el acorde del micrófono y poder elegir con un switch si el mástil cambia la escala o no.
+  . Me gustaría avanzar en el reconocimiento de acordes: que se vea en tiempo real el acorde del micrófono y poder elegir con un switch si el mástil cambia la escala o no.
 
   - Ampliadas las plantillas del detector (`chord-detection.js`): ahora reconoce también 6, m6, add9, 6/9, 9, maj9, m9, sus2, sus4, 7sus4, aug y dim7, además de las de antes.
   - Añadidos esos tipos a `chordTypes` (app.js) para que la tarjeta en vivo los nombre bien y el mástil aplique el acorde y el modo correctos; `defaultChordMode` asigna el modo (mixolidio para suspendidos/novenas, dórico para m6/m9, etc.).
@@ -127,21 +137,21 @@ Pero además noto que hay un boton que dice "Todos los acordes" y quisiera que e
 
 . Falta corregir errores de las implementaciones de micrófono
 
-. [x] Ahora me gustaría implementar un botón a la derecha del boton de play y switch entre backtrack y midi, me gustaría un botón donde se pueda hacer click (mínimo dos veces) para asignar un tempo al acompañamiento, esto también puede servir para agregar los acordes de los video de youtube dandole ya un tempo.
+. Ahora me gustaría implementar un botón a la derecha del boton de play y switch entre backtrack y midi, me gustaría un botón donde se pueda hacer click (mínimo dos veces) para asignar un tempo al acompañamiento, esto también puede servir para agregar los acordes de los video de youtube dandole ya un tempo.
 
   - Implementado: botón «Tempo» junto al botón de reproducción y al selector Backtrack/MIDI, al lado de las tarjetas. Con dos o más pulsaciones estima el BPM y lo fija en el acompañamiento; si hay un video cargado, también fija el BPM del video para generar sus marcas. La lectura «NNN BPM» se oculta al editar el tempo a mano. `tempo-tap.js`; `npm test` → 145/145. Pendiente tu prueba real con la guitarra y el video.
 
-. [x] Me gustaría corregir los colores en el botón de acordes y acordes 7ma, que se muestren los colores de cada grado que le corresponde envez de todas las notas del mismo color excepto la raiz
+. Me gustaría corregir los colores en el botón de acordes y acordes 7ma, que se muestren los colores de cada grado que le corresponde envez de todas las notas del mismo color excepto la raiz
 
   - Implementado: las vistas Acorde y Acorde 7ma vuelven a colorear cada grado con su color (raíz roja, tercera, quinta y séptima con su propio color), tanto en trastes como en cuerdas al aire; ya no se pinta todo de un solo verde. Las notas ajenas al acorde siguen ocultas. Comprobado con `npm test` → 145/145. Pendiente tu revisión visual.
 
-. [x] Quisiera implementar que el switch de backtrack o midi también tenga la opción de metronomo asi puedo pausarlo o reproducirlo desde ahí, y tambien que los bpm se puedan cambiar manualmente si hago click en ellos, ya que solo muestra los bpm que resultan del boton de ritmo
+. Quisiera implementar que el switch de backtrack o midi también tenga la opción de metronomo asi puedo pausarlo o reproducirlo desde ahí, y tambien que los bpm se puedan cambiar manualmente si hago click en ellos, ya que solo muestra los bpm que resultan del boton de ritmo
 
   - Implementado: el switch del acceso rápido ahora tiene tres fuentes: Backtrack, MIDI y Metrónomo. Con Metrónomo activo, el botón de reproducción inicia/pausa el metrónomo (anticipa por 2.5 s los taps y reinicia el cálculo). Cambiar a otra fuente lo detiene.
   - El valor de BPM pasó de ser una etiqueta solo lectura a un campo editable junto al botón «Tempo»: se puede escribir a mano (límites 30–240) y se mantiene sincronizado con el acompañamiento y el video. El botón «Tempo» sigue estimando con las pulsaciones y lo rellena. Al pasar el puntero (o al enfocar) aparecen flechitas arriba y abajo del número para subir o bajar de a un BPM con estilo discreto; se ocultan las flechas nativas del input numérico.
   - `npm test` → 148/148 (nuevos tests de `panel-controls` y del campo editable). Pendiente tu revisión visual y la prueba con guitarra/video.
 
-  . [x] Quisiera una seccion donde se pueda expandir el teclado y que se pueda tocar con algunas teclas
+  . Quisiera una seccion donde se pueda expandir el teclado y que se pueda tocar con algunas teclas
   asdetc (do re mi etc)
   wer etc (do#/b re#/mib etc) 
 
@@ -155,15 +165,15 @@ Pero además noto que hay un boton que dice "Todos los acordes" y quisiera que e
 
   - Implementado: el botón «＋ añadir acorde» se movió del encabezado de la progresión a una fila centrada bajo el mástil, debajo de la información del diapasón. Estilo con la cara izquierda en óxido, esquinas ligeras y sombra inferior; mantiene la misma lógica `addProgressionChord`. Pendiente tu revisión visual.
 
-  . [x] Quisiera buscar la forma en que el micrófono reconozca acordes y no solo notas sueltas
+  . Quisiera buscar la forma en que el micrófono reconozca acordes y no solo notas sueltas
 
-  . [x] A el micrófono le cuesta muchísimo detectar la duración de las notas, así que quisiera que la nota se mantenga dibujada al menos un segundo, a no ser que toque otra nota
+  . A el micrófono le cuesta muchísimo detectar la duración de las notas, así que quisiera que la nota se mantenga dibujada al menos un segundo, a no ser que toque otra nota
   (quizá más adelante una opción de "mantener nota dibujada" para que al tocar con el microfono, se mantenga dibujada junto a la anterior nota que toqué de otro color o algo así).
 
   - Implementado: al enmudecer, la nota queda dibujada al menos 1 s (y su lectura mantiene la frecuencia), a no ser que se toque otra nota, que reemplaza el resaltado al instante y renueva el reloj. La limpieza previa a 300 ms de atenuado se conserva al cumplirse el sostén. La opción futura de "mantener nota dibujada junto a la anterior con otro color" sigue pendiente.
   - `npm test` → 158/158 (dos tests nuevos de `microphone-ui`). Pendiente tu prueba real con guitarra.
 
-  . [x] Actualmente no se cambia la escala en tiempo real al usar el microfono,
+  . Actualmente no se cambia la escala en tiempo real al usar el microfono,
   Quisiera que muestre en tiempo real cuál escala/acorde se toca, y el switch de escala en vivo funcione para que la escala quede lockeada y no cambie en tiempo real al tener microfono.
 
 - Implementado: sección de teclado expandible (`keyboard-section.js`) con botón «⤢ Teclado» junto al teclado miniatura; al expandirse cubre el mástil.
@@ -172,14 +182,14 @@ Pero además noto que hay un boton que dice "Todos los acordes" y quisiera que e
   - La nota audible queda anclada a la tecla física aunque cambies de octava mientras suena. Cierre con botón «✕» o el mismo toggle; el audio se corta al cerrar la página.
   - `npm test` → 156/156 (nuevos tests de `keyboard-section`). Verificado en navegador headless: expansión, 48 teclas renderizadas, mapeo de letras y octavas por shift. Pendiente tu revisión auditiva del sintetizador y de la alineación visual.
 
-. [x] Quisiera implementar que en el mástil de guitarra o bajo también se pueda tocar con las teclas de la pc, con los mismos controles que el teclado
+. Quisiera implementar que en el mástil de guitarra o bajo también se pueda tocar con las teclas de la pc, con los mismos controles que el teclado
   - Implementado: mientras la sección «Teclado» está cerrada, las mismas teclas tocan el mástil en vez del piano: la nota pulsada se remarca en las posiciones de guitarra/bajo en violeta (`#6c5ce7`, clase `.keyboard-live`), distinto del ámbar del micrófono (`.live`), y suena con el timbre del instrumento activo. Al soltar la tecla deja de sonar y se quita el remarcado (polifónico). Al abrir la sección «Teclado», las teclas vuelven al piano.
   - La guitarra y el bajo suenan como instrumentos pulsados: el sintetizador (`KeySynth`) sumó los timbres `guitar` y `bass`, generados con el algoritmo de cuerda pulsada Karplus-Strong (`pluckWave`), menos brillante y de mayor duración en el bajo. En el modo mástil el sonido se elige solo según `instrument`; también están disponibles como timbre en el piano. La octava base del modo mástil coincide con la del piano para ambos instrumentos: `a`=A3 (con Shift se sube/baja una octava).
   - Teclas ampliadas (letras por idioma del teclado, con respaldo por posición física `event.code`): naturales `a s d f g h j k l ñ {` (C4–F5, `ñ`=E5 y `{`=F5 para teclado español en lugar de `;`), fila grave `z x c v b n m , . -` = sol la si do re mi fa sol la si (G3–B4), sostenidos `w e t y u o p ´ +` (C#–G# de C#4 a G#5; `´` es el acento muerto, se resuelve por su posición).
   - `npm test` → 163/163 (unitarios de `mastilKeyToggle`, `keyOffsetFor`, mapeo nuevo y `pluckWave` + voces guitar/bass). Verificado en headless: cada tecla nueva marca el MIDI correcto y el bajo arranca en C2. Pendiente tu revisión auditiva de los timbres de guitarra/bajo, del color violeta y de la colocación de cada tecla.
   - **Acorde en vivo desde el teclado (3 fases)**: control junto al candado del mástil (pie). «Apagado»: tocar no cambia la escala. «Nota»: una sola tecla del PC o un golpe en el mástil muestra el acorde mayor o menor según la calidad y el modo elegidos a la izquierda (los controles `#quality-select`/`#mode-selector`; con la escala ya quedando fija). «Acorde»: con la raíz (la nota más grave) y su tercera alcanza — intervalo de 3 semitonos = menor, de 4 = mayor —, y se puede seguir tocando para acordes más ricos (7, maj7, 6/9, sus4… por `chordFromNotes` con las mismas plantillas que el micrófono; ej.: `a d` = Do mayor, `a e` = Do menor, `a d g j` = Domaj7). En el mástil: en «Nota» cada golpe fija la nota y en «Acorde» cada golpe añade/quita una nota. Enter (o el botón ＋ Añadir) agrega el acorde a las tarjetas. El micrófono cede la tarjeta en vivo cuando el teclado la está usando y, con el acorde en vivo activo, el click en el mástil ya no cambia la raíz (marca la nota y la escala la lleva el acorde). `npm test` → 165/165, verificado en headless.
 
-  . [x] Me gustaría una opción donde el teclado expansible se pueda ver junto al mástil, y que cuando esto suceda, que las notas del teclado de la pc solo funcionen para tocar notas en el piano, y así poder formar los acordes que quiera agregar a las tarjetas con el piano junto al mastil, donde puedo ver las notas que toco en tiempo real con el micrófono, esta opción me gustaría que sea opcional, así tambien puedo dejarlo como ahora donde el teclado expansible reemplaza el mástil, o sea que hayan 3 opciones, solo mastil, teclado, o teclado y mastil donde sólo funcionarian las teclas del pc en el teclado y no en el mástil al tener este modo activado
+  . Me gustaría una opción donde el teclado expansible se pueda ver junto al mástil, y que cuando esto suceda, que las notas del teclado de la pc solo funcionen para tocar notas en el piano, y así poder formar los acordes que quiera agregar a las tarjetas con el piano junto al mastil, donde puedo ver las notas que toco en tiempo real con el micrófono, esta opción me gustaría que sea opcional, así tambien puedo dejarlo como ahora donde el teclado expansible reemplaza el mástil, o sea que hayan 3 opciones, solo mastil, teclado, o teclado y mastil donde sólo funcionarian las teclas del pc en el teclado y no en el mástil al tener este modo activado
 
   - Implementado: el botón «⤢ Teclado» pasó a ser un selector de tres modos cerca del teclado miniatura. «Mástil»: solo el mástil, las teclas del PC lo tocan (comportamiento anterior). «Teclado»: el piano reemplaza el mástil como antes. «Ambos»: el piano se muestra encima del mástil a todo lo ancho; las teclas del PC tocan solo el piano (no marcan el mástil nota a nota), el mástil conserva su ancho completo y sigue mostrando las notas del micrófono. Con «Acorde en vivo» activado (fases Nota o Acorde), el mástil cambia su escala al acorde que formes en el piano, igual que en el modo Mástil. El cierre «✕» vuelve a «Mástil».
   - La lógica vive en `keyboardLayoutClasses` (estado puro), `setMode`, `mastilShown` (el mástil queda visible en Mástil y Ambos) y las clases `keyboard-open`/`keyboard-split` sobre `.fretboard-section`. `npm test` → 166/166 (test de `keyboardLayoutClasses` y smoke headless de los 3 modos). Pendiente tu revisión visual del apilado y de que el mástil siga el acorde del piano.
@@ -188,21 +198,21 @@ Pero además noto que hay un boton que dice "Todos los acordes" y quisiera que e
 
   - Implementado: la separación superior del pie del mástil bajó de 18 px a 8 px (`margin-top` de `.board-footer`), acercando la información al diapasón sin tocar el resto del plegado móvil.
 
-  . [x] Debajo del mastil al poner el switch de "nota" quisiera que funcione como actualmente funciona pero también que capte acordes menores y mayores tal como sucede en acorde, y en la sección Acorde quisiera que funcione igual que ahora pero agregando acordes de septima, disminuidos, y varios acordes compuestos.
+  . Debajo del mastil al poner el switch de "nota" quisiera que funcione como actualmente funciona pero también que capte acordes menores y mayores tal como sucede en acorde, y en la sección Acorde quisiera que funcione igual que ahora pero agregando acordes de septima, disminuidos, y varios acordes compuestos.
 
   - Implementado: en «Nota» ahora dos o más notas detectan el acorde real (mayor, menor y más) igual que en «Acorde»; una sola nota conserva la calidad y el modo elegidos a la izquierda. La fase «Acorde» ya reconocía séptimas, disminuidos y compuestos con las plantillas del micrófono; se verificó con tests contra esas plantillas (C7, Cmaj7, Cdim, Cdim7, Cm7b5, Caug, C6/9, Cm9, C7sus4).
   - `npm test` → 168/168. Pendiente tu prueba real con guitarra y revisión visual del margen.
 
-  . [x] Quisiera añadir un control de volumen para las notas que suenan tanto del piano como del mástil de guitarra/bajo
+  . Quisiera añadir un control de volumen para las notas que suenan tanto del piano como del mástil de guitarra/bajo
 
   - Implementado: slider «Volumen» en la fila de controles del teclado expandible (`#keyboard-volume`, 0–100, arranca en 30). Por defecto arranca en el volumen histórico (0.3) y se aplica al `KeySynth` compartido, por lo que cubre el piano (modos Teclado y Ambos) y el mástil de guitarra/bajo (modo Mástil); cambia la ganancia maestra en vivo, sin detener las voces. `npm test` → 169/169 (test nuevo de `setVolume` y la ganancia maestra). Pendiente tu revisión auditiva y visual.
 
-. [x] Al hacer click en un switch o en el volumen, después las teclas del PC dejaban de sonar hasta hacer click en el piano/área.
+. Al hacer click en un switch o en el volumen, después las teclas del PC dejaban de sonar hasta hacer click en el piano/área.
 
   - Implementado: los switchs, radios y el slider de volumen ya no bloquean las teclas musicales: se interceptan aunque el foco haya quedado en el control tras el clic. Los campos de escritura (texto, número, URL…) y los select conservan su comportamiento para poder tipear. La decisión vive en `keyTargetIsTyping` (estado puro, exportado y testeado) y el manejador de `keydown` de `keyboard-section.js`.
   - De paso se estabilizó un test intermitente de la cuerda pulsada (dependía de `Math.random`): ahora usa una semilla fija. `npm test` → 170/170. Pendiente tu prueba real en navegador.
 
-. [x] Actualmente funciona muy bien el poder generar acordes con el teclado del pc tanto en el mástil como en el piano extensible, me gustaría que esa misma funcion sirva para cuando uso el micrófono, arriba del mástil a la derecha del swithc de pentatonicas, hay un switch de escala en vivo, que no funciona, quisiera que sea igual al de "apagado, Nota, Acorde" Pero que sirva para el micrófono y las notas que capte, envez de los acordes/notas creados por la entrada de teclado del pc/clicks
+. Actualmente funciona muy bien el poder generar acordes con el teclado del pc tanto en el mástil como en el piano extensible, me gustaría que esa misma funcion sirva para cuando uso el micrófono, arriba del mástil a la derecha del swithc de pentatonicas, hay un switch de escala en vivo, que no funciona, quisiera que sea igual al de "apagado, Nota, Acorde" Pero que sirva para el micrófono y las notas que capte, envez de los acordes/notas creados por la entrada de teclado del pc/clicks
 
 - Implementado: el switch booleano «Escala en vivo» del micrófono pasó a ser un selector de tres fases («Apagado / Nota / Acorde») al lado del switch de pentatónicas, con la misma mecánica que «Acorde en vivo» del teclado.
   - «Apagado»: el micrófono nunca cambia la escala. «Nota»: una sola nota usa el tipo y el modo elegidos a la izquierda; al captar un acorde real se aplica el acorde (antes un acorde detectado se aplicaba igual, pero las notas sueltas no hacían nada). «Acorde»: solo al captar un acorde cambia la escala; la nota sola no.
@@ -211,15 +221,15 @@ Pero además noto que hay un boton que dice "Todos los acordes" y quisiera que e
   - La decisión por fase vive en `micLiveChord` (puro, exportado y testeado); `npm test` → 173/173. Pendiente tu prueba real con guitarra y revisión visual del selector.
 
 - Corregido: pulsar «Tempo» con el metrónomo seleccionado no sincronizaba el tempo (solo llegaba al acompañamiento). Ahora el valor pulsado, su edición manual y las flechas también fijan el metrónomo (campo `#metronome-bpm` y `StringMetronome.setTempo`). El MIDI no se toca: conserva su propio tempo. `npm test` → 173/173. Pendiente tu prueba real con el metrónomo.
-. [x] La vinculación del botón tempo con el metrónomo, sólo debería modificar el tempo del metrónomo si yo tengo seleccionado metrónomo en el switch de backtrack midi y metrónomo, si no he seleccionado metrónomo en ese switch no debería afectar al tiempo que tenga en el metrónomo
+. La vinculación del botón tempo con el metrónomo, sólo debería modificar el tempo del metrónomo si yo tengo seleccionado metrónomo en el switch de backtrack midi y metrónomo, si no he seleccionado metrónomo en ese switch no debería afectar al tiempo que tenga en el metrónomo
 
   - Implementado: el botón «Tempo» (pulsaciones, edición manual y flechas) ahora solo fija el tempo del metrónomo cuando la fuente activa en el switch Backtrack/MIDI/Metrónomo es «Metrónomo». Además, con esa fuente, al dar play (acceso rápido o el propio metrónomo) se le aplica el tempo que muestra el campo del botón. En Backtrack o MIDI no toca el tempo guardado del metrónomo (ni su campo). `npm test` → 176/176 (test del caso negativo + publicación al dar play). Pendiente tu prueba real.
 
-. [x] El espacio vertical encima de las tarjetas de la progresión es demasiado; quitar el texto «IDEA DE PROGRESIÓN» y «Tu vuelta armónica», y pasar el switch «Seguir acorde MIDI» a la derecha de las tarjetas, así las tarjetas suben y el mástil/teclado expandible queda más arriba.
+. El espacio vertical encima de las tarjetas de la progresión es demasiado; quitar el texto «IDEA DE PROGRESIÓN» y «Tu vuelta armónica», y pasar el switch «Seguir acorde MIDI» a la derecha de las tarjetas, así las tarjetas suben y el mástil/teclado expandible queda más arriba.
 
 - Implementado: se eliminó el encabezado `.progression-header-inline` con el eyebrow y el título. Las tarjetas `.progression` y los controles (`#progression-view`, «Seguir acorde MIDI» y la ayuda «?», que se conservó) ahora viven en un contenedor `.progression-stack`: las tarjetas a la izquierda y los controles apilados a la derecha, alineados arriba. En pantallas ≤700px los controles bajan a una fila bajo las tarjetas. La ayuda se conserva y abre hacia arriba a la derecha. `npm test` → 173/173 y README actualizado. Pendiente tu revisión visual en navegador.
 
-. [x] Quisiera que el control de volumen del teclado expandible se muestre también para el mástil.
+. Quisiera que el control de volumen del teclado expandible se muestre también para el mástil.
 
 - Implementado: el slider «Volumen» ahora también aparece en el pie del mástil (`#mastil-volume`, en `.board-footer`), visible en los modos Mástil y Ambos (en Teclado el pie queda oculto, igual que antes). Ambos sliders quedan sincronizados: mover cualquiera de ellos fija el `KeySynth` compartido y actualiza al otro. `npm test` → 173/173. Pendiente tu revisión auditiva y visual.
 
@@ -239,11 +249,11 @@ Pero además noto que hay un boton que dice "Todos los acordes" y quisiera que e
 
 - Implementado: la plantilla «Mi progresión» (primera opción del selector de Progresiones de partida) parte con la progresión por defecto de la página y se guarda sola en `localStorage` (`traste.customProgression.v1`) al editar tarjetas: añadir, duplicar, mover, eliminar, cambiar duración y el acorde añadido por el teclado en vivo. Aplicarla restaura las tarjetas guardadas sin tocar BPM ni estilo; las demás plantillas no sobrescriben el slot. `npm test` → 180/180. Pendiente tu prueba real.
 
-. [x] Quisiera que los controles visibles que voy modificando queden siempre iguales al volver a abrir la página.
+. Quisiera que los controles visibles que voy modificando queden siempre iguales al volver a abrir la página.
 
 - Implementado: `preferences.js` (cargado al final de `index.html`) guarda automáticamente un snapshot en `localStorage` (`traste.preferences.v1`) ante cualquier cambio de los controles visibles: instrumento, nota raíz (tecla del piano) y su armadura, calidad y modo (incluida la vista pentatónica), modo fantasma, fuente de reproducción (Backtrack/MIDI/Metrónomo), vista/notas/grados de las tarjetas y el mástil, disposición de las tarjetas (fila/grid), modos Mástil/Teclado/Ambos, acorde en vivo y escala en vivo, BPM/estilo/loop/percusión y volúmenes del acompañamiento, tempos/compases/acento/volumen del metrónomo, timbre/delay/reverb/volumen del sintetizador, «Seguir acorde MIDI», bloqueo de escala y video flotante. Al cargar se restaura disparando los mismos eventos que maneja cada control; los guardados inválidos se ignoran. El tema ya se persistía por separado (`string.theme`). `npm test` → 185/185 (tests en `tests/preferences.test.cjs`). Pendiente tu prueba real en navegador.
 
-. [x] Me gustaria poder borrar todas las tarjeatas, no veo necesario que deba quedar siempre al menos una
+. Me gustaria poder borrar todas las tarjeatas, no veo necesario que deba quedar siempre al menos una
 
   - Implementado: se permite eliminar todas las tarjetas de la progresión. Al quedar vacía, se muestra un aviso «Sin acordes» en el área de tarjetas y el acompañamiento lo informa si intentas reproducir; los acordes añadidos después se comportan como siempre. Las secciones que quedaban sin tarjetas se depuran automáticamente. `npm test` → 186/186 (tests de estado vacío y selección al borrar). Pendiente tu revisión visual.
 
@@ -253,7 +263,7 @@ Quisiera que las teclas del pc se cambien, actualmente es a=c s=d d=e, etc yo qu
 
   - Implementado: las teclas del PC se reasignaron tomando `a` como el la de la 5.ª cuerda de la guitarra (A2). Fila media `a s d f g h j k l ñ` = la si do re mi fa sol la si do; fila grave `z x c v b n m , . -` = mi fa sol la si do re mi fa sol (z = mi de la 6.ª cuerda); fila superior en columnas `q w e r t y u i o p` = ab/g#, a#/bb, … con las que no tienen tecla negra debajo tocando la misma nota natural de su columna (`e`=do, `t`=mi, `y`=fa, `p`=do, como pediste). El piano visible pasó a C2–B5 (4 octavas) y suena por defecto una octava más alta que la guitarra (`a`=A3, 220 Hz, octava por encima del la de la 5.ª cuerda); el modo mástil usa exactamente las mismas teclas que el piano (`a`=la=A3, `s`=si, `d`=do=C4…). `Shift izquierdo`/`derecho` bajan/suben la base exactamente 12 semitonos (A3 → A2 / A4), sin recortar a la ventana visible. `npm test` → 186/186 (tests de mapeo actualizados en `tests/keyboard-section.test.cjs`). Pendiente tu prueba real en navegador.
 
-. [x] Los controles de apagado/ nota/ acorde/ de Escala en vivo, deberían aparecer solo cuando se enciende el micrófono, y en lo posible que se vean más cerca de la sección de micrófono, en cambio el switch de apagado/ nota/ acorde de abajo (el de acorde en vivo) debería mostrarse donde actualmente está el de Escala en vivo, ya que este de abajo es el que está vinculado al teclado del pc, así que tiene sentido que se muestre cerca del teclado en pantalla
+. Los controles de apagado/ nota/ acorde/ de Escala en vivo, deberían aparecer solo cuando se enciende el micrófono, y en lo posible que se vean más cerca de la sección de micrófono, en cambio el switch de apagado/ nota/ acorde de abajo (el de acorde en vivo) debería mostrarse donde actualmente está el de Escala en vivo, ya que este de abajo es el que está vinculado al teclado del pc, así que tiene sentido que se muestre cerca del teclado en pantalla
 
   - Implementado: «Acorde en vivo» (teclado del PC) se movió a la fila de controles junto al switch de Pentatónicas y el botón ＋ de añadir acorde; «Escala en vivo» (micrófono) ahora se muestra junto al botón Micrófono y solo aparece (sin el atributo hidden) cuando el micrófono está encendido (`microphone-ui.js`), ocultándose al detenerlo o ante error. `npm test` → 186/186.
 
@@ -264,11 +274,11 @@ Quisiera que las teclas del pc se cambien, actualmente es a=c s=d d=e, etc yo qu
 
   - Implementado: `t` → d#/eb y las posiciones sin letra fija del latam por código físico: `´` (BracketLeft) = c#/db, `+` (Equal) = d#/eb y `}` (BracketRight) = e. Se conservan la comilla (Quote) = d y `ñ`/`;` = C. Tests de mapeo actualizados; `npm test` → 186/186. Pendiente tu prueba real en navegador con teclado latam.
 
-. [x] Además dentro del piano expansible me gustaría ver el switch entre bemol o sostenido para los acordes que pongo y qué nota se muestra en las teclas negras
+. Además dentro del piano expansible me gustaría ver el switch entre bemol o sostenido para los acordes que pongo y qué nota se muestra en las teclas negras
 
   - Implementado: switch ♯/♭ en los controles del piano (etiqueta estilo Delay/Reverb). Es un espejo del switch ♯/♭ de la raíz del mástil (`#root-spelling`): cambia los nombres de las teclas negras (C#→Db, D#→Eb, F#→Gb, G#→Ab, A#→Bb) y se guarda con las preferencias. `npm test` → 186/186.
 
-. [x] y además en modo oscuro el teclado expansible se ve mal, no respeta el color de las teclas blancas y todas se ven oscuras
+. y además en modo oscuro el teclado expansible se ve mal, no respeta el color de las teclas blancas y todas se ven oscuras
 
   - Implementado: en modo oscuro las teclas blancas del piano mantienen su color claro exactamente igual que el mástil y el piano raíz (`.keyboard-keys` incluido en el reseteo de paleta oscura de `style.css`). `npm test` → 186/186.
 
@@ -283,7 +293,7 @@ quisiera aprovechar ese espacio para colocar el switch con el candado que dice H
 
   .La detección de acordes con Micrófono funciona muy bien, pero se podría ajustar un poco más para mejorarlo? 
 
-  . [x] Además hay momentos que al tocar ciertas notas aparecen barras de desplazamiento en el mástil que rompen la vista al desordenar la visual de los trastes, Por ejemplo con D aparece en el lateral derecho del mástil, y por ejemplo con D# aparece una barra de desplazamiento horizontal abajo
+  . Además hay momentos que al tocar ciertas notas aparecen barras de desplazamiento en el mástil que rompen la vista al desordenar la visual de los trastes, Por ejemplo con D aparece en el lateral derecho del mástil, y por ejemplo con D# aparece una barra de desplazamiento horizontal abajo
 
   quisiera que estas barras no aparezcan a no ser que se use modo responsive
 
@@ -294,9 +304,9 @@ quisiera aprovechar ese espacio para colocar el switch con el candado que dice H
     - **Ruido y notas sueltas**: compuerta de raíz — si la clase de la raíz no alcanza al menos el 30% del pico máximo de la croma, el acorde no se afirma (una tríada C cuya tónica apenas suena ya no se reporta como Do).
   - `npm test` → 189/189 (tests nuevos de inversión, raíz débil y confirmación corta del lector). Pendiente tu prueba real con guitarra: rapidez percibida, cejillas al bajarlas y ruido de habitación.
 
-  . [x] El switch de sostenido/bemol no funciona bien al vincularse con qué nota suena, y si lo tengo activado no se realiza bien el cambio a acordes que tengan sostenidos, por ejemplo si tengo el bemol activado, y por microfono toco un D mayor, el switch debería quedar en modo sostenido, y ahora no funciona.
+  . El switch de sostenido/bemol no funciona bien al vincularse con qué nota suena, y si lo tengo activado no se realiza bien el cambio a acordes que tengan sostenidos, por ejemplo si tengo el bemol activado, y por microfono toco un D mayor, el switch debería quedar en modo sostenido, y ahora no funciona.
 
-  . [x] En ambos switchs de apagado/ notas/ acorde. quisiera que esté por defecto en acorde
+  . En ambos switchs de apagado/ notas/ acorde. quisiera que esté por defecto en acorde
 
   .Me gustaría además incluir un afinador para bajo y guitarra
 
@@ -319,11 +329,11 @@ quisiera aprovechar ese espacio para colocar el switch con el candado que dice H
     nombre del acorde y el switch ♯/♭ cambien juntos al tocar (p. ej. Re mayor → sostenido).
 
 
-  . [x] En el botón de micrófono la nota que se escucha aparece a la derecha del botón, y me gustaría que aparezca a la izquierda, ya que al modificarse todo el tiempo el texto de la nota se mueve constantemente el botón de micrófono y eso me jode mucho la visual.
+  . En el botón de micrófono la nota que se escucha aparece a la derecha del botón, y me gustaría que aparezca a la izquierda, ya que al modificarse todo el tiempo el texto de la nota se mueve constantemente el botón de micrófono y eso me jode mucho la visual.
 
   - Implementado: `#microphone-readout` se movió a la izquierda del botón «Micrófono» dentro de `.mic-control`. Además tiene un ancho mínimo estable (88px, texto centrado y recorte con «…») para que el cambio de texto no desplace el botón. Verificado en headless: la lectura queda a la izquierda del botón. Pendiente tu revisión visual.
 
-  . [x] Al quitar todas las tarjetas se deforma la interfaz porque ocupa menos lugar esa parte donde estaban las tarjetas, eso quiero mejorarlo y que al quitar las tarjetas se mantenga la interfaz en el lugar, y de paso quitar el texto que dice "Sin acordes. Elige una nota y pulsa «añadir acorde» para empezar." y que solo diga "Agrega con «añadir acorde»."
+  . Al quitar todas las tarjetas se deforma la interfaz porque ocupa menos lugar esa parte donde estaban las tarjetas, eso quiero mejorarlo y que al quitar las tarjetas se mantenga la interfaz en el lugar, y de paso quitar el texto que dice "Sin acordes. Elige una nota y pulsa «añadir acorde» para empezar." y que solo diga "Agrega con «añadir acorde»."
 
   - Implementado: el área de tarjetas conserva la altura de una fila al vaciarse (`.progression` con `min-height` de una tarjeta y el aviso centrado en ese mismo alto), así la interfaz (mástil incluido) no se mueve al quitar todas las tarjetas. El texto pasó a «Agrega con «añadir acorde».». Verificado en headless: con tarjetas y sin ellas `.progression` mide lo mismo (147 px) y el desplazamiento del mástil es 0 px.
   
@@ -331,21 +341,21 @@ quisiera aprovechar ese espacio para colocar el switch con el candado que dice H
 
   - Implementado: `restoreCustomProgression()` en `app.js` lee al cargar el slot `traste.customProgression.v1` (el mismo que guarda cada edición de tarjetas) y lo muestra automáticamente, así las tarjetas quedan tal como se estaban editando al recargar. Si no hay slot, se mantiene la progresión inicial; no afecta a las plantillas (siguen sin sobrescribir el slot). Verificado en headless: D y G añadidas a mano sobreviven a la recarga. Los BPM/estilo y demás controles ya se conservaban por preferencias.
 
-  . [x] El botón añadir acorde en un principio estaba colocado en otra parte (para ejemplo revisar la version 1.0) Quisiera que ahora se coloque otro botón en ese lugar para tenerlo a mano en varias circunstancias en la esquina superior derecha como en la version 1.0
+  . El botón añadir acorde en un principio estaba colocado en otra parte (para ejemplo revisar la version 1.0) Quisiera que ahora se coloque otro botón en ese lugar para tenerlo a mano en varias circunstancias en la esquina superior derecha como en la version 1.0
 
   - Implementado: segundo botón «añadir acorde» (`#legend-add-chord`) en la parte alta del panel derecho (`.legend-panel`), encima de «Armadura de Clave». Ancho completo, mismo estilo óxido que el botón central y misma acción (`addProgressionChord`). Verificado en headless: queda arriba de la armadura y añade la tarjeta al hacer clic.
 
   - El encabezado «Armadura de Clave» se eliminó al pasar al panel la lectura de la armadura real («C Mayor · Natural»); el botón de añadir ocupa ahora esa cabecera.
 
-. [x] Quisiera revertir el orden del modo «Ambos»: el piano expandible ya no debe reemplazar ni tapar el mástil, debe quedar debajo.
+. Quisiera revertir el orden del modo «Ambos»: el piano expandible ya no debe reemplazar ni tapar el mástil, debe quedar debajo.
 
   - Implementado: en «Ambos» el piano pasó a mostrarse debajo del mástil a todo lo ancho (`.fretboard-section.keyboard-split` reordena: primero mástil, su pie y su botón de añadir, y después el teclado con su propio «+ añadir acorde»). Las teclas del PC siguen tocando solo el piano y el mástil conserva las notas del micrófono y el seguimiento de «Acorde en vivo». Se actualizaron el texto de ayuda del teclado, los comentarios y el README. Verificado en Chromium headless: con «Ambos» activo el piano queda por debajo del mástil (`pianoTop` > `mastilTop`). `npm test` → 192/192. Pendiente tu revisión visual.
   - Ajuste solicitado: el pie del mástil («? · haz clic en una nota… · Aa scale · grados · 🎨 · Volumen`) ahora se muestra arriba del diapasón y más comprimido (márgenes y gaps reducidos) en el modo «Ambos». Además se separaron los dos botones «+ añadir acorde»: el principal (con la lectura del acorde) queda encima del mástil y el del teclado debajo del piano. Verificado en Chromium headless con el orden pie → añadir(1) → mástil → piano → añadir(2). `npm test` → 192/192. Pendiente tu revisión visual.
   - Ajuste solicitado: en «Ambos» el botón «+ añadir acorde» con su lectura del acorde quedó en la **misma línea** que los controles del pie del mástil, justo antes de los botones de notas/grados (`? · pista · C · + añadir acorde · Aa escala · grados · 🎨 · Volumen`), todo centrado verticalmente sobre el diapasón. Se logró aplanando el pie y la fila de añadir del mástil (`display: contents` en `.fretboard-section.keyboard-split`) para que sus iconos participen en la fila flexible; el `#keyboard-add-row` conserva su caja (selector `:not(.keyboard-add-row)`) y sigue debajo del piano. La pista se acota (`max-width: min(200px, 15vw)` con elipsis) y los botones del pie se compactan para que la fila no desborde. El modo «Mástil» (normal) no cambia. Verificado en headless a 1440 px: los 5 elementos comparten la misma línea con orden pista → lectura → botón → herramientas → volumen, y debajo mástil → piano → añadir(2). `npm test` → 192/192. Pendiente tu revisión visual.
   
-  .Muchas veces pasa que al tocar la primer nota sale un pop que aturde, y si se usan auriculares puede ser dañino, ya que este pop suena como una nota pero más alto que el volumen máximo, aunque los controles de volumen esten bajos pasa muy seguido
+  . [x]Muchas veces pasa que al tocar la primer nota sale un pop que aturde, y si se usan auriculares puede ser dañino, ya que este pop suena como una nota pero más alto que el volumen máximo, aunque los controles de volumen esten bajos pasa muy seguido
 
-  . [x] Ahora me gusta cómo está la distribución de los botones al poner el modo "ambos", me gustaría que esos controles queden así aunque ponga el mástil solo tambien, eso sí, me gustaria que en la p
+  . Ahora me gusta cómo está la distribución de los botones al poner el modo "ambos", me gustaría que esos controles queden así aunque ponga el mástil solo tambien, eso sí, me gustaria que en la p
 arte donde dice 
 ?
 Haz clic en una nota para consultar su intervalo
@@ -355,11 +365,11 @@ Aa escala
 Volumen 
 quitemos el texto que dice "haz clic en una nota etc" y en donde está este texto pongamos el volumen, así queda todo en la misma fila, y además dejarlo más pegado al mástil quitando un poco de margen abajo
 
-. [x] Quisiera que al poner solo mástil también se vea con la misma interfaz ordenada como al poner el modo "ambos" con el boton añadir acorde y volumen en la misma fila arriba del mastil
+. Quisiera que al poner solo mástil también se vea con la misma interfaz ordenada como al poner el modo "ambos" con el boton añadir acorde y volumen en la misma fila arriba del mastil
 
-. [x] Al seleccionar para que se vea solo el mástil se genera un margin que no deberia tener arriba, y los botones de arriba del mastil no quedan de la misma forma compacta como cuando pongo el modo "ambos" donde quedan todos los botones ordenados y compactos arriba del mastil
+. Al seleccionar para que se vea solo el mástil se genera un margin que no deberia tener arriba, y los botones de arriba del mastil no quedan de la misma forma compacta como cuando pongo el modo "ambos" donde quedan todos los botones ordenados y compactos arriba del mastil
 
-. [x] En el teclado extendido me gustaría que el añadir acorde que se ve debajo del teclado, ahora lo traslademos dentro del teclado arriba a la derecha que hay un espacio libre, así siempre puedo agregar acordes siempre desde la interfaz del piano teniendo el boton mas a mano
+. En el teclado extendido me gustaría que el añadir acorde que se ve debajo del teclado, ahora lo traslademos dentro del teclado arriba a la derecha que hay un espacio libre, así siempre puedo agregar acordes siempre desde la interfaz del piano teniendo el boton mas a mano
 
 .Me gustaría que el micrófono en guitarra detecte las notas y las muestre sin tanto retardo, además quisiera mejorar la detección de acordes, por ahora en guitarra ya que es con lo que estoy probando actualmente y con bajo ha funcionado bastante bien, aunque también se podría mejorar la detección de acordes
 
@@ -369,7 +379,7 @@ quitemos el texto que dice "haz clic en una nota etc" y en donde está este text
   - Corregido (el margen sobrante que veías en solo «Mástil»): eran ~16 px de más respecto a «Ambos», no el `margin-top: 6px` del diapasón (ese es el correcto y común a los dos modos). La causa era que la banda es un contenedor flex con `wrap` y su `align-content` valía `normal`, que equivale a `stretch`: al repartirse el espacio libre entre las líneas, en «Mástil» (con menos contenido, sin piano) metía ~112 px **invisibles** entre los bloques, mientras que en «Ambos» el contenido llena la altura y por eso no se notaba. Se añadió `align-content: flex-start` a la banda compartida, así las líneas ya no se estiran. Verificado en Chromium headless a 1440 px midiendo rects: ahora «Mástil» y «Ambos» dan exactamente los mismos huecos (10 px de la fila de controles a la banda y 6 px de la banda al mástil; antes 58,1 px y 22 px en Mástil). `npm test` → 192/192. Pendiente tu revisión visual.
 
 
-. [x] Me gustaría que al usar el micrófono para ver las notas que toco en tiempo real, que las notas doradas que se ven en el mástil al tocar, que permitan ver el color de la nota que se está tocando en el mastil, ya que actualmente el circulo dorado no deja ver el color de la nota que estoy tocando para saber qué parte de la escala es, o si estoy tocando fuera de escala
+. Me gustaría que al usar el micrófono para ver las notas que toco en tiempo real, que las notas doradas que se ven en el mástil al tocar, que permitan ver el color de la nota que se está tocando en el mastil, ya que actualmente el circulo dorado no deja ver el color de la nota que estoy tocando para saber qué parte de la escala es, o si estoy tocando fuera de escala
 
   - Causa: el color de cada nota viene de un **estilo en línea** que `app.js` escribe al pintar el mástil (`background-color`), así que la nota dorada solo podía taparlo con `background: #ffc107 !important`. Y eso era justo lo que impedía ver si la nota estaba dentro de la escala o fuera.
   - Corregido: se respeta el color propio de la nota y la señal de «esto está sonando» la dan el aro dorado y el pulso, no el relleno. Con una nota de la escala se ve su color con el aro alrededor; con una nota fuera de la escala, que no tiene relleno, el aro dorado sobre el fondo oscuro.
@@ -386,7 +396,7 @@ quitemos el texto que dice "haz clic en una nota etc" y en donde está este text
 
 .Creo que una buena forma de ir armando las canciones es agregar interacciones que sean intuitivas para crear las cosas, por ejemplo:
 
-. [x] Me gustaría poder adaptar que al hacer click en una tarjeta, el backtrack se adapte para comenzar desde ahí, eso haría que se pueda vincular mejor el tempo de una canción que estoy creando con un video por ejemplo.
+. Me gustaría poder adaptar que al hacer click en una tarjeta, el backtrack se adapte para comenzar desde ahí, eso haría que se pueda vincular mejor el tempo de una canción que estoy creando con un video por ejemplo.
 . Otra cosa es que al hacer clic en las tarjetas pueda copiar el comportamiento del boton "tempo" para también adaptar el tempo de la canción y que se cambie en tiempo real mientras se reproduce, eso haría más facil ir siguiendo el tempo de las canciones de forma intuitiva
 
   - Implementado: la tarjeta se comporte como el botón **Tempo**. `tempo-tap.js` saca la estimación a `globalThis.tapProgressionTempo` y la comparte entre el botón y las tarjetas, así que con dos o más pulsaciones seguidas se obtiene el mismo BPM. Al aplicarlo, `applyBpm()` avisa con el evento `traste:tempo-applied` y `player-ui.js` se lo pasa al Acompañamiento que esté sonando: el botón Tempo, las flechas, el campo editable a mano y las tarjetas cambian el tempo en vivo, sin cortar la música.
@@ -399,13 +409,13 @@ quitemos el texto que dice "haz clic en una nota etc" y en donde está este text
 
 .Buscar una forma gratuita en la que pueda guardar temas de esta forma y se puedan ver, o por ejemplo en un futuro que alguien suba sus versiones o reproduzca las canciones que quiera
 
-. [x] También que si está todo pausado y toco una tarjeta por ejemplo, se ponga play. esto haría más intuitivo todo.
+. También que si está todo pausado y toco una tarjeta por ejemplo, se ponga play. esto haría más intuitivo todo.
 
   - Implementado lo de pulsar una tarjeta: el Acompañamiento arranca en esa tarjeta y, si ya estaba sonando, se reinicia desde ella. No se recarga la lista, así que al repetir o terminar sigue la progresión completa. En `progression-player.js`, `start()` acepta `startIndex` (se recorta al rango válido); en `player-ui.js` el arranque se reutiliza desde `globalThis.playProgressionFrom(index)`, que es lo que llama `app.js` al pulsar la tarjeta. Con secciones, la tarjeta se busca por referencia dentro de la lista de reproducción (secciones y repeticiones), no por su número: si la tarjeta no está en esa lista, arranca al principio de ella. El clic en «×» o en el selector de duración no dispara nada, y el doble clic sigue duplicando.
   - Añadido el interruptor **Reproducir desde la tarjeta pulsada** en el Acompañamiento, activado por defecto y guardado con las demás preferencias, para poder elegir las tarjetas sin que suene. Con MIDI o Metrónomo como fuente activa el clic no hace nada, para no pisar lo que estás escuchando; la fuente activa se publica como `globalThis.StringSources.active`.
   - `npm test` → 207/207 (motor: `startIndex` válido, recortado y con valores inválidos; interfaz: arranque desde la tarjeta, reinicio al pulsar otra, el encaje con secciones, las dos guardas y el interruptor). Verificado en Chromium sobre `npm start`: pulsando la 3 arranca en «Sonando: G7 · acorde 3 de 4», pulsando la 1 mientras suena pasa a «acorde 1 de 4», y con la sección «Estribillo» (tarjetas 2-3 ×2) la tarjeta 3 muestra «G7 · Estribillo · vuelta 1/2 · acorde 2 de 4». La etiqueta nueva cabe en la fila de «Ritmo y mezcla» sin desbordar (panel 944 px, controles 914 px). Pendiente tu prueba real, sobre todo con secciones y con el interruptor apagado.
 
-  . [x] En este momento no me gustó la nueva incorporación, prefiero que sea más intuitiva así que revierto estos cambios
+  . En este momento no me gustó la nueva incorporación, prefiero que sea más intuitiva así que revierto estos cambios
    Quiero que el botón de "Reproducir desde la tarjeta" esté activado por defecto y no aparezca el botón, y por defecto también quiero que el switch esté en "Reiniciar". Pero con la diferencia que al pulsar otra tarjeta no aplique como cambio de tempo, que el cambio de tempo sólo se haga si hago clic en la misma tarjeta, intentar que no se confunda el doble clic para duplicar la tarjeta, con el clic de cuando estoy marcando tempo, si estoy intentando mejorar el tempo intencionalmente, que no se active el doble clic para el duplicado así evitamos duplicar la tarjeta por error, para que se duplique la tarjeta deberian ser dos clics bien definidos y aislados así no se mezcla con la intención de querer cambiar el tempo desde la tarjeta.
 
   - Reformulado como pediste (formulación superada más abajo), sin deshacer el commit anterior: el interruptor «Reproducir desde la tarjeta pulsada» desaparece de la interfaz y de las preferencias (`preferences.js` ya no guarda ni lee `playerCardStart`), así que la tarjeta reproduce siempre que la fuente activa sea Progresión. El modo por defecto ahora es **Reiniciar** (`cardMode: 'restart'`), y la tarjeta seleccionada es el ancla: `player-ui.js` recuerda en `playingFrom` la tarjeta con la que arrancó la música.
@@ -423,7 +433,7 @@ quitemos el texto que dice "haz clic en una nota etc" y en donde está este text
   - `npm test` → 223/223 (`tests/progression-interactions.test.cjs` reescrito para el doble clic clásico: dos clics seguidos duplican, separados no, tarjetas distintas nunca, tras duplicar el siguiente clic empieza de nuevo y el clic sintético no cuenta; `tests/progression.test.cjs` con «pulsar una tarjeta nunca toca el tempo» y el tempo en marcha desde el botón; `tests/tempo-tap.test.cjs` sin tarjeta).
   - Verificado en Chromium sobre `npm start`: la fila del tempo queda a la derecha de las tarjetas, pegada al interruptor «Seguir acorde MIDI» (141 × 40 px) y sin desbordar a 420, 700 y 1400 px; un clic en la tarjeta arranca y tres clics seguidos no cambian el BPM; el doble clic real duplica (5 tarjetas); tres clics reales en el botón Tempo dan ~120 BPM y los aplican con la música sonando. Aviso: al volver a la regla clásica de 400 ms, dos clics separados unos 400 ms pueden leerse como doble clic y duplicar; es el comportamiento de siempre, sin las condiciones de aislamiento de la versión anterior.
 
-  . [x] «Ajustalo por favor si, y tambi[en cambia de lugar el boton de tempo con el switch de seguir midi por favor».
+  . «Ajustalo por favor si, y tambi[en cambia de lugar el boton de tempo con el switch de seguir midi por favor».
 
   - El doble clic se aprieta: `progression-interactions.js` duplica con el segundo clic a menos de 250 ms del primero, en vez de los 400 ms de siempre. Dos clics deliberados siguen duplicando y dos pulsaciones sueltas ya no. Es solo el umbral: no se recupera el aislamiento de la versión que se descartó.
   - El **Tempo** cambia de sitio con el interruptor: el botón y su campo BPM van por encima de **Seguir acorde MIDI** dentro de `.progression-view-controls` (que queda debajo), en vez de debajo suyo. No cambia el comportamiento del tempo ni del interruptor.
@@ -432,7 +442,7 @@ quitemos el texto que dice "haz clic en una nota etc" y en donde está este text
 
 .Los botones AA NOTAS y 1 GRADOS: NO Tienen funciones que se podrían reordenar ya que no son intuitivas. Por ejemplo al hacer un clic en notas deberia quedar como está, al hacer otro clic envez de decir "todas" debería mostrar los grados. tendría esas 3 fases, Así el botón GRADOS pasaría a Mostrar todo el mástil con notas (lo que antes hacia el segundo clic del boton notas) y con otro clic mostrar los grados en toda la escala, y ahora los botones deberian cambiar de nombre, primer boton diria VER y el segundo botón MASTIL.
 
-  . [x] Actualmente se cambiaron los botones de el párrafo anterior (Notas, grados etc)
+  . Actualmente se cambiaron los botones de el párrafo anterior (Notas, grados etc)
   Pero no quedó con la función como yo esperaba que fuese, ahora mismo El botón que dice "VER NOTAS" Debería estar desactivado al no mostrar nada, luego Que se vean las notas, y luego con otro clic los grados, deberían ser esas 3 fases, luego el botón "MASTIL" deberia también tener 3 fases, apagado donde no muestre notas, luego con un clic debería mostrar las notas en todo el mástil (excepto las notas de la escala seleccionada ya que de eso se encarga el otro boton) y con otro clic debería mostrar los grados en todo el mastil envez de las notas (los grados de la escala/acorde que esté seleccionado y mostrandose en el mastil).   Otra cosa es que el boton "MASTIL" al tener activado el modo notas, debería también sincronizarse con el switch de bemol / sostenido, ya que depende de cómo esté ese switch sería cómo debería mostrar las notas (bemoles/sostenidos). Y debería funcionar como el resto de las cosas, por ejemplo si yo toco un RE MAYOR, entonces el switch tendría que activarse en sostenidos, ya que RE MAYOR tiene sostenido en su armadura de clave.
 
   - **Los dos botones ya no se cruzan: cada uno escribe en su zona.** Quedó claro que la pregunta de cada uno es distinta y que lo quedescribe el botón es solo su parte del mástil. **VER** rotula la **escala dibujada** (las notas del modo y, con la pentatónica apagada, las del acorde) y **MÁSTIL** rotula **el resto del mástil**, lo que queda fuera de la escala. Antes cada uno miraba al otro: con MÁSTIL en «todo» las notas de fuera de la escala se rotulaban aunque dijeras VER=nada, y con VER en grados los grados se salían de la escala. Now no: con **VER no y MÁSTIL notas** la escala calla y el mástil sigue escribiendo (verificado en el navegador).
@@ -485,7 +495,7 @@ quitemos el texto que dice "haz clic en una nota etc" y en donde está este text
 
 .En este momento la app no está bien adaptada a móviles, habría que mejorar su diseño responsive
 
-. [x] Actualmente me gustaría volver a reasignar las teclas para tocar tanto en el piano como en el mastil, haciendo que vuelva la antigua asignasion de asdfg=cdefg
+. Actualmente me gustaría volver a reasignar las teclas para tocar tanto en el piano como en el mastil, haciendo que vuelva la antigua asignasion de asdfg=cdefg
   zxcv=g a b c
 
   - Restaurada la asignación clásica **tomada del historial**, no de memoria: se copió tal cual el `KEY_OFFSETS`, el `KEY_CODES` y la base de `keyboard-section.js` del commit `bf546dd^` (justo antes de que se hicieran los ajustes latam), para no inventar un mapeo a medias.
@@ -508,7 +518,7 @@ quitemos el texto que dice "haz clic en una nota etc" y en donde está este text
 
 .Cuando la app esté mas pulida, me gustaría que se puedan modificar acordes para guardarlos en un backtrack personalizado, por ejemplo si hay una canción donde la progresión es C D G y yo quiero que en G se muestre una escala menor pentatónica en el mástil, que eso se pueda guardar también, o que si en un acorde quiero que aparezca una escala "fantasma" también quisiera poder guardarlo como parte del backtrack, y en un futuro hacer que si quiero puede suceder eso solo en algunas vueltas donde repita ese acorde, y no siempre, así puedo tener muchas variantes y jugar armando mis progresiones y mi forma de improvisar en ellas.
 
-. [x] Actualmente el botón de tempo funciona un poco mal, creo que se entrecruza con el ritmo que está sonando al cambiar de tarjeta, digamos que en vez de reiniciarse con mis clics en el boton de tempo, mis clics se suman con el tempo ya existente y genera que no sea algo cómodo ni facil de usar
+. Actualmente el botón de tempo funciona un poco mal, creo que se entrecruza con el ritmo que está sonando al cambiar de tarjeta, digamos que en vez de reiniciarse con mis clics en el boton de tempo, mis clics se suman con el tempo ya existente y genera que no sea algo cómodo ni facil de usar
 
   - Causa encontrada en dos partes. Una: el estimador promediaba todos los intervalos de la cuenta, así que una pausa dentro de la cuenta (hasta 2,5 s) o un golpe fallido se sumaban a los golpes buenos y arrastraban el BPM; con dos golpes separados por una pausa el resultado no era el que se estaba marcando. Dos: el tempo se publicaba en el Acompañamiento **en cada golpe** desde el segundo, así que lo que estaba sonando cambiaba de pulso varias veces mientras todavía contabas, que es lo que se notaba como un enredo con el ritmo.
   - Corregido el estimador: `tempoFromTaps(taps)` (puro, en `tempo-tap.js`) usa la **mediana** de los intervalos entre golpes y descarta los que se apartan más de un 30%, de modo que una pausa o un golpe perdido no falsean el resultado. Se sigue manteniendo la ventana de 2,5 s para reiniciar la cuenta, porque tiene que ser mayor que el pulso más lento que se acepta (30 BPM = 2000 ms). Devuelve `null` con menos de dos pulsaciones o fuera del rango 30–240.
@@ -517,7 +527,7 @@ quitemos el texto que dice "haz clic en una nota etc" y en donde está este text
   - Editar el BPM del Acompañamiento, aplicar una plantilla o usar las flechitas **cierran** la cuenta: el tempo explícito siempre gana y lo que se estaba contando no llega a aplicarse.
   - `npm test` → 230/230 (6 pruebas nuevas: mediana y descarte de valores atípicos, aplicación única al soltar, estado visual de la cuenta, descarte con «↺», descarte con Escape, y cierre de la cuenta por tempo explícito o plantilla; las de `setTimeout` usan un reloj falso).
   - Verificado en Chromium headless a 1440 px sobre `npm start`: 4 golpes a 500 ms → campo y Acompañamiento a 120 BPM y la cuenta se cierra; 2 golpes a 700 ms → el campo previsualiza 85 pero el Acompañamiento **sigue en 120** y el «↺» aparece; con «↺» y con Escape el campo vuelve a 120 sin cambiar el Acompañamiento; con la música arrancando, el tempo pulsado se aplica igual. Sin errores de consola (solo el 404 histórico del favicon). Pendiente tu prueba real marcando el ritmo de una canción, y en particular marcando a 30-40 BPM, que es donde la ventana de reinicio se aparta más del intervalo real.
-. [x] Ahora me gustaría que las notas del mástil que suenen al presionar las teclas sean en una octava más abajo para la guitarra
+. Ahora me gustaría que las notas del mástil que suenen al presionar las teclas sean en una octava más abajo para la guitarra
 
   - Implementado: en el modo **Mástil** con guitarra, las teclas del PC tocan el mástil **una octava más abajo** que en el piano. `a` pasa de do4 a **do3**, que es donde una guitarra se toca cómodo. Como la nota que suena y la que se marca en el mástil son la misma, en las cuerdas se ve exactamente lo que se oye.
   - Nueva función pura y testeada `mastilBaseDrop(instrument, inMastil)` (`keyboard-section.js`, exportada): devuelve 12 con la guitarra en modo Mástil, 0 con el bajo y 0 siempre que las teclas toquen el piano. El `keydown` usa `soundingBaseFor()`, que resta ese valor a la base normal; el piano no se toca, así que en «Teclado» y «Ambos» no cambia nada.
@@ -526,7 +536,7 @@ quitemos el texto que dice "haz clic en una nota etc" y en donde está este text
   - Verificado en Chromium sobre `npm start` pulsando las teclas de verdad y leyendo qué nota queda marcada en el mástil. Mástil + guitarra: `a`=Do3 `s`=Re3 `d`=Mi3 `f`=Fa3 `g`=Sol3 `h`=La3 `j`=Si3, `w`=Do#3 `e`=Re#3 `t`=Fa#3 `y`=Sol#3, `z`=Sol2 `x`=La2 `c`=Si2 `v`=Do3 — una octava exacta por debajo del piano. Mástil + bajo: `a`=Do4, igual que antes. Piano en modo Teclado: la tecla `a` sigue rotulada en 60 (do4), sin moverse. Sin errores de consola.
   - Pendiente tu prueba real con la guitarra en modo Mástil: `asdfg` debería sonar como un acorde de Do en el registro de la guitarra, no del piano.
 
-  .Al tocar el pianito miniatura (donde se eligen las notas) hace una especie de pop, pero solo en ese, no en el extensible
+  . [x]Al tocar el pianito miniatura (donde se eligen las notas) hace una especie de pop, pero solo en ese, no en el extensible
 
   - **No se pudo reproducir en headless.** Se capturó la salida real del `AudioContext` (espejando las conexiones al destino hacia un `MediaStreamAudioDestinationNode` + `MediaRecorder`, y decodificando con ffmpeg) tanto con la política de autoplay desactivada como con la de rigor: la primera nota sale limpia en los dos casos, pico −16,1 dBFS y sin saltos. El audio virtual de Chromium no tiene el transitorio de arranque del dispositivo real, que es de donde viene el chasquido. **La confirmación de que el pop desapareció tienen que ser tus oídos.**
   - La causa sí se explica por el código, y encaja con un detalle de tu descripción original (IA_GUIDE, línea 327): el pop sonaba **más fuerte que el volumen máximo aunque los controles estuvieran bajos**. Un `GainNode` nace con `gain = 1.0`, y la envolvente se programaba en `ctx.currentTime`, justo en el instante actual. Entre que se crea el nodo y que llega la automatización, la ganancia vale 1.0 con independencia del volumen: por eso el pico no bajaba con el control. Al arrancar el audio de verdad, ese primer tramo se cuela y sale un pico a tope.
@@ -552,3 +562,19 @@ quitemos el texto que dice "haz clic en una nota etc" y en donde está este text
   - **Decisión del autor: la de las pestañas (opción 3).** Se fusionó a `main` y la rama de la opción 1 se borró, local y en GitHub. En `main`: `3c04b38` (las pestañas) y `f0c7239` (README). La opción 1 queda descrita arriba solo como referencia de lo que se descartó.
   - Pendiente tu prueba real en el móvil. Al probar: el mástil con desplazamiento lateral, el modo Ambos con el piano debajo, el plegado de secciones, la biblioteca y, sobre todo, el micrófono y el desbordamiento de las notas del mástil, que se muestran en varios sitios.
   - Dime las cosas que había que cambiar en la opción 1 («había que cambiar varias cosas») y se aplican sobre la de las pestañas.
+
+  . Ahora mismo me gustaría implementar que se pueda seleccionar una tonalidad para el tema (e incluso a las secciones más adelante como estribillo y eso) o para incluso tarjetas o secciones específicas,
+  donde haya un switch cerca del mástil para activar una especie de escala "fantasma" y mostrarla en el mástil, esta "escala fantasma" sería la tonalidad,
+  y también luego poder agregar interacciones con esta tonalidad, por ejemplo poder hacer que a partir de una escala que sea la tonalidad, el resto de los acordes se muestren como los modos de esa tonalidad,
+  ejemplo si pongo tonalidad A, cuando toque un DO deberían mantenerse los colores de grados de la escala de LA pero resaltando la escala que toque en el momento como DO.
+
+. Me gustaría incorporar urgentemente la parte de mostrar varias notas tocadas a la vez durante el uso de micrófono
+
+. Mejorar el reconocimiento de acordes apuntando más que nada a acordes simples en un principio (mayor/menor) y luego que se corrija quizá o algo así para que se
+  optimice que se reconozca y muestre en tiempo real cuando toque un acorde, más que nada para el reconocimiento al momento de tener el switch en «Acorde» del
+  micrófono (y que de paso se incorpore a «Nota») haciendo que se reconozcan tanto acordes con cuerdas graves
+. También mejorar reconocimiento de acordes agudos o con cuerdas más agudas
+
+. Quisiera que al presionar enter o espacio se agregue el acorde que reconoce el mástil, y que con shift se pueda cambiar si el micrófono reconoce nota o acorde,
+  más adelante podemos pulir otros atajos pero por ahora estos son muy necesarios para optimizar el crear progresiones o guardar temas conocidos o con youtube de
+  forma intuitiva
