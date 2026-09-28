@@ -194,6 +194,10 @@ const initialProgression=progression;
 const initialProgressionSnapshot=JSON.stringify(progression);
 let progressionEdited=false;
 const customProgressionKey='traste.customProgression.v1';
+// La escala fantasma se guarda con el acorde, como en «Mis progresiones». Solo
+// se acepta si es un modo que la app conoce: un guardado corrupto no debe poder
+// colar una clave que reviente al pintar el mástil.
+const validGhostMode=value=>(value&&Object.hasOwn(modes,value))?value:'';
 function saveCustomProgression(){
   if(typeof localStorage==='undefined')return;
   try{
@@ -202,29 +206,40 @@ function saveCustomProgression(){
       rootNoteName:item.rootNoteName||undefined,
       type:item.type,
       mode:item.mode,
+      ghostMode:validGhostMode(item.ghostMode),
       beats:validBeats(item.beats)
     }))));
   }catch{/* Sin almacenamiento: la opción «Mi progresión» usa la progresión actual. */}
 }
-// Al recargar se restaura la progresión propia guardada, igual que si se
-// eligiera «Mi progresión»: las tarjetas quedan tal como se estaban editando.
-function restoreCustomProgression(){
-  if(typeof localStorage==='undefined')return;
-  let chords=null;
+// Lee el slot de «Mi progresión» y lo devuelve ya limpio. Un null significa «no
+// hay guardado» o «está corrupto», y una lista vacía es una decisión del autor
+// (borró todas las tarjetas), no un fallo: por eso no se puede preguntar solo
+// por la longitud, que es lo que hacía que al recargar volvieran las tarjetas
+// iniciales. Lo usan tanto la restauración al cargar como la plantilla.
+function readCustomProgression(){
+  if(typeof localStorage==='undefined')return null;
   try{
     const raw=localStorage.getItem(customProgressionKey);
     const parsed=raw?JSON.parse(raw):null;
-    if(Array.isArray(parsed)&&parsed.length){
-      chords=parsed.map(item=>({
-        root:Number.isInteger(item.root)?((item.root%12)+12)%12:null,
-        rootNoteName:item.rootNoteName,
-        type:item.type,
-        mode:item.mode,
-        beats:validBeats(item.beats)
-      })).filter(item=>item.root!==null&&chordTypes.some(type=>type.value===item.type));
-    }
-  }catch{/* Sin guardado previo: se usa la progresión inicial. */}
-  if(!chords||!chords.length)return;
+    if(!Array.isArray(parsed))return null;
+    const chords=parsed.map(item=>({
+      root:Number.isInteger(item.root)?((item.root%12)+12)%12:null,
+      rootNoteName:item.rootNoteName,
+      type:item.type,
+      mode:item.mode,
+      ghostMode:validGhostMode(item.ghostMode),
+      beats:validBeats(item.beats)
+    })).filter(item=>item.root!==null&&chordTypes.some(type=>type.value===item.type));
+    // Si traía acordes y todos son inservibles, el guardado está corrupto y se
+    // devuelve null: mejor la progresión inicial que un mástil sin nada que tocar.
+    return !chords.length&&parsed.length?null:chords;
+  }catch{return null;}
+}
+// Al recargar se restaura la progresión propia guardada, igual que si se
+// eligiera «Mi progresión»: las tarjetas quedan tal como se estaban editando.
+function restoreCustomProgression(){
+  const chords=readCustomProgression();
+  if(!chords)return;
   playingProgressionItem=null;
   progressionEdited=true;
   progression=chords;

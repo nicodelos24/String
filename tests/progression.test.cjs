@@ -531,6 +531,64 @@ test('mi progresión: los cambios en las tarjetas se guardan solos en el slot',(
   assert.deepEqual(saved().map(c=>[c.root,c.type,c.beats]),[[0,'maj',1],[5,'m7',2]]);
 });
 
+test('mi progresión: la escala fantasma también se guarda y se restaura',()=>{
+  // Se perdía al recargar porque el autoguardado no escribía el ghostMode, y
+  // «Mis progresiones» sí. Ahora los dos caminos guardan lo mismo.
+  const {run,element}=setup();
+  run("localStorage={_s:{},getItem(k){return this._s[k]??null;},setItem(k,v){this._s[k]=String(v);}}");
+  run("progression=[{root:0,type:'maj',mode:'ionian',ghostMode:'lydian',beats:4},{root:5,type:'m7',mode:'dorian',ghostMode:'',beats:2}];saveCustomProgression()");
+  const saved=JSON.parse(run("localStorage.getItem('traste.customProgression.v1')"));
+  assert.deepEqual(saved.map(c=>c.ghostMode),['lydian',''],'el slot guarda la escala fantasma de cada acorde');
+  const leido=run('JSON.stringify(readCustomProgression().map(c=>[c.root,c.ghostMode,c.beats]))');
+  assert.equal(leido,JSON.stringify([[0,'lydian',4],[5,'',2]]),'y el lector la devuelve');
+  // Al restaurar, la escala fantasma se aplica al acorde y sale en el selector.
+  run('progression=[];restoreCustomProgression()');
+  assert.equal(run('activeProgression'),0);
+  assert.equal(run('ghostMode'),'lydian');
+  // El doble de DOM no mantiene el `value` de un <select> al repintar sus
+  // opciones, así que se mira el HTML: la opción tiene que salir marcada.
+  assert.match(element('#ghost-mode-select').innerHTML,/value="lydian" selected/);
+  // Una escala fantasma que no exista no puede colarse: se descarta.
+  run("localStorage.setItem('traste.customProgression.v1','[{\"root\":0,\"type\":\"maj\",\"ghostMode\":\"inventado\"}]')");
+  assert.equal(run("JSON.stringify(readCustomProgression().map(c=>c.ghostMode))"),'[""]');
+});
+
+test('mi progresión: una lista vacía guardada se conserva al recargar',()=>{
+  // Antes se perdía: el guardado automático sí guardaba la lista vacía, pero al
+  // restaurarla se confundía con «no hay guardado» y volvían las cuatro
+  // tarjetas iniciales.
+  const {run,element}=setup();
+  run("localStorage={_s:{},getItem(k){return this._s[k]??null;},setItem(k,v){this._s[k]=String(v);}}");
+  const inicio=run('JSON.stringify(progression.map(c=>[c.root,c.type]))');
+  assert.equal(run('progression.length'),4,'la página arranca con cuatro tarjetas');
+  // Borra todas las tarjetas y comprueba que queda guardado como lista vacía.
+  run('removeProgressionChord(3);removeProgressionChord(2);removeProgressionChord(1);removeProgressionChord(0)');
+  assert.equal(run('progression.length'),0);
+  assert.equal(run("localStorage.getItem('traste.customProgression.v1')"),'[]');
+  // Recargar: se respeta la lista vacía.
+  run('progression=initialProgression.map(c=>({...c}));progressionEdited=false;activeProgression=0;restoreCustomProgression()');
+  assert.equal(run('progression.length'),0,'al recargar no vuelven las tarjetas iniciales');
+  assert.equal(run('activeProgression'),-1,'y no queda ninguna seleccionada');
+  assert.equal(run('progressionEdited'),true);
+  assert.match(element('#progression').innerHTML,/progression-empty/,'la lista avisa de que no hay nada');
+  assert.notEqual(inicio,run('JSON.stringify(progression)'));
+});
+
+test('mi progresión: un guardado corrupto cae a la progresión inicial',()=>{
+  const {run}=setup();
+  run("localStorage={_s:{},getItem(k){return this._s[k]??null;},setItem(k,v){this._s[k]=String(v);}}");
+  const inicio=run('JSON.stringify(progression)');
+  for(const guardado of ['[]','no es json','{"a":1}','[{"root":0,"type":"inventado"}]','[{"root":"x","type":"maj"}]']){
+    run(`localStorage.setItem('traste.customProgression.v1',${JSON.stringify(guardado)})`);
+    // Una lista vacía sí es válida y sale como lista; el resto, como null.
+    const esperado=guardado==='[]'?[]:null;
+    assert.equal(run('JSON.stringify(readCustomProgression())'),JSON.stringify(esperado),'con el slot '+guardado);
+    run('progression=initialProgression.map(c=>({...c}));progressionEdited=false;restoreCustomProgression()');
+    assert.equal(run('progression.length'),guardado==='[]'?0:4,'tras restaurar con el slot '+guardado);
+  }
+  assert.equal(run('JSON.stringify(progression)'),inicio);
+});
+
 test('pulsar una tarjeta arranca el acompañamiento desde ella y la sigue mostrando',async()=>{
   const {run,element,clickCard}=setupPlayerInterface();
   await clickCard(2);

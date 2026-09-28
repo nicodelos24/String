@@ -27,23 +27,22 @@ if(typeof document!=='undefined')document.querySelector('#apply-preset').addEven
   const key=document.querySelector('#progression-preset').value;
   if(draggingProgressionItem)return;
   if(key==='custom'){
-    let chords=null;
-    if(typeof localStorage!=='undefined'){
-      try{
-        const raw=localStorage.getItem(customProgressionKey);
-        const parsed=raw?JSON.parse(raw):null;
-        if(Array.isArray(parsed)&&parsed.length)chords=parsed.map(item=>({
-          root:item.root,rootNoteName:item.rootNoteName,type:item.type,mode:item.mode,beats:item.beats
-        }));
-      }catch{/* Sin guardado previo: se usa la progresión actual. */}
-    }
-    if(!chords||!chords.length)chords=progression.map(item=>({...item}));
+    // El lector es el de app.js y ya trae la escala fantasma, la validación y
+    // el caso de la lista vacía guardada a propósito. Si no hay slot, se usa la
+    // progresión que hay en pantalla.
+    const chords=readCustomProgression()||progression.map(item=>({...item}));
     window.dispatchEvent(new Event('traste:load-song'));
     progression=chords;progressionEdited=true;playingProgressionItem=null;
-    selectProgressionChord(0);
+    // Con las tarjetas vacías no hay acorde que seleccionar, y updateView no
+    // llega a pintarse: hay que repintar la lista a mano o se quedarían las
+    // tarjetas viejas en pantalla.
+    if(progression.length)selectProgressionChord(0);
+    else{activeProgression=-1;renderProgression();}
     window.dispatchEvent(new Event('traste:preset-applied'));
     const compases=Math.round(chords.reduce((sum,chord)=>sum+(Math.abs(Number(chord.beats))||4),0)/4);
-    document.querySelector('#preset-status').textContent=`Mi progresión · ${compases} compases. Se guarda sola cuando editas las tarjetas.`;
+    document.querySelector('#preset-status').textContent=chords.length
+      ? `Mi progresión · ${compases} compases. Se guarda sola cuando editas las tarjetas.`
+      : 'Mi progresión está vacía. Añade acordes y se guardará sola.';
     return;
   }
   const preset=progressionPresets[key];
