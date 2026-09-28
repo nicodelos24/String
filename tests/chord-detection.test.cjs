@@ -29,6 +29,31 @@ for (const sampleRate of [44100, 48000]) {
     });
   }
 }
+test('el acorde detectado dice qué notas sonaron y cuál es la más grave', () => {
+  // Es lo que permite marcar varias posiciones del mástil a la vez en vez de
+  // una: las notas de la plantilla reconocida y la nota más grave que se oye.
+  const found = detectChord(audioSpectrum([48, 52, 55], { harmonics: 6, noise: 0.006 }), 48000);
+  assert.deepEqual(found.pitches, [0, 4, 7], 'un Do mayor sonando en Do3-Mi3-Sol3');
+  assert.equal(found.bass, 48, 'la más grave de verdad, no la más aguda');
+  const inverted = detectChord(audioSpectrum([41, 45, 48, 50], { harmonics: 6 }), 48000);
+  assert.deepEqual(inverted.pitches, [5, 9, 0, 2], 'Fa6: Fa-Si-Do-Re');
+  assert.equal(inverted.bass, 41, 'el Fa grave del bajo manda en la colocación');
+  // La nota más grave se busca entre los parciales, no entre las clases: una
+  // octava más arriba del mismo acorde cambia la referencia y no las notas.
+  const up = detectChord(audioSpectrum([60, 64, 67], { harmonics: 6 }), 48000);
+  assert.deepEqual(up.pitches, [0, 4, 7]);
+  assert.equal(up.bass, 60);
+  // Los acordes con cuartas y sextas también lo dice: un G13 completo
+  // (Sol-Si-Re-Fa-La-Mi) trae sus seis notas, no solo las cinco de un G9.
+  const thirteen = detectChord(audioSpectrum([43, 47, 50, 53, 57, 64], { harmonics: 6 }), 48000);
+  assert.equal(thirteen.type, '13');
+  assert.deepEqual(thirteen.pitches.slice().sort((a, b) => a - b), [2, 4, 5, 7, 9, 11]);
+  assert.equal(thirteen.bass, 43);
+  // Un G9 sin el Mi es un G9, no un G13: las notas que dice son las suyas.
+  const nine = detectChord(audioSpectrum([43, 47, 50, 53, 55, 59], { harmonics: 6 }), 48000);
+  assert.equal(nine.type, '7');
+  assert.deepEqual(nine.pitches.slice().sort((a, b) => a - b), [2, 5, 7, 11]);
+});
 test('transposición cromática y desafinación leve', () => {
   for (let step = 0; step < 12; step++) {
     const found = detectChord(audioSpectrum([48, 52, 55].map(midi => midi + step), { detune: -15 }), 48000);

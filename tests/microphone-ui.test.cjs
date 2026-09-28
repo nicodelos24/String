@@ -323,6 +323,72 @@ test('el grado se recalcula cuando cambia la raíz de la escala', () => {
   assert.equal(faS.textContent, 'F#', 'el nombre de la nota no depende de la escala');
 });
 
+test('chordFretMidis: una posición por nota, en la octava más cercana a la más grave', () => {
+  const { chordFretMidis } = require('../microphone-ui.js');
+  // Guitarra: de Mi2+1 (41) a Mi4+22 (86), que es lo que cubre el mástil.
+  const guitar = { low: 41, high: 86 };
+  // Do mayor con el Do3 (48) como nota más grave: la forma cae en la misma
+  // posición que la tocada, no con las cuatro notas repetidas por el mástil.
+  assert.deepEqual(chordFretMidis([0, 4, 7], 48, guitar), [48, 52, 55], 'Do3-Mi3-Sol3');
+  // Dos octavas más arriba del mismo acorde, la forma sube con él.
+  assert.deepEqual(chordFretMidis([0, 4, 7], 60, guitar), [60, 64, 67], 'Do4-Mi4-Sol4');
+  // Un acorde invertido sitúa cada nota en la octava más cercana al bajo real.
+  assert.deepEqual(chordFretMidis([5, 9, 0, 2], 41, guitar), [41, 45, 48, 50], 'Fa2-Sib2-Do3-Re3');
+  // Marcar la misma nota dos veces (octavas del mismo grado) no se repite.
+  assert.deepEqual(chordFretMidis([7, 7, 4], 43, guitar), [43, 52], 'sin posiciones repetidas: el Sol una vez y el Mi3 por encima del bajo');
+  // Una nota sin ninguna posición en el mástil simplemente no se dibuja.
+  assert.deepEqual(chordFretMidis([0, 4, 8], 48, { low: 48, high: 52 }), [48, 52], 'el Sol# no cabe en dos trastes');
+  // Si solo hay posiciones por debajo del bajo, se dibuja la más alta.
+  assert.deepEqual(chordFretMidis([1], 60, { low: 40, high: 55 }), [49], 'el Db# solo existe por debajo del bajo');
+  // Sin nota grave conocida la forma se dibuja en la mitad del mástil, o en la
+  // octava de arriba si la de abajo cae más lejos del centro.
+  assert.deepEqual(chordFretMidis([0], null, guitar), [72], 'Do en la mitad del mástil');
+  assert.deepEqual(chordFretMidis([], 48, guitar), []);
+  assert.deepEqual(chordFretMidis(null, 48, guitar), []);
+  assert.deepEqual(chordFretMidis([1.5, 'x', 4], 48, guitar), [52], 'descarta lo que no es una nota entera');
+  assert.deepEqual(chordFretMidis([0], 48, { low: 86, high: 41 }), [], 'un alcance imposible no inventa posiciones');
+  // Bajo: Mi1+1 (29) a Sol4+22 (65). Un Do con el Do2 (36) de grave sale en la
+  // posición abierta de siempre, y con el Mi2 (40) de grave, que es la
+  // inversión, la forma también se dibuja desde el bajo real.
+  const bassRange = { low: 29, high: 65 };
+  assert.deepEqual(chordFretMidis([0, 4, 7], 36, bassRange), [36, 40, 43], 'Do2-Mi2-Sol2 en bajo');
+  assert.deepEqual(chordFretMidis([0, 4, 7], 40, bassRange), [40, 43, 48], 'con el Mi de grave: Mi2-Sol2-Do3');
+});
+
+test('con un acorde se dibujan todas sus notas y la monofónica se aparta', () => {
+  const { callbacks, notes } = setupLabels();
+  const liveMidis = () => notes.filter(n => n.isLive()).map(n => Number(n.dataset.midi)).sort((a, b) => a - b);
+  callbacks.onState('ready');
+  // La nota que YIN confirma se marca como hasta ahora.
+  callbacks.onPitch({ midi: 64, freq: 329.63, cents: 0 });
+  assert.deepEqual(liveMidis(), [64], 'una nota sola marca una posición');
+  // Llega un acorde con sus notas y la más grave: se dibuja la forma entera.
+  // El Fa3 (53) está en el mástil de mentira a propósito: es la nota que YIN
+  // inventó sobre un Do en la medición del navegador, y tiene que existir aquí
+  // para que la supresión se pueda comprobar de verdad.
+  notes.push(fakeNote(48, 'C', ''), fakeNote(52, 'E', ''), fakeNote(55, 'G', ''), fakeNote(59, 'B', ''), fakeNote(53, 'F', ''));
+  callbacks.onChord({ root: 0, type: 'maj7', mode: 'ionian', pitches: [0, 4, 7, 11], bass: 48, confidence: 0.95 });
+  assert.deepEqual(liveMidis(), [48, 52, 55, 59], 'la forma del Cmaj7 en la posición sonada');
+  // Con el acorde sonando, la nota monofónica no se dibuja: se midió que no es
+  // la que se está tocando (0 aciertos de 5) y solo añadía un falso resaltado.
+  // Ojo: la nota llega en cada fotograma, así que comprobarla solo justo después
+  // del acorde no basta: tiene que seguir fuera con más fotogramas encima.
+  callbacks.onPitch({ midi: 53, freq: 174.61, cents: 0 });
+  assert.deepEqual(liveMidis(), [48, 52, 55, 59], 'la nota de YIN no se cuela con el acorde');
+  callbacks.onPitch({ midi: 53, freq: 174.61, cents: 0 });
+  assert.deepEqual(liveMidis(), [48, 52, 55, 59], 'ni en los fotogramas siguientes');
+  // Al soltar el acorde, la nota monofónica recupera su lugar.
+  callbacks.onChord(null);
+  callbacks.onPitch({ midi: 53, freq: 174.61, cents: 0 });
+  assert.deepEqual(liveMidis(), [53], 'soltado el acorde, vuelve la nota única');
+  // Y un acorde que no trae notas (o viene vacío) no se dibuja, pero tampoco
+  // borra lo que hubiera: solo manda si de verdad hay forma que enseñar.
+  callbacks.onChord({ root: 0, type: 'maj', mode: 'ionian', confidence: 0.9 });
+  assert.deepEqual(liveMidis(), [53], 'un acorde sin notas deja la nota como estaba');
+  callbacks.onState('stopped');
+  assert.deepEqual(liveMidis(), [], 'al detener el micrófono no queda nada encendido');
+});
+
 function setupPitch() {
 
   const timers = [];

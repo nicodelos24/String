@@ -101,6 +101,9 @@ function detectChord(spectrum, sampleRate, fftSize = spectrum.length * 2) {
   // de más abajo y el suelo de confianza siguen impidiendo que se inventen.
   if (present.length < 3 || present.length > 6) return null;
   const total = chroma.reduce((sum, value) => sum + value, 0);
+  // La nota más grave que suena de verdad: sirve para desempatar (abajo) y para
+  // colocar después la forma del acorde en un punto del mástil.
+  const lowestMidi = audible.reduce((lowest, peak) => peak.midi < lowest ? peak.midi : lowest, Infinity);
   const candidates = [];
   for (let root = 0; root < 12; root++) {
     for (const template of LIVE_CHORD_TEMPLATES) {
@@ -110,7 +113,9 @@ function detectChord(spectrum, sampleRate, fftSize = spectrum.length * 2) {
       const inside = pitches.reduce((sum, pitch) => sum + chroma[pitch], 0);
       const coverage = inside / total;
       const extra = present.filter(pitch => !pitches.includes(pitch)).length;
-      candidates.push({ root, type: template.type, mode: template.mode, confidence: coverage - extra * 0.12 });
+      // `pitches` viaja con el resultado: son las notas que suenan a la vez, que
+      // es lo que el mástil necesita para marcarlas todas en lugar de una.
+      candidates.push({ root, type: template.type, mode: template.mode, pitches, confidence: coverage - extra * 0.12 });
     }
   }
   candidates.sort((a, b) => b.confidence - a.confidence);
@@ -121,8 +126,7 @@ function detectChord(spectrum, sampleRate, fftSize = spectrum.length * 2) {
   if (candidates.length > 1 && candidates[0].confidence - candidates[1].confidence < TIE_BREAK_WINDOW) {
     if (candidates[0].confidence < 0.82) return null;
     const tied = candidates.filter(candidate => candidates[0].confidence - candidate.confidence < TIE_BREAK_WINDOW);
-    const lowest = [...audible].sort((a, b) => a.freq - b.freq)[0];
-    const lowestClass = lowest ? lowest.midi % 12 : -1;
+    const lowestClass = Number.isFinite(lowestMidi) ? lowestMidi % 12 : -1;
     const bassScore = candidate => {
       let score = lowestClass === candidate.root ? 12 : 0;
       for (const peak of audible) if (peak.midi % 12 === candidate.root) score += peak.amplitude / peak.freq;
@@ -130,12 +134,12 @@ function detectChord(spectrum, sampleRate, fftSize = spectrum.length * 2) {
     };
     const chosen = [...tied].sort((a, b) => bassScore(b) - bassScore(a))[0];
     if (chroma[chosen.root] < maximum * ROOT_MIN_SHARE) return null;
-    return chosen;
+    return Number.isFinite(lowestMidi) ? { ...chosen, bass: lowestMidi } : chosen;
   }
   const best = candidates[0];
   if (!best || best.confidence < 0.82 || (candidates[1] && best.confidence - candidates[1].confidence < 0.08)) return null;
   if (chroma[best.root] < maximum * ROOT_MIN_SHARE) return null;
-  return best;
+  return Number.isFinite(lowestMidi) ? { ...best, bass: lowestMidi } : best;
 }
 
 // Los tiempos son milisegundos reales, independientes de la tasa de refresco.

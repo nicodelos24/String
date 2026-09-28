@@ -168,8 +168,11 @@ if (typeof document !== 'undefined') (() => {
       recomputeMicroLive();
     },
     onChord: detection => {
-      if (keyboardOwnsChord()) { liveChord = null; return; }
+      if (keyboardOwnsChord()) { liveChord = null; highlightChord(null); return; }
       liveChord = detection;
+      // Un acorde conocido se marca entero, no solo la nota que YIN acierta:
+      // de cada nota se dibuja la posición más cercana a la más grave que suena.
+      highlightChord(detection ? chordFretMidis(detection.pitches, detection.bass, fretboardBounds()) : null);
       recomputeMicroLive();
     },
     onState: renderState,
@@ -307,7 +310,10 @@ if (typeof document !== 'undefined') (() => {
     });
   });
 
+  // Las dos detecciones van por separado: la nota que YIN confirma y las notas
+  // del acorde reconocido, que se dibujan a la vez.
   let liveMidi = null;
+  let liveChordMidis = null;
   let heldMidi = null;
   let heldSince = 0;
   let holdTimer = null;
@@ -352,6 +358,7 @@ if (typeof document !== 'undefined') (() => {
     document.querySelectorAll('.fret-note.live').forEach(fadeOut);
     document.querySelectorAll('.open-string-note.live').forEach(fadeOut);
     liveMidi = null;
+    liveChordMidis = null;
   }
 
   // El alcance del mástil con el instrumento elegido: la cuerda más grave por
@@ -365,11 +372,16 @@ if (typeof document !== 'undefined') (() => {
     return { low: Math.min(...strings) + 1, high: Math.max(...strings) + 22 };
   }
 
-  // La nota suena mientras su pulso permanece: se mantiene hasta una nota
-  // distinta o el silencio, y las posiciones que dejan de sonar se atenúan.
-  function applyLive(midi) {
+  // La nota suena mientras su pulso permanece: se mantiene hasta otra nota o el
+  // silencio, y las posiciones que dejan de sonar se atenúan. Son dos
+  // detecciones distintas —la nota que YIN confirma y las del acorde reconocido—
+  // y mientras hay un acorde estable en el mástil solo se dibuja la del acorde.
+  function applyLive() {
+    const sounding = new Set();
+    if (liveChordMidis) for (const midi of liveChordMidis) sounding.add(midi);
+    else if (liveMidi !== null) sounding.add(liveMidi);
     document.querySelectorAll('#fretboard [data-midi], #open-strings [data-midi]').forEach(note => {
-      if (Number(note.dataset.midi) === midi) {
+      if (sounding.has(Number(note.dataset.midi))) {
         note.classList.remove('live-fade');
         note.classList.add('live');
         applyMicLabel(note);
@@ -382,7 +394,7 @@ if (typeof document !== 'undefined') (() => {
   function highlightPitch(midi) {
     if (!Number.isInteger(midi)) return;
     liveMidi = midi;
-    applyLive(midi);
+    applyLive();
   }
 
   // Con un acorde estable, la forma manda. Medido en Chromium con acordes
@@ -399,7 +411,7 @@ if (typeof document !== 'undefined') (() => {
 
   // El mástil se reconstruye al cambiar de acorde/modo; reaplicar si sigue activo.
   const observer = new MutationObserver(() => {
-    if (reader.running && liveMidi !== null) applyLive(liveMidi);
+    if (reader.running && (liveMidi !== null || liveChordMidis)) applyLive();
   });
   for (const id of ['fretboard', 'open-strings']) {
     const node = document.getElementById(id);
@@ -569,4 +581,4 @@ if (typeof document !== 'undefined') (() => {
   window.addEventListener('pagehide', () => reader.stop());
 })();
 
-if (typeof module !== 'undefined' && module.exports) module.exports = { micLiveChord, preferredRootSpelling, tunerReading, micFretLabel };
+if (typeof module !== 'undefined' && module.exports) module.exports = { micLiveChord, preferredRootSpelling, tunerReading, micFretLabel, chordFretMidis };
