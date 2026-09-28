@@ -67,6 +67,21 @@
     if (player.running || player.starting) { player.stop(); return; }
     await startPlayback();
   });
+  // Silencio del Acompañamiento. La secuencia no se detiene: las tarjetas
+  // siguen cambiando, el mástil se sigue actualizando y el tempo se sigue
+  // aplicando; solo se calla el bus maestro, así que al quitarlo el sonido
+  // vuelve al nivel que ya tuviera en vez de a un valor nuevo. Es un estado
+  // aparte del volumen precisamente para eso.
+  const muteButton = document.querySelector('#accompaniment-mute');
+  const paintMute = muted => {
+    if (!muteButton) return muted;
+    muteButton.setAttribute('aria-pressed', String(muted));
+    muteButton.setAttribute('aria-label', muted ? 'Quitar el silencio del Acompañamiento' : 'Silenciar el Acompañamiento');
+    return muted;
+  };
+  if (muteButton) {
+    muteButton.addEventListener('click', () => paintMute(player.setMuted(!player.muted)));
+  }
   // `app.js` lo llama al pulsar una tarjeta. Si el Acompañamiento está parado,
   // arranca en esa tarjeta; si ya está sonando, depende del interruptor
   // «Reiniciar» (opción por defecto, vuelve a empezar en la tarjeta pulsada) o

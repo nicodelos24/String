@@ -110,6 +110,10 @@ function build(seed){
   make('tempo-tap-bpm',{tag:'input',type:'number',value:'100'});
   make('progression-view',{tag:'button'});
   make('progression',{classes:['progression']});
+  // El silencio es un botón que se pulsa: el doble alterna su `aria-pressed`
+  // como hace `player-ui.js` al pintarlo.
+  make('accompaniment-mute',{tag:'button',attrs:{'aria-pressed':'false'},
+    onClick:n=>n.setAttribute('aria-pressed',n.getAttribute('aria-pressed')==='true'?'false':'true')});
 
   make('metronome-bpm',{tag:'input',type:'number',value:'100'});
   make('metronome-beats',{tag:'input',type:'number',value:'4'});
@@ -217,11 +221,28 @@ test('preferencias: los radios y botones de fuente actualizan el snapshot',()=>{
   runs('document.querySelectorAll(\'#quality-select input[name="quality"]\').forEach((r,i)=>{r.checked=i===1;});document.querySelectorAll(\'#quality-select input[name="quality"]\')[1].dispatchEvent(new Event("change"));');
   runs('document.querySelectorAll(\'[data-source]\')[0].setAttribute("aria-pressed","false");document.querySelectorAll(\'[data-source]\')[2].setAttribute("aria-pressed","true");document.dispatchEvent(new Event("click"));');
   runs('document.querySelectorAll(\'[data-card-mode]\')[0].setAttribute("aria-pressed","false");document.querySelectorAll(\'[data-card-mode]\')[1].setAttribute("aria-pressed","true");document.dispatchEvent(new Event("click"));');
+  runs('document.querySelector("#accompaniment-mute").click();document.dispatchEvent(new Event("click"));');
   flush();  // el guardado se aplaza un turno
   const snap=JSON.parse(localStorage.getItem('traste.preferences.v1'));
   assert.equal(snap.quality,'minor');
   assert.equal(snap.source,'metronome');
   assert.equal(snap.cardMode,'restart');
+  assert.equal(snap.accompanimentMuted,true,'el silencio también se guarda, como el resto de lo visible');
+});
+
+test('el silencio se restaura con un clic, y solo si el estado no es el guardado',()=>{
+  // Guardado en silencio: la página lo deja silenciado al abrirse.
+  const enSilencio=build({accompanimentMuted:true});
+  assert.equal(enSilencio.q('#accompaniment-mute').getAttribute('aria-pressed'),'true');
+  assert.equal(enSilencio.clicked.includes(enSilencio.q('#accompaniment-mute')),true);
+  // Un guardado con sonido no toca el botón: si pulsara igual, lo dejaría
+  // silenciado, que es justo lo contrario de lo guardado.
+  const conSonido=build({accompanimentMuted:false});
+  assert.equal(conSonido.clicked.includes(conSonido.q('#accompaniment-mute')),false);
+  assert.equal(conSonido.q('#accompaniment-mute').getAttribute('aria-pressed'),'false');
+  // Y un guardado antiguo, sin el campo, tampoco da un clic espurio.
+  const antiguo=build({playerBpm:'100'});
+  assert.equal(antiguo.clicked.includes(antiguo.q('#accompaniment-mute')),false);
 });
 
 test('el guardado se mide después del clic, no antes (si no, va un paso atrasado)',()=>{

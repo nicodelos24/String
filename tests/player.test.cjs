@@ -134,6 +134,40 @@ test('PLY-08: volume is bounded and mute affects already scheduled notes', async
   player.stop();
 });
 
+test('PLY-21: mute silences the mix without losing the volume or stopping the sequence', async () => {
+  const {player,context,gains,heard} = setup();
+  await player.start(chords,{bpm:120,style:'none'});
+  player.setVolume(0.5);
+  assert.equal(player.muted,false);
+  assert.equal(player.setMuted(true),true);
+  assert.equal(player.master.gain.value,0,'con silencio el bus maestro baja a cero');
+  assert.equal(player.volume,0.5,'el volumen guardado no se toca: es un estado aparte');
+  // Silenciar no detiene nada: la secuencia sigue y el siguiente acorde avisa.
+  assert.equal(player.running,true);
+  context.currentTime=0.05; player.tick();
+  context.currentTime=2; player.tick();
+  context.currentTime=2.05; player.tick();
+  assert.deepEqual(heard.at(-1),[1,'Fm7',2]);
+  assert.equal(player.running,true);
+  // El bus maestro es anterior a la percusión, así que también se calla.
+  assert.equal(gains[0].disconnected,undefined);
+  assert.equal(player.setMuted(false),false);
+  assert.equal(player.master.gain.value,0.5,'al quitar el silencio vuelve el nivel que había');
+  player.stop();
+});
+
+test('PLY-22: starting while muted stays silent, and the volume slider still moves underneath', async () => {
+  const {player,gains} = setup();
+  player.setMuted(true);
+  await player.start(chords,{bpm:120,style:'none'});
+  assert.equal(gains[0].gain.value,0,'arrancar en silencio no destapa el bus maestro');
+  assert.equal(player.setVolume(0.8),0.8);
+  assert.equal(player.master.gain.value,0,'mover el volumen con silencio puesto no se oye');
+  assert.equal(player.setMuted(false),false);
+  assert.equal(player.master.gain.value,0.8,'y al quitarlo sale el nivel nuevo, no el anterior');
+  player.stop();
+});
+
 test('PLY-09: a delayed tick schedules only one chord instead of a burst', async () => {
   const {player,context,oscillators} = setup();
   await player.start(chords);

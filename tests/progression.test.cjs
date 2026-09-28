@@ -384,6 +384,7 @@ function setupPlayerInterface() {
       stop() {this.running = false; this.callbacks.onState(false);}
       setTempo(bpm) {this.tempo = bpm; return bpm;}
       setVolume(value) {this.volume = value;}
+      setMuted(value) {this.muted = Boolean(value); return this.muted;}
       setDrumVolume(value) {this.drumVolume = value;}
     }
   `);
@@ -500,6 +501,35 @@ test('RIT-06: style and percussion controls reach the player and lock only durin
   await element('#player-toggle').handlers.click();
   assert.equal(element('#player-style').disabled,false);
   assert.equal(element('#player-percussion').disabled,false);
+});
+
+test('el silencio calla el Acompañamiento sin parar la secuencia ni perder el volumen', async () => {
+  const {run,element} = setupPlayerInterface();
+  const mute = element('#accompaniment-mute');
+  // El doble de DOM no parte del HTML, así que el estado de partida se mira en el
+  // motor: sin pulsar, el Acompañamiento no está en silencio.
+  assert.notEqual(run('testPlayer.muted'),true,'arranca con sonido');
+  // Silenciar con la música parada: se guarda para cuando empiece a sonar.
+  mute.handlers.click();
+  assert.equal(run('testPlayer.muted'),true);
+  assert.equal(mute.attrs['aria-pressed'],'true');
+  assert(mute.attrs['aria-label'].includes('Quitar'),'el nombre accesible dice cómo volver a oír');
+  await element('#player-toggle').handlers.click();
+  assert.equal(run('testPlayer.running'),true,'silenciar no detiene la reproducción');
+  // El volumen se puede mover mientras suena: el silencio está por encima.
+  element('#player-volume').handlers.input({target:{value:'80'}});
+  assert.equal(run('testPlayer.volume'),0.8);
+  assert.equal(run('testPlayer.muted'),true);
+  // Las tarjetas siguen cambiando de acorde con el silencio puesto.
+  run("testPlayer.callbacks.onChord(1, 'Fm7', 4);");
+  assert.equal(element('#player-status').textContent,'Sonando: Fm7 · acorde 2 de 4');
+  assert.equal(run('activeProgression'),1);
+  // Quitarlo devuelve el sonido, y el botón se apaga.
+  mute.handlers.click();
+  assert.equal(run('testPlayer.muted'),false);
+  assert.equal(mute.attrs['aria-pressed'],'false');
+  assert(mute.attrs['aria-label'].includes('Silenciar'),'al volver a sonar el botón propone silenciar');
+  assert.equal(run('testPlayer.volume'),0.8,'el nivel no se resetea al quitar el silencio');
 });
 
 test('duraciones: cada tarjeta expone su duración y respeta el predeterminado',()=>{

@@ -94,6 +94,7 @@
       playerPercussion: $('#player-percussion')?.checked || false,
       playerVolume: $('#player-volume')?.value || '',
       playerDrumVolume: $('#player-drum-volume')?.value || '',
+      accompanimentMuted: $('#accompaniment-mute')?.getAttribute('aria-pressed') === 'true' || false,
       metronomeBpm: $('#metronome-bpm')?.value || '',
       metronomeBeats: $('#metronome-beats')?.value || '',
       metronomeAccent: $('#metronome-accent')?.checked || true,
@@ -212,6 +213,12 @@
     const drumVolume = $('#player-drum-volume');
     setValue(drumVolume, saved.playerDrumVolume);
     fire(drumVolume, 'input');
+    // El silencio es un botón de pulsación, no un valor: se restaura con un clic
+    // y solo si el estado actual no es el guardado, para no alternar al revés.
+    const muteButton = $('#accompaniment-mute');
+    if (muteButton && (muteButton.getAttribute('aria-pressed') === 'true') !== Boolean(saved.accompanimentMuted)) {
+      if (typeof muteButton.click === 'function') muteButton.click();
+    }
 
     setSelectIfOption('#keyboard-timbre', saved.synthTimbre);
     setChecked($('#keyboard-delay'), saved.synthDelay);

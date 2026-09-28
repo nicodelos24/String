@@ -1060,6 +1060,17 @@ html[data-theme="dark"] .board-add-button {
 .tempo-tap svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 .tempo-tap:hover { border-color: var(--rust); color: var(--rust); }
 .tempo-tap:active { transform: scale(.97); }
+/* Silencio: mismo cuerpo que Tempo, que está justo debajo. Apagado enseña el
+   altavoz con sus ondas; encendido, solo el altavoz tachado y el fondo activations. */
+.mute-toggle { display: inline-flex; align-items: center; gap: 5px; min-height: 28px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); color: var(--muted); font: inherit; cursor: pointer; }
+.mute-toggle svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.mute-toggle svg path:first-child { fill: currentColor; stroke: none; }
+.mute-toggle .mute-slash { display: none; }
+.mute-toggle:hover { border-color: var(--rust); color: var(--rust); }
+.mute-toggle:active { transform: scale(.97); }
+.mute-toggle[aria-pressed='true'] { border-color: var(--rust); background: var(--rust); color: var(--paper-light); }
+.mute-toggle[aria-pressed='true'] .mute-wave { display: none; }
+.mute-toggle[aria-pressed='true'] .mute-slash { display: block; }
 .tempo-tap-stepper { display: block; margin-top: 0.5px; }
 .tempo-tap-control { display: inline-flex; align-items: center; }
 .tempo-tap-wrap { position: relative; display: inline-flex; }

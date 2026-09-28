@@ -57,6 +57,9 @@ class ProgressionPlayer {
     this.generation = 0;
     this.volume = 0.35;
     this.drumVolume = 0.4;
+    // Silencio sin perder el volumen: la secuencia sigue avanzando (las
+    // tarjetas cambian y el mástil con ellas) y solo se apaga el bus maestro.
+    this.muted = false;
     this.voices = new Set();
     this.queue = [];
   }
@@ -64,8 +67,21 @@ class ProgressionPlayer {
   setVolume(value) {
     if (!Number.isFinite(Number(value)) || String(value).trim() === '') return this.volume;
     this.volume = Math.max(0, Math.min(1, Number(value)));
-    if (this.master) this.master.gain.setTargetAtTime(this.volume, this.context.currentTime, 0.01);
+    this.applyOutputGain();
     return this.volume;
+  }
+
+  // El silencio no toca `volume`: es un estado aparte para poder volver a
+  // dejarlo como estaba sin volver a buscar el mando. Como el bus maestro es
+  // anterior a las voces y a la percusión, calla las dos cosas de golpe.
+  setMuted(value) {
+    this.muted = Boolean(value);
+    this.applyOutputGain();
+    return this.muted;
+  }
+
+  applyOutputGain() {
+    if (this.master) this.master.gain.setTargetAtTime(this.muted ? 0 : this.volume, this.context.currentTime, 0.01);
   }
 
   setDrumVolume(value) {
@@ -131,7 +147,7 @@ class ProgressionPlayer {
       if (generation !== this.generation) return;
       if (this.context.state !== 'running') throw new Error('No se pudo activar el audio.');
       this.connectOutput();
-      this.master.gain.setValueAtTime(this.volume, this.context.currentTime);
+      this.master.gain.setValueAtTime(this.muted ? 0 : this.volume, this.context.currentTime);
       this.index = Number.isInteger(startIndex)
         ? Math.min(Math.max(startIndex, 0), this.chords.length - 1)
         : 0;
