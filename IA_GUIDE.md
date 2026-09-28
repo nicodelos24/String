@@ -456,6 +456,16 @@ quitemos el texto que dice "haz clic en una nota etc" y en donde está este text
 
 
 
+.El autoguardado de «Mi progresión» no guardaba la escala fantasma, y una progresión vacía no se conservaba
+
+  - **Los dos fallos venían del mismo sitio**: el autoguardado escribía cinco campos por acorde y `ghostMode` no era uno de ellos, y los dos lectores del slot (al cargar y en la plantilla «Mi progresión») decidían con `parsed.length`, así que una lista vacía guardada se tomaba por «no hay guardado».
+  - **Escala fantasma**: ahora se guarda y se restaura, como ya hacía «Mis progresiones». Se valida con `validGhostMode`: solo pasa un modo que la app conoce, porque el pintado del mástil hace `modes[ghostMode].color` y un guardado corrupto con una clave inventada lo reventaría.
+  - **Progresión vacía**: se respeta. La diferencia entre «no hay guardado» y «el autor borró las tarjetas» no se puede preguntar por la longitud, así que el lector devuelve `null` para lo primero y `[]` para lo segundo. Si el slot traía acordes y todos son inservibles, ahí sí está corrupto y se cae a la progresión inicial, que es mejor que un mástil sin nada que tocar.
+  - **Los dos lectores se unificaron** en `readCustomProgression()` (`app.js`), que antes estaba copiado en `app.js` y en `progression-presets.js`. Ahora la validación, la escala fantasma y el caso de la lista vacía están en un solo sitio, y `progression-presets.js` solo lo usa. Al vaciarse la lista, `updateView` no llega a pintarse (no hay acorde que seleccionar), así que la plantilla repinta a mano; si no, se quedaban las tarjetas viejas en pantalla.
+  - `npm test` → 253/253. Tres pruebas nuevas en `tests/progression.test.cjs` (la escala fantasma de ida y vuelta y el descarte de una inventada; la lista vacía conservada al recargar; el slot corrupto cayendo a la inicial) y una en `tests/progression-presets.test.cjs` (la plantilla respeta la lista vacía y repinta). El sandbox de esa última antes copiaba el lector real, que podía divergir en silencio: ahora es un doble y el lector se prueba con el código de verdad en `progression.test.cjs`.
+  - **Comprobado que los tests detectan la rotura**, con seis mutaciones: el autoguardado sin `ghostMode`, la lista vacía descartada en dos sitios distintos, el lector exigiendo longitud, `validGhostMode` sin validar, la plantilla sin repintar y la plantilla ignorando el slot.
+  - Verificado en Chromium sobre `npm start`: un acorde con escala lidia se recarga con ella (la quinta tarjeta conserva «Lidia» y pinta 11 notas fantasma en el mástil; al recargar se abre la primera, que no la tiene, que es lo correcto porque la escala fantasma es de cada tarjeta). Las cuatro tarjetas iniciales borradas se quedan vacías al recargar, con el aviso de la lista, y la plantilla «Mi progresión» también. Sin errores ni avisos de consola.
+
 .Me gustaría un switch dentro a la derecha del botón de micrófono para mostrar el grado o la nota cromática de las notas en tiempo real que toque usando el micrófono
 
 .Me gustaría retomar la opción de que se guarden automáticamente los acordes que capte por micrófono ahora que está mucho más optimizado el reconocimiento de acordes, aunque me gustaría mejorarlo aún más para que sea más preciso aún, si se puede me gustaría intentar mejorarlo.
