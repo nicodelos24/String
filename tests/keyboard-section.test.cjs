@@ -62,23 +62,23 @@ test('keyboard: letters are labelled only inside the active window', () => {
   assert.equal(keyLetter(baseC4 + 4, baseC4), 'd');
   assert.equal(keyLetter(baseC4 + 1, baseC4), 'w');
   assert.equal(keyLetter(baseC4 + 16, baseC4), 'ñ');
-  assert.equal(keyLetter(baseC4 - 5, baseC4), 'z');
+  assert.equal(keyLetter(baseC4 - 8, baseC4), 'z');
   assert.equal(keyLetter(36, baseC4), '', 'fuera de la ventana activa');
   assert.equal(keyLetter(100, baseC4), '');
 });
 
-test('keyboard: la fila grave arranca en sol (z=G3) y la superior son los sostenidos ascendentes', () => {
+test('keyboard: la fila grave arranca en mi (z=E3) y la superior son los sostenidos ascendentes', () => {
   const { KEY_OFFSETS, KEY_CODES } = require('../keyboard-section.js');
-  assert.equal(KEY_OFFSETS.z, -5); // G3
-  assert.equal(KEY_OFFSETS.x, -3); // A3
-  assert.equal(KEY_OFFSETS.c, -1); // B3
-  assert.equal(KEY_OFFSETS.v, 0);  // C4, repite la fila media
-  assert.equal(KEY_OFFSETS.b, 2);  // D4
-  assert.equal(KEY_OFFSETS.n, 4);  // E4
-  assert.equal(KEY_OFFSETS.m, 5);  // F4
-  assert.equal(KEY_OFFSETS[','], 7);  // G4
-  assert.equal(KEY_OFFSETS['.'], 9);  // A4
-  assert.equal(KEY_OFFSETS['-'], 11); // B4
+  assert.equal(KEY_OFFSETS.z, -8); // E3
+  assert.equal(KEY_OFFSETS.x, -7); // F3
+  assert.equal(KEY_OFFSETS.c, -5); // G3
+  assert.equal(KEY_OFFSETS.v, -3); // A3
+  assert.equal(KEY_OFFSETS.b, -1); // B3
+  assert.equal(KEY_OFFSETS.n, 0);  // C4, repite la fila media
+  assert.equal(KEY_OFFSETS.m, 2);  // D4
+  assert.equal(KEY_OFFSETS[','], 4); // E4
+  assert.equal(KEY_OFFSETS['.'], 5);  // F4
+  assert.equal(KEY_OFFSETS['-'], 7);  // G4
   assert.equal(KEY_OFFSETS.o, 13);  // C#5
   assert.equal(KEY_OFFSETS.p, 15);  // D#5
   assert.equal(KEY_OFFSETS['´'], 18); // F#5
@@ -158,12 +158,40 @@ test('keyboard: keyOffsetFor usa la letra o la posición física como respaldo',
   const { keyOffsetFor } = require('../keyboard-section.js');
   assert.equal(keyOffsetFor({ key: 'a', code: 'KeyA' }), 0);
   assert.equal(keyOffsetFor({ key: 'ñ', code: 'Semicolon' }), 16);
-  assert.equal(keyOffsetFor({ key: 'Z', code: 'KeyZ' }), -5);
-  assert.equal(keyOffsetFor({ key: 'z', code: 'KeyZ' }), -5);
+  assert.equal(keyOffsetFor({ key: 'Z', code: 'KeyZ' }), -8);
+  assert.equal(keyOffsetFor({ key: 'z', code: 'KeyZ' }), -8);
   assert.equal(keyOffsetFor({ key: 'Dead', code: 'BracketLeft' }), 18, 'tecla de acento muerto ´ por posición');
   assert.equal(keyOffsetFor({ key: '{', code: 'BracketLeft' }), 17, 'la letra tiene prioridad sobre la posición');
   assert.equal(keyOffsetFor({ key: '+', code: 'Equal' }), 20);
   assert.equal(keyOffsetFor({ key: 'q', code: 'KeyQ' }), undefined, 'q no está en la asignación antigua');
+});
+
+test('keyboard: la fila grave empieza en mi y la fila media se queda como estaba', () => {
+  // La fila grave se bajó a petición del autor: z x c v = mi fa sol la, de modo
+  // que con la guitarra en «Mástil» «z» cae en la sexta cuerda al aire y «v» en la
+  // quinta. La fila media y la de sostenidos no se tocan.
+  const { keyOffsetFor } = require('../keyboard-section.js');
+  const nota=(key,code)=>60+keyOffsetFor({key,code});
+  // Fila grave, en MIDI y en nombre: mi3 fa3 sol3 la3 si3 do4 re4 mi4 fa4 sol4.
+  assert.deepEqual(
+    [['z','KeyZ'],['x','KeyX'],['c','KeyC'],['v','KeyV'],['b','KeyB'],['n','KeyN'],['m','KeyM'],[',','Comma'],['.','Period'],['-','Minus']]
+      .map(([key,code])=>nota(key,code)),
+    [52, 53, 55, 57, 59, 60, 62, 64, 65, 67]);
+  // Fila media: do4 a fa5, sin cambios.
+  assert.deepEqual(
+    ['a','s','d','f','g','h','j','k','l','ñ','{'].map((key,i)=>nota(key,i===9?'Semicolon':'Key'+i)),
+    [60, 62, 64, 65, 67, 69, 71, 72, 74, 76, 77]);
+  // Sostenidos: do#4 a sol#5, sin cambios.
+  assert.deepEqual(['w','e','t','y','u','o','p'].map((key,i)=>nota(key,'KeyW'+i)),
+    [61, 63, 66, 68, 70, 73, 75]);
+  // Ninguna nota se repite dentro de la fila grave, que es lo que la hace usable
+  // como fila: si dos teclas dieran la misma, una no serviría de nada.
+  const graves=[52, 53, 55, 57, 59, 60, 62, 64, 65, 67];
+  assert.equal(new Set(graves).size,graves.length);
+  // Con la guitarra en el mástil (una octava más abajo) «z» es la sexta cuerda al
+  // aire y «v» la quinta, que es la razón del cambio.
+  assert.equal(52-12,40,'z suena como la sexta cuerda al aire');
+  assert.equal(57-12,45,'v suena como la quinta cuerda al aire');
 });
 
 test('keyboard: keyTargetIsTyping deja tocar tras hacer clic en switchs y volumen, pero no sobre campos de texto', () => {
