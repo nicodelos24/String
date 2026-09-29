@@ -842,18 +842,59 @@ html[data-theme="dark"] .legend-add-button { background: var(--paper); border-co
 .tuner-cents { font: 600 11px var(--mono); color: var(--muted); min-width: 3.2em; text-align: right; }
 .tuner-status { flex: 1 1 100%; margin: 0; font: 500 11px var(--sans); color: var(--muted); }
 
-/* Nota que está sonando por el micrófono. Antes se pintaba de doradomacizo con
+/* Nota que está sonando por el micrófono. Antes se pintaba de dorado macizo con
    `background: #ffc107 !important` y tapaba el color propio de la nota, que
    viene en un estilo en línea (`app.js` lo escribe al pintar el mástil). Con el
    relleno dorado no se veía si la nota estaba dentro de la escala o fuera, que
    es justo lo que hace falta mirar al tocar. Ahora se respeta ese color y la
-   señal de «esto está sonando» la dan el aro dorado y el pulso, no el relleno. */
+   señal de «esto está sonando» la dan el aro dorado y el pulso, no el relleno.
+
+   Lo que escribe el micrófono encima (el nombre de la nota o su grado) es de
+   9-10 px y su tinta la pone `app.js` según el estado de la nota, así que aquí
+   solo se le da más cuerpo y un halo del color contrario al de la tinta: sin
+   ese halo los grados se perdían, sobre todo el `7` gris de una nota de la
+   escala que la vista actual no resalta. */
 .fret-note.live,
 .open-string-note.live {
   position: relative;
   z-index: 3;
-  box-shadow: 0 0 0 2px #ffc107, 0 0 0 5px rgba(255, 193, 7, .3), 0 0 16px 3px rgba(255, 193, 7, .45);
+  box-shadow: 0 0 0 2px #ffc107, 0 0 0 5px rgba(255, 193, 7, .5), 0 0 20px 5px rgba(255, 193, 7, .65);
   animation: live-bounce 1s ease-in-out infinite;
+  font-weight: 700;
+  font-size: 10px;
+}
+
+/* Velo dorado por dentro, solo donde hay un color propio que conservar: sube el
+   oro sin taparlo. Medido, en las notas sin relleno el velo es contraproducente
+   —el `#999` de una nota fuera de escala cae de 2,31 a 1,73 de contraste contra
+   la madera—, así que ahí el dorado se queda en el aro, que es lo que la hace
+   visible. */
+.fret-note.live.scale-note,
+.open-string-note.live.scale-note {
+  box-shadow: inset 0 0 0 100px rgba(255, 193, 7, .2), 0 0 0 2px #ffc107, 0 0 0 5px rgba(255, 193, 7, .5), 0 0 20px 5px rgba(255, 193, 7, .65);
+}
+
+/* El halo va al revés de la tinta: oscuro donde la tinta es clara (raíz y notas
+   del acorde) y claro donde es oscura (notas de la escala). */
+.fret-note.live.root-note,
+.fret-note.live.chord-note,
+.open-string-note.live.root-note,
+.open-string-note.live.chord-note {
+  font-size: 11px;
+  text-shadow: 0 0 3px rgba(0, 0, 0, .6), 0 1px 0 rgba(0, 0, 0, .5);
+}
+
+.fret-note.live.scale-note:not(.root-note):not(.chord-note),
+.open-string-note.live.scale-note:not(.root-note):not(.chord-note) {
+  text-shadow: 0 0 3px rgba(255, 255, 255, .85), 0 -1px 0 rgba(255, 255, 255, .6);
+}
+
+/* Fuera de la escala no hay relleno: la nota se apoya en la madera y su halo
+   tiene que ser oscuro, o el gris `#999` se pierde contra el brown. Con tres
+   sombras el glifo se emborronaba, así que van dos. */
+.fret-note.live:not(.scale-note):not(.ghost-note),
+.open-string-note.live:not(.scale-note):not(.ghost-note) {
+  text-shadow: 0 0 3px rgba(0, 0, 0, .8), 0 1px 0 rgba(0, 0, 0, .55);
 }
 
 .fret-note.live::after,
