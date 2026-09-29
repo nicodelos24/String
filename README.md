@@ -6,6 +6,12 @@ Aplicación web para estudiar escalas en guitarra y bajo, crear progresiones y p
 
 String, antes Traste, es un proyecto de aprendizaje y portfolio desarrollado con ayuda de IA para implementar, revisar, probar y documentar. Los reportes distinguen las comprobaciones automáticas de las pruebas manuales del autor. La aplicación no genera canciones mediante IA.
 
+## Derechos y permisos de reutilización
+
+Las nuevas aportaciones originales de String están sujetas a **derechos reservados**: su reutilización requiere autorización previa y por escrito de **nicodelos24**. Se permite consultar el código para evaluar el proyecto. Las condiciones completas y sus excepciones están en [LICENSE](LICENSE); las solicitudes de permiso se dirigen mediante los canales publicados en [el perfil del titular](https://github.com/nicodelos24).
+
+El material anteriormente publicado bajo MIT conserva los permisos ya concedidos, incluso cuando siga incluido en versiones posteriores. El texto anterior está en [MIT-legacy.txt](licenses/MIT-legacy.txt). Los [materiales de terceros](THIRD_PARTY_NOTICES.md) mantienen sus propias condiciones.
+
 ## Iniciar
 
 Con Node.js y npm instalados:

@@ -1,21 +1,57 @@
-MIT License
+String — Derechos reservados y condiciones de consulta
 
-Copyright (c) 2026 nicodelos24
+Copyright (c) 2026 nicodelos24.
+Todos los derechos reservados sobre las aportaciones originales cuyos derechos
+correspondan a nicodelos24, con el alcance y las excepciones siguientes.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+1. Alcance y comienzo
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+Este aviso establece la política para las nuevas aportaciones originales
+incorporadas a partir del commit que introduce este archivo. No retira permisos
+concedidos previamente ni restringe material que siga cubierto por otra licencia.
+El historial de cada aportación determina el alcance, no solo su fecha.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+2. Consulta y reutilización
+
+Se permite consultar el código para conocer y evaluar String como proyecto de
+portfolio. Fuera de esa consulta, la reutilización de las aportaciones cubiertas
+por este aviso requiere autorización previa, expresa y por escrito de
+nicodelos24. Esto incluye copiarlas, modificarlas, incorporarlas en otros
+proyectos, redistribuirlas, sublicenciarlas o comercializarlas, con o sin lucro.
+
+Para solicitar autorización, contactar al titular mediante los canales que
+publique en https://github.com/nicodelos24, indicando el material y uso propuesto.
+Una solicitud o la ausencia de respuesta no constituyen autorización.
+
+Se respetan las excepciones y permisos de la legislación aplicable y las
+condiciones de la plataforma donde el titular publique el repositorio.
+Si se publica como repositorio público en GitHub, este aviso no impide la
+consulta ni los forks que permitan sus condiciones de servicio.
+
+3. Material anteriormente publicado bajo MIT
+
+String utilizó MIT antes de este cambio. La última revisión comprobada con
+esa licencia es de9dbc52d75507574f723f26b1a61e99d07ce24f.
+
+Los permisos MIT ya concedidos para ese material se mantienen, incluso cuando
+ese material aparece sin cambios o como parte de una versión posterior.
+Este aviso no convierte retroactivamente ese código en exclusivo. La reserva
+se limita a nuevas aportaciones que no hayan sido ofrecidas bajo MIT u otra
+licencia que permita su reutilización.
+
+El texto anterior se conserva íntegro en licenses/MIT-legacy.txt para el
+material al que corresponde. Su presencia no concede MIT a las nuevas
+aportaciones cubiertas únicamente por este aviso.
+
+4. Material de terceros
+
+Los recursos, bibliotecas, fuentes y demás materiales de terceros conservan
+sus propios derechos y condiciones. Este aviso no atribuye derechos sobre
+ellos ni sobre material que no esté protegido por derecho de autor.
+Consultar THIRD_PARTY_NOTICES.md y los avisos de cada recurso.
+
+5. Garantías
+
+En la medida permitida por la legislación aplicable, el material se ofrece
+«tal cual», sin garantías. Este aviso no limita derechos o responsabilidades
+que la ley no permita excluir.
