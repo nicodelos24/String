@@ -62,23 +62,23 @@ test('keyboard: letters are labelled only inside the active window', () => {
   assert.equal(keyLetter(baseC4 + 4, baseC4), 'd');
   assert.equal(keyLetter(baseC4 + 1, baseC4), 'w');
   assert.equal(keyLetter(baseC4 + 16, baseC4), 'ñ');
-  assert.equal(keyLetter(baseC4 - 8, baseC4), 'z');
+  assert.equal(keyLetter(baseC4 - 7, baseC4), 'z');
   assert.equal(keyLetter(36, baseC4), '', 'fuera de la ventana activa');
   assert.equal(keyLetter(100, baseC4), '');
 });
 
-test('keyboard: la fila grave arranca en mi (z=E3) y la superior son los sostenidos ascendentes', () => {
+test('keyboard: la fila grave arranca en fa (z=F3) y la superior son los sostenidos ascendentes', () => {
   const { KEY_OFFSETS, KEY_CODES } = require('../keyboard-section.js');
-  assert.equal(KEY_OFFSETS.z, -8); // E3
-  assert.equal(KEY_OFFSETS.x, -7); // F3
-  assert.equal(KEY_OFFSETS.c, -5); // G3
-  assert.equal(KEY_OFFSETS.v, -3); // A3
-  assert.equal(KEY_OFFSETS.b, -1); // B3
-  assert.equal(KEY_OFFSETS.n, 0);  // C4, repite la fila media
-  assert.equal(KEY_OFFSETS.m, 2);  // D4
-  assert.equal(KEY_OFFSETS[','], 4); // E4
-  assert.equal(KEY_OFFSETS['.'], 5);  // F4
-  assert.equal(KEY_OFFSETS['-'], 7);  // G4
+  assert.equal(KEY_OFFSETS.z, -7); // F3
+  assert.equal(KEY_OFFSETS.x, -5); // G3
+  assert.equal(KEY_OFFSETS.c, -3); // A3
+  assert.equal(KEY_OFFSETS.v, -1); // B3
+  assert.equal(KEY_OFFSETS.b, 0);  // C4, repite la fila media
+  assert.equal(KEY_OFFSETS.n, 2);  // D4, repite la fila media
+  assert.equal(KEY_OFFSETS.m, 4);  // E4
+  assert.equal(KEY_OFFSETS[','], 5); // F4
+  assert.equal(KEY_OFFSETS['.'], 7); // G4
+  assert.equal(KEY_OFFSETS['-'], 9); // A4, repite la fila media
   assert.equal(KEY_OFFSETS.o, 13);  // C#5
   assert.equal(KEY_OFFSETS.p, 15);  // D#5
   assert.equal(KEY_OFFSETS['´'], 18); // F#5
@@ -158,25 +158,26 @@ test('keyboard: keyOffsetFor usa la letra o la posición física como respaldo',
   const { keyOffsetFor } = require('../keyboard-section.js');
   assert.equal(keyOffsetFor({ key: 'a', code: 'KeyA' }), 0);
   assert.equal(keyOffsetFor({ key: 'ñ', code: 'Semicolon' }), 16);
-  assert.equal(keyOffsetFor({ key: 'Z', code: 'KeyZ' }), -8);
-  assert.equal(keyOffsetFor({ key: 'z', code: 'KeyZ' }), -8);
+  assert.equal(keyOffsetFor({ key: 'Z', code: 'KeyZ' }), -7);
+  assert.equal(keyOffsetFor({ key: 'z', code: 'KeyZ' }), -7);
   assert.equal(keyOffsetFor({ key: 'Dead', code: 'BracketLeft' }), 18, 'tecla de acento muerto ´ por posición');
   assert.equal(keyOffsetFor({ key: '{', code: 'BracketLeft' }), 17, 'la letra tiene prioridad sobre la posición');
   assert.equal(keyOffsetFor({ key: '+', code: 'Equal' }), 20);
   assert.equal(keyOffsetFor({ key: 'q', code: 'KeyQ' }), undefined, 'q no está en la asignación antigua');
 });
 
-test('keyboard: la fila grave empieza en mi y la fila media se queda como estaba', () => {
-  // La fila grave se bajó a petición del autor: z x c v = mi fa sol la, de modo
-  // que con la guitarra en «Mástil» «z» cae en la sexta cuerda al aire y «v» en la
-  // quinta. La fila media y la de sostenidos no se tocan.
+test('keyboard: la fila grave empieza en fa y la fila media se queda como estaba', () => {
+  // La fila grave se corrió a petición del autor: z x c v = fa sol la si, de modo
+  // que con la guitarra en «Mástil» «z» cae en la sexta cuerda en el primer traste y
+  // «c», «n» y «.» en la quinta, la cuarta y la tercera al aire. La fila media y la
+  // de sostenidos no se tocan.
   const { keyOffsetFor } = require('../keyboard-section.js');
   const nota=(key,code)=>60+keyOffsetFor({key,code});
-  // Fila grave, en MIDI y en nombre: mi3 fa3 sol3 la3 si3 do4 re4 mi4 fa4 sol4.
+  // Fila grave, en MIDI y en nombre: fa3 sol3 la3 si3 do4 re4 mi4 fa4 sol4 la4.
   assert.deepEqual(
     [['z','KeyZ'],['x','KeyX'],['c','KeyC'],['v','KeyV'],['b','KeyB'],['n','KeyN'],['m','KeyM'],[',','Comma'],['.','Period'],['-','Minus']]
       .map(([key,code])=>nota(key,code)),
-    [52, 53, 55, 57, 59, 60, 62, 64, 65, 67]);
+    [53, 55, 57, 59, 60, 62, 64, 65, 67, 69]);
   // Fila media: do4 a fa5, sin cambios.
   assert.deepEqual(
     ['a','s','d','f','g','h','j','k','l','ñ','{'].map((key,i)=>nota(key,i===9?'Semicolon':'Key'+i)),
@@ -186,12 +187,26 @@ test('keyboard: la fila grave empieza en mi y la fila media se queda como estaba
     [61, 63, 66, 68, 70, 73, 75]);
   // Ninguna nota se repite dentro de la fila grave, que es lo que la hace usable
   // como fila: si dos teclas dieran la misma, una no serviría de nada.
-  const graves=[52, 53, 55, 57, 59, 60, 62, 64, 65, 67];
+  const graves=[53, 55, 57, 59, 60, 62, 64, 65, 67, 69];
   assert.equal(new Set(graves).size,graves.length);
-  // Con la guitarra en el mástil (una octava más abajo) «z» es la sexta cuerda al
-  // aire y «v» la quinta, que es la razón del cambio.
-  assert.equal(52-12,40,'z suena como la sexta cuerda al aire');
-  assert.equal(57-12,45,'v suena como la quinta cuerda al aire');
+  // Con la guitarra en el mástil (una octava más abajo) «z» es la sexta cuerda en el
+  // primer traste y «c», «n» y «.» son la quinta, la cuarta y la tercera al aire,
+  // que es la razón del cambio.
+  assert.equal(53-12,41,'z suena como la sexta cuerda en el primer traste');
+  assert.equal(57-12,45,'c suena como la quinta cuerda al aire');
+  assert.equal(62-12,50,'n suena como la cuarta cuerda al aire');
+  assert.equal(67-12,55,'el punto suena como la tercera cuerda al aire');
+  // Qué teclas de la fila grave repiten una de la fila media. Cambia con el
+  // mapeo, y son las que el piano no rotula, así que conviene tenerlo escrito y no
+  // deducirlo: ahora la fila llega hasta la4 y alcanza la fila media más arriba.
+  // `in` buscaría por nombre de propiedad y aquí las claves son letras, así que se
+  // compara por valor: lo que se pregunta es si el offset está en la fila media.
+  const media=[0, 2, 4, 5, 7, 9, 11, 12, 14, 16, 17];
+  const filaGrave=[['z',-7],['x',-5],['c',-3],['v',-1],['b',0],['n',2],['m',4],[',',5],['.',7],['-',9]];
+  const repetidas=filaGrave.filter(([,offset])=>media.includes(offset)).map(([key])=>key);
+  assert.deepEqual(repetidas,['b','n','m',',','.','-'],'las que repiten la fila media son seis ahora');
+  // Y las cuatro de verdad nuevas, las que no tienen tecla propia más arriba.
+  assert.deepEqual(filaGrave.filter(([,offset])=>!media.includes(offset)).map(([key])=>key),['z','x','c','v']);
 });
 
 test('keyboard: keyTargetIsTyping deja tocar tras hacer clic en switchs y volumen, pero no sobre campos de texto', () => {

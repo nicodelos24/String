@@ -6,9 +6,10 @@
 // muestra las notas del micrófono).
 // Asignación de teclas (la clásica, con el do en «a»): fila media
 // a s d f g h j k l ñ { = do re mi fa sol la si do re mi fa; fila grave
-// z x c v b n m , . - = mi fa sol la si do re mi fa sol (empieza en mi3, a
+// z x c v b n m , . - = fa sol la si do re mi fa sol la (empieza en fa3, a
 // petición del autor: así, con la guitarra en modo «Mástil», «z» cae en la sexta
-// cuerda al aire y «v» en la quinta); fila superior
+// cuerda en el primer traste y «c», «n» y «.» en la quinta, la cuarta y la tercera
+// al aire); fila superior
 // w e t y u o p y las posiciones sin letra fija (´ y +) = los sostenidos
 // ascendentes, de do#4 a sol#5. Re Pág (mantenida) baja una octava y Av Pág la
 // sube. Las teclas q, r e i quedan libres.
@@ -22,8 +23,8 @@
 var WHITE_SEMITONES = [0, 2, 4, 5, 7, 9, 11];
 var BLACK_SPECS = [[1, 1], [3, 2], [6, 4], [8, 5], [10, 6]];
 // La clave «a» es el do central (C4, MIDI 60) y el resto se cuenta en semitonos
-// desde ahí: por eso «asdfg» es do-re-mi-fa-sol y «zxcv» es mi-fa-sol-la.
-var KEY_OFFSETS = { a: 0, w: 1, s: 2, e: 3, d: 4, f: 5, t: 6, g: 7, y: 8, h: 9, u: 10, j: 11, k: 12, o: 13, l: 14, p: 15, ñ: 16, ';': 16, '{': 17, '´': 18, '+': 20, z: -8, x: -7, c: -5, v: -3, b: -1, n: 0, m: 2, ',': 4, '.': 5, '-': 7 };
+// desde ahí: por eso «asdfg» es do-re-mi-fa-sol y «zxcv» es fa-sol-la-si.
+var KEY_OFFSETS = { a: 0, w: 1, s: 2, e: 3, d: 4, f: 5, t: 6, g: 7, y: 8, h: 9, u: 10, j: 11, k: 12, o: 13, l: 14, p: 15, ñ: 16, ';': 16, '{': 17, '´': 18, '+': 20, z: -7, x: -5, c: -3, v: -1, b: 0, n: 2, m: 4, ',': 5, '.': 7, '-': 9 };
 // Posiciones físicas que cambian de carácter según el idioma del teclado y
 // palabras muertas (acentos), identificadas por código en vez de por letra.
 var KEY_CODES = { Semicolon: 16, Quote: 17, BracketLeft: 18, Equal: 20 };
