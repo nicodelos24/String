@@ -141,6 +141,17 @@
       if(target>=0 && target<progression.length) {
         list.querySelector(`[data-index="${target}"]`)?.focus();
       }
+    } else if(event.key==='Delete') {
+      // Supr / Ctrl+Supr borra la tarjeta enfocada.
+      // Respeta el candado de la escala y no pasa por delante de un campo de escritura.
+      const lock = document.querySelector('#fret-scale-lock');
+      if (lock && lock.checked) return;
+      if (event.target.closest('button, select, label, input, textarea')) return;
+      event.preventDefault();
+      removeProgressionChord(index);
+      // Mover el foco a la tarjeta siguiente (o anterior si era la última).
+      const next = Math.min(index, progression.length - 1);
+      if (next >= 0) list.querySelector(`[data-index="${next}"]`)?.focus();
     } else if(event.key==='Enter' || event.key===' ') {
       event.preventDefault(); selectProgressionChord(index);
       list.querySelector(`[data-index="${index}"]`)?.focus();
