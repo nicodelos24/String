@@ -2,7 +2,7 @@ const {test}=require('node:test');const assert=require('node:assert/strict');
 const fs=require('node:fs');const vm=require('node:vm');const path=require('node:path');
 const SRC=fs.readFileSync(path.join(__dirname,'../preferences.js'),'utf8');
 
-const NOTES=['','notas','grados'];
+const NOTES=['NOTAS','notas','grados'];
 const DEGREES=['','notas','grados'];
 const DISPLAY=['grados','tríada','7ma','Acorde','Acorde 7ma'];
 
@@ -277,12 +277,12 @@ test('preferencias: un guardado de antes del renombrado se desplaza a la fase qu
   // 1 = grados y 2 = apagado; ahora 0 = apagado («AA» a secas), 1 = «AA NOTAS» y
   // 2 = «AA GRADOS». Sin desplazar, quien tuviera los grados guardados abriría
   // el botón en «AA NOTAS», que es justo lo contrario de lo que había elegido.
-  for(const [guardado,esperado] of [[0,'notas'],[1,'grados'],[2,'']]){
+  for(const [guardado,esperado] of [[0,'notas'],[1,'grados'],[2,'NOTAS']]){
     const{q}=build({verLevel:guardado,displayLabel:'tríada'});
     assert.equal(q('#toggle-notes span').textContent,esperado,'un guardado antiguo con verLevel '+guardado);
   }
   // Uno ya escrito con la nomenclatura nueva se queda donde está, sin desplazar.
-  for(const [guardado,esperado] of [[0,''],[1,'notas'],[2,'grados']]){
+  for(const [guardado,esperado] of [[0,'NOTAS'],[1,'notas'],[2,'grados']]){
     const{q}=build({verLevel:guardado,fretPhases:2,displayLabel:'tríada'});
     assert.equal(q('#toggle-notes span').textContent,esperado,'un guardado nuevo con verLevel '+guardado);
   }

@@ -1047,7 +1047,7 @@ document.querySelector('#toggle-display').addEventListener('click', event => {
 // botón apagado el `span` queda vacío y solo se ve el nombre, que es la forma
 // de decir que no está escribiendo nada. El resalte separa la fase apagada de
 // las otras dos, que son las que se ven distinto de lo de siempre.
-const VER_LABELS = ['', 'notas', 'grados'];
+const VER_LABELS = ['NOTAS', 'notas', 'grados'];
 const MASTIL_LABELS = ['', 'notas', 'grados'];
 // El nombre visible de cada botón, que el `aria-label` tiene que contener.
 const VER_PREFIX = 'AA', MASTIL_PREFIX = 'MÁSTIL';

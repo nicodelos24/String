@@ -113,7 +113,7 @@ test('los botones VER y MÁSTIL rotulan zonas distintas sin cruzarse',()=>{
   // pintura: preferences.js restaura pulsando hasta alcanzar el texto guardado,
   // así que un rótulo que se cambiara sin cambiar las listas de preferences.js
   // dejaría el botón sin restaurar en silencio.
-  for(const [ver,mastil,textoVer,textoMastil] of [[0,0,'',''],[1,1,'notas','notas'],[2,2,'grados','grados']]){
+  for(const [ver,mastil,textoVer,textoMastil] of [[0,0,'NOTAS',''],[1,1,'notas','notas'],[2,2,'grados','grados']]){
     run(`verLevel=${ver};mastilScope=${mastil};paintFretLabelButtons()`);
     assert.equal(element('#toggle-notes').querySelector('span').textContent,textoVer,'VER fase '+ver);
     assert.equal(element('#toggle-degrees').querySelector('span').textContent,textoMastil,'MÁSTIL fase '+mastil);
@@ -122,8 +122,8 @@ test('los botones VER y MÁSTIL rotulan zonas distintas sin cruzarse',()=>{
     // el botón. En la fase apagada de MÁSTIL solo se comprueba el nombre.
     const ariaVer=element('#toggle-notes').attrs['aria-label'];
     const ariaMastil=element('#toggle-degrees').attrs['aria-label'];
-    assert(ariaVer.toLowerCase().includes(textoVer||'aa'),'el aria-label de VER («'+ariaVer+'») no contiene lo que se ve («AA'+(textoVer?' '+textoVer:'')+'»)');
-    assert(ariaMastil.toLowerCase().includes(textoMastil||'mástil'),'el aria-label de MÁSTIL («'+ariaMastil+'») no contiene lo que se ve («MÁSTIL'+(textoMastil?' '+textoMastil:'')+'»)');
+    assert(ariaVer.toLowerCase().includes((textoVer||'aa').toLowerCase()),'el aria-label de VER («'+ariaVer+'») no contiene lo que se ve («AA'+(textoVer?' '+textoVer:'')+'»)');
+    assert(ariaMastil.toLowerCase().includes((textoMastil||'mástil').toLowerCase()),'el aria-label de MÁSTIL («'+ariaMastil+'») no contiene lo que se ve («MÁSTIL'+(textoMastil?' '+textoMastil:'')+'»)');
   }
   // El resalte: la fase apagada es la única sin resaltar en los dos botones.
   // Ojo al orden: la apagada es la primera (FRET_OFF = 0) en los dos, y el
