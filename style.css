@@ -874,7 +874,9 @@ html[data-theme="dark"] .legend-add-button { background: var(--paper); border-co
 .open-string-note.live {
   position: relative;
   z-index: 3;
-  box-shadow: 0 0 0 2px #ffc107, 0 0 0 5px rgba(255, 193, 7, .5), 0 0 20px 5px rgba(255, 193, 7, .65);
+  /* Halo reducido: 2 + 4 + 8 + 3 = 17 px de alcance (antes 32 px).
+     No invade a las vecinas (centro a centro 29.7 px). Ver DEF-01. */
+  box-shadow: 0 0 0 2px #ffc107, 0 0 0 4px rgba(255, 193, 7, .45), 0 0 8px 3px rgba(255, 193, 7, .5);
   animation: live-bounce 1s ease-in-out infinite;
   font-weight: 700;
   font-size: 10px;
@@ -887,7 +889,7 @@ html[data-theme="dark"] .legend-add-button { background: var(--paper); border-co
    visible. */
 .fret-note.live.scale-note,
 .open-string-note.live.scale-note {
-  box-shadow: inset 0 0 0 100px rgba(255, 193, 7, .2), 0 0 0 2px #ffc107, 0 0 0 5px rgba(255, 193, 7, .5), 0 0 20px 5px rgba(255, 193, 7, .65);
+  box-shadow: inset 0 0 0 100px rgba(255, 193, 7, .2), 0 0 0 2px #ffc107, 0 0 0 4px rgba(255, 193, 7, .45), 0 0 8px 3px rgba(255, 193, 7, .5);
 }
 
 /* El halo va al revés de la tinta: oscuro donde la tinta es clara (raíz y notas
