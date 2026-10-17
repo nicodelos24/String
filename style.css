@@ -1115,7 +1115,14 @@ html[data-theme="dark"] .board-add-button {
 #quick-play:hover:not(:disabled) { transform: scale(1.06); }
 #quick-play:disabled { opacity: .45; cursor: default; }
 #quick-midi-time { font: 11px var(--sans); color: var(--muted); font-variant-numeric: tabular-nums; }
-.tempo-tap { display: inline-flex; align-items: center; gap: 5px; min-height: 40px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); color: var(--muted); cursor: pointer; }
+/* `font: inherit` faltaba acá y es lo que separaba este botón de todos los
+   demás: el navegador NO aplica al <button> la fuente del documento, así que
+   sin esto Tempo caía en Arial 13.33px mientras su hermano `.mute-toggle`
+   (que sí lo tiene) iba en DM Mono. No hay reset global de `font` para botones
+   en este archivo, por eso cada uno lo trae de a uno.
+   El `font-size: 13px` conserva el peso visual del botón grande: con el 11px
+   que hereda se quedaba corto dentro de una caja de 40px de alto. Ver DEF-02. */
+.tempo-tap { display: inline-flex; align-items: center; gap: 5px; min-height: 40px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); color: var(--muted); font: inherit; font-size: 13px; cursor: pointer; }
 .tempo-tap svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 .tempo-tap:hover { border-color: var(--rust); color: var(--rust); }
 .tempo-tap:active { transform: scale(.97); }
