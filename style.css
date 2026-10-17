@@ -9,6 +9,11 @@
   --sage: #a8b9a0;
   --wood: #8b4d2d;
   --wood-dark: #35241d;
+  /* Para las superficies claras que NO se re-tematizan (los #f1e8dc y
+     #eeeade del archivo). No se redefine en oscuro a propósito: si siguieran
+     a --muted, un gris claro quedaría sobre un fondo casi blanco.
+     Ver docs/AUDITORIA-CONTRASTE.md. */
+  --muted-chip: #5d6560;
   --mono: 'DM Mono', monospace;
   --sans: 'Manrope', sans-serif;
 }
@@ -371,6 +376,13 @@ footer {
   background: #f1e8dc;
 }
 
+/* La ficha seleccionada se queda clara en los dos temas, así que su rótulo no
+   puede seguir a --muted: en oscuro quedaba en 1.67. Como el fondo es el mismo
+   en claro y en oscuro, un valor fijo alcanza en ambos (4.95). */
+.mode-option:has(input:checked) .mode-label {
+  color: var(--muted-chip);
+}
+
 .chord-readout strong {
   display: block;
   margin: 5px 0;
@@ -518,6 +530,14 @@ html[data-theme="dark"] .legend-add-button { background: var(--paper); border-co
 
 .icon-button span {
   color: var(--muted);
+}
+
+/* Pulsado, el botón se invierte: su fondo pasa a ser --ink. Pero --muted se
+   invierte con el tema, así que en oscuro el span quedaba con un gris claro
+   sobre un fondo casi blanco (1.69 de contraste). El span tiene que seguir al
+   fondo del botón, no al tema. Medido: 7.2 en claro y 5.0 en oscuro. */
+.icon-button[aria-pressed='true'] span {
+  color: color-mix(in srgb, var(--paper-light) 72%, var(--ink));
 }
 
 .fret-numbers {
@@ -1925,6 +1945,11 @@ footer {
 .fretboard-section:is(.keyboard-split, .keyboard-band) .library-panel { order: 17; }
 
 @media (prefers-reduced-motion: reduce) { .keyboard-panel { animation: none; } .kp-key { transition: none; } }
+/* Faltaba este: .workspace anima 550 ms con rise, y era el único contenedor
+   animado sin relevo. Con reducir movimiento activo, el video flotante de
+   YouTube queda anclado al contenedor en vez del viewport durante esa
+   animación, que es justo lo que venía a arreglar la rama muerta. Ver T-02. */
+@media (prefers-reduced-motion: reduce) { .workspace { animation: none; } }
 @media (max-width: 800px) {
   .keyboard-keys { height: 130px; }
   .kp-black small { display: none; }
