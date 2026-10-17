@@ -19,10 +19,10 @@
 
   // Leyendas de los botones cíclicos: el texto se usa como estado para
   // capturar y para restaurar pulsando hasta alcanzar el objetivo. La fase
-  // apagada de los dos botones no pone palabra (solo el nombre fijo del
-  // botón), así que su estado es el texto vacío, y por eso los dos índices
-  // caen en 0 cuando no reconocen el rótulo.
-  const NOTES_LABELS = ['', 'notas', 'grados'];
+  // apagada de MÁSTIL no pone palabra (solo el nombre fijo del botón), así
+  // que su estado es el texto vacío. En cambio, la fase apagada de AA ahora
+  // dice «NOTAS» para distinguirse del primer clic.
+  const NOTES_LABELS = ['NOTAS', 'notas', 'grados'];
   const DEGREE_LABELS = ['', 'notas', 'grados'];
   // Guardados de la versión anterior: showNotes (0 sin, 1 escala, 2 todas) y
   // degreeDisplay (0 no, 1 escala, 2 todas).
@@ -33,7 +33,7 @@
   };
   const fromLegacyScope = saved => (saved.degreeDisplay === 2 || saved.showNotes === 2) ? 1 : 0;
   // Los rótulos de VER se reordenaron al ponerles nombre propio: antes 0 = notas,
-  // 1 = grados y 2 = apagado; ahora 0 = apagado («AA» a secas), 1 = «AA NOTAS» y
+  // 1 = grados y 2 = apagado; ahora 0 = apagado («AA NOTAS» en mayúsculas), 1 = «AA notas» y
   // 2 = «AA GRADOS». Como el snapshot guarda el número de fase, un guardado
   // anterior hay que desplazarlo o el botón se abriría en otra fase. Se marca
   // con `fretPhases` para no desplazar dos veces los que ya son de esta versión.

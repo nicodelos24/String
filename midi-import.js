@@ -55,6 +55,9 @@ function readMidiChords(buffer,types) {
   if(chords.length>4096)throw new Error('Se reconocieron más de 4096 acordes. Importa un fragmento más corto.');
   const timedNotes=notes.filter(note=>note.end>note.tick).map(note=>({midi:note.midi,velocity:note.velocity,time:timeAt(note.tick),duration:timeAt(note.end)-timeAt(note.tick)})).sort((a,b)=>a.time-b.time);
   const duration=timedNotes.reduce((end,note)=>Math.max(end,note.time+note.duration),timeAt(lastTick));
-  return {chords,skipped,notes:timedNotes,duration};
+  // Devolver el mapa de tempo para calcular beats en la UI.
+  // tempos ya está ordenado por tick y tiene {tick, tempo, time}.
+  const tempoMap = tempos.map(t => ({time: t.time, tempo: t.tempo}));
+  return {chords,skipped,notes:timedNotes,duration,tempoMap};
 }
 if(typeof module!=='undefined' && module.exports)module.exports={readMidiChords};

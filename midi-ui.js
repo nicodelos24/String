@@ -2,6 +2,34 @@
   const input=document.querySelector('#midi-file'),status=document.querySelector('#midi-status'),preview=document.querySelector('#midi-preview'),add=document.querySelector('#midi-add');
   const play=document.querySelector('#midi-play'),clock=document.querySelector('#midi-time');
   let pending=[],generation=0,imported=null,last=-1,linked=[];
+
+  // Calcula beats a partir de segundos usando el mapa de tempo del MIDI.
+  // tempoMap: [{time, tempo}] donde tempo está en µs por negra (quarter note).
+  function beatsFromSeconds(seconds, tempoMap) {
+    if (!tempoMap?.length) return 4;
+    let beats = 0;
+    for (let i = 0; i < tempoMap.length; i++) {
+      const segmentStart = tempoMap[i].time;
+      const segmentEnd = (i + 1 < tempoMap.length) ? tempoMap[i + 1].time : Infinity;
+      const segmentTempo = tempoMap[i].tempo; // µs per quarter note
+      const beatsPerSecond = 1_000_000 / segmentTempo;
+      const overlapStart = Math.max(seconds[0], segmentStart);
+      const overlapEnd = Math.min(seconds[1], segmentEnd);
+      if (overlapEnd > overlapStart) {
+        beats += (overlapEnd - overlapStart) * beatsPerSecond;
+      }
+      if (segmentEnd >= seconds[1]) break;
+    }
+    // Redondear al beat válido más cercano (1-16)
+    const valid = [1,2,3,4,6,8,12,16];
+    let best = 4, bestDiff = Infinity;
+    for (const v of valid) {
+      const diff = Math.abs(v - beats);
+      if (diff < bestDiff) { bestDiff = diff; best = v; }
+    }
+    return best;
+  }
+
   function addCards() {
     if(!pending.length)return true;
     const result=appendMidiChords(pending);
@@ -41,7 +69,17 @@
     try {
       if(file.size>2*1024*1024)throw new Error('El archivo supera 2 MB.');
       const data=await file.arrayBuffer();if(request!==generation)return;
-      const result=readMidiChords(data,chordTypes);imported=result;play.disabled=!result.notes.length;pending=result.chords.map(({root,type})=>({root,type}));
+      const result=readMidiChords(data,chordTypes);imported=result;play.disabled=!result.notes.length;
+      // Calcular beats para cada acorde basándose en la duración hasta el siguiente acorde (o fin de pista).
+      const chords = result.chords;
+      const tempoMap = result.tempoMap || [];
+      const totalDuration = result.duration || 0;
+      pending = chords.map((chord, i) => {
+        const start = chord.time;
+        const end = (i + 1 < chords.length) ? chords[i + 1].time : totalDuration;
+        const beats = beatsFromSeconds([start, end], tempoMap);
+        return {root: chord.root, type: chord.type, beats};
+      });
       for(const item of pending){const row=document.createElement('li');row.textContent=noteName(item.root)+chordTypes.find(type=>type.value===item.type).suffix;preview.append(row);}
       add.disabled=!pending.length;
       status.textContent=`${pending.length} acordes reconocidos; ${result.skipped} grupos omitidos. Revisa posibles ambigüedades: las inversiones pueden tener más de un nombre.`;
