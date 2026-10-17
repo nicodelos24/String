@@ -21,7 +21,59 @@ const progressionPresets={
     {root:2,type:'m7',mode:'dorian',beats:2},{root:1,type:'7',mode:'mixolydian',beats:2},
     {root:0,type:'maj7',mode:'ionian'},{root:11,type:'7',mode:'mixolydian'},{root:4,type:'m',mode:'aeolian'},{root:4,type:'m',mode:'aeolian'}
   ]},
-  turnaround:{name:'Jazz · I–vi–ii–V en Do',bpm:110,style:'jazz',chords:[{root:0,type:'maj7',mode:'ionian'},{root:9,type:'m7',mode:'aeolian'},{root:2,type:'m7',mode:'dorian'},{root:7,type:'7',mode:'mixolydian'}]}
+  turnaround:{name:'Jazz · I–vi–ii–V en Do',bpm:110,style:'jazz',chords:[{root:0,type:'maj7',mode:'ionian'},{root:9,type:'m7',mode:'aeolian'},{root:2,type:'m7',mode:'dorian'},{root:7,type:'7',mode:'mixolydian'}]},
+  // === Uruguayos / Río de la Plata ===
+  candombe:{name:'Candombe · Progresión típica (I–IV–V)',bpm:105,style:'pop',chords:[
+    {root:0,type:'maj',mode:'ionian',beats:2},{root:0,type:'maj',mode:'ionian',beats:2},
+    {root:5,type:'maj',mode:'lydian',beats:2},{root:5,type:'maj',mode:'lydian',beats:2},
+    {root:7,type:'7',mode:'mixolydian',beats:2},{root:7,type:'7',mode:'mixolydian',beats:2},
+    {root:0,type:'maj',mode:'ionian',beats:2},{root:0,type:'maj',mode:'ionian',beats:2}
+  ]},
+  milonga:{name:'Milonga · I–V–vi–IV (La menor)',bpm:80,style:'ballad',chords:[
+    {root:9,type:'m',mode:'aeolian'},{root:7,type:'maj',mode:'mixolydian'},
+    {root:9,type:'m',mode:'aeolian'},{root:5,type:'maj',mode:'lydian'}
+  ]},
+  valsCriollo:{name:'Vals criollo · ii–V–I en Sol',bpm:160,style:'jazz',chords:[
+    {root:2,type:'m7',mode:'dorian'},{root:7,type:'7',mode:'mixolydian'},
+    {root:0,type:'maj7',mode:'ionian'},{root:0,type:'maj7',mode:'ionian'}
+  ]},
+  salsa:{name:'Salsa · I–IV–V–IV (montuno)',bpm:180,style:'pop',chords:[
+    {root:0,type:'maj7',mode:'ionian',beats:2},{root:0,type:'maj7',mode:'ionian',beats:2},
+    {root:5,type:'maj7',mode:'lydian',beats:2},{root:5,type:'maj7',mode:'lydian',beats:2},
+    {root:7,type:'7',mode:'mixolydian',beats:2},{root:7,type:'7',mode:'mixolydian',beats:2},
+    {root:5,type:'maj7',mode:'lydian',beats:2},{root:5,type:'maj7',mode:'lydian',beats:2}
+  ]},
+  // === Más progresiones comunes ===
+  laBamba:{name:'La Bamba · I–IV–V en Do',bpm:150,style:'pop',chords:[
+    {root:0,type:'maj',mode:'ionian'},{root:5,type:'maj',mode:'lydian'},{root:7,type:'maj',mode:'mixolydian'},{root:5,type:'maj',mode:'lydian'}
+  ]},
+  standByMe:{name:'Stand By Me · I–vi–IV–V en La',bpm:110,style:'ballad',chords:[
+    {root:9,type:'maj',mode:'ionian'},{root:4,type:'m',mode:'aeolian'},{root:5,type:'maj',mode:'lydian'},{root:7,type:'maj',mode:'mixolydian'}
+  ]},
+  pachelbel:{name:'Canon de Pachelbel · I–V–vi–iii–IV–I–IV–V',bpm:70,style:'ballad',chords:[
+    {root:0,type:'maj',mode:'ionian'},{root:7,type:'maj',mode:'mixolydian'},{root:9,type:'m',mode:'aeolian'},{root:4,type:'m',mode:'phrygian'},
+    {root:5,type:'maj',mode:'lydian'},{root:0,type:'maj',mode:'ionian'},{root:5,type:'maj',mode:'lydian'},{root:7,type:'maj',mode:'mixolydian'}
+  ]},
+  georgia:{name:'Georgia on My Mind · I–vi–ii–V (con bridge)',bpm:85,style:'jazz',chords:[
+    {root:0,type:'maj7',mode:'ionian'},{root:9,type:'m7',mode:'aeolian'},{root:2,type:'m7',mode:'dorian'},{root:7,type:'7',mode:'mixolydian'},
+    {root:5,type:'maj7',mode:'lydian'},{root:0,type:'7',mode:'mixolydian'},{root:2,type:'m7',mode:'dorian'},{root:7,type:'7',mode:'mixolydian'}
+  ]},
+  giantSteps:{name:'Giant Steps (Coltrane) · cambios de terceras mayores',bpm:220,style:'jazz',chords:[
+    {root:0,type:'maj7',mode:'ionian'},{root:1,type:'7',mode:'mixolydian'},{root:5,type:'maj7',mode:'ionian'},{root:6,type:'7',mode:'mixolydian'},
+    {root:11,type:'maj7',mode:'ionian'},{root:3,type:'7',mode:'mixolydian'},{root:7,type:'maj7',mode:'ionian'},{root:9,type:'7',mode:'mixolydian'},
+    {root:2,type:'m7',mode:'dorian'},{root:5,type:'7',mode:'mixolydian'},{root:0,type:'maj7',mode:'ionian'}
+  ]},
+  minorBlues:{name:'Blues menor · 12 compases en Re menor',bpm:80,style:'jazz',chords:[
+    {root:2,type:'m7',mode:'aeolian'},{root:2,type:'m7',mode:'aeolian'},{root:2,type:'m7',mode:'aeolian'},{root:2,type:'m7',mode:'aeolian'},
+    {root:7,type:'m7',mode:'aeolian'},{root:7,type:'m7',mode:'aeolian'},{root:2,type:'m7',mode:'aeolian'},{root:2,type:'m7',mode:'aeolian'},
+    {root:10,type:'7',mode:'mixolydian'},{root:7,type:'7',mode:'mixolydian'},{root:2,type:'m7',mode:'aeolian'},{root:10,type:'7',mode:'mixolydian'}
+  ]},
+  rhythmChanges:{name:'Rhythm Changes · AABA (simplificado)',bpm:200,style:'jazz',chords:[
+    {root:0,type:'maj7',mode:'ionian'},{root:2,type:'m7',mode:'dorian'},{root:5,type:'7',mode:'mixolydian'},{root:7,type:'7',mode:'mixolydian'},
+    {root:0,type:'maj7',mode:'ionian'},{root:2,type:'m7',mode:'dorian'},{root:5,type:'7',mode:'mixolydian'},{root:7,type:'7',mode:'mixolydian'},
+    {root:0,type:'maj7',mode:'ionian'},{root:4,type:'m7',mode:'aeolian'},{root:7,type:'m7',mode:'dorian'},{root:2,type:'7',mode:'mixolydian'},
+    {root:0,type:'maj7',mode:'ionian'},{root:2,type:'m7',mode:'dorian'},{root:5,type:'7',mode:'mixolydian'},{root:7,type:'7',mode:'mixolydian'}
+  ]}
 };
 if(typeof document!=='undefined')document.querySelector('#apply-preset').addEventListener('click',()=>{
   const key=document.querySelector('#progression-preset').value;
