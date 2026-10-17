@@ -134,6 +134,13 @@
       const moved=list.querySelector(`[data-index="${progression.indexOf(source)}"]`);
       moved?.focus();
       if(moved && !reducedMotion()) moved.animate([{transform:`translateX(${old.left-moved.getBoundingClientRect().left}px)`},{transform:'translateX(0)'}],{duration:180});
+    } else if(['ArrowUp','ArrowDown'].includes(event.key)) {
+      event.preventDefault();
+      const delta=event.key==='ArrowUp'?-1:1;
+      const target=index+delta;
+      if(target>=0 && target<progression.length) {
+        list.querySelector(`[data-index="${target}"]`)?.focus();
+      }
     } else if(event.key==='Enter' || event.key===' ') {
       event.preventDefault(); selectProgressionChord(index);
       list.querySelector(`[data-index="${index}"]`)?.focus();
