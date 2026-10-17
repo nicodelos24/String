@@ -586,10 +586,6 @@ html[data-theme="dark"] .legend-add-button { background: var(--paper); border-co
   border: none;
 }
 
-.fretboard-wrap {
-  overflow-x: auto;
-}
-
 .fretboard {
   position: relative;
   display: flex;
@@ -2068,7 +2064,7 @@ footer {
 .youtube-form { max-width: 560px; margin: 8px 0; }
 /* La altura la fija `fit()` en youtube-player.js con proporción 16:9; aquí solo
    queda el mínimo para que el panel no salte mientras carga el iframe. */
-.youtube-video-wrap { max-width: 360px; min-height: 180px; margin: 8px 0; }
+.youtube-video-wrap { max-width: 360px; margin: 8px 0; }
 .youtube-video-wrap.is-floating { position: fixed; bottom: 18px; right: 18px; width: 320px; max-width: calc(100vw - 36px); min-height: 0; margin: 0; z-index: 100; box-shadow: 0 12px 40px #0005; }
 /* Los botones «Mover» y «Restaurar» van sobre el video; el degradado los deja legibles. */
 .youtube-video-wrap.is-floating::before { content: ''; position: absolute; inset: 0 0 auto 0; height: 32px; background: linear-gradient(#000a, #0000); pointer-events: none; }
@@ -2327,7 +2323,7 @@ html[data-theme="dark"] .fret-numbers, html[data-theme="dark"] .open-strings-hea
 
   /* La fila del micrófono es más ancha que la pantalla: sin esto el chip
      «Acorde» queda cortado a la derecha. */
-  .board-toolbar { flex-wrap: wrap; align-items: flex-start; }
+  .board-toolbar { align-items: flex-start; }
   .mic-control, .pentatonic-control, .toolbar-buttons { flex: 1 1 100%; min-width: 0; max-width: 100%; }
   .tuner-toggle { flex: 0 0 auto; }
   .live-chord-switch { flex-wrap: wrap; min-width: 0; }
@@ -2337,7 +2333,6 @@ html[data-theme="dark"] .fret-numbers, html[data-theme="dark"] .open-strings-hea
   .scale-summary .chord-readout, .scale-summary .key-signature-info { height: auto; min-height: 0; }
   .scale-summary { gap: 8px; margin: 12px 0; }
   .legend-panel { order: 9; }
-  .control-panel { padding: 16px; }
 }
 
 @media (max-width: 800px) and (orientation: landscape) {
