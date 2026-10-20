@@ -27,7 +27,14 @@
       if (entry) {
         window.StringSections?.follow(entry);
         playingProgressionItem = entry.source;
-        showProgressionChord(entry.saved, progression.indexOf(entry.source));
+        // La vuelta de la entrada que suena: con secciones la define la
+        // propia sección; sin secciones la define la pasada del loop. Una
+        // variante por vuelta solo cambia lo que se muestra en el mástil:
+        // el audio sigue el acorde, no la fantasma.
+        const vuelta = entry.section ? entry.vuelta : player.playingPass + 1;
+        const variant = vuelta ? entry.source?.variants?.[vuelta] : null;
+        const ghost = validGhostMode(variant?.ghostMode);
+        showProgressionChord(ghost ? {...entry.saved, ghostMode: ghost} : entry.saved, progression.indexOf(entry.source));
       }
       status.textContent = `Sonando: ${name} · ${entry?.section ? entry.section+" · " : ""}acorde ${index + 1} de ${total}`;
     },

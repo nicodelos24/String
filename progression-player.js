@@ -151,6 +151,10 @@ class ProgressionPlayer {
       this.index = Number.isInteger(startIndex)
         ? Math.min(Math.max(startIndex, 0), this.chords.length - 1)
         : 0;
+      // Vuelta del loop en la que suena lo que se programa; la interfaz lee
+      // la de lo que se muestra en `playingPass`, no esta.
+      this.currentPass = 0;
+      this.playingPass = 0;
       this.endTime = null;
       this.nextTime = this.context.currentTime + 0.04;
       this.running = true;
@@ -174,17 +178,17 @@ class ProgressionPlayer {
     if (this.endTime === null && this.nextTime < now + 0.1) {
       const chord = this.chords[this.index];
       this.scheduleBar(chord, this.nextTime, chord.beats);
-      this.queue.push({time: this.nextTime, index: this.index, name: chord.name});
+      this.queue.push({time: this.nextTime, index: this.index, name: chord.name, pass: this.currentPass});
       this.nextTime += chord.beats * this.beat;
       this.index++;
       if (this.index === this.chords.length) {
-        if (this.loop) this.index = 0;
+        if (this.loop) {this.currentPass++; this.index = 0;}
         else this.endTime = this.nextTime;
       }
     }
     let latest;
     while (this.queue.length && this.queue[0].time <= now) latest = this.queue.shift();
-    if (latest) this.onChord(latest.index, latest.name, this.chords.length);
+    if (latest) {this.playingPass = latest.pass; this.onChord(latest.index, latest.name, this.chords.length);}
   }
 
   scheduleBar(chord, time, beats = 4) {

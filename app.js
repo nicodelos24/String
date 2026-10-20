@@ -198,6 +198,27 @@ const customProgressionKey='traste.customProgression.v1';
 // se acepta si es un modo que la app conoce: un guardado corrupto no debe poder
 // colar una clave que reviente al pintar el mástil.
 const validGhostMode=value=>(value&&Object.hasOwn(modes,value))?value:'';
+// Las variantes por vuelta guardan excepciones del modo fantasma para
+// vueltas concretas del mismo acorde: la vuelta de una sección que se
+// repite (el coro, el estribillo) o la pasada del loop del Acompañamiento
+// cuando no hay secciones. La clave es el número de vuelta (1 a 8, el
+// mismo techo que las repeticiones de una sección) y el valor solo
+// cambia el modo fantasma, con la misma validación que el modo del
+// acorde: un guardado raro no coló una clave que reviente al pintar el
+// mástil.
+function validVariants(value){
+  if(!value||typeof value!=='object'||Array.isArray(value))return undefined;
+  const out={};
+  for(const key of Object.keys(value)){
+    const vuelta=Number(key);
+    const variant=value[key];
+    if(!Number.isInteger(vuelta)||vuelta<1||vuelta>8||!variant||typeof variant!=='object')continue;
+    const ghost=validGhostMode(variant.ghostMode);
+    if(!ghost)continue;
+    out[vuelta]={ghostMode:ghost};
+  }
+  return Object.keys(out).length?out:undefined;
+}
 function saveCustomProgression(){
   if(typeof localStorage==='undefined')return;
   try{
@@ -207,6 +228,7 @@ function saveCustomProgression(){
       type:item.type,
       mode:item.mode,
       ghostMode:validGhostMode(item.ghostMode),
+      variants:validVariants(item.variants),
       beats:validBeats(item.beats)
     }))));
   }catch{/* Sin almacenamiento: la opción «Mi progresión» usa la progresión actual. */}
@@ -228,6 +250,7 @@ function readCustomProgression(){
       type:item.type,
       mode:item.mode,
       ghostMode:validGhostMode(item.ghostMode),
+      variants:validVariants(item.variants),
       beats:validBeats(item.beats)
     })).filter(item=>item.root!==null&&chordTypes.some(type=>type.value===item.type));
     // Si traía acordes y todos son inservibles, el guardado está corrupto y se

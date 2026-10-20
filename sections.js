@@ -9,7 +9,16 @@ function validateSections(value,count) {
     return {name:s.name.trim(),repeat:s.repeat,indices:[...s.indices]};
   });
 }
-if(typeof module!=='undefined')module.exports={validateSections};
+// La lista de reproducción es una sola secuencia de entradas: cada una sabe
+// qué tarjeta es (source), con qué se ve (saved) y, si viene de una sección
+// con repeticiones, en qué vuelta va — la clave por la que una variante por
+// vuelta cambia lo que se muestra. Sin secciones, cada tarjeta aparece una
+// vez y la vuelta la cuenta el loop del Acompañamiento.
+function playbackEntries(data,progression,live=[]){
+  if(!data.length)return progression.map(source=>({source,saved:{...source}}));
+  return data.flatMap((s,sectionIndex)=>Array.from({length:s.repeat},(_,i)=>s.indices.map(index=>({source:progression[index],saved:{...progression[index]},sectionRef:live[sectionIndex],section:`${s.name} · vuelta ${i+1}/${s.repeat}`,vuelta:i+1}))).flat());
+}
+if(typeof module!=='undefined')module.exports={validateSections,playbackEntries};
 if(typeof document!=='undefined')(()=>{
   let sections=[],active=null,drag=null;
   const $=id=>document.getElementById(id);
@@ -63,9 +72,9 @@ if(typeof document!=='undefined')(()=>{
     include(source,copy){if(active){const at=active.items.indexOf(source);active.items.splice(at<0?active.items.length:at+1,0,copy);}},
     load(value){sections=validateSections(value,progression.length).map(s=>({...s,items:s.indices.map(i=>progression[i])}));active=null;render();renderProgression();},playback(){
     const data=validateSections(serialize(),progression.length);
-    if(!data.length)return progression.map(source=>({source,saved:{...source}}));
+    if(!data.length)return playbackEntries([],progression);
     const live=sections.filter(s=>s.items.some(item=>progression.includes(item)));
-    return data.flatMap((s,sectionIndex)=>Array.from({length:s.repeat},(_,i)=>s.indices.map(index=>({source:progression[index],saved:{...progression[index]},sectionRef:live[sectionIndex],section:`${s.name} · vuelta ${i+1}/${s.repeat}`}))).flat());
+    return playbackEntries(data,progression,live);
   }};
   $('section-add').onclick=()=>{
     const from=Number($('section-from').value),to=Number($('section-to').value),repeat=Number($('section-repeat').value),name=$('section-name').value.trim();
