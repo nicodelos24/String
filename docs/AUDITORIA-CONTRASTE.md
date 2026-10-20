@@ -140,3 +140,23 @@ bien en oscuro.
 - **`npm test` no Midió nada de esto.** Siguió dando verde con los tres fallos de contraste
   arreglados y sin ver ninguno. Los 290/290 dicen que no se rompió la funcionalidad; no dicen
   nada de si algo se lee.
+
+## Revalidación QA — 2026-10-20
+
+Base revisada: `main` `b698f11`. Se volvió a ejecutar la suite y se revisó la página real en
+Chromium: escritorio a 1440 px en tema claro y oscuro, y móvil a 375 px. No se observó
+desbordamiento horizontal ni regresión estática en la consolidación de CSS de `T-05`; el botón
+**Tempo** de `DEF-02` conserva una jerarquía y fuente coherentes en ambos temas.
+
+Esta pasada **no cierra** las tareas que requieren estados que no pueden simularse honestamente
+sin instrumento o servicio externo:
+
+- `DEF-01` y `T-03`: falta comprobar el halo y la lectura del grado con el micrófono y la
+  guitarra reales.
+- Los contrastes abiertos de esta auditoría siguen abiertos; esta pasada no volvió a medirlos
+  ni cambia su severidad.
+- El botón `↺` del Tempo y los cuatro botones `×` de tarjetas siguen en `DEF-03`: no declaran
+  `font: inherit` y se revisarán por componente, no como parte de `DEF-02`.
+
+La evidencia visual confirma ausencia de regresión en las vistas inspeccionadas; no sustituye
+la aceptación auditiva, la validación en Safari/Firefox ni la prueba del autor con instrumento.

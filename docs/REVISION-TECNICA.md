@@ -1,6 +1,35 @@
-# Revisión técnica — 2026-09-11
+# Revisión técnica — base histórica del 2026-09-11
 
 Base inspeccionada: `4aee85c` más los cambios locales de esta revisión. Trabajo realizado con asistencia de IA. Es una revisión de código y regresiones de los flujos existentes; no garantiza ausencia total de defectos.
+
+## Estado validado el 2026-10-20
+
+Base actual: `main` `b698f11`, sincronizada con `origin/main`. Esta sección actualiza el
+estado sin reescribir el registro histórico de la revisión del 11/09.
+
+- La suite `npm test` pasa completa sin dependencias de paquete. Abarca lógica musical, MIDI,
+  guardado, secciones, estructura HTML y tres regresiones de CSS que se pueden comprobar como
+  texto.
+- Hay integración continua en `.github/workflows/tests.yml`: ejecuta `npm test` con Node 20 en
+  cada push a `main` y en pull requests.
+- La revisión visual de QA en Chromium, a 1440 px y 375 px, no detectó regresiones estáticas en
+  las rondas integradas de consolidación CSS (`T-05`) ni en la fuente de Tempo (`DEF-02`). La
+  comprobación no cubre el halo con el micrófono realmente activo: permanece en validación manual
+  (`T-03` y `DEF-01`).
+- La estructura se dividió en archivos por dominio, pero `app.js` continúa concentrando datos
+  musicales, estado y renderizado. Su extracción gradual sigue siendo `T-01`; no es seguro
+  reordenarlo en una sola ronda.
+- El catálogo ampliado de plantillas funciona, pero cuatro descripciones musicales no coinciden
+  con los acordes que cargan (`T-10`). Es un defecto de contenido pendiente de decisión, no una
+  regresión que se deba ocultar con una prueba.
+- La auditoría de contraste corrigió dos textos invisibles en oscuro y el relevo de movimiento
+  reducido de `.workspace`; conserva hallazgos abiertos en los grados del mástil, `--muted`,
+  `--rust` y el número de octava en oscuro. Ver `AUDITORIA-CONTRASTE.md`.
+
+## Alcance de la revisión histórica
+
+Las correcciones y conclusiones que siguen describen la fotografía de `4aee85c`. Para el
+estado vigente se aplica la actualización anterior y el backlog coordinado del proyecto.
 
 ## Correcciones de esta revisión
 

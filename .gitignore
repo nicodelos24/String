@@ -16,3 +16,6 @@ npm-debug.log*
 # código fuente, tal cual se sirve desde server.cjs.
 *.log
 *.tmp
+
+# Índice local generado por herramientas de análisis; no forma parte de String.
+.codegraph/
