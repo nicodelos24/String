@@ -29,14 +29,17 @@ function setup() {
       setAttribute(name, value) { this.attrs[name] = String(value); },
       removeAttribute(name) { delete this.attrs[name]; },
       dispatchEvent(event) { if (this.handlers[event.type]) this.handlers[event.type]({target: this}); return true; },
+      classList: {add() {}, remove() {}, toggle() {}, contains() {return false;}},
+      replaceChildren() {}, append() {}, dataset: {}, close() {}, open: false,
     });
     return elements.get(key);
   }
   class FakeEvent { constructor(type, init) { this.type = type; Object.assign(this, init); } }
   const store = new Map();
   const ctx = vm.createContext({
-    document: {querySelector: element, querySelectorAll: () => [], getElementById: id => element(`#${id}`), addEventListener() {}},
+    document: {querySelector: element, querySelectorAll: () => [], getElementById: id => element(`#${id}`), addEventListener() {}, createElement: () => element(`·${elements.size}`)},
     Event: FakeEvent,
+    MutationObserver: class MutationObserver {constructor(callback) {this.callback = callback;} observe() {}},
     localStorage: {getItem: key => store.has(key) ? store.get(key) : null, setItem: (key, value) => store.set(key, value), removeItem: key => store.delete(key)},
   });
   vm.runInContext(fs.readFileSync(path.join(__dirname,'../app.js'),'utf8'), ctx);
@@ -197,4 +200,55 @@ test('una fantasma que la app no conoce no se dibuja y no revienta la reproducci
   player().playingPass = 1;
   player().callbacks.onChord(0, 'G', 1);
   assert.equal(run('ghostMode'), '', 'La variante inválida se descarta y el mástil queda sin fantasma');
+});
+
+// QA-R05: la copia de ejecución se congela al arrancar. Editar las variantes
+// del acorde vivo a mitad de la reproducción no arrastra lo que suena; la
+// edición se ve recién al detener y volver a reproducir.
+test('la copia de ejecución congela las variantes y la edición se ve al volver a reproducir', () => {
+  const source = {root: 0, type: 'maj', variants: {'2': {ghostMode: 'majorPentatonic'}}};
+  const [entry] = playbackEntries([], [source]);
+  source.variants['2'].ghostMode = 'lydian';
+  assert.equal(entry.saved.variants['2'].ghostMode, 'majorPentatonic', 'Los objetos anidados se copiaron al arrancar');
+  source.variants = {'2': {ghostMode: 'dorian'}};
+  assert.equal(entry.saved.variants['2'].ghostMode, 'majorPentatonic', 'Reemplazar la variante entera tampoco afecta a la copia');
+  const [reEntry] = playbackEntries([], [source]);
+  assert.equal(reEntry.saved.variants['2'].ghostMode, 'dorian', 'Una nueva repetición toma la edición');
+});
+
+test('con la página real, editar las variantes en vivo no arrastra lo que suena', () => {
+  const {run, runRaw, clickPlay, player} = setupPlayerInterface();
+  // sections.js real: la reproducción pasa por playbackEntries, no por un fake.
+  // Guion de QA-R05: base majorPentatonic, variante de la vuelta 2 minorPentatonic,
+  // y en consola una sustitución a lydian a mitad de la ejecución.
+  runRaw(fs.readFileSync(path.join(__dirname,'../sections.js'),'utf8'));
+  runRaw(`progression = [
+    {root: 7, rootNoteName: 'G', type: 'maj', mode: 'ionian', ghostMode: 'majorPentatonic', variants: {'2': {ghostMode: 'minorPentatonic'}}}
+  ];`);
+  clickPlay();
+  player().playingPass = 0;
+  player().callbacks.onChord(0, 'G', 2);
+  assert.equal(run('ghostMode'), 'majorPentatonic', 'Vuelta 1: la base del acorde, igual que la ejecución de control');
+  player().playingPass = 1;
+  player().callbacks.onChord(0, 'G', 2);
+  assert.equal(run('ghostMode'), 'minorPentatonic', 'Vuelta 2: la copia congelada al arrancar');
+  // Editando el modo del objeto anidado en vivo…
+  runRaw(`progression[0].variants['2'].ghostMode = 'ionian';`);
+  player().callbacks.onChord(0, 'G', 2);
+  assert.equal(run('ghostMode'), 'minorPentatonic', 'La edición en vivo no cambia la vuelta ya programada');
+  // …y sustituyendo la variante entera (el paso del informe de QA), tampoco.
+  runRaw(`progression[0].variants = {'2': {ghostMode: 'lydian'}};`);
+  player().callbacks.onChord(0, 'G', 2);
+  assert.equal(run('ghostMode'), 'minorPentatonic', 'Reemplazar la variante en vivo tampoco arrastra lo que suena');
+  // Detener y volver a reproducir: la copia se saca de nuevo y la edición aparece.
+  clickPlay();
+  clickPlay();
+  player().playingPass = 0;
+  player().callbacks.onChord(0, 'G', 2);
+  assert.equal(run('ghostMode'), 'majorPentatonic', 'Vuelta 1 de la nueva ejecución: la base otra vez');
+  player().playingPass = 1;
+  player().callbacks.onChord(0, 'G', 2);
+  assert.equal(run('ghostMode'), 'lydian', 'El mástil muestra la edición recién en la nueva ejecución');
+  const frozenAgain = run("window.StringSections.playback().map(entry => entry.saved.variants['2'].ghostMode)");
+  assert.deepEqual(frozenAgain, ['lydian'], 'La nueva copia tomó la variante editada');
 });

@@ -14,11 +14,21 @@ function validateSections(value,count) {
 // con repeticiones, en qué vuelta va — la clave por la que una variante por
 // vuelta cambia lo que se muestra. Sin secciones, cada tarjeta aparece una
 // vez y la vuelta la cuenta el loop del Acompañamiento.
-function playbackEntries(data,progression,live=[]){
-  if(!data.length)return progression.map(source=>({source,saved:{...source}}));
-  return data.flatMap((s,sectionIndex)=>Array.from({length:s.repeat},(_,i)=>s.indices.map(index=>({source:progression[index],saved:{...progression[index]},sectionRef:live[sectionIndex],section:`${s.name} · vuelta ${i+1}/${s.repeat}`,vuelta:i+1}))).flat());
+// La copia de ejecución congela el estado con el que arranca la reproducción:
+// se saca una sola vez al pulsar «Reproducir». Las variantes por vuelta se
+// copian también por dentro, porque lo que suena debe conservar su fantasma
+// aunque el autor edite el acorde en vivo; la edición se ve al detener y
+// volver a reproducir, no a mitad de la canción (devolución QA-R05).
+function playbackCopy(source){
+  const saved={...source};
+  if(saved.variants) saved.variants=Object.fromEntries(Object.entries(saved.variants).map(([key,variant])=>[key,{...variant}]));
+  return saved;
 }
-if(typeof module!=='undefined')module.exports={validateSections,playbackEntries};
+function playbackEntries(data,progression,live=[]){
+  if(!data.length)return progression.map(source=>({source,saved:playbackCopy(source)}));
+  return data.flatMap((s,sectionIndex)=>Array.from({length:s.repeat},(_,i)=>s.indices.map(index=>({source:progression[index],saved:playbackCopy(progression[index]),sectionRef:live[sectionIndex],section:`${s.name} · vuelta ${i+1}/${s.repeat}`,vuelta:i+1}))).flat());
+}
+if(typeof module!=='undefined')module.exports={validateSections,playbackEntries,playbackCopy};
 if(typeof document!=='undefined')(()=>{
   let sections=[],active=null,drag=null;
   const $=id=>document.getElementById(id);
