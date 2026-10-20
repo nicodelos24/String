@@ -88,7 +88,10 @@
       rowView: $('#progression')?.classList.contains('single-row') || false,
       followMidi: $('#follow-midi')?.checked || false,
       fretScaleLock: $('#fret-scale-lock')?.checked || false,
-      youtubeFloat: $('#youtube-float')?.checked || true,
+      // El predeterminado explícito aquí es true: son el video flotante y el
+      // acento del metrónomo. Es `?? true` y no `|| true` para que un false
+      // desmarcado se conserve tal cual al guardar (QA-R01, T-32).
+      youtubeFloat: $('#youtube-float')?.checked ?? true,
       playerBpm: $('#player-bpm')?.value || '',
       playerStyle: $('#player-style')?.value || '',
       playerLoop: $('#player-loop')?.checked || false,
@@ -98,7 +101,7 @@
       accompanimentMuted: $('#accompaniment-mute')?.getAttribute('aria-pressed') === 'true' || false,
       metronomeBpm: $('#metronome-bpm')?.value || '',
       metronomeBeats: $('#metronome-beats')?.value || '',
-      metronomeAccent: $('#metronome-accent')?.checked || true,
+      metronomeAccent: $('#metronome-accent')?.checked ?? true,
       metronomeVolume: $('#metronome-volume')?.value || '',
       synthTimbre: $('#keyboard-timbre')?.value || '',
       synthDelay: $('#keyboard-delay')?.checked || false,

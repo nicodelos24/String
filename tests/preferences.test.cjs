@@ -6,7 +6,7 @@ const NOTES=['NOTAS','notas','grados'];
 const DEGREES=['','notas','grados'];
 const DISPLAY=['grados','tríada','7ma','Acorde','Acorde 7ma'];
 
-function build(seed){
+function build(seed, _omitDecorations, omitControls=[]) {
   const byId=new Map();const allNodes=[];const clicked=[];
   // De arranque la app está en AA GRADOS y MÁSTIL apagado, como el doble.
   let noteIndex=2,degreeIndex=0,displayIndex=1;
@@ -103,10 +103,10 @@ function build(seed){
   make('pentatonic-view',{tag:'input',type:'checkbox'});
   checkbox('follow-midi',true);
   checkbox('fret-scale-lock',false);
-  checkbox('youtube-float',true);
+  if(!omitControls.includes('youtube-float'))checkbox('youtube-float',true);
   checkbox('player-loop',false);
   checkbox('player-percussion',false);
-  checkbox('metronome-accent',true);
+  if(!omitControls.includes('metronome-accent'))checkbox('metronome-accent',true);
   checkbox('keyboard-delay',false);
   checkbox('keyboard-reverb',false);
 
@@ -355,4 +355,43 @@ test('preferencias: restaura los valores guardados disparando los eventos',()=>{
 test('preferencias: los guardados inválidos se ignoran sin romper la carga',()=>{
   const{q}=build('{no es json');
   assert.equal(q('#player-bpm').value,'100');
+});
+
+// QA-R01 (T-32): las casillas desmarcadas se guardan desmarcadas. Antes,
+// `checked || true` convertía el false en true tanto al guardar como al capturar.
+test('preferencias: desmarcar se guarda desmarcado y volver a marcar se guarda marcado',()=>{
+  const{localStorage,runs,flush}=build();
+  // Un campo ajeno marca que el snapshot existió (con el defecto, desmarcar
+  // solo cambia dos campos que el `|| true` re-vuelve true y el texto muere
+  // igualado con el último guardado sin llegar a escribirse).
+  runs(`document.querySelector("#metronome-volume").value="75";
+        document.querySelector('#youtube-float').checked=false;
+        document.querySelector('#metronome-accent').checked=false;
+        document.dispatchEvent(new Event("click"));`);
+  flush();  // el guardado se aplaza un turno
+  let snap=JSON.parse(localStorage.getItem('traste.preferences.v1'));
+  assert.equal(snap.metronomeVolume,'75','El snapshot se guardó');
+  assert.equal(snap.youtubeFloat,false,'Desmarcar el video flotante se guarda en false (el `|| true` convertía el false en true)');
+  assert.equal(snap.metronomeAccent,false,'Desmarcar el acento del metrónomo se guarda en false (el `|| true` convertía el false en true)');
+  runs(`document.querySelector("#metronome-volume").value="81";
+        document.querySelector('#youtube-float').checked=true;
+        document.querySelector('#metronome-accent').checked=true;
+        document.dispatchEvent(new Event("click"));`);
+  flush();
+  snap=JSON.parse(localStorage.getItem('traste.preferences.v1'));
+  assert.equal(snap.metronomeVolume,'81','El nuevo snapshot se guardó');
+  assert.equal(snap.youtubeFloat,true,'Volver a marcar se guarda marcado');
+  assert.equal(snap.metronomeAccent,true,'Ídem el acento del metrónomo');
+});
+
+// QA-R01, caso de aceptación: con el control ausente el predeterminado es
+// explicito (true para el video flotante y el acento del metrónomo), ni
+// undefined ni un crasheo.
+test('preferencias: con el control ausente, casillas con true por defecto guardan true',()=>{
+  const{localStorage,runs,flush}=build(undefined,[],['youtube-float','metronome-accent']);
+  runs('document.querySelector("#metronome-volume").value="75";document.dispatchEvent(new Event("click"));');
+  flush();
+  const snap=JSON.parse(localStorage.getItem('traste.preferences.v1'));
+  assert.equal(snap.youtubeFloat,true,'Sin el control, el video flotante queda en su predeterminado true');
+  assert.equal(snap.metronomeAccent,true,'Sin el control, el acento del metrónomo queda en su predeterminado true');
 });
