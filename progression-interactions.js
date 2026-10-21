@@ -16,6 +16,26 @@
   });
   let lastClick=null;
   const cards = () => [...list.querySelectorAll('.progression-card')];
+  // El orden visible es el mismo dato que pinta renderProgression (app.js):
+  // con una sección activa, los índices en el orden de la sección; sin ella,
+  // toda la lista. Enfocar manda sobre lo que se ve, porque lo que no está en
+  // la vista no es enfocable.
+  const visibleIndexes = () => (window.StringSections
+    ? window.StringSections.visible()
+    : progression.map((item, index) => ({item, index}))).map(entry => entry.index);
+  // Tras borrar la tarjeta enfocada, el foco va a la siguiente de la vista, o a
+  // la anterior si era la última; si la vista quedó vacía, a la acción de añadir.
+  // `at` es la posición que la borrada ocupaba en el orden visible antes del
+  // borrado; con `at<0` (no se pudo ubicar) cae al criterio global de siempre.
+  const refocusAfterRemoval = (index, at) => {
+    const later = visibleIndexes();
+    if (later.length) {
+      const slot = at >= 0 ? at : index;
+      list.querySelector(`[data-index="${later[Math.min(slot, later.length - 1)]}"]`)?.focus();
+    } else {
+      document.querySelector('#legend-add-chord')?.focus?.();
+    }
+  };
   const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const positions = () => new Map(cards().map(card => [card, card.getBoundingClientRect()]));
   function animateShift(before) {
@@ -50,8 +70,10 @@
     if(!card || event.target.closest('button, select, label'))return;
     event.preventDefault();lastClick=null;
     if(draggingProgressionItem)return;
-    const index=Number(card.dataset.index);removeProgressionChord(index);
-    list.querySelector(`[data-index="${Math.min(index,progression.length-1)}"]`)?.focus();
+    const index=Number(card.dataset.index);
+    const at=visibleIndexes().indexOf(index);
+    removeProgressionChord(index);
+    refocusAfterRemoval(index,at);
   });
   list.addEventListener('pointerdown', event => {
     if (drag) return;
@@ -137,7 +159,10 @@
     } else if(['ArrowUp','ArrowDown'].includes(event.key)) {
       event.preventDefault();
       const delta=event.key==='ArrowUp'?-1:1;
-      const target=index+delta;
+      // Recorrer lo que se ve, no la lista entera: en una sección, el orden es
+      // el de la sección; sin ella, el de siempre en la lista completa.
+      const order=visibleIndexes(), at=order.indexOf(index);
+      const target=at>=0?order[at+delta]:index+delta;
       if(target>=0 && target<progression.length) {
         list.querySelector(`[data-index="${target}"]`)?.focus();
       }
@@ -148,10 +173,11 @@
       if (lock && lock.checked) return;
       if (event.target.closest('button, select, label, input, textarea')) return;
       event.preventDefault();
+      const at = visibleIndexes().indexOf(index);
       removeProgressionChord(index);
-      // Mover el foco a la tarjeta siguiente (o anterior si era la última).
-      const next = Math.min(index, progression.length - 1);
-      if (next >= 0) list.querySelector(`[data-index="${next}"]`)?.focus();
+      // El foco sigue el orden visible, no la lista global: la siguiente se ve,
+      // o la anterior si se borró la última (el foco perdido aquí era el bug).
+      refocusAfterRemoval(index, at);
     } else if(event.key==='Enter' || event.key===' ') {
       event.preventDefault(); selectProgressionChord(index);
       list.querySelector(`[data-index="${index}"]`)?.focus();
