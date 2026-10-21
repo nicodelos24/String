@@ -21,7 +21,7 @@
       if (segmentEnd >= seconds[1]) break;
     }
     // Redondear al beat válido más cercano (1-16)
-    const valid = [1,2,3,4,6,8,12,16];
+    const valid = beatOptions;
     let best = 4, bestDiff = Infinity;
     for (const v of valid) {
       const diff = Math.abs(v - beats);

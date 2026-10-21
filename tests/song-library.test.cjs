@@ -88,6 +88,7 @@ function setupUi() {
     draggingProgressionItem:null,
   };
   vm.createContext(sandbox);
+  vm.runInContext(fs.readFileSync(path.join(__dirname,'../progression-duration.js'),'utf8'),sandbox);
   vm.runInContext(fs.readFileSync(path.join(__dirname,'../app.js'),'utf8'),sandbox);
   vm.runInContext(fs.readFileSync(path.join(__dirname,'../song-library-ui.js'),'utf8'),sandbox);
   return {sandbox,element,storage};

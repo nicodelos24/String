@@ -987,20 +987,9 @@ function updateModeLegend() {
   }).join('');
 }
 // Duración de cada acorde en pulsos de 4/4. Cuatro pulsos equivalen a un compás.
-const beatOptions = [1, 2, 3, 4, 6, 8, 12, 16];
-// El rótulo de una duración es n/4 compases, y existe para TODOS los enteros 1..16,
-// porque la biblioteca los acepta (song-library-ui.js) y el motor los programa (PLY-23):
-// el 5 restaurado no puede caer en el `undefined` de un mapa que no lo trae.
-function beatsLabel(value) {
-  const beats = validBeats(value);
-  const wholes = Math.floor(beats / 4), rest = beats % 4;
-  if (rest === 0) return String(wholes);
-  return `${wholes ? wholes : ''}${['','¼','½','¾'][rest]}`;
-}
-function validBeats(value) {
-  const beats = Number(value);
-  return Number.isInteger(beats) && beats >= 1 && beats <= 16 ? beats : 4;
-}
+// Validación, normalización, rótulos y cuadrícula viven en `progression-duration.js`,
+// el único contrato de duraciones: lo consumen app.js, la biblioteca (al validar y
+// guardar) y la cuantización del importado MIDI. index.html lo carga antes de app.js.
 
 function renderProgression() {
   if (draggingProgressionItem) return;
