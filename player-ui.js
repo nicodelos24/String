@@ -27,7 +27,16 @@
       if (entry) {
         window.StringSections?.follow(entry);
         playingProgressionItem = entry.source;
-        showProgressionChord(entry.saved, progression.indexOf(entry.source));
+        // La vuelta de la entrada que suena: con secciones la define la
+        // propia sección; sin secciones la define la pasada del loop. La
+        // variante sale de la copia congelada al arrancar, no del acorde
+        // vivo: editar las variantes mientras suena no arrastra la vuelta
+        // ya programada (QA-R05). Una variante por vuelta solo cambia lo
+        // que se muestra en el mástil: el audio sigue el acorde.
+        const vuelta = entry.section ? entry.vuelta : player.playingPass + 1;
+        const variant = vuelta ? entry.saved?.variants?.[vuelta] : null;
+        const ghost = validGhostMode(variant?.ghostMode);
+        showProgressionChord(ghost ? {...entry.saved, ghostMode: ghost} : entry.saved, progression.indexOf(entry.source));
       }
       status.textContent = `Sonando: ${name} · ${entry?.section ? entry.section+" · " : ""}acorde ${index + 1} de ${total}`;
     },
@@ -45,7 +54,7 @@
     if (player.running || player.starting) player.stop();
     if (!bpm.reportValidity()) return;
     window.dispatchEvent?.(new Event('traste:progression-start'));
-    try {playbackItems = window.StringSections ? window.StringSections.playback() : progression.map(item => ({source:item, saved:{...item}}));}
+    try {playbackItems = window.StringSections ? window.StringSections.playback() : progression.map(item => typeof playbackCopy === 'function' ? playbackCopy(item) : {source:item, saved:{...item}});}
     catch(error){status.textContent=error.message;return;}
     const chords = playbackItems.map(({saved:item}) => {
       const type = chordTypes.find(candidate => candidate.value === item.type);
