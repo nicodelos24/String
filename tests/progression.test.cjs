@@ -549,6 +549,43 @@ test('duraciones: cada tarjeta expone su duración y respeta el predeterminado',
   assert.equal(run('progression.at(-1).beats'),4);
 });
 
+test('duraciones fuera de cuadrícula con 5: el rótulo y el selector dicen la real',()=>{
+  const {run,element}=setup();
+  run("progression=[{root:0,type:'maj',beats:5}];renderProgression()");
+  const html=element('#progression').innerHTML;
+  assert.match(html,/Duración: 1¼ de compás/,'El título del control no puede caer en la fuente: undefined');
+  assert.match(html,/1¼ de compás/,'El nombre accesible tampoco');
+  assert.match(html,/<option value="5" selected>/,'El selector muestra el 5 restaurado, no se disfraza de 1');
+  assert.equal((html.match(/<option value="1"/g)||[]).length,1,'Las ocho de la interfaz siguen siendo opciones al alcance');
+});
+
+test('duraciones fuera de cuadrícula: el 5 se guarda y se restaura como 5',()=>{
+  const {run}=setup();
+  run("localStorage={_s:{},getItem(k){return this._s[k]??null;},setItem(k,v){this._s[k]=String(v);}}");
+  run("progression=[{root:0,type:'maj',beats:5}];saveCustomProgression()");
+  assert.equal(JSON.parse(run("localStorage.getItem('traste.customProgression.v1')"))[0].beats,5,'El guardado no convierte 5 en otro número');
+  assert.equal(run('readCustomProgression()')[0].beats,5,'El lector tampoco');
+});
+
+test('duraciones de la interfaz: los ocho valores rotulan y siguen solos',()=>{
+  const {run,element}=setup();
+  run("progression=[1,2,3,4,6,8,12,16].map(beats=>({root:0,type:'maj',beats}));renderProgression()");
+  const html=element('#progression').innerHTML;
+  for(const rótulo of ['¼','½','¾','1','1½','2','3','4']){
+    assert(html.includes(`${rótulo} de compás`),`El rótulo ${rótulo} de compás no apareció`);
+  }
+  assert.equal((html.match(/<option value="5"/g)||[]).length,0,'Sin 5 en el dato no hace falta opción extra');
+});
+
+test('duraciones inválidas caen al predeterminado explícito 4',()=>{
+  const {run,element}=setup();
+  run("progression=[{root:0,type:'maj',beats:0},{root:0,type:'maj',beats:17},{root:0,type:'maj',beats:4.5},{root:0,type:'maj',beats:'abc'}];renderProgression()");
+  const html=element('#progression').innerHTML;
+  assert.equal((html.match(/1 de compás/g)||[]).length,8,'Las cuatro tarjetas anuncian 1 compás (título y aria), no undefined');
+  assert.equal((html.match(/data-beats="/g)||[]).length,4);
+  assert.equal((html.match(/<option value="5"/g)||[]).length,0,'Nada de inventar opciones para datos inválidos');
+});
+
 test('mi progresión: los cambios en las tarjetas se guardan solos en el slot',()=>{
   const {run}=setup();
   run("localStorage={_s:{},getItem(k){return this._s[k]??null;},setItem(k,v){this._s[k]=String(v);}}");

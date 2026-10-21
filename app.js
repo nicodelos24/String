@@ -988,12 +988,19 @@ function updateModeLegend() {
 }
 // Duración de cada acorde en pulsos de 4/4. Cuatro pulsos equivalen a un compás.
 const beatOptions = [1, 2, 3, 4, 6, 8, 12, 16];
-const beatLabels = {1: '¼', 2: '½', 3: '¾', 4: '1', 6: '1½', 8: '2', 12: '3', 16: '4'};
+// El rótulo de una duración es n/4 compases, y existe para TODOS los enteros 1..16,
+// porque la biblioteca los acepta (song-library-ui.js) y el motor los programa (PLY-23):
+// el 5 restaurado no puede caer en el `undefined` de un mapa que no lo trae.
+function beatsLabel(value) {
+  const beats = validBeats(value);
+  const wholes = Math.floor(beats / 4), rest = beats % 4;
+  if (rest === 0) return String(wholes);
+  return `${wholes ? wholes : ''}${['','¼','½','¾'][rest]}`;
+}
 function validBeats(value) {
   const beats = Number(value);
   return Number.isInteger(beats) && beats >= 1 && beats <= 16 ? beats : 4;
 }
-function beatsLabel(value) { return beatLabels[validBeats(value)]; }
 
 function renderProgression() {
   if (draggingProgressionItem) return;
@@ -1009,7 +1016,11 @@ function renderProgression() {
     const beats = validBeats(item.beats);
     const barNumber = Math.floor(cursor / 4) + 1;
     cursor += beats;
-    const beatsSelect = `<label class="beats-control" title="Duración: ${beatsLabel(beats)} de compás"><span class="sr-only">Duración del acorde ${index + 1}</span><select data-beats="${index}" aria-label="Duración del acorde ${index + 1}">${beatOptions.map(option => `<option value="${option}"${option === beats ? ' selected' : ''}>${beatLabels[option]}</option>`).join('')}</select></label>`;
+    // Una duración fuera de la cuadrícula de la interfaz no se prohibió en el
+    // guardado, así que no se oculta: el selector muestra el valor real como
+    // opción extra, y elegir alguna de las ocho vuelve a la cuadrícula.
+    const fueraDeRejilla = beatOptions.includes(beats) ? '' : `<option value="${beats}" selected>${beatsLabel(beats)}</option>`;
+    const beatsSelect = `<label class="beats-control" title="Duración: ${beatsLabel(beats)} de compás"><span class="sr-only">Duración del acorde ${index + 1}</span><select data-beats="${index}" aria-label="Duración del acorde ${index + 1}">${fueraDeRejilla}${beatOptions.map(option => `<option value="${option}"${option === beats ? ' selected' : ''}>${beatsLabel(option)}</option>`).join('')}</select></label>`;
     return `<div class="progression-card ${index === activeProgression ? 'active' : ''} ${item === playingProgressionItem ? 'playing' : ''}" data-index="${index}" tabindex="0" role="group" aria-label="Acorde ${index + 1}, compás ${barNumber}, ${beatsLabel(beats)} de compás. Arrastrar o usar Alt y flechas para mover. Flechas arriba y abajo para recorrer. Supr para borrar.">><button type="button" data-remove="${index}" aria-label="Quitar acorde ${index + 1}">×</button><small>${index + 1}${item === playingProgressionItem ? ' · sonando' : ''}</small><span class="progression-mode">${modes[item.mode || defaultChordMode(item)]?.name || ''}</span>${beatsSelect}<span class="drag-grip" aria-hidden="true">⠿</span><strong>${item.rootNoteName || noteName(item.root)}${type ? type.suffix : ''}</strong></div>`;
   }).join('');
 }

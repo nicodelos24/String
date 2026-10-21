@@ -336,6 +336,19 @@ test('PLY-16: each chord follows its own beat duration and invalid durations are
   assert.equal(others.length,0);
 });
 
+test('PLY-23: una duración de 5 pulsos se programa con su 1¼ de compás, sin redondeo',async()=>{
+  const {player,context,oscillators,heard}=setup();
+  const custom=[{name:'C',notes:[48,52,55],beats:5},{name:'G7',notes:[55,59,62,65],beats:2}];
+  await player.start(custom,{bpm:120,loop:false,style:'none'});
+  assert.equal(oscillators[0].time,0.04);
+  context.currentTime=2.5; player.tick();
+  assert.equal(oscillators[3].time,2.54,'El segundo acorde empieza tras los 1¼ de compás del 5 pulsos');
+  context.currentTime=2.55; player.tick();
+  assert.deepEqual(heard[1],[1,'G7',2]);
+  context.currentTime=3.55; player.tick();
+  assert.equal(player.running,false,'5 pulsos (2.5 s) más 2 pulsos (1 s) cierran a los 3.5 s');
+});
+
 test('PLY-17: startIndex begins at the chosen chord and the loop still closes the whole list',async()=>{
   const {player,context,oscillators,heard}=setup();
   await player.start(chords,{bpm:120,startIndex:1});
