@@ -1,3 +1,10 @@
+// El contrato de las duraciones vive en progression-duration.js: la página lo
+// carga antes que este script (index.html) y en Node llega por require, para
+// que el motor valide con el mismo acuerdo y no re-codifique el rango al programar.
+const durations = typeof module !== 'undefined' && module.exports
+  ? require('./progression-duration.js')
+  : {isValidBeats};
+
 // Convierte números MIDI en frecuencias; A4 (69) equivale a 440 Hz.
 function midiToFrequency(note) {
   return 440 * 2 ** ((note - 69) / 12);
@@ -125,7 +132,7 @@ class ProgressionPlayer {
     if (!Array.isArray(chords) || !chords.length || chords.some(chord =>
       !chord || !Array.isArray(chord.notes) || !chord.notes.length || chord.notes.some(note =>
         !Number.isInteger(note) || note < 0 || note > 127) ||
-      (chord.beats !== undefined && (!Number.isInteger(chord.beats) || chord.beats < 1 || chord.beats > 16)))) {
+      (chord.beats !== undefined && !durations.isValidBeats(chord.beats)))) {
       throw new Error('La progresión no contiene notas válidas.');
     }
     if (!Number.isFinite(Number(bpm)) || Number(bpm) < 30 || Number(bpm) > 240) {

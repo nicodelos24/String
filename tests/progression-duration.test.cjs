@@ -40,4 +40,7 @@ test('el rango y la cuadrícula viven solo en el módulo: ningún consumidor rep
   assert(library.includes('isValidBeats'),'la biblioteca valida con el contrato del módulo');
   const midi=fs.readFileSync(path.join(root,'midi-ui.js'),'utf8');
   assert(!midi.includes('[1,2,3,4,6,8,12,16]'),'midi-ui cuantiza con la cuadrícula del módulo, no con una copia');
+  const motor=fs.readFileSync(path.join(root,'progression-player.js'),'utf8');
+  assert(!motor.match(/Number\.isInteger\(chord\.beats\)|chord\.beats\s*<\s*1\b|chord\.beats\s*>\s*16\b/),'el motor ya no re-codifica el rango: programa con el contrato del módulo');
+  assert(motor.includes('isValidBeats'),'el motor valida las duraciones con el mismo contrato');
 });

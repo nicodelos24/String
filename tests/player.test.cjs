@@ -204,6 +204,7 @@ test('PLY-11: repeated start creates only one timer and ended notes disconnect',
 test('PLY-14: default timers preserve the Window receiver on start and stop', async () => {
   const {context} = setup();
   const sandbox = vm.createContext({audio:context});
+  vm.runInContext(fs.readFileSync(path.join(__dirname,'../progression-duration.js'),'utf8'),sandbox);
   vm.runInContext(`
     let timerCalls = 0, clearCalls = 0;
     function setInterval(callback, delay) {
