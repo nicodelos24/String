@@ -6,7 +6,7 @@
   // Calcula beats a partir de segundos usando el mapa de tempo del MIDI.
   // tempoMap: [{time, tempo}] donde tempo está en µs por negra (quarter note).
   function beatsFromSeconds(seconds, tempoMap) {
-    if (!tempoMap?.length) return 4;
+    if (!tempoMap?.length) return DEFAULT_BEATS;
     let beats = 0;
     for (let i = 0; i < tempoMap.length; i++) {
       const segmentStart = tempoMap[i].time;
@@ -22,7 +22,7 @@
     }
     // Redondear al beat válido más cercano (1-16)
     const valid = beatOptions;
-    let best = 4, bestDiff = Infinity;
+    let best = DEFAULT_BEATS, bestDiff = Infinity;
     for (const v of valid) {
       const diff = Math.abs(v - beats);
       if (diff < bestDiff) { bestDiff = diff; best = v; }

@@ -990,6 +990,8 @@ function updateModeLegend() {
 // Validación, normalización, rótulos y cuadrícula viven en `progression-duration.js`,
 // el único contrato de duraciones: lo consumen app.js, la biblioteca (al validar y
 // guardar) y la cuantización del importado MIDI. index.html lo carga antes de app.js.
+// El DEFAULT_BEATS que expone es el del acorde nuevo/sin duración; el 4 del
+// compás musical se queda escrito a mano.
 
 function renderProgression() {
   if (draggingProgressionItem) return;
@@ -1168,15 +1170,15 @@ function duplicateProgressionChord(index) {
 // único que hace que «improvisar» pueda añadir lo que se está tocando y no lo
 // que estaba seleccionado de antes.
 function progressionChordEntry(item) {
-  if (!item || !Number.isInteger(item.root)) return {root, rootNoteName, type: chordType.value, mode: selectedMode, ghostMode, beats: 4};
+  if (!item || !Number.isInteger(item.root)) return {root, rootNoteName, type: chordType.value, mode: selectedMode, ghostMode, beats: DEFAULT_BEATS};
   const type = chordTypes.find(candidate => candidate.value === item.type);
-  if (!type) return {root, rootNoteName, type: chordType.value, mode: selectedMode, ghostMode, beats: 4};
+  if (!type) return {root, rootNoteName, type: chordType.value, mode: selectedMode, ghostMode, beats: DEFAULT_BEATS};
   const rootIndex = ((item.root % 12) + 12) % 12;
   // Un modo que la app no conoce (un guardado raro, o una detección nueva) cae al
   // que le corresponde al acorde: pintar el mástil hace modes[mode].color y una
   // clave inventada lo reventaría.
   const mode = item.mode && modes[item.mode] ? item.mode : defaultChordMode({root: rootIndex, type: type.value});
-  return {root: rootIndex, rootNoteName: item.rootNoteName || displayNoteSpelled(rootIndex), type: type.value, mode, beats: 4};
+  return {root: rootIndex, rootNoteName: item.rootNoteName || displayNoteSpelled(rootIndex), type: type.value, mode, beats: DEFAULT_BEATS};
 }
 
 function addProgressionChord(item) {

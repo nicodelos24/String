@@ -1,9 +1,11 @@
 // El contrato de las duraciones vive en progression-duration.js: la página lo
 // carga antes que este script (index.html) y en Node llega por require, para
 // que el motor valide con el mismo acuerdo y no re-codifique el rango al programar.
+// DEFAULT_BEATS es el del acorde sin duración en la copia de ejecución; el 4
+// del compás musical (this.duration) no es parte del contrato.
 const durations = typeof module !== 'undefined' && module.exports
   ? require('./progression-duration.js')
-  : {isValidBeats};
+  : {isValidBeats, DEFAULT_BEATS};
 
 // Convierte números MIDI en frecuencias; A4 (69) equivale a 440 Hz.
 function midiToFrequency(note) {
@@ -140,7 +142,7 @@ class ProgressionPlayer {
     }
     if (!Object.hasOwn(accompanimentStyles, style)) throw new Error('Estilo desconocido.');
     // Una copia mantiene estable la reproducción mientras se edita la progresión.
-    this.chords = chords.map(chord => ({name: chord.name, notes: [...chord.notes], beats: chord.beats === undefined ? 4 : chord.beats}));
+    this.chords = chords.map(chord => ({name: chord.name, notes: [...chord.notes], beats: chord.beats === undefined ? durations.DEFAULT_BEATS : chord.beats}));
     this.beat = 60 / Number(bpm);
     this.duration = 4 * this.beat;
     this.loop = Boolean(loop);
