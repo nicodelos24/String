@@ -987,13 +987,11 @@ function updateModeLegend() {
   }).join('');
 }
 // Duración de cada acorde en pulsos de 4/4. Cuatro pulsos equivalen a un compás.
-const beatOptions = [1, 2, 3, 4, 6, 8, 12, 16];
-const beatLabels = {1: '¼', 2: '½', 3: '¾', 4: '1', 6: '1½', 8: '2', 12: '3', 16: '4'};
-function validBeats(value) {
-  const beats = Number(value);
-  return Number.isInteger(beats) && beats >= 1 && beats <= 16 ? beats : 4;
-}
-function beatsLabel(value) { return beatLabels[validBeats(value)]; }
+// Validación, normalización, rótulos y cuadrícula viven en `progression-duration.js`,
+// el único contrato de duraciones: lo consumen app.js, la biblioteca (al validar y
+// guardar) y la cuantización del importado MIDI. index.html lo carga antes de app.js.
+// El DEFAULT_BEATS que expone es el del acorde nuevo/sin duración; el 4 del
+// compás musical se queda escrito a mano.
 
 function renderProgression() {
   if (draggingProgressionItem) return;
@@ -1009,7 +1007,11 @@ function renderProgression() {
     const beats = validBeats(item.beats);
     const barNumber = Math.floor(cursor / 4) + 1;
     cursor += beats;
-    const beatsSelect = `<label class="beats-control" title="Duración: ${beatsLabel(beats)} de compás"><span class="sr-only">Duración del acorde ${index + 1}</span><select data-beats="${index}" aria-label="Duración del acorde ${index + 1}">${beatOptions.map(option => `<option value="${option}"${option === beats ? ' selected' : ''}>${beatLabels[option]}</option>`).join('')}</select></label>`;
+    // Una duración fuera de la cuadrícula de la interfaz no se prohibió en el
+    // guardado, así que no se oculta: el selector muestra el valor real como
+    // opción extra, y elegir alguna de las ocho vuelve a la cuadrícula.
+    const fueraDeRejilla = beatOptions.includes(beats) ? '' : `<option value="${beats}" selected>${beatsLabel(beats)}</option>`;
+    const beatsSelect = `<label class="beats-control" title="Duración: ${beatsLabel(beats)} de compás"><span class="sr-only">Duración del acorde ${index + 1}</span><select data-beats="${index}" aria-label="Duración del acorde ${index + 1}">${fueraDeRejilla}${beatOptions.map(option => `<option value="${option}"${option === beats ? ' selected' : ''}>${beatsLabel(option)}</option>`).join('')}</select></label>`;
     return `<div class="progression-card ${index === activeProgression ? 'active' : ''} ${item === playingProgressionItem ? 'playing' : ''}" data-index="${index}" tabindex="0" role="group" aria-label="Acorde ${index + 1}, compás ${barNumber}, ${beatsLabel(beats)} de compás. Arrastrar o usar Alt y flechas para mover. Flechas arriba y abajo para recorrer. Supr para borrar.">><button type="button" data-remove="${index}" aria-label="Quitar acorde ${index + 1}">×</button><small>${index + 1}${item === playingProgressionItem ? ' · sonando' : ''}</small><span class="progression-mode">${modes[item.mode || defaultChordMode(item)]?.name || ''}</span>${beatsSelect}<span class="drag-grip" aria-hidden="true">⠿</span><strong>${item.rootNoteName || noteName(item.root)}${type ? type.suffix : ''}</strong></div>`;
   }).join('');
 }
@@ -1168,15 +1170,15 @@ function duplicateProgressionChord(index) {
 // único que hace que «improvisar» pueda añadir lo que se está tocando y no lo
 // que estaba seleccionado de antes.
 function progressionChordEntry(item) {
-  if (!item || !Number.isInteger(item.root)) return {root, rootNoteName, type: chordType.value, mode: selectedMode, ghostMode, beats: 4};
+  if (!item || !Number.isInteger(item.root)) return {root, rootNoteName, type: chordType.value, mode: selectedMode, ghostMode, beats: DEFAULT_BEATS};
   const type = chordTypes.find(candidate => candidate.value === item.type);
-  if (!type) return {root, rootNoteName, type: chordType.value, mode: selectedMode, ghostMode, beats: 4};
+  if (!type) return {root, rootNoteName, type: chordType.value, mode: selectedMode, ghostMode, beats: DEFAULT_BEATS};
   const rootIndex = ((item.root % 12) + 12) % 12;
   // Un modo que la app no conoce (un guardado raro, o una detección nueva) cae al
   // que le corresponde al acorde: pintar el mástil hace modes[mode].color y una
   // clave inventada lo reventaría.
   const mode = item.mode && modes[item.mode] ? item.mode : defaultChordMode({root: rootIndex, type: type.value});
-  return {root: rootIndex, rootNoteName: item.rootNoteName || displayNoteSpelled(rootIndex), type: type.value, mode, beats: 4};
+  return {root: rootIndex, rootNoteName: item.rootNoteName || displayNoteSpelled(rootIndex), type: type.value, mode, beats: DEFAULT_BEATS};
 }
 
 function addProgressionChord(item) {

@@ -204,6 +204,7 @@ test('PLY-11: repeated start creates only one timer and ended notes disconnect',
 test('PLY-14: default timers preserve the Window receiver on start and stop', async () => {
   const {context} = setup();
   const sandbox = vm.createContext({audio:context});
+  vm.runInContext(fs.readFileSync(path.join(__dirname,'../progression-duration.js'),'utf8'),sandbox);
   vm.runInContext(`
     let timerCalls = 0, clearCalls = 0;
     function setInterval(callback, delay) {
@@ -334,6 +335,36 @@ test('PLY-16: each chord follows its own beat duration and invalid durations are
   const {player:other,oscillators:others}=setup();
   for(const beats of [0,17,2.5]) await assert.rejects(other.start([{name:'C',notes:[48,52,55],beats}]));
   assert.equal(others.length,0);
+});
+
+test('PLY-23: una duración de 5 pulsos se programa con su 1¼ de compás, sin redondeo',async()=>{
+  const {player,context,oscillators,heard}=setup();
+  const custom=[{name:'C',notes:[48,52,55],beats:5},{name:'G7',notes:[55,59,62,65],beats:2}];
+  await player.start(custom,{bpm:120,loop:false,style:'none'});
+  assert.equal(oscillators[0].time,0.04);
+  context.currentTime=2.5; player.tick();
+  assert.equal(oscillators[3].time,2.54,'El segundo acorde empieza tras los 1¼ de compás del 5 pulsos');
+  context.currentTime=2.55; player.tick();
+  assert.deepEqual(heard[1],[1,'G7',2]);
+  context.currentTime=3.55; player.tick();
+  assert.equal(player.running,false,'5 pulsos (2.5 s) más 2 pulsos (1 s) cierran a los 3.5 s');
+});
+
+test('PLY-24: el acorde sin beats se copia con el predeterminado del contrato, no con un 4 suelto',async()=>{
+  const {DEFAULT_BEATS}=require('../progression-duration.js');
+  assert.equal(DEFAULT_BEATS,4);
+  const {player,context,oscillators,heard}=setup();
+  // El fixture `chords` no trae `beats`: es justo el camino de «duración ausente».
+  await player.start(chords,{bpm:120,loop:false,style:'none'});
+  assert.equal(player.chords[0].beats,DEFAULT_BEATS,'la copia del motor usa el predeterminado exportado');
+  assert.equal(player.chords[1].beats,DEFAULT_BEATS);
+  assert.equal(oscillators[0].time,0.04,'la duración ausente sigue sonando como 4 pulsos: nada cambió a oído');
+  context.currentTime=0.05; player.tick();
+  assert.deepEqual(heard[0],[0,'C',2]);
+  context.currentTime=2; player.tick();
+  assert.equal(oscillators[3].time,2.04,'el acorde por defecto cierra su 4/4 a los 2 s como siempre');
+  context.currentTime=4.05; player.tick();
+  assert.equal(player.running,false,'4 pulsos + 4 pulsos cierran a los 4 s: nada cambió');
 });
 
 test('PLY-17: startIndex begins at the chosen chord and the loop still closes the whole list',async()=>{
