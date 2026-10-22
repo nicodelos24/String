@@ -98,6 +98,12 @@
   // tarjetas no tocan el tempo: eso es solo del botón Tempo. No pisa un MIDI o un
   // metrónomo que el usuario eligió como fuente.
   globalThis.playProgressionFrom = card => {
+    // El interruptor «Reproducir desde la tarjeta pulsada» decide si el clic
+    // de una tarjeta arranca o reinicia el Acompañamiento. Sin elemento no
+    // bloquea (equivale a activado); con él apagado, el clic solo selecciona
+    // la tarjeta: no inicia, para ni reinicia, y el Play explícito sigue por
+    // su propio camino.
+    if (document.querySelector('#player-card-start')?.checked === false) return;
     if ((globalThis.StringSources?.active ?? 'progression') !== 'progression') return;
     if (!Number.isInteger(card) || card < 0 || card >= progression.length) return;
     if (player.running && cardMode() !== 'restart') return;

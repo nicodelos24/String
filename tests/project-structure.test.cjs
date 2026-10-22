@@ -21,3 +21,15 @@ test('active HTML has unique IDs, unique scripts and existing local entrypoints'
   assert(/^AA\s*<span>grados<\/span>$/.test(notasButton[1].trim()),'the first button is AA and starts on AA GRADOS');
   assert(/^MÁSTIL\s*<span><\/span>$/.test(mastilButton[1].trim()),'the MÁSTIL button is MÁSTIL and starts off');
 });
+
+// A-5 (T-43): el interruptor «Reproducir desde la tarjeta pulsada» vuelve
+// visible y marcado por defecto. Si una preferencia vieja no trae la clave, el
+// estado es el marcado, así que el HTML debe nacer con `checked`.
+test('el interruptor de la tarjeta pulsada está en el HTML, marcado por defecto',()=>{
+  const html=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
+  const input=html.match(/<input[^>]*id="player-card-start"[^>]*>/);
+  assert(input,'falta el control #player-card-start en index.html');
+  assert(/\bchecked\b/.test(input[0]),'#player-card-start debe venir marcado (activado por defecto)');
+  assert(html.match(/<label[^>]*for="player-card-start"[^>]*>[\s\S]*?Reproducir desde la tarjeta pulsada[\s\S]*?<\/label>/),
+    'la etiqueta visible hace falta para poder verla y activarla');
+});

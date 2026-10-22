@@ -92,6 +92,11 @@
       // acento del metrónomo. Es `?? true` y no `|| true` para que un false
       // desmarcado se conserve tal cual al guardar (QA-R01, T-32).
       youtubeFloat: $('#youtube-float')?.checked ?? true,
+      // El interruptor «Reproducir desde la tarjeta pulsada» va activado por
+      // defecto: un guardado anterior sin esta clave restaura marcado
+      // (QA aceptación A-5). Es `?? true` y no `|| true` para que un false
+      // desmarcado se conserve tal cual al guardar, como en youtubeFloat.
+      playerCardStart: $('#player-card-start')?.checked ?? true,
       playerBpm: $('#player-bpm')?.value || '',
       playerStyle: $('#player-style')?.value || '',
       playerLoop: $('#player-loop')?.checked || false,
@@ -242,6 +247,10 @@
     const floatToggle = $('#youtube-float');
     setChecked(floatToggle, saved.youtubeFloat);
     fire(floatToggle, 'change');
+    // Sin la clave (guardado anterior) vale activado: `?? true`, nunca `|| true`.
+    const cardStartToggle = $('#player-card-start');
+    setChecked(cardStartToggle, saved.playerCardStart ?? true);
+    fire(cardStartToggle, 'change');
     const rowViewNow = $('#progression')?.classList.contains('single-row') || false;
     if (rowViewNow !== Boolean(saved.rowView)) {
       const viewButton = $('#progression-view');
