@@ -1,5 +1,8 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const vm = require('node:vm');
+const path = require('node:path');
 const { keyStrip, keyLetter, activeBaseMidi, mastilBaseDrop, keyboardMidiFor, KEY_OFFSETS, KeySynth, keyboardLayoutClasses } = require('../keyboard-section.js');
 
 test('keyboard: the strip builds 7 white and 5 black keys per octave with ascending MIDI', () => {
@@ -280,6 +283,30 @@ test('keyboard: el acorde que añaden Enter y Espacio es el del teclado en vivo 
   assert.equal(recognizedChordSource(false, false), 'selected');
 });
 
+// QA-SPACE-01 / T-37: la decisión «capturar o dejar al transporte».
+test('keyboard: Espacio sobre el transporte pasa al atajo solo con una captura en vivo activa', () => {
+  const { transportSpaceCaptures } = require('../keyboard-section.js');
+  assert.equal(transportSpaceCaptures(true, true), true, 'con captura en vivo activa: la tecla agrega el acorde en vez de activar Play');
+  assert.equal(transportSpaceCaptures(true, false), false, 'sin captura: el transporte conserva su Espacio nativo');
+  assert.equal(transportSpaceCaptures(false, true), false, 'el foco en otro control no convierte a ese botón en atajo global');
+  assert.equal(transportSpaceCaptures(false, false), false);
+});
+
+// QA-SPACE-01: el alcance no convierte cada botón de la app en un atajo global.
+test('keyboard: es transporte, para Espacio, solo el play rápido y sus tres play equivalentes del panel', () => {
+  const { isTransportPlayControl } = require('../keyboard-section.js');
+  const el = id => ({ id, tagName: 'BUTTON' });
+  assert.equal(isTransportPlayControl(el('quick-play')), true, 'el transporte rápido junto al mástil');
+  assert.equal(isTransportPlayControl(el('player-toggle')), true, 'el play del transporte de Backtrack');
+  assert.equal(isTransportPlayControl(el('midi-play')), true, 'el play del transporte de MIDI');
+  assert.equal(isTransportPlayControl(el('metronome-toggle')), true, 'el play del panel del metrónomo');
+  assert.equal(isTransportPlayControl(el('add-chord')), false, 'añadir acorde no es reproducción');
+  assert.equal(isTransportPlayControl(el('legend-add-chord')), false, 'el añadir acorde del mástil tampoco');
+  assert.equal(isTransportPlayControl(el('theme-toggle')), false, 'los demás botones de la app no son transporte');
+  assert.equal(isTransportPlayControl(el('')), false);
+  assert.equal(isTransportPlayControl(null), false);
+});
+
 test('keyboard: los tres modos ocultan o muestran el panel y la clase del mástil', () => {
   assert.deepEqual(keyboardLayoutClasses('mastil'), { hidden: true, open: false, split: false }, 'solo mástil: el panel queda oculto');
   assert.deepEqual(keyboardLayoutClasses('teclado'), { hidden: false, open: true, split: false }, 'teclado: el piano reemplaza el mástil');
@@ -445,4 +472,244 @@ test('keyboard synth: setVolume define la ganancia maestra al arrancar y la actu
   synth.setVolume(0);
   assert.equal(synth.master.gain.value, 0, 'volumen cero apaga la salida sin bloquear las voces');
   synth.allOff();
+});
+
+// ---------------------------------------------------------------------------
+// QA-SPACE-01 · T-37 · Prueba de integración con el handler real de keydown.
+//
+// El sandbox levanta keyboard-section.js y panel-controls.js con un DOM falso
+// mínimo (el mismo molde de tests/panel-controls.test.cjs): los listeners que
+// los módulos registran se pueden disparar, y se modela la activación nativa
+// del navegador — un Espacio (o un Enter) sobre un botón enfocado lo activa
+// salvo preventDefault, que es justo lo que separa el caso del defecto T-37.
+// ---------------------------------------------------------------------------
+
+function keyboardHarness() {
+  const registry = new Map();
+  function node(id, tagName) {
+    if (registry.has(id)) return registry.get(id);
+    const el = {
+      id, tagName,
+      hidden: false, textContent: '', value: '', checked: false, disabled: false, title: '',
+      dataset: {}, children: [], listeners: {},
+      style: { setProperty() {} },
+      _attrs: { 'aria-pressed': 'false', 'aria-label': '' },
+      _html: '',
+      get innerHTML() { return this._html; },
+      set innerHTML(v) { this._html = v; },
+      addEventListener(n, f) { (this.listeners[n] = this.listeners[n] || []).push(f); },
+      click() { [...(this.listeners.click || [])].forEach(f => f()); },
+      getAttribute(n) { return Object.hasOwn(this._attrs, n) ? this._attrs[n] : null; },
+      setAttribute(n, v) { this._attrs[n] = String(v); },
+      querySelector() { return null; },
+      querySelectorAll() { return []; },
+    };
+    registry.set(id, el);
+    return el;
+  }
+
+  // Botones de «Acorde en vivo»: «Acorde» arranca activo, como en index.html.
+  const liveButtons = ['off', 'note', 'chord'].map(mode => ({
+    dataset: { liveMode: mode },
+    listeners: {},
+    classList: { toggle() {} },
+    addEventListener(n, f) { (this.listeners[n] = this.listeners[n] || []).push(f); },
+    click() { [...(this.listeners.click || [])].forEach(f => f()); },
+    _pressed: mode === 'chord' ? 'true' : 'false',
+    getAttribute(n) { return n === 'aria-pressed' ? this._pressed : null; },
+    setAttribute(n, v) { if (n === 'aria-pressed') this._pressed = String(v); },
+  }));
+
+  // Contexto de audio falso, completo para timbre piano y guitarra (el molde
+  // ya probado en las pruebas del sintetizador): sin él, noteOn rechazaría sin
+  // .catch y el sandbox caería en un rechazo no atendido.
+  const gainParam = () => ({ value: 1, setValueAtTime() {}, linearRampToValueAtTime() {}, setTargetAtTime() {}, cancelScheduledValues() {} });
+  const audioCtx = {
+    currentTime: 0, sampleRate: 44100, destination: {},
+    resume: async () => {},
+    createGain: () => ({ gain: gainParam(), connect() {}, disconnect() {} }),
+    createOscillator: () => ({ type: '', frequency: { setValueAtTime() {} }, connect() {}, start() {}, stop() {} }),
+    createBuffer: (canales, muestras) => ({ getChannelData: () => new Float32Array(muestras) }),
+    createBufferSource: () => ({ connect() {}, start() {}, stop() {} }),
+  };
+
+  const known = {
+    'keyboard-section': 'DIV',
+    'keyboard-keys': 'DIV',
+    'keyboard-live-chord': 'DIV',
+    'quick-play': 'BUTTON',
+    'quick-midi-time': 'SPAN',
+    'progression-transport': 'DIV',
+    'midi-transport': 'DIV',
+    'player-status': 'DIV',
+    'player-toggle': 'BUTTON',
+    'midi-play': 'BUTTON',
+    'metronome-toggle': 'BUTTON',
+    'midi-time': 'SPAN',
+    'midi-file': 'INPUT',
+  };
+  const docListeners = {};
+  const documentStub = {
+    getElementById: id => (Object.hasOwn(known, id) ? node(id, known[id]) : null),
+    addEventListener(n, f) { (docListeners[n] = docListeners[n] || []).push(f); },
+    querySelector() { return null; },
+    querySelectorAll(sel) {
+      if (sel === '[data-source]' || sel === '[data-card-mode]' || sel === 'details' || sel === '[data-section-name]') return [];
+      return [];
+    },
+  };
+  const liveRoot = node('keyboard-live-chord', 'DIV');
+  liveRoot.querySelectorAll = sel => (sel === '[data-live-mode]' ? liveButtons : []);
+  // La sección en modo «Mástil» (panel oculto), como la usa el autor cuando
+  // captura: el mástil está visible y el teclado reconoce el acorde en vivo.
+  node('keyboard-section', 'DIV').hidden = true;
+
+  const win = {
+    listeners: {},
+    addEventListener(n, f) { (this.listeners[n] = this.listeners[n] || []).push(f); },
+    dispatchEvent() {},
+  };
+  win.AudioContext = function () { return audioCtx; };
+
+  // Estado de la app que el atajo consulta o cambia. Las tarjetas sumadas se
+  // cuentan por la progresión (acorde en vivo) y por los llamados hechos al
+  // addProgressionChord del acorde seleccionado (captura de micrófono).
+  const progression = [];
+  let selectedAdds = 0;
+  let playToggled = 0;
+  const context = vm.createContext({
+    window: win,
+    document: documentStub,
+    MutationObserver: class { constructor(cb) { this.cb = cb; } observe() {} },
+    Event: class { constructor(tipo) { this.type = tipo; } },
+    progression,
+    draggingProgressionItem: false,
+    instrument: 'guitar',
+    chordType: { value: 'maj' },
+    selectedMode: 'ionian',
+    notes: ['Do', 'Do#', 'Re', 'Re#', 'Mi', 'Fa', 'Fa#', 'Sol', 'Sol#', 'La', 'La#', 'Si'],
+    noteName: pitch => 'nota-' + pitch,
+    saveCustomProgression: () => {},
+    addProgressionChord: () => { selectedAdds++; return true; },
+  });
+
+  // El Play de prueba del transporte, antes de cargar panel-controls.js, para
+  // que el clic reenviado por #quick-play llegue a los dos listeners del
+  // player-toggle real: el nuestro (marca el estado) y el de elegir la fuente.
+  node('player-toggle', 'BUTTON').addEventListener('click', () => {
+    playToggled++;
+    node('player-toggle', 'BUTTON').setAttribute('aria-pressed', String(playToggled % 2 === 1));
+  });
+
+  vm.runInContext(fs.readFileSync(path.join(__dirname, '../keyboard-section.js'), 'utf8'), context);
+  vm.runInContext(fs.readFileSync(path.join(__dirname, '../panel-controls.js'), 'utf8'), context);
+
+  function fireKeydown(spec) {
+    const event = {
+      code: spec.code, key: spec.key === undefined ? spec.code : spec.key,
+      repeat: Boolean(spec.repeat),
+      altKey: Boolean(spec.altKey), ctrlKey: Boolean(spec.ctrlKey), metaKey: Boolean(spec.metaKey),
+      target: spec.target,
+      defaultPrevented: false,
+      preventDefault() { this.defaultPrevented = true; },
+      stopPropagation() { this.propagationStopped = true; },
+    };
+    [...(win.listeners.keydown || [])].forEach(fn => fn(event));
+    // Activación nativa del navegador: sobre un botón enfocado, el Espacio (en
+    // el keyup) y el Enter (en el keydown) disparan el click si ningún keydown
+    // los prevenió. Con modificadores el navegador no activa el botón.
+    if (!event.defaultPrevented && !event.altKey && !event.ctrlKey && !event.metaKey
+      && spec.target && spec.target.tagName === 'BUTTON'
+      && (event.code === 'Space' || event.code === 'Enter' || event.code === 'NumpadEnter')) {
+      spec.target.click();
+    }
+    return event;
+  }
+
+  function fireKeyup(spec) {
+    const event = { code: spec.code, key: spec.key === undefined ? spec.code : spec.key, target: spec.target };
+    [...(win.listeners.keyup || [])].forEach(fn => fn(event));
+  }
+
+  return {
+    win, liveButtons, progression,
+    el: node, keydown: fireKeydown, keyup: fireKeyup,
+    playToggled: () => playToggled,
+    selectedAdds: () => selectedAdds,
+  };
+}
+
+// Aceptación 2 (QA-SPACE-01): teclado en vivo + foco en #quick-play.
+test('teclado: con captura del teclado activa, Espacio sobre #quick-play agrega una tarjeta y no activa Play', () => {
+  const h = keyboardHarness();
+  h.liveButtons[1].click(); // captura del teclado en fase Nota
+  h.keydown({ code: 'KeyA', key: 'a', target: h.el('quick-play') }); // una nota: el acorde reconocido es Do mayor
+  assert.equal(h.progression.length, 0, 'todavía no se agregó nada');
+  const press = h.keydown({ code: 'Space', key: ' ', target: h.el('quick-play') });
+  assert.equal(h.progression.length, 1, 'una pulsación suma exactamente una tarjeta');
+  assert.equal(h.el('player-toggle').getAttribute('aria-pressed'), 'false', 'aria-pressed del transporte no cambia');
+  assert.equal(h.playToggled(), 0, 'el transporte no se activó ni pausó');
+  assert.equal(press.defaultPrevented, true, 'la tecla quedó en el atajo: no llegó al botón');
+});
+
+// El mismo desvío con la captura de micrófono (la otra sesión del repro).
+test('teclado: con la captura del micrófono activa, Espacio sobre #quick-play agrega el acorde seleccionado', () => {
+  const h = keyboardHarness();
+  h.liveButtons[0].click(); // «Acorde en vivo» del teclado apagado
+  h.win.__microLiveActive = () => true; // el micrófono siguiendo la escala en vivo
+  assert.equal(h.el('player-toggle').getAttribute('aria-pressed'), 'false');
+  const press = h.keydown({ code: 'Space', key: ' ', target: h.el('quick-play') });
+  assert.equal(h.selectedAdds(), 1, 'agrega el mismo acorde que se agrega con el foco fuera del transporte');
+  assert.equal(h.progression.length, 0, 'no hay acorde en vivo del teclado que sumar');
+  assert.equal(h.el('player-toggle').getAttribute('aria-pressed'), 'false', 'el transporte no cambia de estado');
+  assert.equal(press.defaultPrevented, true);
+});
+
+// Aceptación 3: sin sesión de captura activa, la semántica nativa sigue igual.
+test('teclado: sin captura en vivo, Espacio sobre #quick-play sigue activando el transporte', () => {
+  const h = keyboardHarness();
+  h.liveButtons[0].click(); // captura apagada (y sin micrófono)
+  const press = h.keydown({ code: 'Space', key: ' ', target: h.el('quick-play') });
+  assert.equal(press.defaultPrevented, false, 'el transporte se queda la tecla, igual que siempre');
+  assert.equal(h.el('player-toggle').getAttribute('aria-pressed'), 'true', 'Play se activa con el Espacio nativo');
+  assert.equal(h.playToggled(), 1);
+  assert.equal(h.progression.length, 0, 'sin captura no se agrega tarjeta');
+});
+
+// Aceptación 4: Enter sigue perteneciendo al botón enfocado, con o sin captura.
+test('teclado: Enter sobre el transporte sigue siendo del botón enfocado aunque haya captura', () => {
+  const h = keyboardHarness();
+  h.liveButtons[1].click();
+  const press = h.keydown({ code: 'Enter', key: 'Enter', target: h.el('quick-play') });
+  assert.equal(press.defaultPrevented, false, 'el botón foco conserva su Enter');
+  assert.equal(h.el('player-toggle').getAttribute('aria-pressed'), 'true', 'el transporte se activa con Enter');
+  assert.equal(h.progression.length, 0, 'Enter no agrega tarjeta con el foco en el transporte');
+});
+
+// Aceptación 4: event.repeat no apila tarjetas ni deja escapar la tecla.
+test('teclado: la repetición automática de Espacio no apila tarjetas y no escapa del atajo', () => {
+  const h = keyboardHarness();
+  h.liveButtons[1].click();
+  h.keydown({ code: 'KeyA', key: 'a', target: h.el('quick-play') });
+  h.keydown({ code: 'Space', key: ' ', target: h.el('quick-play') });
+  const repeat = h.keydown({ code: 'Space', key: ' ', target: h.el('quick-play'), repeat: true });
+  assert.equal(h.progression.length, 1, 'una sola pulsación, una sola tarjeta aunque se mantenga la tecla');
+  assert.equal(repeat.defaultPrevented, true, 'el Espacio mantenido no llega al botón');
+  const repeatFuera = h.keydown({ code: 'Space', key: ' ', target: {}, repeat: true });
+  assert.equal(repeatFuera.defaultPrevented, true, 'también fuera del transporte: sin preventDefault el Espacio mantenido haría scroll');
+  assert.equal(h.progression.length, 1);
+});
+
+// Aceptación 4: campos y modificadores conservan su semántica.
+test('teclado: un campo de texto y las teclas con modificadores no agregan nada ni cambian el transporte', () => {
+  const h = keyboardHarness();
+  h.liveButtons[1].click();
+  const campo = { tagName: 'INPUT', type: 'text', isContentEditable: false };
+  const enCampo = h.keydown({ code: 'Space', key: ' ', target: campo });
+  assert.equal(enCampo.defaultPrevented, false, 'un campo de texto escribe el espacio');
+  assert.equal(h.progression.length, 0, 'un campo no agrega acordes');
+  const conAlt = h.keydown({ code: 'Space', key: ' ', target: h.el('quick-play'), altKey: true });
+  assert.equal(conAlt.defaultPrevented, false, 'Alt+Espacio sigue siendo del navegador');
+  assert.equal(h.selectedAdds(), 0, 'los modificadores apartan el atajo');
+  assert.equal(h.progression.length, 0, 'los modificadores no agregan tarjetas');
 });

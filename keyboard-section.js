@@ -100,6 +100,28 @@ function keyTargetOwnsChordAdd(target) {
   return role === 'button' || role === 'switch' || role === 'radio' || role === 'menuitem' || role === 'link';
 }
 
+// Controles de reproducción cuyo Espacio puede pasar al atajo de añadir
+// acorde: el transporte rápido junto al mástil y los tres Play/Pausa nativos a
+// los que su clic va a parar (Backtrack, MIDI y Metrónomo). El resto de los
+// botones de la app no es transporte: ni vale convertir cada botón en un
+// atajo global (T-37).
+var TRANSPORT_PLAY_IDS = ['quick-play', 'player-toggle', 'midi-play', 'metronome-toggle'];
+
+// ¿El foco quedó en un control de reproducción del transporte?
+function isTransportPlayControl(target) {
+  return !!target && typeof target.id === 'string' && TRANSPORT_PLAY_IDS.indexOf(target.id) !== -1;
+}
+
+// La decisión «capturar o dejar al transporte» (T-37): el Espacio sobre el
+// transporte pasa al atajo de añadir acorde solo mientras hay una captura en
+// vivo activa (micrófono o acorde en vivo del teclado); el autor captura, usa
+// #quick-play y quiere seguir agregando sin reactivar el transporte. Sin
+// captura —o con el foco en otro control— el botón enfocado conserva su
+// semántica nativa.
+function transportSpaceCaptures(isTransport, liveActive) {
+  return !!isTransport && !!liveActive;
+}
+
 // Genera las teclas visibles. Las blancas llevan índice 0-based dentro del
 // pentagrama total; las negras llevan la columna (1-based) entre blancas,
 // igual que #root-piano, para posicionarse con translateX(-50%).
@@ -481,6 +503,9 @@ if (typeof module !== 'undefined' && module.exports) module.exports = {
   isShiftKey: isShiftKey,
   shiftTapToggles: shiftTapToggles,
   keyTargetOwnsChordAdd: keyTargetOwnsChordAdd,
+  TRANSPORT_PLAY_IDS: TRANSPORT_PLAY_IDS,
+  isTransportPlayControl: isTransportPlayControl,
+  transportSpaceCaptures: transportSpaceCaptures,
   recognizedChordSource: recognizedChordSource,
   mastilKeyToggle: mastilKeyToggle,
   keyboardLayoutClasses: keyboardLayoutClasses,
@@ -867,8 +892,23 @@ if (typeof document !== 'undefined') (function () {
     // teclado activo; ahora ambas teclas funcionan siempre y, sin acorde en
     // vivo, añaden el acorde que esté seleccionado. Se acepta también el Enter
     // del teclado numérico, que es una tecla distinta con su propio código.
+    // T-37: con una captura en vivo activa, el Espacio es del atajo aunque el
+    // foco haya quedado en el transporte (#quick-play y sus tres play
+    // equivalentes): agrega el mismo acorde que agregaría con el foco fuera y
+    // no cambia Play/Pausa. Enter sigue siendo del botón enfocado, y sin
+    // captura el transporte conserva su Espacio nativo.
     if (event.code === 'Enter' || event.code === 'NumpadEnter' || event.code === SPACE_CODE) {
-      if (keyTargetOwnsChordAdd(target)) return;
+      var capturaViva = typeof window.__liveChordActive === 'function' && window.__liveChordActive();
+      var espacioAtajo = event.code === SPACE_CODE
+        && transportSpaceCaptures(isTransportPlayControl(target), capturaViva);
+      if (keyTargetOwnsChordAdd(target) && !espacioAtajo) return;
+      if (event.code === SPACE_CODE && event.repeat) {
+        // La repetición automática no apila tarjetas; sin preventDefault, el
+        // Espacio mantenido haría scroll (o reactivaría otra vez el botón).
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
       if (!addRecognizedChord()) return;
       event.preventDefault();
       // La tarjeta enfocada no selecciona nada: el acorde se acaba de añadir y
