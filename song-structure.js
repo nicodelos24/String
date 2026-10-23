@@ -32,6 +32,13 @@ const CHORD_TYPES = ['maj', 'maj7', 'maj9', 'm', 'm7', 'm9', 'dim', 'dim7', 'aug
 // el documento puro no puede propagar a T-40 un acorde que la biblioteca
 // rechaza o cuyo consumidor no es seguro).
 const MODES = ['ionian', 'lydian', 'mixolydian', 'dorian', 'phrygian', 'aeolian', 'locrian', 'majorPentatonic', 'minorPentatonic'];
+// La gramática del nombre raíz del acorde: la misma regex que la biblioteca
+// escribe en song-library-ui.js:28 — letra A–G con una accidental opcional
+// en sus dos escrituras (# b / ♯ ♭). Copia cotejada como CHORD_TYPES y
+// MODES: la prueba la compara contra el texto fuente de la biblioteca
+// (cuarta devolución QA-MOD-01: el documento puro no puede aceptar y
+// propagar a T-40 un acorde que las canciones v1 rechazan al guardarlo).
+const NOTE_NAME_PATTERN = /^[A-G](?:#|b|♯|♭)?$/;
 const MAX_BLOCKS = 64;
 const MAX_NAME_LENGTH = 40;
 const MIN_REPEAT = 1;
@@ -39,8 +46,15 @@ const MAX_REPEAT = 8;
 const MAX_CHORDS_PER_BLOCK = 4096;
 const MAX_FLAT_ENTRIES = 32768;
 
+// "Plano" de verdad: objeto con el prototipo propio de Object o ninguno.
+// Una instancia de la app (new Date(), un Map, Object.create(…) heredado)
+// no viaja: copyValue podría reducirla a {} sin que nadie lo note y el
+// documento puro no puede propagar a T-40 un dato que el contrato degrada
+// silenciosamente (cuarta devolución QA-MOD-01).
 function isPlain(value) {
-  return value !== null && typeof value === 'object' && !Array.isArray(value);
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) return false;
+  const proto = Object.getPrototypeOf(value);
+  return proto === Object.prototype || proto === null;
 }
 
 // Copia profunda de datos planos: los acordes y sus variantes por vuelta
@@ -117,6 +131,14 @@ function validateChord(value) {
   // entrada, en vez de colarse al reproductor de T-40.
   if (value.mode !== undefined && !MODES.includes(value.mode)) throw new Error(`El modo del acorde no es de la lista que la app conoce (modes): ${value.mode}.`);
   if (value.ghostMode && !MODES.includes(value.ghostMode)) throw new Error(`El modo fantasma del acorde no es de la lista que la app conoce (modes): ${value.ghostMode}.`);
+  // El nombre raíz, cuando viaja, es de la gramática de la biblioteca
+  // (song-library-ui.js:28): la misma regex cotejada de arriba — letra A–G
+  // con una accidental opcional. Un nombre ajeno (el «No-es-nota» del repro
+  // de QA) se rechaza en voz alta, sin mutar la entrada, en vez de salir
+  // como documento que las canciones v1 rechazan al guardarlo.
+  if (value.rootNoteName !== undefined && !NOTE_NAME_PATTERN.test(value.rootNoteName)) {
+    throw new Error(`El nombre raíz del acorde no es de la gramática de la biblioteca: ${value.rootNoteName}.`);
+  }
   if (value.beats !== undefined && (!Number.isInteger(value.beats) || value.beats < 1)) throw new Error('La duración del acorde debe ser un entero positivo de pulsos.');
   const out = {root: value.root, type: value.type};
   // Las variantes por vuelta se validan con la regla exacta de
@@ -141,6 +163,12 @@ function validateChord(value) {
 function validateVariants(value) {
   if (value === undefined) return undefined;
   if (!isPlain(value)) throw new Error('Las variantes por vuelta deben ser un objeto.');
+  // Una variants PRESENTE no viaja vacía: en la app validVariants limpia
+  // ese caso a silencio (la forma opcional del contrato), pero el
+  // documento puro no normaliza a espaldas del que escribe — fuera del
+  // contrato de {ghostMode} es rechazo en voz alta (cuarta devolución
+  // QA-MOD-01).
+  if (!Object.keys(value).length) throw new Error('Las variantes por vuelta, si están presentes, traen al menos una vuelta.');
   const variants = {};
   for (const key of Object.keys(value)) {
     const vuelta = Number(key);
@@ -152,6 +180,12 @@ function validateVariants(value) {
     for (const campo of Object.keys(variant)) {
       if (campo !== 'ghostMode') throw new Error(`La variante de la vuelta ${vuelta} lleva la forma exacta {ghostMode}: campo desconocido: ${campo}.`);
     }
+    // El campo propio, no heredado: la misma Object.hasOwn que usa la
+    // biblioteca — una variante creada con prototipo ajeno (el repro de
+    // QA: {'2': Object.create({ghostMode: 'dorian'})}) no tiene la forma
+    // exacta que la app escribe, y en el modelo no se copia a espaldas del
+    // dato: se rechaza en voz alta.
+    if (!Object.hasOwn(variant, 'ghostMode')) throw new Error(`La variante de la vuelta ${vuelta} lleva la forma exacta {ghostMode}: falta el campo propio ghostMode.`);
     const ghost = variant.ghostMode;
     if (typeof ghost !== 'string' || !ghost) throw new Error(`El modo fantasma de la variante de la vuelta ${vuelta} es obligatorio y no vacío.`);
     if (!MODES.includes(ghost)) throw new Error(`El modo fantasma de la variante de la vuelta ${vuelta} no es de la lista que la app conoce (modes): ${ghost}.`);
@@ -364,6 +398,7 @@ const SongStructure = {
   CHORD_FIELDS,
   CHORD_TYPES,
   MODES,
+  NOTE_NAME_PATTERN,
   MAX_BLOCKS,
   MAX_NAME_LENGTH,
   MIN_REPEAT,

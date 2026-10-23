@@ -8,7 +8,7 @@ const {
   MAX_CHORDS_PER_BLOCK, MAX_FLAT_ENTRIES,
   createStructure, isValidStructure, addBlock, duplicateBlock, updateBlock,
   removeBlock, appendArrangement, setArrangementRepeat, moveArrangementEntry,
-  removeArrangementEntry, flattenArrangement, flatSize, parseTonic
+  removeArrangementEntry, flattenArrangement, flatSize, parseTonic, NOTE_NAME_PATTERN
 } = require('../song-structure.js');
 
 // La matriz de aceptación del mapa (docs/MAPA-COMPOSITOR.md, sección T-39)
@@ -260,6 +260,76 @@ test('variantes por vuelta: la forma exacta que validVariants admite — tercera
   ]}), /variante/i);
 });
 
+test('nombre raíz del acorde: la gramática que la biblioteca valida — cuarta devolución QA-MOD-01', () => {
+  // El repro exacto de QA (2026-10-23, sobre 337927d): el campo opcional
+  // rootNoteName aceptaba cualquier texto («No-es-nota»), cuando
+  // song-library-ui.js:24-26 lo rechaza con /^[A-G](?:#|b|♯|♭)?$/ y el mapa
+  // aprobado (T-38) lo declara parte de la forma del acorde: T-40 no puede
+  // recibir un documento que las canciones v1 rechazan al guardarlo/abrirlo.
+  // Hoy isValidStructure responde true: esa es la roja de la corrección.
+  const malo = {blocks: [{id: 'x', name: 'X', chords: [{root: 0, type: 'maj', rootNoteName: 'No-es-nota'}]}], arrangement: [{blockId: 'x', repeat: 1}]};
+  assert.equal(isValidStructure(malo), false, 'el repro de QA: el nombre raíz ajeno a la gramática de la biblioteca se rechaza');
+  assert.throws(() => createStructure(malo), /gramática/);
+  const antes = clone(malo);
+  assert.throws(() => createStructure(malo));
+  assert.deepEqual(malo, antes, 'el rechazo no muta la entrada');
+  // cada grafía válida pasa: la letra sola o con una accidental en sus dos
+  // escrituras (# b / ♯ ♭), la misma familia que valida la biblioteca
+  for (const nombre of ['C', 'D', 'E', 'F', 'G', 'A', 'B', 'A#', 'Bb', 'E♭', 'F#', 'G♯']) {
+    const doc = {blocks: [{id: 'x', name: 'X', chords: [{root: 0, type: 'maj', rootNoteName: nombre}]}], arrangement: [{blockId: 'x', repeat: 1}]};
+    assert.equal(isValidStructure(doc), true, `el nombre raíz ${nombre} es de la gramática de la biblioteca`);
+  }
+  for (const nombre of ['', 'H', 'do', 'AB', 'C##', 'C b', 'C#B', '7', null, 7]) {
+    const doc = {blocks: [{id: 'x', name: 'X', chords: [{root: 0, type: 'maj', rootNoteName: nombre}]}], arrangement: [{blockId: 'x', repeat: 1}]};
+    assert.equal(isValidStructure(doc), false, `el nombre raíz ${JSON.stringify(nombre)} no es de la gramática`);
+  }
+  // y todas las puertas validan: la edición también pasa por createStructure
+  assert.throws(() => updateBlock(BASE, 'verso', {chords: [{root: 0, type: 'maj', rootNoteName: 'No-es-nota'}]}), /gramática/);
+  assert.throws(() => addBlock(BASE, {name: 'Raro', chords: [{root: 0, type: 'maj', rootNoteName: 'No-es-nota'}]}), /gramática/);
+});
+
+test('variantes presente pero sin entrada propia válida y plana: rechazo en voz alta — cuarta devolución QA-MOD-01', () => {
+  // El repro exacto de QA (2026-10-23, sobre 337927d): isPlain() aceptaba
+  // instancias y validateVariants() una forma definida pero vacía, así que
+  // {variants: {}} y {variants: new Date()} daban true y el documento
+  // salía con variants: {} — justo lo que validVariants (app.js) limpia a
+  // undefined. También una variante heredada ({'2': Object.create(…)})
+  // pasaba pese a no tener el campo propio que exige la forma {ghostMode}.
+  // En el modelo nada se limpia: se rechaza en voz alta, sin mutar la
+  // entrada, en vez de propagar a T-40 un dato que el contrato de
+  // progresión degrada silenciosamente.
+  const base = clone({blocks: [{id: 'x', name: 'X', chords: [{root: 0, type: 'maj'}]}], arrangement: [{blockId: 'x', repeat: 1}]});
+  const vacia = clone(base);
+  vacia.blocks[0].chords[0].variants = {};
+  assert.equal(isValidStructure(vacia), false, 'el repro de QA: una variants presente sin entradas no viaja como {}');
+  assert.throws(() => createStructure(vacia), /al menos una/);
+  const antesVacia = clone(vacia);
+  assert.throws(() => createStructure(vacia));
+  assert.deepEqual(vacia, antesVacia, 'el rechazo no muta la entrada');
+  const instancia = clone(base);
+  instancia.blocks[0].chords[0].variants = new Date();
+  assert.equal(isValidStructure(instancia), false, 'el repro de QA: una instancia de la app no viaja');
+  assert.throws(() => createStructure(instancia), /deben ser un objeto/);
+  const heredada = clone(base);
+  heredada.blocks[0].chords[0].variants = {'2': Object.create({ghostMode: 'dorian'})};
+  assert.equal(isValidStructure(heredada), false, 'el repro de QA: la variante heredada sin campo propio no viaja');
+  assert.throws(() => createStructure(heredada), /debe ser un objeto|propio/);
+  // la no mutación en los dos caminos restantes: la entrada heredada solo
+  // tiene la vuelta propia (el deepEqual del clone compara prototipos; acá
+  // se comprueba su forma propia, que es lo que el modelo no toca)
+  assert.deepEqual(Object.keys(heredada.blocks[0].chords[0].variants), ['2']);
+  assert.deepEqual(Object.keys(heredada.blocks[0].chords[0].variants['2']), []);
+  // lo verde queda verde: dos vueltas propias y planas viajan con su forma
+  // exacta, y la salida conserva la vuelta entera que la app escribe
+  const dos = clone(base);
+  dos.blocks[0].chords[0].variants = {'1': {ghostMode: 'lydian'}, '3': {ghostMode: 'dorian'}};
+  assert.equal(isValidStructure(dos), true, 'dos vueltas propias y planas valen');
+  assert.deepEqual(createStructure(dos).blocks[0].chords[0].variants, {1: {ghostMode: 'lydian'}, 3: {ghostMode: 'dorian'}});
+  // y todas las puertas validan: la edición también pasa por createStructure
+  assert.throws(() => updateBlock(BASE, 'verso', {chords: [{root: 0, type: 'maj', variants: {}}]}), /al menos una/);
+  assert.throws(() => addBlock(BASE, {name: 'Raro', chords: [{root: 0, type: 'maj', variants: new Date()}]}), /deben ser un objeto/);
+});
+
 test('guarda de fuente única: los modos del modelo son las claves vigentes de modes en la app', () => {
   const appJs = fs.readFileSync(path.join(__dirname, '..', 'app.js'), 'utf8');
   const m = appJs.match(/const modes = \{[\s\S]*?\n\};/);
@@ -431,6 +501,26 @@ test('guarda de fuente única: las variantes del modelo son la regla de validVar
   // rechazo en voz alta — por eso la entrada {ghostMode:''} no viaje
   const libJs = fs.readFileSync(path.join(__dirname, '..', 'song-library-ui.js'), 'utf8');
   assert(libJs.includes('(chord.ghostMode && !Object.hasOwn(modes,chord.ghostMode))'), 'la biblioteca sigue sendo la fuente reflejada del fantasma');
+});
+
+test('guarda de fuente única: la gramática del nombre raíz y la forma de las variantes quedan cotejadas', () => {
+  // La regex del nombre raíz en el modelo es la misma que escribe la
+  // biblioteca (song-library-ui.js:28) — letra A–G con una accidental
+  // opcional en sus dos escrituras. Y los dos cierres de la cuarta
+  // devolución quedan en el texto del módulo: la variante exige su campo
+  // PROPIO (Object.hasOwn, como la biblioteca) y una variants presente no
+  // puede viajar vacía (al menos una vuelta). Si la fuente o el módulo
+  // cambian sin ronda, acá suena la alarma.
+  const libJs = fs.readFileSync(path.join(__dirname, '..', 'song-library-ui.js'), 'utf8');
+  const m = libJs.match(/\(chord\.rootNoteName!==undefined && !\/(.+?)\/\.test\(chord\.rootNoteName\)\)/);
+  assert(m, 'la biblioteca sigue validando rootNoteName con su regex de la gramática');
+  assert(NOTE_NAME_PATTERN, 'el módulo exporta la copia cotejada de la gramática (NOTE_NAME_PATTERN)');
+  assert.equal(m[1], NOTE_NAME_PATTERN.source, 'la gramática del modelo es la misma regex letra por letra');
+  const fuente = fs.readFileSync(path.join(__dirname, '..', 'song-structure.js'), 'utf8');
+  assert(fuente.includes('!NOTE_NAME_PATTERN.test(value.rootNoteName)'), 'el módulo valida el nombre raíz con la copia cotejada, no con una suelta');
+  assert(fuente.includes("Object.hasOwn(variant, 'ghostMode')"), 'la variante exige el campo propio ghostMode, como Object.hasOwn en la biblioteca');
+  assert(fuente.includes('!Object.keys(value).length'), 'una variants presente con cero vueltas se rechaza (al menos una)');
+  assert(fuente.includes('getPrototypeOf'), 'isPlain rechaza instancias de la app: el prototipo propio de Object o ninguno');
 });
 
 test('el módulo es puro: sin pantallla, sin almacenamiento, sin dependencias y sin mutar nada', () => {
