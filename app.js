@@ -184,6 +184,23 @@ Object.values({ ...intervalColors, ...alteredIntervalColors }).forEach(interval 
 
 let instrument = 'guitar';
 let selectedTonality = tonalities[0]; // Escala global base
+// T-45 · QA-TONAL-02: la tonalidad de la canción. Cuando está fijada es el
+// contexto tonal de la página: colores y grados se leen desde su tónica y el
+// modo diatónico lo decide el contrato T-44 (tonal-context.js). Lo de la
+// tarjeta no se toca: posiciones, resaltado y modo explícito siguen midiendo
+// desde la raíz, así que un acorde prestado o cromático no se infla.
+let songTonality = null;
+const songTonalityByKey = key => tonalities.find(item => item.key === key) ?? null;
+function setSongTonality(key) {
+  songTonality = key ? songTonalityByKey(key) : null;
+  updateView();
+}
+// Tónica de la tonalidad fijada, como índice de clase de paso. Sin tonalidad es
+// null y cada uso cae al comportamiento de la tarjeta con el mismo resultado
+// que hoy: el mástil no nota la tonalidad que no está.
+function songTonic() {
+  return songTonality ? noteToIndex(songTonality.key) : null;
+}
 let root = 0; // Raíz del acorde (índice)
 let rootNoteName = 'C'; // Nombre específico de la nota seleccionada por el usuario
 let quality = 'major'; // Calidad seleccionada (mayor, minor, diminished)
@@ -801,7 +818,13 @@ function renderFretboard() {
       const inChord = chordIntervals.has(intervalFromRoot);
       const inSelectedMode = selectedModeNotes.has(pitchClass);
 
-      const intervalInfo = getIntervalClass(intervalFromRoot, !inSelectedMode && ghostNotesMap.has(pitchClass) ? ghostMode : selectedMode);
+      // Con tonalidad de canción fijada, el rótulo y el color salen de su
+      // tónica (qué grado es esta nota EN LA CANCIÓN); sin ella es el mismo
+      // intervalo de la raíz de siempre. El resaltado y el modo ya decididos
+      // arriba siguen mirando a la tarjeta.
+      const songTonicPitch = songTonic();
+      const intervalForLabel = songTonicPitch === null ? intervalFromRoot : (pitchClass - songTonicPitch + 12) % 12;
+      const intervalInfo = getIntervalClass(intervalForLabel, !inSelectedMode && ghostNotesMap.has(pitchClass) ? ghostMode : selectedMode);
 
       // Determinar color de fondo y clase CSS
       let bgColor;
@@ -847,7 +870,7 @@ function renderFretboard() {
       // El color que ya decidió getIntervalClass para esta posición se queda
       // escrito en la posición (`data-interval-color`): es de donde lee el
       // micrófono al tintar la nota que suena, sin una tabla propia (T-21).
-      return `<div class="fret"><span class="${noteClass}" data-midi="${openNote + actualFret}" data-note="${displayNote(pitchClass)}" data-interval="${intervalInfo.name}" data-interval-color="${intervalInfo.color}" style="background-color: ${bgColor}; color: ${textColor};${displayModeIndex >= 3 && !shouldHighlight ? ' opacity: 0;' : ''}" title="${displayNote(pitchClass)} · ${intervalInfo.name}">${getFretLabel(pitchClass, intervalFromRoot, inScaleZone)}</span></div>`;
+      return `<div class="fret"><span class="${noteClass}" data-midi="${openNote + actualFret}" data-note="${displayNote(pitchClass)}" data-interval="${intervalInfo.name}" data-interval-color="${intervalInfo.color}" style="background-color: ${bgColor}; color: ${textColor};${displayModeIndex >= 3 && !shouldHighlight ? ' opacity: 0;' : ''}" title="${displayNote(pitchClass)} · ${intervalInfo.name}">${getFretLabel(pitchClass, intervalForLabel, inScaleZone)}</span></div>`;
     }).join('');
     return `<div class="string-row" style="--string-width: ${stringIndex < (instrument === 'guitar' ? 3 : 2) ? 2 : 1}px">${frets}</div>`;
   }).join('');
@@ -888,7 +911,11 @@ function renderOpenStrings() {
       const intervalFromRoot = (pitchClass - root + 12) % 12;
       const inChord = chordIntervals.has(intervalFromRoot);
       const inSelectedMode = selectedModeNotes.has(pitchClass);
-      const intervalInfo = getIntervalClass(intervalFromRoot, !inSelectedMode && ghostNotesMap.has(pitchClass) ? ghostMode : selectedMode);
+      // Con tonalidad de canción fijada, el rótulo y el color salen de su
+      // tónica, igual que en el mástil (ver renderFretboard).
+      const songTonicPitch = songTonic();
+      const intervalForLabel = songTonicPitch === null ? intervalFromRoot : (pitchClass - songTonicPitch + 12) % 12;
+      const intervalInfo = getIntervalClass(intervalForLabel, !inSelectedMode && ghostNotesMap.has(pitchClass) ? ghostMode : selectedMode);
 
       let bgColor;
       let textColor;
@@ -898,7 +925,7 @@ function renderOpenStrings() {
       const shouldHighlight = shouldHighlightInterval(intervalFromRoot, displayModeIndex);
 
       if (isRoot) {
-        bgColor = '#E53935';
+        bgColor = intervalInfo.color;
         textColor = '#f3f0e8';
         noteClass += ' root-note scale-note';
       } else if (inChord && shouldHighlight) {
@@ -931,7 +958,7 @@ function renderOpenStrings() {
 
       // `data-interval-color` igual que en renderFretboard: el color que el
       // mástil ya decidió para la posición, de donde lee el micrófono (T-21).
-      return `<div class="open-string-row"><span class="${noteClass}" data-midi="${openNote}" data-note="${displayNote(pitchClass)}" data-interval="${intervalInfo.name}" data-interval-color="${intervalInfo.color}" style="background-color: ${bgColor}; color: ${textColor};${displayModeIndex >= 3 && !shouldHighlight ? ' opacity: 0;' : ''}" title="${displayNote(pitchClass)} · ${intervalInfo.name}">${getFretLabel(pitchClass, intervalFromRoot, inScaleZone)}</span></div>`;
+      return `<div class="open-string-row"><span class="${noteClass}" data-midi="${openNote}" data-note="${displayNote(pitchClass)}" data-interval="${intervalInfo.name}" data-interval-color="${intervalInfo.color}" style="background-color: ${bgColor}; color: ${textColor};${displayModeIndex >= 3 && !shouldHighlight ? ' opacity: 0;' : ''}" title="${displayNote(pitchClass)} · ${intervalInfo.name}">${getFretLabel(pitchClass, intervalForLabel, inScaleZone)}</span></div>`;
     }).join('');
 
   document.querySelector('#open-strings').innerHTML = openStringsHtml;
@@ -951,6 +978,12 @@ function updateView() {
   if (syncSpellingToKeySignature(keySignature)) keySignature = calculateKeySignature(mode, root);
 
   const chordSuffix = chordType.suffix;
+
+  // T-45 · QA-TONAL-02: con la tonalidad de la canción fijada, la armadura que
+  // se muestra es la de la canción: cambiar de tarjeta no mueve el contexto.
+  if (songTonality) {
+    keySignature = { sharps: songTonality.sharps, flats: songTonality.flats, key: songTonality.key };
+  }
 
   // Actualizar la tonalidad global basada en el modo seleccionado
   const matchingTonality = tonalities.find(ton => ton.key === keySignature.key);
@@ -1054,6 +1087,16 @@ if (ghostModeSelect) {
     activeProgression = -1;
     renderProgression();
     renderFretboard();
+  });
+}
+
+// T-45 · QA-TONAL-02: el selector de tonalidad de canción arma el contexto
+// tonal de la página; volver a «Sin tonalidad fija» devuelve el mástil al
+// comportamiento de la tarjeta de siempre.
+const songTonalitySelect = document.querySelector('#song-tonality');
+if (songTonalitySelect) {
+  songTonalitySelect.addEventListener('change', event => {
+    setSongTonality(event.target.value);
   });
 }
 

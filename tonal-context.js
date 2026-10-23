@@ -77,6 +77,8 @@ const TonalContext = {parsePitchClass, DIATONIC_DEGREES, MODES_BY_DEGREE, CHORD_
 
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = TonalContext;
-} else {
+} else if (typeof window !== 'undefined') {
+  // En la página (index.html lo carga antes de app.js) queda en window, y
+  // app.js lo lee como identificador global igual que el resto de módulos.
   window.TonalContext = TonalContext;
 }
