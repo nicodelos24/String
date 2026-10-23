@@ -104,6 +104,7 @@ function build(seed, _omitDecorations, omitControls=[]) {
   checkbox('follow-midi',true);
   checkbox('fret-scale-lock',false);
   if(!omitControls.includes('youtube-float'))checkbox('youtube-float',true);
+  if(!omitControls.includes('player-card-start'))checkbox('player-card-start',true);
   checkbox('player-loop',false);
   checkbox('player-percussion',false);
   if(!omitControls.includes('metronome-accent'))checkbox('metronome-accent',true);
@@ -394,4 +395,42 @@ test('preferencias: con el control ausente, casillas con true por defecto guarda
   const snap=JSON.parse(localStorage.getItem('traste.preferences.v1'));
   assert.equal(snap.youtubeFloat,true,'Sin el control, el video flotante queda en su predeterminado true');
   assert.equal(snap.metronomeAccent,true,'Sin el control, el acento del metrónomo queda en su predeterminado true');
+});
+
+// A-5 (T-43): vuelve el interruptor «Reproducir desde la tarjeta pulsada» y su
+// clave en las preferencias. Sin la clave en un guardado antiguo vale true
+// (activado, como estaba); el false desmarcado se conserva, con el patrón
+// nulo/propiedad de QA-R01 y nunca `|| true`.
+test('preferencias: playerCardStart guarda marcado y desmarcado',()=>{
+  const{localStorage,runs,flush}=build();
+  runs(`document.querySelector("#metronome-volume").value="75";
+        document.querySelector('#player-card-start').checked=false;
+        document.dispatchEvent(new Event("click"));`);
+  flush();
+  let snap=JSON.parse(localStorage.getItem('traste.preferences.v1'));
+  assert.equal(snap.metronomeVolume,'75','El snapshot se guardó');
+  assert.equal(snap.playerCardStart,false,'Apagar el interruptor se guarda en false, no vuelto true');
+  runs(`document.querySelector("#metronome-volume").value="81";
+        document.querySelector('#player-card-start').checked=true;
+        document.dispatchEvent(new Event("click"));`);
+  flush();
+  snap=JSON.parse(localStorage.getItem('traste.preferences.v1'));
+  assert.equal(snap.playerCardStart,true,'Volver a marcar se guarda marcado');
+});
+
+test('preferencias: con el control ausente, playerCardStart queda en su predeterminado true',()=>{
+  const{localStorage,runs,flush}=build(undefined,[],['player-card-start']);
+  runs('document.querySelector("#metronome-volume").value="75";document.dispatchEvent(new Event("click"));');
+  flush();
+  const snap=JSON.parse(localStorage.getItem('traste.preferences.v1'));
+  assert.equal(snap.playerCardStart,true,'Sin el control, el interruptor queda en su predeterminado true');
+});
+
+test('preferencias: guardado antiguo sin la clave deja el interruptor marcado, y el false se restaura desmarcado',()=>{
+  const{q}=build({playerBpm:'96'});
+  assert.equal(q('#player-card-start').checked,true,'Si una preferencia antigua no contiene la clave, equivale a marcado');
+  assert.ok(q('#player-card-start').events.includes('change'));
+  const{q:q2}=build({playerBpm:'96',playerCardStart:false});
+  assert.equal(q2('#player-card-start').checked,false,'El false guardado se restaura desmarcado');
+  assert.ok(q2('#player-card-start').events.includes('change'));
 });

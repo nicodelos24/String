@@ -732,6 +732,35 @@ test('el clic en una tarjeta no reproduce ni marca el tempo con otra fuente acti
   assert.equal(run('tempoTaps'),0,'Las tarjetas no marcan el tempo en ningún caso');
 });
 
+// A-5 (T-43): vuelve el interruptor «Reproducir desde la tarjeta pulsada».
+// Apagado, el clic de una tarjeta es pura selección y edición: arrancar, para
+// o reiniciar es solo del Play explícito (#player-toggle y #quick-play).
+test('con el interruptor apagado, el clic en una tarjeta solo la selecciona',async()=>{
+  const {run,element,clickCard}=setupPlayerInterface();
+  element('#player-card-start').checked=false;
+  await clickCard(2);
+  assert.equal(run('testPlayer.chords'),undefined,'El clic no arranca el Acompañamiento');
+  assert.equal(run("typeof testPlayer.options === 'undefined'"),true,'Y no se programó ninguna reproducción');
+  assert.equal(run('activeProgression'),2,'La tarjeta sí queda seleccionada');
+  assert.equal(element('#chord-readout').textContent,'G7','El editor y el mástil se actualizan igual');
+});
+
+test('con el interruptor apagado ninguna tarjeta reinicia la música y el Play explícito sigue bien',async()=>{
+  const {run,element,clickCard}=setupPlayerInterface();
+  element('#player-card-start').checked=false;
+  await element('#player-toggle').handlers.click();
+  assert.equal(run('testPlayer.running'),true,'El botón de Play reproduce aunque el interruptor esté apagado');
+  assert.equal(run('testPlayer.options.startIndex'),0);
+  await clickCard(3); // «Reiniciar» es el modo predeterminado
+  assert.equal(run('testPlayer.options.startIndex'),0,'La tarjeta no reinicia en «Reiniciar»');
+  assert.equal(run('testPlayer.running'),true,'La música sigue sonando');
+  element('[data-card-mode][aria-pressed="true"]').dataset={cardMode:'pulse'};
+  await clickCard(1);
+  assert.equal(run('testPlayer.options.startIndex'),0,'Tampoco reinicia en «Solo pulso»');
+  assert.equal(run('testPlayer.running'),true,'La música sigue sonando');
+  assert.equal(run('activeProgression'),1,'La tarjeta sí se selecciona para editarla');
+});
+
 test('con secciones la tarjeta se busca en la lista de reproducción, no en la progresión',async()=>{
   const {run,clickCard}=setupPlayerInterface();
   run(`window.StringSections={playback(){return [
