@@ -18,6 +18,13 @@
 
 const NOTE_PC = {C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11};
 const CHORD_FIELDS = ['root', 'rootNoteName', 'type', 'mode', 'ghostMode', 'variants', 'beats'];
+// Los tipos de acorde que la app conoce: la lista vigente de chordTypes en
+// app.js, la misma contra la que valida la biblioteca (song-library-ui.js:24)
+// y la que la carga de progresiones usa para descartar ajenos (app.js:291).
+// Es una copia cotejada — la prueba la compara contra app.js leído como texto;
+// no hay require del árbol de la app (devolución QA-MOD-01: el documento puro
+// no puede aceptar y propagar a T-40 un tipo que la aplicación rechaza).
+const CHORD_TYPES = ['maj', 'maj7', 'maj9', 'm', 'm7', 'm9', 'dim', 'dim7', 'aug', '7', '7sus4', 'm7b5', '6', 'm6', 'add9', '6/9', '9', 'm11', '11', 'maj13', '13', 'sus2', 'sus4'];
 const MAX_BLOCKS = 64;
 const MAX_NAME_LENGTH = 40;
 const MIN_REPEAT = 1;
@@ -86,6 +93,11 @@ function validateChord(value) {
   }
   if (!Number.isInteger(value.root) || value.root < 0 || value.root > 11) throw new Error('La raíz del acorde debe ser una de las 12 del cómputo.');
   if (typeof value.type !== 'string' || !value.type) throw new Error('El acorde debe declarar un tipo válido.');
+  // El tipo se valida contra la lista vigente de chordTypes: es la fuente
+  // que la biblioteca y la carga de la app ya usan — un tipo ajeno (el
+  // 'no-existe' del repro de QA) se rechaza en voz alta, sin mutar la
+  // entrada, en vez de colarse al reproductor de T-40.
+  if (!CHORD_TYPES.includes(value.type)) throw new Error(`El tipo del acorde no es de la lista que la app conoce (chordTypes): ${value.type}.`);
   for (const key of ['rootNoteName', 'mode', 'ghostMode']) {
     if (value[key] !== undefined && typeof value[key] !== 'string') throw new Error(`El campo ${key} del acorde no es de texto.`);
   }
@@ -305,6 +317,7 @@ function isValidStructure(value) {
 
 const SongStructure = {
   CHORD_FIELDS,
+  CHORD_TYPES,
   MAX_BLOCKS,
   MAX_NAME_LENGTH,
   MIN_REPEAT,

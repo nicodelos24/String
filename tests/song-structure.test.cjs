@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const TonalContext = require('../tonal-context.js');
 const {
-  CHORD_FIELDS, MAX_BLOCKS, MAX_NAME_LENGTH, MIN_REPEAT, MAX_REPEAT,
+  CHORD_FIELDS, CHORD_TYPES, MAX_BLOCKS, MAX_NAME_LENGTH, MIN_REPEAT, MAX_REPEAT,
   MAX_CHORDS_PER_BLOCK, MAX_FLAT_ENTRIES,
   createStructure, isValidStructure, addBlock, duplicateBlock, updateBlock,
   removeBlock, appendArrangement, setArrangementRepeat, moveArrangementEntry,
@@ -68,15 +68,17 @@ test('copias frescas en ambas direcciones: lo importado y el documento no compar
   assert.equal(doc.blocks[0].chords[0].variants['2'].ghostMode, 'lydian', 'la copia profunda llega hasta las variantes por vuelta (lección T-20)');
   assert.equal(doc.arrangement[0].repeat, 2);
   doc.blocks[0].name = 'Editado';
-  doc.blocks[0].chords[0].type = 'ZZZ';
+  doc.blocks[0].chords[0].type = 'm';
   assert.equal(input.blocks[0].name, 'Mutado');
   assert.equal(input.blocks[0].chords[0].type, 'maj');
   // y una entrada del aplanado tampoco pisa el documento: lo que la edición
-  // del documento escribió ('ZZZ') sigue en pie y no se vuelve 'YYY'
+  // del documento escribió ('m') sigue en pie y no se vuelve 'dim' (tipos
+  // válidos de chordTypes: el documento corrompido ya no es válido, la
+  // devolución QA-MOD-01 lo rechaza en voz alta)
   const entrada = flattenArrangement(doc)[1];
-  entrada.chord.type = 'YYY';
+  entrada.chord.type = 'dim';
   entrada.chord.variants = 'basura';
-  assert.equal(createStructure(doc).blocks[0].chords[0].type, 'ZZZ', 'la entrada del aplanado no pisa el documento');
+  assert.equal(createStructure(doc).blocks[0].chords[0].type, 'm', 'la entrada del aplanado no pisa el documento');
   assert.equal(flattenArrangement(doc)[1].chord.variants['2'].ghostMode, 'lydian');
 });
 
@@ -130,6 +132,27 @@ test('rechazos en voz alta: campos, ids, nombres, acordes, referencias y repetic
     () => removeArrangementEntry(BASE, 9)
   ]) assert.throws(rompe);
   assert.deepEqual(BASE, antes);
+});
+
+test('tipo de acorde: solo los valores que la app conoce — repro de la devolución QA-MOD-01', () => {
+  // El repro exacto de QA: el documento puro no debe aceptar un tipo que la
+  // biblioteca rechaza (song-library-ui.js) y que la carga de la app descarta
+  // (app.js). Hoy `isValidStructure` responde true: esa es la roja.
+  const malo = {blocks: [{id: 'x', name: 'X', chords: [{root: 0, type: 'no-existe'}]}], arrangement: [{blockId: 'x', repeat: 1}]};
+  assert.equal(isValidStructure(malo), false, 'el repro de QA: el tipo desconocido se rechaza');
+  assert.throws(() => createStructure(malo), /tipo/i);
+  // y sin mutar la entrada: el rechazo no deja manos en el dato
+  const antes = clone(malo);
+  assert.throws(() => createStructure(malo));
+  assert.deepEqual(malo, antes);
+  // cada valor vigente de chordTypes pasa uno por uno
+  for (const type of CHORD_TYPES) {
+    const doc = {blocks: [{id: 'x', name: 'X', chords: [{root: 0, type}]}], arrangement: [{blockId: 'x', repeat: 1}]};
+    assert.equal(isValidStructure(doc), true, `el tipo ${type} de chordTypes es válido para el modelo`);
+  }
+  // y todas las puertas validan: la edición también pasa por createStructure
+  assert.throws(() => updateBlock(BASE, 'verso', {chords: [{root: 0, type: 'no-existe'}]}), /tipo/i);
+  assert.throws(() => addBlock(BASE, {name: 'Raro', chords: [{root: 0, type: 'no-existe'}]}), /tipo/i);
 });
 
 test('alta de bloques: id autogenerado opaco, determinista y que no pisa los existentes', () => {
@@ -256,6 +279,17 @@ test('guarda de fuente única: la whitelist del modelo es la lista que el guarda
   assert(m, 'app.js sigue guardando «Mi progresión» con un objeto de acorde literal');
   const enApp = [...m[1].matchAll(/^\s*([a-zA-Z]+):/gm)].map(x => x[1]).sort();
   assert.deepEqual([...CHORD_FIELDS].sort(), enApp, 'si app.js gana o pierde un campo de acorde, la whitelist del modelo exige la misma ronda');
+});
+
+test('guarda de fuente única: los tipos del modelo son la lista chordTypes vigente de la app', () => {
+  const appJs = fs.readFileSync(path.join(__dirname, '..', 'app.js'), 'utf8');
+  const m = appJs.match(/const chordTypes = \[([\s\S]*?)\n\];/);
+  assert(m, 'app.js sigue declarando chordTypes');
+  const enApp = [...m[1].matchAll(/value:\s*'([^']+)'/g)].map(x => x[1]);
+  assert(enApp.length, 'la lista de app.js no se leyó vacía');
+  assert.deepEqual(CHORD_TYPES, enApp, 'si app.js gana o pierde un tipo de acorde, la lista del modelo exige la misma ronda');
+  const libJs = fs.readFileSync(path.join(__dirname, '..', 'song-library-ui.js'), 'utf8');
+  assert(libJs.includes('chordTypes.some(type=>type.value===chord.type)'), 'la fuente que el modelo refleja sigue siendo la validación de la biblioteca');
 });
 
 test('el módulo es puro: sin pantallla, sin almacenamiento, sin dependencias y sin mutar nada', () => {
