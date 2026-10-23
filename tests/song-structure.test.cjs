@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const TonalContext = require('../tonal-context.js');
 const {
-  CHORD_FIELDS, CHORD_TYPES, MAX_BLOCKS, MAX_NAME_LENGTH, MIN_REPEAT, MAX_REPEAT,
+  CHORD_FIELDS, CHORD_TYPES, MODES, MAX_BLOCKS, MAX_NAME_LENGTH, MIN_REPEAT, MAX_REPEAT,
   MAX_CHORDS_PER_BLOCK, MAX_FLAT_ENTRIES,
   createStructure, isValidStructure, addBlock, duplicateBlock, updateBlock,
   removeBlock, appendArrangement, setArrangementRepeat, moveArrangementEntry,
@@ -153,6 +153,59 @@ test('tipo de acorde: solo los valores que la app conoce — repro de la devoluc
   // y todas las puertas validan: la edición también pasa por createStructure
   assert.throws(() => updateBlock(BASE, 'verso', {chords: [{root: 0, type: 'no-existe'}]}), /tipo/i);
   assert.throws(() => addBlock(BASE, {name: 'Raro', chords: [{root: 0, type: 'no-existe'}]}), /tipo/i);
+});
+
+test('modos del acorde: mode y ghostMode se validan contra modes — segunda devolución QA-MOD-01', () => {
+  // El repro exacto de QA (2026-10-23, sobre cbf88e9): el documento puro no
+  // debe aceptar un modo ajeno a la lista modes de la app — la biblioteca
+  // (song-library-ui.js:25-26) los busca con Object.hasOwn(modes,…) y app.js
+  // los consume para indexar modes al pintar. Hoy isValidStructure responde
+  // true: esa es la roja de la corrección.
+  const base = clone({
+    blocks: [{id: 'x', name: 'X', chords: [{root: 0, type: 'maj'}]}],
+    arrangement: [{blockId: 'x', repeat: 1}]
+  });
+  for (const field of ['mode', 'ghostMode']) {
+    const doc = clone(base);
+    doc.blocks[0].chords[0][field] = 'no-existe';
+    assert.equal(isValidStructure(doc), false, `el ${field} desconocido se rechaza`);
+    assert.throws(() => createStructure(doc), /modes/i);
+    // y sin mutar la entrada: el rechazo no deja manos en el dato
+    const antes = clone(doc);
+    assert.throws(() => createStructure(doc));
+    assert.deepEqual(doc, antes);
+  }
+  // cada modo vigente de modes pasa, como modo principal y como fantasma
+  for (const modo of MODES) {
+    const doc = clone(base);
+    doc.blocks[0].chords[0].mode = modo;
+    doc.blocks[0].chords[0].ghostMode = modo;
+    assert.equal(isValidStructure(doc), true, `el modo ${modo} de modes es válido para el modelo`);
+  }
+  // un ghostMode vacío sigue significando «sin fantasma» (la biblioteca:
+  // chord.ghostMode && …); un mode definido que no es clave de modes no
+  // viaja, igual que en la biblioteca (chord.mode!==undefined && …)
+  const sinFantasma = clone(base);
+  sinFantasma.blocks[0].chords[0].ghostMode = '';
+  assert.equal(isValidStructure(sinFantasma), true, 'el ghostMode vacío es «sin fantasma»');
+  const modeVacio = clone(base);
+  modeVacio.blocks[0].chords[0].mode = '';
+  assert.equal(isValidStructure(modeVacio), false, 'un mode definido que no es clave de modes no viaja');
+  // y todas las puertas validan: la edición también pasa por createStructure
+  assert.throws(() => updateBlock(BASE, 'verso', {chords: [{root: 0, type: 'maj', mode: 'no-existe'}]}), /modes/i);
+  assert.throws(() => addBlock(BASE, {name: 'Raro', chords: [{root: 0, type: 'maj', ghostMode: 'no-existe'}]}), /modes/i);
+});
+
+test('guarda de fuente única: los modos del modelo son las claves vigentes de modes en la app', () => {
+  const appJs = fs.readFileSync(path.join(__dirname, '..', 'app.js'), 'utf8');
+  const m = appJs.match(/const modes = \{[\s\S]*?\n\};/);
+  assert(m, 'app.js sigue declarando el objeto modes');
+  const enApp = [...m[0].matchAll(/^  ([A-Za-z]+?):\s*\{/gm)].map(x => x[1]);
+  assert(enApp.length, 'la lista de claves de app.js no se leyó vacía');
+  assert.deepEqual(MODES, enApp, 'si app.js gana o pierde un modo, la lista del modelo exige la misma ronda');
+  const libJs = fs.readFileSync(path.join(__dirname, '..', 'song-library-ui.js'), 'utf8');
+  assert(libJs.includes('(chord.mode!==undefined && !Object.hasOwn(modes,chord.mode))') &&
+    libJs.includes('(chord.ghostMode && !Object.hasOwn(modes,chord.ghostMode))'), 'la fuente que el modelo refleja sigue siendo la validación de la biblioteca');
 });
 
 test('alta de bloques: id autogenerado opaco, determinista y que no pisa los existentes', () => {

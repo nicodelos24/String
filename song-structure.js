@@ -25,6 +25,13 @@ const CHORD_FIELDS = ['root', 'rootNoteName', 'type', 'mode', 'ghostMode', 'vari
 // no hay require del árbol de la app (devolución QA-MOD-01: el documento puro
 // no puede aceptar y propagar a T-40 un tipo que la aplicación rechaza).
 const CHORD_TYPES = ['maj', 'maj7', 'maj9', 'm', 'm7', 'm9', 'dim', 'dim7', 'aug', '7', '7sus4', 'm7b5', '6', 'm6', 'add9', '6/9', '9', 'm11', '11', 'maj13', '13', 'sus2', 'sus4'];
+// Los modos que la app conoce: las claves vigentes del objeto modes en
+// app.js — las mismas contra las que valida la biblioteca con Object.hasOwn
+// (song-library-ui.js:25-26) y las que app.js consume para indexar modes al
+// pintar. Copia cotejada como la de arriba (segunda devolución QA-MOD-01:
+// el documento puro no puede propagar a T-40 un acorde que la biblioteca
+// rechaza o cuyo consumidor no es seguro).
+const MODES = ['ionian', 'lydian', 'mixolydian', 'dorian', 'phrygian', 'aeolian', 'locrian', 'majorPentatonic', 'minorPentatonic'];
 const MAX_BLOCKS = 64;
 const MAX_NAME_LENGTH = 40;
 const MIN_REPEAT = 1;
@@ -101,6 +108,15 @@ function validateChord(value) {
   for (const key of ['rootNoteName', 'mode', 'ghostMode']) {
     if (value[key] !== undefined && typeof value[key] !== 'string') throw new Error(`El campo ${key} del acorde no es de texto.`);
   }
+  // El modo y el modo fantasma se validan contra la lista vigente de modes:
+  // es la fuente que la biblioteca ya usa con Object.hasOwn
+  // (song-library-ui.js:25-26) y la que app.js consume para indexar al
+  // pintar. Un ghostMode vacío conserva el significado «sin fantasma» (la
+  // misma guarda de la biblioteca); un mode definido que no sea clave de
+  // modes no viaja, y un modo ajeno se rechaza en voz alta, sin mutar la
+  // entrada, en vez de colarse al reproductor de T-40.
+  if (value.mode !== undefined && !MODES.includes(value.mode)) throw new Error(`El modo del acorde no es de la lista que la app conoce (modes): ${value.mode}.`);
+  if (value.ghostMode && !MODES.includes(value.ghostMode)) throw new Error(`El modo fantasma del acorde no es de la lista que la app conoce (modes): ${value.ghostMode}.`);
   if (value.beats !== undefined && (!Number.isInteger(value.beats) || value.beats < 1)) throw new Error('La duración del acorde debe ser un entero positivo de pulsos.');
   if (value.variants !== undefined) {
     if (!isPlain(value.variants)) throw new Error('Las variantes por vuelta deben ser un objeto.');
@@ -318,6 +334,7 @@ function isValidStructure(value) {
 const SongStructure = {
   CHORD_FIELDS,
   CHORD_TYPES,
+  MODES,
   MAX_BLOCKS,
   MAX_NAME_LENGTH,
   MIN_REPEAT,
