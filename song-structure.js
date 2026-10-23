@@ -118,17 +118,46 @@ function validateChord(value) {
   if (value.mode !== undefined && !MODES.includes(value.mode)) throw new Error(`El modo del acorde no es de la lista que la app conoce (modes): ${value.mode}.`);
   if (value.ghostMode && !MODES.includes(value.ghostMode)) throw new Error(`El modo fantasma del acorde no es de la lista que la app conoce (modes): ${value.ghostMode}.`);
   if (value.beats !== undefined && (!Number.isInteger(value.beats) || value.beats < 1)) throw new Error('La duración del acorde debe ser un entero positivo de pulsos.');
-  if (value.variants !== undefined) {
-    if (!isPlain(value.variants)) throw new Error('Las variantes por vuelta deben ser un objeto.');
-    for (const vuelta of Object.keys(value.variants)) {
-      if (!isPlain(value.variants[vuelta])) throw new Error(`La variante de la vuelta ${vuelta} debe ser un objeto.`);
-    }
-  }
   const out = {root: value.root, type: value.type};
-  for (const key of ['rootNoteName', 'mode', 'ghostMode', 'variants', 'beats']) {
+  // Las variantes por vuelta se validan con la regla exacta de
+  // validVariants (app.js:245-256, tercera devolución QA-MOD-01) y viajan
+  // normalizadas con la vuelta entera, no con el texto que entró.
+  const normalizedVariants = validateVariants(value.variants);
+  if (normalizedVariants !== undefined) out.variants = normalizedVariants;
+  for (const key of ['rootNoteName', 'mode', 'ghostMode', 'beats']) {
     if (value[key] !== undefined) out[key] = copyValue(value[key]);
   }
   return out;
+}
+
+// La forma exacta de las variantes por vuelta, la regla que la app aplica
+// al guardar (validVariants, app.js:245-256, tercera devolución QA-MOD-01):
+// vuelta entera 1..8 —el techo de las repeticiones de sección,
+// MIN/MAX_REPEAT—, valor con la forma exacta {ghostMode} y modo fantasma no
+// vacío presente en MODES. Es la misma regla que la biblioteca aplica con
+// Object.hasOwn (song-library-ui.js:25-26). En el documento puro nada se
+// limpia a silencio como en la app: fuera del contrato es rechazo en voz
+// alta, sin mutar la entrada, en vez de colarse al reproductor de T-40.
+function validateVariants(value) {
+  if (value === undefined) return undefined;
+  if (!isPlain(value)) throw new Error('Las variantes por vuelta deben ser un objeto.');
+  const variants = {};
+  for (const key of Object.keys(value)) {
+    const vuelta = Number(key);
+    if (!Number.isInteger(vuelta) || vuelta < MIN_REPEAT || vuelta > MAX_REPEAT) {
+      throw new Error(`La vuelta de la variante debe ser un entero de ${MIN_REPEAT} a ${MAX_REPEAT}: ${JSON.stringify(key)}.`);
+    }
+    const variant = value[key];
+    if (!isPlain(variant)) throw new Error(`La variante de la vuelta ${vuelta} debe ser un objeto.`);
+    for (const campo of Object.keys(variant)) {
+      if (campo !== 'ghostMode') throw new Error(`La variante de la vuelta ${vuelta} lleva la forma exacta {ghostMode}: campo desconocido: ${campo}.`);
+    }
+    const ghost = variant.ghostMode;
+    if (typeof ghost !== 'string' || !ghost) throw new Error(`El modo fantasma de la variante de la vuelta ${vuelta} es obligatorio y no vacío.`);
+    if (!MODES.includes(ghost)) throw new Error(`El modo fantasma de la variante de la vuelta ${vuelta} no es de la lista que la app conoce (modes): ${ghost}.`);
+    variants[vuelta] = {ghostMode: ghost};
+  }
+  return variants;
 }
 
 function validateBlock(block, index, ids) {

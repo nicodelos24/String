@@ -196,6 +196,70 @@ test('modos del acorde: mode y ghostMode se validan contra modes — segunda dev
   assert.throws(() => addBlock(BASE, {name: 'Raro', chords: [{root: 0, type: 'maj', ghostMode: 'no-existe'}]}), /modes/i);
 });
 
+test('variantes por vuelta: la forma exacta que validVariants admite — tercera devolución QA-MOD-01', () => {
+  // El repro exacto de QA (2026-10-23, sobre fe67e2e): validateChord() solo
+  // exigía objetos planos, así que el documento puro aceptaba variantes que
+  // validVariants (app.js:245-256) descarta o limpia en silencio — vueltas 0,
+  // 9 o no enteras, valores sin la forma exacta {ghostMode} y modos fantasma
+  // que la biblioteca rechaza (song-library-ui.js:25-26). Hoy
+  // isValidStructure responde true: esa es la roja de la corrección. En el
+  // modelo nada se limpia: fuera del contrato es rechazo en voz alta, sin
+  // mutar la entrada (el contrato de progresión degrada silenciosamente; el
+  // documento puro no puede propagar ese dato a T-40).
+  const base = clone({
+    blocks: [{id: 'x', name: 'X', chords: [{root: 0, type: 'maj'}]}],
+    arrangement: [{blockId: 'x', repeat: 1}]
+  });
+  for (const variants of [
+    {'0': {ghostMode: 'dorian'}},                            // vuelta fuera de rango (por abajo)
+    {'9': {ghostMode: 'dorian'}},                            // vuelta fuera de rango (por arriba)
+    {'dos': {ghostMode: 'dorian'}},                          // vuelta no numérica
+    {'2.5': {ghostMode: 'dorian'}},                          // vuelta no entera
+    {'2': {ghostMode: 'no-existe'}},                         // modo fantasma ajeno a modes
+    {'2': {ghostMode: ''}},                                  // modo fantasma vacío
+    {'2': {ghostMode: null}},                                // modo fantasma ausente
+    {'2': {otra: 'x'}},                                      // valor con datos ajenos a {ghostMode}
+    {'2': {ghostMode: 'lydian', otra: 'x'}}                  // la forma exacta no admite campos de más
+  ]) {
+    const doc = clone(base);
+    doc.blocks[0].chords[0].variants = variants;
+    assert.equal(isValidStructure(doc), false, `las variantes ${JSON.stringify(variants)} se rechazan`);
+    assert.throws(() => createStructure(doc), /variante/i);
+    const antes = clone(doc);
+    assert.throws(() => createStructure(doc));
+    assert.deepEqual(doc, antes, 'el rechazo no muta la entrada');
+  }
+  // lo verde queda verde: vueltas enteras 1..8 y cada modo fantasma vigente
+  // pasan, y la copia sale con la forma exacta {ghostMode} y la vuelta que
+  // la app escribe (entera), no el texto que entró
+  for (let vuelta = MIN_REPEAT; vuelta <= MAX_REPEAT; vuelta++) {
+    const doc = clone(base);
+    doc.blocks[0].chords[0].variants = {[String(vuelta)]: {ghostMode: 'lydian'}};
+    assert.equal(isValidStructure(doc), true, `la vuelta entera ${vuelta} vale`);
+    const salida = createStructure(doc).blocks[0].chords[0].variants;
+    assert.deepEqual(salida, {[vuelta]: {ghostMode: 'lydian'}}, `la vuelta ${vuelta} viaja entera y en forma exacta`);
+  }
+  for (const modo of MODES) {
+    const doc = clone(base);
+    doc.blocks[0].chords[0].variants = {'2': {ghostMode: modo}};
+    assert.equal(isValidStructure(doc), true, `el fantasma ${modo} de modes vale`);
+  }
+  // la copia es profunda hasta la vuelta (lección T-20): tocar lo que entró
+  // no pisa el documento
+  const conVariante = clone(base);
+  conVariante.blocks[0].chords[0].variants = {'2': {ghostMode: 'lydian'}};
+  const doc = createStructure(conVariante);
+  conVariante.blocks[0].chords[0].variants['2'].ghostMode = 'phrygian';
+  assert.equal(doc.blocks[0].chords[0].variants['2'].ghostMode, 'lydian');
+  // y todas las puertas validan: la edición también pasa por createStructure
+  assert.throws(() => updateBlock(BASE, 'verso', {
+    chords: [{root: 0, type: 'maj', variants: {'9': {ghostMode: 'lydian'}}}]
+  }), /vuelta/i);
+  assert.throws(() => addBlock(BASE, {name: 'Raro', chords: [
+    {root: 0, type: 'maj', variants: {'2': {ghostMode: 'no-existe'}}}
+  ]}), /variante/i);
+});
+
 test('guarda de fuente única: los modos del modelo son las claves vigentes de modes en la app', () => {
   const appJs = fs.readFileSync(path.join(__dirname, '..', 'app.js'), 'utf8');
   const m = appJs.match(/const modes = \{[\s\S]*?\n\};/);
@@ -343,6 +407,30 @@ test('guarda de fuente única: los tipos del modelo son la lista chordTypes vige
   assert.deepEqual(CHORD_TYPES, enApp, 'si app.js gana o pierde un tipo de acorde, la lista del modelo exige la misma ronda');
   const libJs = fs.readFileSync(path.join(__dirname, '..', 'song-library-ui.js'), 'utf8');
   assert(libJs.includes('chordTypes.some(type=>type.value===chord.type)'), 'la fuente que el modelo refleja sigue siendo la validación de la biblioteca');
+});
+
+test('guarda de fuente única: las variantes del modelo son la regla de validVariants de la app', () => {
+  // La regla que el modelo exige (vueltas enteras 1..8, forma exacta
+  // {ghostMode}, fantasma no vacío y clave de modes) es la misma que
+  // validVariants (app.js) aplica al guardar y que la biblioteca valida con
+  // Object.hasOwn. Si app.js gana o pierde un límite o cambia la forma, la
+  // regla del modelo exige la misma ronda (guarda nacida verde: coteja texto
+  // fuente, no comportamiento).
+  const appJs = fs.readFileSync(path.join(__dirname, '..', 'app.js'), 'utf8');
+  const m = appJs.match(/function validVariants\(value\)\{([\s\S]*?)\n\}/);
+  assert(m, 'app.js sigue declarando validVariants');
+  const cuerpo = m[1];
+  const bounds = cuerpo.match(/vuelta<(\d+)\|\|vuelta>(\d+)/);
+  assert(bounds, 'validVariants sigue fijando el techo de vueltas');
+  assert.equal(Number(bounds[1]), MIN_REPEAT, 'la vuelta mínima del modelo es la de validVariants');
+  assert.equal(Number(bounds[2]), MAX_REPEAT, 'la vuelta máxima del modelo es la de validVariants');
+  assert(cuerpo.includes('Number.isInteger(vuelta)'), 'validVariants solo lleva vueltas enteras; el modelo las exige enteras igual');
+  assert(cuerpo.includes('validGhostMode(variant.ghostMode)'), 'validVariants valida el fantasma con la regla de modes; el modelo usa la misma lista');
+  assert(cuerpo.includes('{ghostMode:ghost}'), 'validVariants solo conserva la forma exacta {ghostMode}; el modelo la exige igual');
+  // en la app el fantasma vacío se limpia a silencio; en el modelo es
+  // rechazo en voz alta — por eso la entrada {ghostMode:''} no viaje
+  const libJs = fs.readFileSync(path.join(__dirname, '..', 'song-library-ui.js'), 'utf8');
+  assert(libJs.includes('(chord.ghostMode && !Object.hasOwn(modes,chord.ghostMode))'), 'la biblioteca sigue sendo la fuente reflejada del fantasma');
 });
 
 test('el módulo es puro: sin pantallla, sin almacenamiento, sin dependencias y sin mutar nada', () => {
