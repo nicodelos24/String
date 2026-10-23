@@ -76,6 +76,26 @@ function copyValue(value) {
   throw new Error('El modelo solo lleva datos planos: entró una función u objeto vivo de la app.');
 }
 
+// El barrido completo de claves propias de cada forma de contrato: nombres y
+// Symbol, enumerables o no — Reflect.ownKeys trae getOwnPropertyNames más
+// getOwnPropertySymbols, sin importar el enumerable. Sexta devolución
+// QA-MOD-01: Object.keys() no veía las propiedades no enumerables ni las
+// claves Symbol; ese dato entraba invisible al validador, pasaba, y
+// desaparecía en la copia fresca que la puerta única hace — normalización a
+// espaldas del que llama. Acá las formas solo viajan con sus campos
+// contractuales: lo demás, también lo que llega escondido, es rechazo en voz
+// alta, con la entrada intacta.
+function checkFields(value, allowed, what) {
+  for (const key of Reflect.ownKeys(value)) {
+    if (typeof key === 'symbol') {
+      throw new Error(`${what} lleva una propiedad simbólica (${String(key)}): las formas del contrato solo viajan con sus campos.`);
+    }
+    if (!allowed.includes(key)) {
+      throw new Error(`${what} con campo desconocido: ${key}.`);
+    }
+  }
+}
+
 // La tónica con la grafía del cómputo ('C', 'F#', 'Bb'… — la misma regla que
 // el contrato tonal): cualquier otra cosa es null, sin adivinar. La prueba
 // cruza esta copia contra TonalContext.parsePitchClass para que no diverjan.
@@ -99,9 +119,7 @@ function parseTonic(text) {
 function validateTonality(value) {
   if (value === undefined) return undefined;
   if (!isPlain(value)) throw new Error('La tonalidad de la canción debe ser la forma del contrato tonal (T-44).');
-  for (const key of Object.keys(value)) {
-    if (key !== 'key' && key !== 'scale') throw new Error(`Tonalidad de la canción con campo desconocido: ${key}.`);
-  }
+  checkFields(value, ['key', 'scale'], 'Tonalidad de la canción');
   if (value.scale !== 'major') throw new Error('El contrato tonal (T-44) solo lleva tonalidad mayor: sin conversión silenciosa.');
   if (parseTonic(value.key) === null) throw new Error('La tónica de la tonalidad de la canción debe ser una nota del cómputo (C, F#, Bb…).');
   return {key: value.key, scale: 'major'};
@@ -109,9 +127,10 @@ function validateTonality(value) {
 
 function validateChord(value) {
   if (!isPlain(value)) throw new Error('Acorde no válido.');
-  for (const key of Object.keys(value)) {
-    if (!CHORD_FIELDS.includes(key)) throw new Error(`Acorde con campo desconocido: ${key}.`);
-  }
+  // El barrido propio completo, como en toda forma de contrato: un campo
+  // ajeno —enumerable o escondido— y un Symbol propio se rechazan en voz
+  // alta (sexta devolución QA-MOD-01).
+  checkFields(value, CHORD_FIELDS, 'Acorde');
   if (!Number.isInteger(value.root) || value.root < 0 || value.root > 11) throw new Error('La raíz del acorde debe ser una de las 12 del cómputo.');
   if (typeof value.type !== 'string' || !value.type) throw new Error('El acorde debe declarar un tipo válido.');
   // El tipo se valida contra la lista vigente de chordTypes: es la fuente
@@ -168,16 +187,25 @@ function validateVariants(value) {
   // documento puro no normaliza a espaldas del que escribe — fuera del
   // contrato de {ghostMode} es rechazo en voz alta (cuarta devolución
   // QA-MOD-01).
-  if (!Object.keys(value).length) throw new Error('Las variantes por vuelta, si están presentes, traen al menos una vuelta.');
+  // Presencia medida con las claves propias completas: una vuelta que apenas
+  // llegue escondida (no enumerable) es contractual y viaja — contada con
+  // Object.keys quedaría «vacía» para la guarda y el dato se perdería.
+  if (!Reflect.ownKeys(value).length) throw new Error('Las variantes por vuelta, si están presentes, traen al menos una vuelta.');
   const variants = {};
-  for (const key of Object.keys(value)) {
+  for (const key of Reflect.ownKeys(value)) {
+    if (typeof key === 'symbol') {
+      throw new Error(`La vuelta de una variante no puede ser una clave Symbol (${String(key)}): las vueltas viajan numeradas.`);
+    }
     const vuelta = Number(key);
     if (!Number.isInteger(vuelta) || vuelta < MIN_REPEAT || vuelta > MAX_REPEAT) {
       throw new Error(`La vuelta de la variante debe ser un entero de ${MIN_REPEAT} a ${MAX_REPEAT}: ${JSON.stringify(key)}.`);
     }
     const variant = value[key];
     if (!isPlain(variant)) throw new Error(`La variante de la vuelta ${vuelta} debe ser un objeto.`);
-    for (const campo of Object.keys(variant)) {
+    for (const campo of Reflect.ownKeys(variant)) {
+      if (typeof campo === 'symbol') {
+        throw new Error(`La variante de la vuelta ${vuelta} lleva la forma exacta {ghostMode}: campo simbólico desconocido (${String(campo)}).`);
+      }
       if (campo !== 'ghostMode') throw new Error(`La variante de la vuelta ${vuelta} lleva la forma exacta {ghostMode}: campo desconocido: ${campo}.`);
     }
     // El campo propio, no heredado: la misma Object.hasOwn que usa la
@@ -208,7 +236,16 @@ function validateVariants(value) {
 // forma viva que sí puede.
 function validateDenseList(list, what) {
   if (!Array.isArray(list)) throw new Error(`${what} va en una lista.`);
-  for (const key of Object.keys(list)) {
+  // El barrido también es completo: Reflect.ownKeys trae 'length' (siempre
+  // propia y no enumerable del mecanismo del array), los índices —densos o no—
+  // y cualquier propiedad ajena, enumerable o escondida, y los Symbol — la
+  // sexta devolución QA-MOD-01: un extra definido con defineProperty o una
+  // clave Symbol fueron invisibles y la copia los tiraba a silencio.
+  for (const key of Reflect.ownKeys(list)) {
+    if (typeof key === 'symbol') {
+      throw new Error(`Propiedad simbólica (${String(key)}) de ${what}: las listas solo traen sus índices.`);
+    }
+    if (key === 'length') continue;
     if (!/^\d+$/.test(key) || String(Number(key)) !== key || Number(key) >= list.length) {
       throw new Error(`Propiedad ${JSON.stringify(key)} fuera de las posiciones de ${what}: las listas solo traen sus índices.`);
     }
@@ -223,9 +260,7 @@ function validateDenseList(list, what) {
 
 function validateBlock(block, index, ids) {
   if (!isPlain(block)) throw new Error(`El bloque ${index + 1} no es un objeto.`);
-  for (const key of Object.keys(block)) {
-    if (key !== 'id' && key !== 'name' && key !== 'chords') throw new Error(`Bloque con campo desconocido: ${key}.`);
-  }
+  checkFields(block, ['id', 'name', 'chords'], 'Bloque');
   if (typeof block.id !== 'string' || !block.id.trim()) throw new Error('Cada bloque necesita un id propio y estable: nunca el índice de una tarjeta.');
   const id = block.id.trim();
   if (ids.has(id)) throw new Error(`Los ids de los bloques son únicos y hay dos con ${id}.`);
@@ -244,9 +279,7 @@ function validateArrangement(entries, blockIds, sizes) {
   let total = 0;
   return entries.map((entry, index) => {
     if (!isPlain(entry)) throw new Error(`La referencia ${index + 1} del arreglo no es un objeto.`);
-    for (const key of Object.keys(entry)) {
-      if (key !== 'blockId' && key !== 'repeat') throw new Error(`Referencia del arreglo con campo desconocido: ${key}.`);
-    }
+    checkFields(entry, ['blockId', 'repeat'], 'Referencia del arreglo');
     const blockId = typeof entry.blockId === 'string' ? entry.blockId.trim() : '';
     if (!blockIds.has(blockId)) throw new Error(`La referencia ${index + 1} del arreglo apunta a un bloque que no existe: no se inventan bloques implícitos.`);
     if (!Number.isInteger(entry.repeat) || entry.repeat < MIN_REPEAT || entry.repeat > MAX_REPEAT) throw new Error('Las repeticiones del arreglo van de 1 a 8 vueltas, como las secciones de siempre.');
@@ -260,9 +293,7 @@ function validateArrangement(entries, blockIds, sizes) {
 // validado por dentro y por fuera, en copias nuevas.
 function createStructure(value) {
   if (!isPlain(value)) throw new Error('La estructura debe ser un objeto con bloques y arreglo.');
-  for (const key of Object.keys(value)) {
-    if (key !== 'blocks' && key !== 'arrangement' && key !== 'tonality') throw new Error(`Estructura con campo desconocido: ${key}.`);
-  }
+  checkFields(value, ['blocks', 'arrangement', 'tonality'], 'Estructura');
   const ids = new Set();
   const sizes = new Map();
   const blocksIn = value.blocks === undefined ? [] : value.blocks;
@@ -293,9 +324,10 @@ function editStructure(doc, edit) {
 
 function addBlock(doc, value) {
   if (!isPlain(value)) throw new Error('El bloque nuevo se describe con un objeto {id?, name, chords}.');
-  for (const key of Object.keys(value)) {
-    if (key !== 'id' && key !== 'name' && key !== 'chords') throw new Error(`Bloque nuevo con campo desconocido: ${key}.`);
-  }
+  // El descriptor del bloque nuevo pasa por el mismo barrido completo: nada
+  // de datos ajenos, escondidos o Symbol, que la forma {id?, name, chords}
+  // tiraría sin que nadie lo note (sexta devolución QA-MOD-01).
+  checkFields(value, ['id', 'name', 'chords'], 'Bloque nuevo');
   return editStructure(doc, current => {
     const raw = {
       id: value.id === undefined ? nextBlockId(new Set(current.blocks.map(b => b.id))) : value.id,
@@ -321,9 +353,7 @@ function duplicateBlock(doc, blockId) {
 
 function updateBlock(doc, blockId, patch) {
   if (!isPlain(patch)) throw new Error('La edición del bloque se describe con un objeto {name?, chords?}.');
-  for (const key of Object.keys(patch)) {
-    if (key !== 'name' && key !== 'chords') throw new Error(`Edición del bloque con campo desconocido: ${key}.`);
-  }
+  checkFields(patch, ['name', 'chords'], 'Edición del bloque');
   if (patch.name === undefined && patch.chords === undefined) throw new Error('La edición del bloque debe traer un nombre o acordes: nada se cambia sin que se note.');
   return editStructure(doc, current => {
     const at = current.blocks.findIndex(item => item.id === blockId);

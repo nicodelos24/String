@@ -404,6 +404,103 @@ test('quinta devolución QA-MOD-01: las listas viajan densas, posición por posi
   assert.equal(flatSize({blocks: [bloquePuro], arrangement: [referencia]}), 1);
 });
 
+test('sexta devolución QA-MOD-01: el barrido propio ve los no enumerables y los Symbol', () => {
+  // El repro exacto de QA (2026-10-23, sobre cd0bcfa): las validaciones
+  // recorrieron los datos con Object.keys(), que omite propiedades propias no
+  // enumerables y claves Symbol. Esos datos pasaban isValidStructure() y
+  // desaparecían en la copia fresca que la puerta única hace — normalización a
+  // espaldas del que llama, contra la regla de la ronda: rechazo en voz alta,
+  // sin mutar la entrada. Este test barre las claves propias completas (nombres
+  // + Symbol, enumerable o no) en cada forma de contrato y en las tres listas.
+  const ref = () => ({blockId: 'b1', repeat: 1});
+  const puro = () => ({id: 'b1', name: 'B', chords: [{root: 0, type: 'maj'}]});
+  const doc = () => ({blocks: [puro()], arrangement: [ref()]});
+  const ocultar = (obj, nombre, valor) => { Object.defineProperty(obj, nombre, {value: valor}); return obj; };
+  const marcar = (obj, letra) => { obj[Symbol(letra)] = 1; return obj; };
+
+  // el repro n.º 1 de QA: un extra no enumerable del arreglo viaja invisible
+  // para Object.keys y la copia lo tiraba sin que nadie lo supiera
+  const arregloExtra = doc();
+  Object.defineProperty(arregloExtra.arrangement, 'extra', {value: 1});
+  assert.equal(isValidStructure(arregloExtra), false, 'el extra no enumerable de una lista no viaja en silencio');
+  assert.throws(() => createStructure(arregloExtra), /fuera de las posiciones/);
+  assert(Object.hasOwn(arregloExtra.arrangement, 'extra'), 'el extra rechazado sigue en la entrada: sin mutación');
+
+  // el repro n.º 2 de QA: el Symbol propio de la estructura
+  const conSimbolo = doc();
+  conSimbolo[Symbol('extra')] = 1;
+  assert.equal(isValidStructure(conSimbolo), false, 'el Symbol de la estructura no viaja en silencio');
+  assert.throws(() => createStructure(conSimbolo), /propiedad simbólica/);
+  assert.equal(Reflect.ownKeys(conSimbolo).length, 3, 'el rechazo deja la entrada como la recibió: el Symbol sobrevive');
+
+  // el repro n.º 3 de QA: un campo ajeno no enumerable del acorde
+  const acordeExtra = doc();
+  Object.defineProperty(acordeExtra.blocks[0].chords[0], 'extra', {value: 1});
+  assert.equal(isValidStructure(acordeExtra), false, 'el campo ajeno del acorde no viaja en silencio');
+  assert.throws(() => createStructure(acordeExtra), /Acorde con campo desconocido: extra/);
+
+  // y el mismo barrido en las restantes formas de contrato — estructura,
+  // bloque, tonalidad, referencia, variants y valor de variante: se rechaza
+  // todo lo que la copia fresca habría dejado mudo, aunque llegue escondido
+  assert.equal(isValidStructure(ocultar(doc(), 'extra', 1)), false, 'el extra escondido de la estructura no viaja');
+  assert.throws(() => createStructure(ocultar(doc(), 'extra', 1)), /Estructura con campo desconocido: extra/);
+  assert.equal(isValidStructure({blocks: [ocultar(puro(), 'extra', 1)], arrangement: [ref()]}), false, 'el extra escondido del bloque no viaja');
+  assert.throws(() => createStructure({blocks: [ocultar(puro(), 'extra', 1)], arrangement: [ref()]}), /Bloque con campo desconocido: extra/);
+
+  const tonalidadExtra = {...doc(), tonality: ocultar({key: 'C', scale: 'major'}, 'extra', 1)};
+  assert.equal(isValidStructure(tonalidadExtra), false, 'el extra escondido de la tonalidad no viaja');
+  assert.throws(() => createStructure(tonalidadExtra), /Tonalidad de la canción con campo desconocido: extra/);
+
+  assert.equal(isValidStructure({blocks: [puro()], arrangement: [ocultar(ref(), 'extra', 1)]}), false, 'el extra escondido de la referencia no viaja');
+  assert.throws(() => createStructure({blocks: [puro()], arrangement: [ocultar(ref(), 'extra', 1)]}), /Referencia del arreglo con campo desconocido: extra/);
+
+  const variantesEscondidas = doc();
+  variantesEscondidas.blocks[0].chords[0].variants = ocultar({'2': {ghostMode: 'dorian'}}, 'otra', 1);
+  assert.equal(isValidStructure(variantesEscondidas), false, 'la clave ajena escondida de las variants no viaja');
+  assert.throws(() => createStructure(variantesEscondidas), /de 1 a 8/, 'la clave ajena de variants no es una vuelta del contrato: se rechaza a la vista');
+
+  const variantesSimbolo = doc();
+  variantesSimbolo.blocks[0].chords[0].variants = marcar({'2': {ghostMode: 'dorian'}}, 'otra');
+  assert.equal(isValidStructure(variantesSimbolo), false, 'las variants no viajan con claves Symbol');
+  assert.throws(() => createStructure(variantesSimbolo), /clave Symbol/);
+
+  const varianteOculta = doc();
+  varianteOculta.blocks[0].chords[0].variants = {'2': ocultar({ghostMode: 'dorian'}, 'otra', 1)};
+  assert.equal(isValidStructure(varianteOculta), false, 'el campo ajeno escondido del valor de variante no viaja');
+  assert.throws(() => createStructure(varianteOculta), /campo desconocido: otra/);
+
+  const varianteSimbolo = doc();
+  varianteSimbolo.blocks[0].chords[0].variants = {'2': marcar({ghostMode: 'dorian'}, 'otra')};
+  assert.equal(isValidStructure(varianteSimbolo), false, 'el valor de la variante no viaja con claves Symbol');
+  assert.throws(() => createStructure(varianteSimbolo), /campo simbólico desconocido/);
+
+  // claves Symbol en las listas y en el bloque/acorde: el mismo rechazo
+  // en voz alta — la copia (.map / la whitelist) las habría dejado mudas
+  assert.throws(() => createStructure({blocks: [puro()], arrangement: marcar([ref()], 'otra')}), /Propiedad simbólica/);
+  assert.throws(() => createStructure({blocks: [marcar(puro(), 'otra')], arrangement: [ref()]}), /propiedad simbólica/);
+  assert.throws(() => createStructure({blocks: [{id: 'b1', name: 'B', chords: [marcar({root: 0, type: 'maj'}, 'otra')]}], arrangement: [ref()]}), /propiedad simbólica/);
+
+  // las puertas de interacción tampoco limpian a silencio: un dato ajeno del
+  // descriptor (escondido o Symbol) se rechaza, no se pierde
+  assert.throws(() => addBlock(BASE, ocultar({name: 'Nueva', chords: [{root: 0, type: 'maj'}]}, 'extra', 1)), /Bloque nuevo con campo desconocido: extra/);
+  assert.throws(() => addBlock(BASE, marcar({name: 'Nueva', chords: [{root: 0, type: 'maj'}]}, 'otra')), /propiedad simbólica/);
+  assert.throws(() => updateBlock(BASE, 'verso', ocultar({name: 'Verso escondido'}, 'extra', 1)), /Edición del bloque con campo desconocido: extra/, 'la puerta rechaza el extra escondido en vez de renombrar y tirar el resto');
+  assert.throws(() => updateBlock(BASE, 'verso', marcar({name: 'Verso escondido'}, 'otra')), /propiedad simbólica/);
+  const antes = JSON.stringify(BASE);
+  assert.throws(() => updateBlock(BASE, 'verso', ocultar({name: 'Verso escondido'}, 'extra', 1)));
+  assert.equal(JSON.stringify(BASE), antes, 'la puerta rechazada tampoco muta el documento vivo');
+
+  // y lo que queda: el dato contractual que llega escondido no se deja fuera
+  // (nada se pierde) — solo se rechaza lo que la copia habría dejado mudo
+  const acordeOculto = {root: 0, type: 'maj'};
+  Object.defineProperty(acordeOculto, 'beats', {value: 4});
+  const docOculto = createStructure({blocks: [{id: 'b', name: 'B', chords: [acordeOculto]}], arrangement: [{blockId: 'b', repeat: 1}]});
+  assert.equal(docOculto.blocks[0].chords[0].beats, 4, 'el campo contractual, aunque no enumerable, viaja: ninguna pérdida en silencio');
+  const acordeAlaOculta = {root: 0, type: 'maj', variants: ocultar({}, '2', {ghostMode: 'dorian'})};
+  const docAlaOculta = createStructure({blocks: [{id: 'b', name: 'B', chords: [acordeAlaOculta]}], arrangement: [{blockId: 'b', repeat: 1}]});
+  assert.equal(docAlaOculta.blocks[0].chords[0].variants['2'].ghostMode, 'dorian', 'la vuelta contractual escondida de una variante viaja canonizada como siempre');
+});
+
 test('guarda de fuente única: los modos del modelo son las claves vigentes de modes en la app', () => {
   const appJs = fs.readFileSync(path.join(__dirname, '..', 'app.js'), 'utf8');
   const m = appJs.match(/const modes = \{[\s\S]*?\n\};/);
@@ -593,7 +690,7 @@ test('guarda de fuente única: la gramática del nombre raíz y la forma de las 
   const fuente = fs.readFileSync(path.join(__dirname, '..', 'song-structure.js'), 'utf8');
   assert(fuente.includes('!NOTE_NAME_PATTERN.test(value.rootNoteName)'), 'el módulo valida el nombre raíz con la copia cotejada, no con una suelta');
   assert(fuente.includes("Object.hasOwn(variant, 'ghostMode')"), 'la variante exige el campo propio ghostMode, como Object.hasOwn en la biblioteca');
-  assert(fuente.includes('!Object.keys(value).length'), 'una variants presente con cero vueltas se rechaza (al menos una)');
+  assert(fuente.includes('!Reflect.ownKeys(value).length'), 'una variants presente con cero vueltas se rechaza (al menos una), con el barrido propio completo');
   assert(fuente.includes('getPrototypeOf'), 'isPlain rechaza instancias de la app: el prototipo propio de Object o ninguno');
 });
 
