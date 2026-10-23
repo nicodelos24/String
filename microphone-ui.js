@@ -102,6 +102,22 @@ function micFretLabel(note, mode, ctx) {
   return ctx.degreeFor(((pitch - rootPitch) + 12) % 12) || '';
 }
 
+// El color del grado de una nota que suena: es el que app.js ya decidió al
+// pintar el mástil y dejó escrito en la posición (`data-interval-color`), así
+// que acá no hay ninguna tabla propia que despegar del mástil. La tinta va
+// pareja a la clase de la nota: clara (la que pinta el mástil) sobre la raíz
+// y las notas del acorde, oscura en las demás, igual que en el resto del
+// mástil. Devuelve el par {color, ink} o null si la posición no lo lleva
+// (posición pintada antes de que exista el atributo, o sin color que leer).
+function micFretColor(note) {
+  if (!note || typeof note !== 'object') return null;
+  const color = typeof note.color === 'string' ? note.color.trim() : '';
+  if (!color) return null;
+  const className = typeof note.className === 'string' ? note.className : '';
+  const ink = /(^|\s)(root-note|chord-note)(\s|$)/.test(className) ? '#f3f0e8' : '#1d2521';
+  return { color: color, ink: ink };
+}
+
 // Afinador: lee una nota sostenida y la mide contra la afinación estándar del
 // instrumento. Devuelve la cuerda más cercana (o la fijada con lockedIndex),
 // su nota objetivo con octava y la desviación en cents (negativa = quedó
@@ -257,6 +273,9 @@ if (typeof document !== 'undefined') (() => {
   // `dataset['data-mic-label']` lanza en el navegador, así que el nombre se
   // escribe como `dataset.micLabel`.
   const MIC_LABEL_SLOT = 'micLabel';
+  // Igual que el rótulo: el atributo `style` que pintó app.js en la posición
+  // se guarda aparte y se devuelve entero al soltar la nota (color del grado).
+  const MIC_STYLE_SLOT = 'micStyle';
   let micLabelChosen = false;
 
   function micLabelButtons() {
@@ -301,6 +320,39 @@ if (typeof document !== 'undefined') (() => {
     if (!element || !element.dataset || element.dataset[MIC_LABEL_SLOT] === undefined) return;
     element.textContent = element.dataset[MIC_LABEL_SLOT];
     delete element.dataset[MIC_LABEL_SLOT];
+  }
+
+  // El color del grado, mientras la nota suena: se escribe sobre el estilo en
+  // línea que la página dejó en la posición y se devuelve tal cual al soltarla
+  // (el guardado es el atributo entero, así que la restauración es idéntica).
+  // Solo toca lo que significa «esto suena»: relleno y tinta del grado, y
+  // levanta el `opacity: 0` con el que la vista MÁSTIL esconde lo no
+  // resaltado — sin verlo, el grado sonaría pero no se vería.
+  function applyMicTint(element) {
+    if (!element || !element.dataset || !element.style
+      || typeof element.style.setProperty !== 'function') return;
+    const tint = micFretColor({ color: element.dataset.intervalColor, className: element.className });
+    if (!tint) return;
+    if (element.dataset[MIC_STYLE_SLOT] === undefined) {
+      element.dataset[MIC_STYLE_SLOT] = typeof element.getAttribute === 'function'
+        ? (element.getAttribute('style') || '') : '';
+    }
+    element.style.setProperty('background-color', tint.color);
+    element.style.setProperty('color', tint.ink);
+    if (element.style.getPropertyValue && element.style.getPropertyValue('opacity') === '0') {
+      element.style.removeProperty('opacity');
+    }
+  }
+
+  function restoreMicTint(element) {
+    if (!element || !element.dataset || element.dataset[MIC_STYLE_SLOT] === undefined) return;
+    const saved = element.dataset[MIC_STYLE_SLOT];
+    if (!saved) {
+      if (typeof element.removeAttribute === 'function') element.removeAttribute('style');
+    } else if (typeof element.setAttribute === 'function') {
+      element.setAttribute('style', saved);
+    }
+    delete element.dataset[MIC_STYLE_SLOT];
   }
 
   function repaintMicLabels() {
@@ -401,6 +453,7 @@ if (typeof document !== 'undefined') (() => {
     note.classList.remove('live');
     note.classList.add('live-fade');
     restoreMicLabel(note);
+    restoreMicTint(note);
     setTimeout(() => note.classList.remove('live-fade'), 300);
   }
 
@@ -435,6 +488,7 @@ if (typeof document !== 'undefined') (() => {
         note.classList.remove('live-fade');
         note.classList.add('live');
         applyMicLabel(note);
+        applyMicTint(note);
       } else if (note.classList.contains('live')) {
         fadeOut(note);
       }
@@ -631,4 +685,4 @@ if (typeof document !== 'undefined') (() => {
   window.addEventListener('pagehide', () => reader.stop());
 })();
 
-if (typeof module !== 'undefined' && module.exports) module.exports = { micLiveChord, preferredRootSpelling, tunerReading, micFretLabel, chordFretMidis, nextMicLivePhase };
+if (typeof module !== 'undefined' && module.exports) module.exports = { micLiveChord, preferredRootSpelling, tunerReading, micFretLabel, micFretColor, chordFretMidis, nextMicLivePhase };

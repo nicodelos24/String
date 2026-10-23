@@ -237,6 +237,37 @@ function fakeNote(midi, name, label) {
   });
   return {
     dataset: data, textContent: label,
+    // El estilo y los atributos son los que el tintado del micrófono lee y
+    // guarda aparte: `style` como el DOM (setProperty/…/cssProps) y el
+    // atributo `style` como lo escribió app.js al pintar el mástil.
+    className: 'fret-note',
+    attrs: {},
+    getAttribute(key) { return Object.hasOwn(this.attrs, key) ? this.attrs[key] : null; },
+    // En el DOM el atributo `style` y el CSSStyleDeclaration son la misma cosa:
+    style: {
+      props: {},
+      setProperty(key, value) { this.props[key] = value; },
+      getPropertyValue(key) { return Object.hasOwn(this.props, key) ? this.props[key] : ''; },
+      removeProperty(key) { delete this.props[key]; },
+    },
+    setAttribute(key, value) {
+      this.attrs[key] = String(value);
+      // Escribir el atributo repobla el estilo, como en el navegador.
+      if (key === 'style') {
+        this.style.props = {};
+        String(value).split(';').forEach(entry => {
+          const i = entry.indexOf(':');
+          if (i < 0) return;
+          const name = entry.slice(0, i).trim();
+          if (name) this.style.props[name] = entry.slice(i + 1).trim();
+        });
+      }
+    },
+    removeAttribute(key) {
+      delete this.attrs[key];
+      // Quitar el atributo limpia el estilo en línea, como en el navegador.
+      if (key === 'style') this.style.props = {};
+    },
     classList: {
       add: c => classes.add(c), remove: c => classes.delete(c),
       contains: c => classes.has(c), toggle: (c, on) => (on ? classes.add(c) : classes.delete(c)),
@@ -511,4 +542,79 @@ test('cada nota confirmada avisa con un evento, y el silencio no', () => {
   // marcar el tempo con notas mediría el doble de lo que toca.
   callbacks.onPitch(null);
   assert.equal(context.events.length, 2, 'el silencio no emite evento');
+});
+
+// -------------------------------------------------------------------------
+// El color del grado de la nota que suena: la página pinta el mástil con el
+// color de cada grado y deja ese color escrito en cada posición
+// (`data-interval-color`); el micrófono lo muestra en la nota que suena y lo
+// devuelve al soltarla. Así la nota suena vista en las vistas donde la página
+// no pinta todo el mástil (tríada, séptima, o la vista MÁSTIL que esconde con
+// `opacity: 0`), sin nueva tabla de colores del lado del micrófono.
+// -------------------------------------------------------------------------
+
+test('micFretColor: el relleno y la tinta del grado, tal como los pinta el mástil', () => {
+  const { micFretColor } = require('../microphone-ui.js');
+  // Donde el mástil mismo pinta con tinta clara (raíz y notas del acorde), el
+  // tintado escribe el mismo par: no cambia nada visible.
+  assert.deepEqual(
+    micFretColor({ color: '#E53935', className: 'fret-note root-note scale-note' }),
+    { color: '#E53935', ink: '#f3f0e8' });
+  assert.deepEqual(
+    micFretColor({ color: '#4CAF50', className: 'fret-note chord-note scale-note' }),
+    { color: '#4CAF50', ink: '#f3f0e8' });
+  // En las demás posiciones (grises, vacías u ocultas), la tinta es la oscura
+  // que el mástil usa sobre ese relleno en sus notas de escala.
+  assert.deepEqual(
+    micFretColor({ color: '#00BCD4', className: 'fret-note scale-note' }),
+    { color: '#00BCD4', ink: '#1d2521' });
+  assert.deepEqual(
+    micFretColor({ color: ' #EF8700 ', className: 'fret-note' }),
+    { color: '#EF8700', ink: '#1d2521' },
+    'sin clase de raíz/acorde la tinta es la oscura, aunque el relleno traiga espacios');
+  // Sin color de grado no hay que inventar relleno.
+  assert.equal(micFretColor(null), null);
+  assert.equal(micFretColor({ className: 'fret-note' }), null);
+});
+
+test('la nota que suena luce el color de su grado y lo devuelve al soltarla', () => {
+  const { callbacks, notes } = setupLabels();
+  callbacks.onState('ready');
+  // El Mi4 (64) en una vista de tríada donde la página lo pintó gris: el color
+  // del grado que calculó (3ª mayor) vive en la posición, igual que en el resto.
+  const mi = notes.find(n => n.dataset.midi === '64');
+  mi.dataset.intervalColor = '#4CAF50';
+  mi.className = 'fret-note scale-note';
+  mi.attrs.style = 'background-color: #bbb; color: #666;';
+  Object.assign(mi.style.props, { 'background-color': '#bbb', color: '#666' });
+  callbacks.onPitch({ midi: 64, freq: 329.63, cents: 0 });
+  assert.equal(mi.style.props['background-color'], '#4CAF50', 'mientras suena lleva el relleno de su grado, no el gris');
+  assert.equal(mi.style.props.color, '#1d2521', 'con la tinta oscura que se lee sobre ese relleno');
+  assert.equal(mi.dataset.micStyle, 'background-color: #bbb; color: #666;', 'el estilo de la página se guardó aparte');
+  assert.equal(mi.isLive(), true);
+  // Al apagar el micrófono, la posición vuelve exactamente a como estaba.
+  callbacks.onState('stopped');
+  assert.equal(mi.attrs.style, 'background-color: #bbb; color: #666;', 'el atributo de estilo vuelve íntegro');
+  assert.equal(mi.style.props['background-color'], '#bbb');
+  assert.equal(mi.style.props.color, '#666');
+  assert.equal(mi.dataset.micStyle, undefined, 'no queda rastro del tintado');
+});
+
+test('una posición que la vista esconde se ve mientras suena y vuelve a esconderse al soltarla', () => {
+  const { callbacks, notes } = setupLabels();
+  callbacks.onState('ready');
+  // En la vista MÁSTIL (grados por modo), las posiciones no resaltadas quedan
+  // con `opacity: 0`: hoy la nota suena y no se ve nada. Mientras suena, el
+  // tintado la hace visible con el color de su grado.
+  const faS = notes.find(n => n.dataset.midi === '66');
+  faS.dataset.intervalColor = '#C9A227';
+  faS.className = 'fret-note';
+  faS.attrs.style = 'background-color: transparent; color: #999; opacity: 0;';
+  Object.assign(faS.style.props, { 'background-color': 'transparent', color: '#999', opacity: '0' });
+  callbacks.onPitch({ midi: 66, freq: 369.99, cents: 0 });
+  assert.equal(faS.style.props['background-color'], '#C9A227', 'la nota oculta suena visible con el color de su grado');
+  assert.equal(faS.style.props.opacity, undefined, 'el escondido de la vista se levanta mientras suena');
+  callbacks.onState('stopped');
+  assert.equal(faS.attrs.style, 'background-color: transparent; color: #999; opacity: 0;', 'al soltar vuelve el estado que la página pintó');
+  assert.equal(faS.style.props.opacity, '0');
 });
