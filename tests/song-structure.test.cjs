@@ -330,6 +330,80 @@ test('variantes presente pero sin entrada propia válida y plana: rechazo en voz
   assert.throws(() => addBlock(BASE, {name: 'Raro', chords: [{root: 0, type: 'maj', variants: new Date()}]}), /deben ser un objeto/);
 });
 
+test('quinta devolución QA-MOD-01: las listas viajan densas, posición por posición', () => {
+  // El repro exacto de QA (2026-10-23, sobre fec85c0): las listas de bloques,
+  // de acordes y de referencias del arreglo admitían huecos — el map/forEach
+  // omite lo que no es propiedad propia —, así que el documento puro aceptaba
+  // `chords: [chord, , ]` con flatSize() 2 y aplanado de 1 acorde, y
+  // `arrangement: [,]` pasaba y se aplanaba como vacío: el conteo y la
+  // reproducción discrepaban del documento que la app valida. Cada posición
+  // de las tres listas tiene que ser una propiedad propia que pase su
+  // validador; el hueco se rechaza en voz alta, sin mutar la entrada. El
+  // barrido adicional del borde (el que pidió la coordinación para no volver
+  // por una devolución): las listas tampoco viajan con propiedades fuera de
+  // sus posiciones, porque la copia las tiraría a silencio.
+  const chord = {root: 0, type: 'maj'};
+  const referencia = {blockId: 'b1', repeat: 1};
+  const bloqueDisperso = {id: 'b1', name: 'B', chords: [chord, , ]};
+  const bloquePuro = {id: 'b1', name: 'B', chords: [{root: 0, type: 'maj'}]};
+  // el repro n.º 1 de QA: acordes dispersos — flatSize() informaba 2 y el
+  // aplanado daba 1, con el mismo documento detrás de los dos números
+  const acordesSuelto = {blocks: [bloqueDisperso], arrangement: [referencia]};
+  assert.equal(isValidStructure(acordesSuelto), false, 'el repro de QA: un acorde disperso no viaja');
+  assert.throws(() => createStructure(acordesSuelto), /hueco en los acordes del bloque/i);
+  assert.throws(() => flatSize(acordesSuelto), /hueco/i, 'el conteo ya no discrepa: no se mide nada que el contrato rechaza');
+  assert.throws(() => flattenArrangement(acordesSuelto), /hueco/i, 'el aplanado ya no es parcial: nada sale de un documento con huecos');
+  const antesAcordes = JSON.stringify(acordesSuelto);
+  assert.throws(() => createStructure(acordesSuelto));
+  assert.deepEqual(Object.keys(acordesSuelto.blocks[0].chords), ['0'], 'el rechazo no tocó las propiedades de la entrada');
+  assert.equal(JSON.stringify(acordesSuelto), antesAcordes, 'el rechazo no muta la entrada');
+
+  // el repro n.º 2 de QA: una referencia dispersa se aplanaba como vacío
+  const arregloSuelto = {blocks: [bloquePuro], arrangement: [, referencia]};
+  assert.equal(isValidStructure(arregloSuelto), false, 'el repro de QA: una referencia dispersa no viaja');
+  assert.throws(() => createStructure(arregloSuelto), /hueco en el arreglo/i);
+  assert.throws(() => flattenArrangement(arregloSuelto), /hueco/i, 'el aplanado vacío con un documento con huecos tampoco reaparece');
+  const antesArreglo = JSON.stringify(arregloSuelto);
+  assert.throws(() => createStructure(arregloSuelto));
+  assert.equal(JSON.stringify(arregloSuelto), antesArreglo, 'el rechazo no muta la entrada');
+
+  // y, coherente con los dos repros, el bloque disperso: hoy el rechazo
+  // existe pero por TypeError (el conteo de tamaños pisa el hueco al
+  // indexar); conviene que sea contractual — un Error del contrato con su
+  // mensaje de hueco, no un accidente del recorrido
+  const bloquesSuelto = {blocks: [bloquePuro, , ], arrangement: [referencia]};
+  assert.equal(isValidStructure(bloquesSuelto), false, 'el bloque disperso no viaja');
+  assert.throws(() => createStructure(bloquesSuelto), error => {
+    assert(error instanceof Error, 'el rechazo es del contrato (Error), no del recorrido (TypeError)');
+    assert(!(error instanceof TypeError));
+    return /hueco en la lista de bloques/i.test(error.message);
+  });
+
+  // el barrido del borde que pidió la coordinación: propiedades con nombre en
+  // las tres listas se rechazan — la copia (.map) las tiraría y el documento
+  // saldría parcial, otra vez sin que nadie lo sepa
+  const propAcordes = {blocks: [{id: 'b1', name: 'B', chords: Object.assign([chord], {extra: 'x'})}], arrangement: [referencia]};
+  assert.equal(isValidStructure(propAcordes), false, 'los acordes no viajan con propiedades que no son posiciones');
+  assert.throws(() => createStructure(propAcordes), /fuera de las posiciones/i);
+  const propArreglo = {blocks: [bloquePuro], arrangement: Object.assign([referencia], {extra: 1})};
+  assert.equal(isValidStructure(propArreglo), false, 'el arreglo no viaja con propiedades que no son posiciones');
+  assert.throws(() => createStructure(propArreglo), /fuera de las posiciones/i);
+  const propBloques = {blocks: Object.assign([bloquePuro], {extra: 1}), arrangement: [referencia]};
+  assert.equal(isValidStructure(propBloques), false, 'los bloques no viajan con propiedades que no son posiciones');
+  assert.throws(() => createStructure(propBloques), /fuera de las posiciones/i);
+
+  // y ninguna puerta acepta ni edita parcialmente: las puertas de edición
+  // pasan por createStructure, igual que el conteo y el aplanado
+  assert.throws(() => addBlock(BASE, {name: 'Raro', chords: [chord, , ]}), /hueco en los acordes/i);
+  assert.throws(() => updateBlock(BASE, 'verso', {chords: [chord, , ]}), /hueco en los acordes/i);
+  const antesPuertas = JSON.stringify(BASE);
+  assert.throws(() => updateBlock(BASE, 'verso', {chords: [chord, , ]}));
+  assert.equal(JSON.stringify(BASE), antesPuertas, 'la puerta rechazada tampoco muta el documento vivo');
+  // lo verde queda verde: la misma lista densa que hoy pasa sigue pasando,
+  // con las posiciones correctas en el aplanado
+  assert.equal(flatSize({blocks: [bloquePuro], arrangement: [referencia]}), 1);
+});
+
 test('guarda de fuente única: los modos del modelo son las claves vigentes de modes en la app', () => {
   const appJs = fs.readFileSync(path.join(__dirname, '..', 'app.js'), 'utf8');
   const m = appJs.match(/const modes = \{[\s\S]*?\n\};/);

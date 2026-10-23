@@ -194,6 +194,33 @@ function validateVariants(value) {
   return variants;
 }
 
+// Las tres listas del contrato (bloques, acordes del bloque y referencias
+// del arreglo) viajan densas: cada índice 0..length-1 es una propiedad
+// PROPIA con dato, y ninguna lista lleva propiedades fuera de sus
+// posiciones. Quinta devolución QA-MOD-01: el map/forEach omite los huecos,
+// así que el documento puro aceptaba `chords: [chord, , ]` con un conteo
+// (flatSize, que ve el length) distinto de su aplanado (los puestos con
+// dato), y `arrangement: [,]` pasaba y se aplanaba como vacío. El hueco es
+// rechazo en voz alta, sin mutar la entrada; y las propiedades ajenas no
+// viajan porque la copia (.map) las tiraría sin que nadie lo note. Es una
+// regla propia del documento puro — el respaldo JSON no puede llevar huecos
+// (viajan como null, que los validadores ya rechazan): esta guarda cubre la
+// forma viva que sí puede.
+function validateDenseList(list, what) {
+  if (!Array.isArray(list)) throw new Error(`${what} va en una lista.`);
+  for (const key of Object.keys(list)) {
+    if (!/^\d+$/.test(key) || String(Number(key)) !== key || Number(key) >= list.length) {
+      throw new Error(`Propiedad ${JSON.stringify(key)} fuera de las posiciones de ${what}: las listas solo traen sus índices.`);
+    }
+  }
+  for (let i = 0; i < list.length; i++) {
+    if (!Object.hasOwn(list, i)) {
+      throw new Error(`Hueco en ${what}: la posición ${i + 1} no existe (no es propiedad propia); las listas del contrato viajan densas, con dato en cada posición.`);
+    }
+  }
+  return list;
+}
+
 function validateBlock(block, index, ids) {
   if (!isPlain(block)) throw new Error(`El bloque ${index + 1} no es un objeto.`);
   for (const key of Object.keys(block)) {
@@ -206,12 +233,14 @@ function validateBlock(block, index, ids) {
   if (typeof block.name !== 'string' || !block.name.trim()) throw new Error(`El bloque ${id} necesita un nombre no vacío para mostrarse.`);
   if (block.name.length > MAX_NAME_LENGTH) throw new Error(`El nombre del bloque ${id} supera ${MAX_NAME_LENGTH} caracteres.`);
   if (!Array.isArray(block.chords) || !block.chords.length) throw new Error(`El bloque ${id} no trae acordes: un bloque sin acordes no se puede reproducir.`);
+  validateDenseList(block.chords, `los acordes del bloque ${id}`);
   if (block.chords.length > MAX_CHORDS_PER_BLOCK) throw new Error(`El bloque ${id} supera el límite de ${MAX_CHORDS_PER_BLOCK} acordes de la progresión y la biblioteca.`);
   return {id, name: block.name.trim(), chords: block.chords.map(validateChord)};
 }
 
 function validateArrangement(entries, blockIds, sizes) {
   if (!Array.isArray(entries)) throw new Error('El arreglo debe ser una lista de referencias a bloques.');
+  validateDenseList(entries, 'el arreglo');
   let total = 0;
   return entries.map((entry, index) => {
     if (!isPlain(entry)) throw new Error(`La referencia ${index + 1} del arreglo no es un objeto.`);
@@ -239,6 +268,7 @@ function createStructure(value) {
   const blocksIn = value.blocks === undefined ? [] : value.blocks;
   if (!Array.isArray(blocksIn)) throw new Error('Los bloques van en una lista.');
   if (blocksIn.length > MAX_BLOCKS) throw new Error(`La estructura supera el límite de ${MAX_BLOCKS} bloques.`);
+  validateDenseList(blocksIn, 'la lista de bloques');
   const blocks = blocksIn.map((block, index) => validateBlock(block, index, ids));
   for (const block of blocks) sizes.set(block.id, block.chords.length);
   const arrangementIn = value.arrangement === undefined ? [] : value.arrangement;
