@@ -128,3 +128,63 @@ test('tonalidad fija en una tonalidad con bemoles: los grados mantienen su tabla
     assert(pos.style.includes('#4CAF50'));
   }
 });
+
+// Devolución QA-TONAL-02 (2026-10-23): el contrato T-44 estaba cargado y sin
+// usar. El modo que gobierna el mástil con tonalidad fijada lo decide el
+// contrato; el modo guardado de la tarjeta queda intacto. Prueba roja primero:
+// hoy el mástil dibuja Re eólico (escala de Fa: Si natural fuera de escala) y
+// muestra «Eólico (vi)», donde debe dibujar el ii grado de Do (dórico).
+test('corrección: Dm guardado como eólico en Do, el mástil se dibuja dórico (ii grado), no eólico',()=>{
+  const {run,element,positions}=setup();
+  run(`setSongTonality('C')`);
+  // La ruta real del repro: seleccionar la tarjeta con su modo guardado.
+  run(`showProgressionChord({root:2, rootNoteName:'D', type:'m', mode:'aeolian'}, 0)`);
+  assert.equal(element('#mode-display').textContent,'Dórico (ii)',
+    'con tonalidad fijada, el modo mostrado sale del contrato T-44, no del modo guardado');
+  assert.equal(run('selectedMode'),'aeolian',
+    'el modo explícito de la tarjeta no se pisa: queda para su guardado');
+  // La escala dibujada es la de la tonalidad (Re dórico = notas de C): Si
+  // natural pertenece a la escala y Bb queda fuera. Con el modo guardado
+  // dibujado (Re eólico = escala de Fa) pasa al revés.
+  for(const pos of positions(element('#fretboard'),11))
+    assert(!pos.style.includes('background-color: transparent;'),`Si debería estar en la escala: ${pos.html}`);
+  for(const pos of positions(element('#fretboard'),10))
+    assert(pos.style.includes('background-color: transparent;'),`Bb es ajena a la escala de C: ${pos.html}`);
+});
+
+test('prestado con modo explícito: el modo mostrado sigue siendo el de la tarjeta (D mayor en Do no infiere)',()=>{
+  const {run,runCard,element}=setup();
+  run(`setSongTonality('C')`);
+  runCard(2,'maj','lydian'); // Re MAYOR en Do: prestado → null → modo explícito
+  assert.equal(element('#mode-display').textContent,'Lidio (IV)',
+    'sin inferencia (null), el mástil conserva el modo explícito de la tarjeta');
+});
+
+test('cambiar la tonalidad de la canción reinfiere el modo del mástil',()=>{
+  const {run,element,positions}=setup();
+  run(`setSongTonality('C')`);
+  run(`showProgressionChord({root:2, rootNoteName:'D', type:'m', mode:'aeolian'}, 0)`);
+  assert.equal(element('#mode-display').textContent,'Dórico (ii)');
+  // La misma tarjeta diatónica también en Bb mayor: Dm pasa a ser el iii → frigio.
+  // (En G, en cambio, el Fa natural de Dm es prestado: ahí el contrato da null
+  // y queda eólico, que es la regresión de «prestado conserva el modo».)
+  run(`setSongTonality('Bb')`);
+  assert.equal(element('#mode-display').textContent,'Frigio (iii)',
+    'Re menor en Bb es el iii grado: el modo mostrado es frigio');
+  // La escala dibujada se mueve con la tonalidad: Bb entra (escala de Bb) y Fa# queda fuera.
+  for(const pos of positions(element('#fretboard'),10))
+    assert(!pos.style.includes('background-color: transparent;'),`Bb está en la escala de Bb mayor: ${pos.html}`);
+  for(const pos of positions(element('#fretboard'),6))
+    assert(pos.style.includes('background-color: transparent;'),`Fa# no está en la escala de Bb mayor: ${pos.html}`);
+});
+
+test('sin tonalidad fija, el modo mostrado y la escala siguen la tarjeta de siempre (regresión)',()=>{
+  const {run,element,positions}=setup();
+  run(`showProgressionChord({root:2, rootNoteName:'D', type:'m', mode:'aeolian'}, 0)`);
+  assert.equal(element('#mode-display').textContent,'Eólico (vi)',
+    'sin tonalidad, la tarjeta manda como siempre');
+  for(const pos of positions(element('#fretboard'),10))
+    assert(!pos.style.includes('background-color: transparent;'),`Bb pertenece a la escala de Re eólico: ${pos.html}`);
+  for(const pos of positions(element('#fretboard'),11))
+    assert(pos.style.includes('background-color: transparent;'),`Si natural no está en la escala de Re eólico: ${pos.html}`);
+});

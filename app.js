@@ -201,6 +201,25 @@ function setSongTonality(key) {
 function songTonic() {
   return songTonality ? noteToIndex(songTonality.key) : null;
 }
+// T-45 · corrección de la devolución QA-TONAL-02: el modo que gobierna el
+// mástil con la tonalidad de canción fijada sale del contrato T-44
+// (tonal-context.js), y no del modo guardado de la tarjeta. Un acorde
+// diatónico a la tonalidad se dibuja con el modo de su grado (Dm en Do es el
+// ii grado → dórico, aunque el acorde esté guardado como eólico); el
+// prestado, el cromático o la calidad incompatible devuelven null y el
+// mástil conserva el modo explícito de la tarjeta, sin conversión
+// silenciosa. El modo explícito nunca se pisa: queda para el rótulo de su
+// tarjeta, su guardado y el mástil sin tonalidad.
+function songInferredMode() {
+  if (!songTonality) return null;
+  const inferred = typeof TonalContext !== 'undefined' && TonalContext?.inferTonalContext
+    ? TonalContext.inferTonalContext(
+        { root, type: chordType?.value },
+        { key: songTonality.key, scale: 'major' }
+      )
+    : null;
+  return inferred && Object.hasOwn(modes, inferred) ? inferred : null;
+}
 let root = 0; // Raíz del acorde (índice)
 let rootNoteName = 'C'; // Nombre específico de la nota seleccionada por el usuario
 let quality = 'major'; // Calidad seleccionada (mayor, minor, diminished)
@@ -432,7 +451,9 @@ function shouldHighlightInterval(interval, displayModeIndex) {
   switch (displayMode) {
     case 'modeChord':
     case 'modeSeventh': {
-      const intervals=modes[selectedMode].intervals;
+      // La triada/septima es del modo dibujado: con la tonalidad de la
+      // canción fijada, viewMode() devuelve el modo inferido del contrato.
+      const intervals=modes[viewMode()].intervals;
       if(intervals.length!==7)return false;
       const degrees=displayMode==='modeChord'?[0,2,4]:[0,2,4,6];
       return degrees.some(degree=>intervals[degree]===normalized);
@@ -776,7 +797,13 @@ function pentatonicMode(){
   return chordType.intervals.includes(3)?'minorPentatonic':'majorPentatonic';
 }
 // Respeta la elección explícita; en modos diatónicos adapta la pentatónica al acorde.
-function viewMode(){return pentatonicView?pentatonicMode():selectedMode;}
+// Con la tonalidad de la canción fijada, el modo que gobierna el mástil sale
+// del contrato T-44 (ver songInferredMode): el inferido manda y el modo
+// explícito de la tarjeta solo vuelve cuando la inferencia da null.
+function viewMode(){
+  if(pentatonicView)return pentatonicMode();
+  return songInferredMode() ?? selectedMode;
+}
 document.querySelector('#pentatonic-view').addEventListener('change',event=>{pentatonicView=event.target.checked;updateView();});
 function renderFretboard() {
   renderOpenStrings();
@@ -784,8 +811,9 @@ function renderFretboard() {
   const scaleNotes = new Set(selectedTonality.scaleNotes);
   const chordIntervals = new Set(chordType.intervals);
 
-  // Calcular notas del modo seleccionado
-  const selectedModeNotes = new Set(getModeNotes(pentatonicView?pentatonicMode():selectedMode, root));
+  // Calcular notas del modo dibujado. Con la tonalidad de la canción fijada,
+  // ese modo es el inferido por el contrato T-44 (ver viewMode).
+  const selectedModeNotes = new Set(getModeNotes(viewMode(), root));
 
   // Crear mapa de notas fantasmas con sus colores (solo si hay un modo fantasma seleccionado)
   const ghostNotesMap = new Map();
@@ -824,7 +852,7 @@ function renderFretboard() {
       // arriba siguen mirando a la tarjeta.
       const songTonicPitch = songTonic();
       const intervalForLabel = songTonicPitch === null ? intervalFromRoot : (pitchClass - songTonicPitch + 12) % 12;
-      const intervalInfo = getIntervalClass(intervalForLabel, !inSelectedMode && ghostNotesMap.has(pitchClass) ? ghostMode : selectedMode);
+      const intervalInfo = getIntervalClass(intervalForLabel, !inSelectedMode && ghostNotesMap.has(pitchClass) ? ghostMode : viewMode());
 
       // Determinar color de fondo y clase CSS
       let bgColor;
@@ -888,8 +916,9 @@ function renderOpenStrings() {
   const scaleNotes = new Set(selectedTonality.scaleNotes);
   const chordIntervals = new Set(chordType.intervals);
 
-  // Calcular notas del modo seleccionado
-  const selectedModeNotes = new Set(getModeNotes(pentatonicView?pentatonicMode():selectedMode, root));
+  // Calcular notas del modo dibujado. Con la tonalidad de la canción fijada,
+  // ese modo es el inferido por el contrato T-44 (ver viewMode).
+  const selectedModeNotes = new Set(getModeNotes(viewMode(), root));
 
   // Crear mapa de notas fantasmas con sus colores (solo si hay un modo fantasma seleccionado)
   const ghostNotesMap = new Map();
@@ -915,7 +944,7 @@ function renderOpenStrings() {
       // tónica, igual que en el mástil (ver renderFretboard).
       const songTonicPitch = songTonic();
       const intervalForLabel = songTonicPitch === null ? intervalFromRoot : (pitchClass - songTonicPitch + 12) % 12;
-      const intervalInfo = getIntervalClass(intervalForLabel, !inSelectedMode && ghostNotesMap.has(pitchClass) ? ghostMode : selectedMode);
+      const intervalInfo = getIntervalClass(intervalForLabel, !inSelectedMode && ghostNotesMap.has(pitchClass) ? ghostMode : viewMode());
 
       let bgColor;
       let textColor;
