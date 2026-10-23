@@ -797,3 +797,38 @@ test('quitar una tarjeta o cambiar su duración no dispara la reproducción',asy
   assert.equal(run('progression.length'),3);
 });
 
+
+test('el color del grado de cada posición queda escrito: data-interval-color',()=>{
+  const {run,element}=setup();
+  run("root=0;selectedMode='ionian';displayModeIndex=1;updateView()");
+  const html=element('#fretboard').innerHTML+element('#open-strings').innerHTML;
+  // El micrófono no lleva su propia tabla de colores: lee el que el mástil ya
+  // decidió para cada posición, así que la emisión no se puede despegar.
+  assert.match(html,/data-interval="3ª mayor" data-interval-color="#4CAF50"/);
+  assert.match(html,/data-interval="5ª justa" data-interval-color="#E6B800"/);
+});
+
+test('quintas y sextas no se confunden: ♭5≠♭6 y ♯5 solo sobre el acorde aumentado',()=>{
+  const {run}=setup();
+  run("root=0;selectedMode='ionian';chordType=chordTypes.find(t=>t.value==='maj');updateView()");
+  // La quinta disminuida son 6 semitonos: ni por color ni por rótulo se cruza
+  // con una sexta bemol, que son 8.
+  assert.equal(run('getIntervalClass(6).name'),'5ª disminuida');
+  assert.equal(run('getIntervalClass(6).color'),'#C9A227');
+  assert.equal(run('getDegreeLabel(6)'),'♭5');
+  assert.equal(run('getIntervalClass(8).name'),'6ª menor / 13ª menor');
+  assert.equal(run('getIntervalClass(8).color'),'#EF8700');
+  assert.equal(run('getDegreeLabel(8)'),'♭6');
+  assert.ok(run('getIntervalClass(6).color')!==run('getIntervalClass(8).color'),'♭5 y ♭6 no comparten color');
+  // En el acorde aumentado la nota de 8 semitonos ES la quinta, y así la
+  // reclaman rótulo y color; lejos del resto, sigue sin parecer una 6ª bemol.
+  run("chordType=chordTypes.find(t=>t.value==='aug');updateView()");
+  assert.equal(run('getIntervalClass(8).name'),'5ª aumentada');
+  assert.equal(run('getIntervalClass(8).color'),'#F0C83D');
+  assert.equal(run('getDegreeLabel(8)'),'♯5');
+  // En lidio el tritono es la característica de la escala: 4ª aumentada.
+  run("chordType=chordTypes.find(t=>t.value==='maj');selectedMode='lydian';updateView()");
+  assert.equal(run('getIntervalClass(6).name'),'4ª aumentada / 11ª aumentada');
+  assert.equal(run('getIntervalClass(6).color'),'#26A69A');
+  assert.equal(run('getDegreeLabel(6)'),'♯4');
+});
