@@ -171,6 +171,26 @@
         <div class="chord-readout"><span class="readout-label">ACORDE SELECCIONADO</span><strong id="chord-readout">C</strong><span class="mode-display" id="mode-display"></span><span class="key-signature-chord" id="key-signature-chord"></span></div>
         <div class="key-signature-info"><span class="readout-label">ARMADURA DE CLAVE</span><span id="key-signature-display">--</span></div>
         
+        <label for="song-tonality">Tonalidad de la canción</label>
+        <select id="song-tonality">
+          <option value="">Sin tonalidad fija</option>
+          <option value="C">C · Do mayor</option>
+          <option value="G">G · Sol mayor</option>
+          <option value="D">D · Re mayor</option>
+          <option value="A">A · La mayor</option>
+          <option value="E">E · Mi mayor</option>
+          <option value="B">B · Si mayor</option>
+          <option value="F#">F# · Fa♯ mayor</option>
+          <option value="C#">C# · Do♯ mayor</option>
+          <option value="F">F · Fa mayor</option>
+          <option value="Bb">Bb · Si♭ mayor</option>
+          <option value="Eb">Eb · Mi♭ mayor</option>
+          <option value="Ab">Ab · La♭ mayor</option>
+          <option value="Db">Db · Re♭ mayor</option>
+          <option value="Gb">Gb · Sol♭ mayor</option>
+          <option value="Cb">Cb · Do♭ mayor</option>
+        </select>
+
         <label for="ghost-mode-select">Seleccionar escala adicional</label>
         <select id="ghost-mode-select">
           <option value="">Ninguna</option>
@@ -232,7 +252,7 @@
     <button type="button" data-mobile-tab="mas" aria-pressed="false"><span class="mobile-tab-glyph" aria-hidden="true">&#8942;</span><span>Más</span></button>
   </nav>
   <footer><span>string. cuerdas y código · explorador armónico</span><span>Hecho para estudiar, tocar y descubrir.</span></footer>
-  <script src="progression-duration.js"></script><script src="app.js"></script>
+  <script src="progression-duration.js"></script><script src="tonal-context.js"></script><script src="app.js"></script>
   <script src="responsive-layout.js"></script><script src="mobile-tabs.js"></script>
   <script src="progression-interactions.js"></script>
   <script src="metronome.js"></script>

@@ -61,6 +61,9 @@ function setupUi() {
       removeAttribute(name){delete this.attrs[name];},
       setAttribute(name,value){this.attrs[name]=String(value);},
       querySelectorAll(){return[];},reportValidity(){return true;},replaceChildren(){},
+      // `list.replaceChildren` es no-op y `add` solo reúne las opciones: el
+      // `refresh` de la biblioteca llama a los dos y el stub antes les botaba.
+      add(child){(this.children??=[]).push(child);},
       querySelector(selector){return element(id+selector);}});
     return elements.get(id);
   };
@@ -89,6 +92,7 @@ function setupUi() {
   };
   vm.createContext(sandbox);
   vm.runInContext(fs.readFileSync(path.join(__dirname,'../progression-duration.js'),'utf8'),sandbox);
+  vm.runInContext(fs.readFileSync(path.join(__dirname,'../tonal-context.js'),'utf8'),sandbox);
   vm.runInContext(fs.readFileSync(path.join(__dirname,'../app.js'),'utf8'),sandbox);
   vm.runInContext(fs.readFileSync(path.join(__dirname,'../song-library-ui.js'),'utf8'),sandbox);
   return {sandbox,element,storage};
@@ -113,4 +117,41 @@ sandboxTest('la biblioteca guarda y reabre las variantes por vuelta del fantasma
   assert.deepEqual(restored[0],{ghostMode:'',variants:{'2':{ghostMode:'majorPentatonic'}}},'La canción reabierta trae la variante de la vuelta 2');
   assert.equal(restored[1].variants,undefined);
   assert.equal(restored[1].ghostMode,'minorPentatonic','La escala fantasma por acorde ya viajaba y sigue viajando');
+});
+
+// T-45 · QA-TONAL-02: la tonalidad de canción viaja como campo opcional de la
+// canción v1 (mismo patrón que sections y variants: sin el campo, nada cambia).
+sandboxTest('la biblioteca guarda y reabre la tonalidad de canción y rechaza una clave inválida',()=>{
+  const {sandbox,element,storage}=setupUi();
+  const progression=[{root:7,rootNoteName:'G',type:'maj',mode:'ionian',ghostMode:'',beats:4}];
+  vm.runInContext(`progression=${JSON.stringify(progression)}`,sandbox);
+  vm.runInContext("songTonality=tonalities.find(t=>t.key==='G')",sandbox);
+  element('#song-title').value='Cumbia en Sol';
+  vm.runInContext("document.getElementById('song-save').handlers.click()",sandbox);
+  const saved=JSON.parse(storage.get('traste.songs.v1'));
+  assert.equal(saved.songs[0].tonality,'G','la tonalidad elegida queda en la canción');
+  element('#song-list').value=saved.songs[0].id;
+  vm.runInContext("document.getElementById('song-open').handlers.click()",sandbox);
+  assert.equal(element('#song-tonality').currentValue,'G','al abrir, el selector vuelve a la tonalidad guardada');
+  assert.equal(String(vm.runInContext("songTonality===null?'sin':songTonality.key",sandbox)),'G');
+  // Clave inválida: no se guarda nada (el whitelist la rechaza por completo).
+  vm.runInContext("songTonality={key:'Do mayor!!'}",sandbox);
+  storage.set('traste.songs.v1','{"version":1,"songs":[]}');
+  element('#song-title').value='mala';
+  vm.runInContext("document.getElementById('song-save').handlers.click()",sandbox);
+  assert.deepEqual(JSON.parse(storage.get('traste.songs.v1')).songs,[],'una tonalidad que la app no conoce no entra al guardado');
+});
+
+sandboxTest('canción v1 sin tonalidad: guarda y abre exactamente como antes (byte a byte compatible)',()=>{
+  const {sandbox,element,storage}=setupUi();
+  const progression=[{root:0,rootNoteName:'G',type:'maj',mode:'ionian',ghostMode:'',beats:4}];
+  vm.runInContext(`progression=${JSON.stringify(progression)}`,sandbox);
+  element('#song-title').value='Sin tonalidad';
+  vm.runInContext("document.getElementById('song-save').handlers.click()",sandbox);
+  const raw=storage.get('traste.songs.v1');
+  assert(!raw.includes('"tonality"'),'una canción sin tonalidad elegida no estrena la clave');
+  element('#song-list').value=JSON.parse(raw).songs[0].id;
+  vm.runInContext("document.getElementById('song-open').handlers.click()",sandbox);
+  assert.equal(element('#song-tonality').currentValue,'');
+  assert.equal(String(vm.runInContext('songTonality===null',sandbox)),'true','sin el campo guardado, la app conserva el comportamiento actual');
 });

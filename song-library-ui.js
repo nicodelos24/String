@@ -28,6 +28,11 @@
         (chord.rootNoteName!==undefined && !/^[A-G](?:#|b|♯|♭)?$/.test(chord.rootNoteName))) throw new Error('Acorde no válido.');
       return {root:chord.root,type:chord.type,rootNoteName:chord.rootNoteName,mode:chord.mode,ghostMode:chord.ghostMode || '',variants:validVariants(chord.variants),beats:chord.beats===undefined?DEFAULT_BEATS:chord.beats};
     });
+    // T-45 · QA-TONAL-02: la tonalidad de canción viaja como campo opcional de
+    // la canción v1, igual que sections: sin el campo, la canción queda como
+    // siempre. Una clave que la app no conoce (un respaldo corrido) rechaza la
+    // canción completa en vez de colar una tonalidad inventada.
+    if(song.tonality!==undefined && !tonalities.some(item=>item.key===song.tonality)) throw new Error('No es una tonalidad de canción válida.');
     const settings={};
     for(const id of settingIds) {
       const control=$(id), value=song.settings?.[id];
@@ -36,7 +41,7 @@
       else if(typeof value!=='number' || !Number.isInteger(value) || value<Number(control.min) || value>Number(control.max)) throw new Error('Valor fuera de rango.');
       settings[id]=value;
     }
-    return {id:song.id,title:song.title.trim(),video:song.video,chordUrl:chordReference(song.chordUrl),videoMarks:validateVideoMarks(song.videoMarks,chords.length),chords,settings,sections:validateSections(song.sections,chords.length)};
+    return {id:song.id,title:song.title.trim(),video:song.video,chordUrl:chordReference(song.chordUrl),videoMarks:validateVideoMarks(song.videoMarks,chords.length),chords,settings,sections:validateSections(song.sections,chords.length),tonality:song.tonality||undefined};
   }
   // El acceso puede fallar si el usuario bloquea el almacenamiento.
   const library=new SongLibrary({getItem:key=>localStorage.getItem(key),setItem:(key,value)=>localStorage.setItem(key,value)},validate);
@@ -51,7 +56,7 @@
   function snapshot(id) {
     const settings={};
     for(const key of settingIds) {const control=$(key); settings[key]=control.type==='checkbox'?control.checked:control.tagName==='SELECT'?control.value:Number(control.value);}
-    return validate({id,title:title.value,video:$('youtube-url').value.trim(),videoMarks:window.StringVideoSync.save($('youtube-url').value.trim()),chordUrl:$('song-chord-url').value,chords:progression,settings,sections:window.StringSections.serialize()});
+    return validate({id,title:title.value,video:$('youtube-url').value.trim(),videoMarks:window.StringVideoSync.save($('youtube-url').value.trim()),chordUrl:$('song-chord-url').value,chords:progression,settings,sections:window.StringSections.serialize(),tonality:songTonality?.key});
   }
   function save(update) {run(()=>{
     const song=snapshot(update?openedId:crypto.randomUUID());
@@ -69,6 +74,10 @@
     for(const id of settingIds) {const control=$(id);if(control.type==='checkbox') control.checked=song.settings[id];else control.value=song.settings[id];control.dispatchEvent(new Event('input'));}
     title.value=song.title; openedId=song.id; refresh(song.id);
     $('song-chord-url').value=song.chordUrl;updateChordLink();
+    // T-45 · QA-TONAL-02: la tonalidad vuelve con el resto de la canción. Sin
+    // campo guardado, «Sin tonalidad fija»: el mástil no nota nada.
+    $('song-tonality').value=song.tonality??'';
+    setSongTonality(song.tonality??'');
     window.StringVideoSync.load(song.videoMarks,song.video);
     window.dispatchEvent(new CustomEvent('traste:load-video',{detail:song.video}));
     status.textContent=`Abierta: ${song.title}. Los cambios se guardan con «Actualizar».`;

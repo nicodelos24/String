@@ -43,6 +43,7 @@ function setup() {
     localStorage: {getItem: key => store.has(key) ? store.get(key) : null, setItem: (key, value) => store.set(key, value), removeItem: key => store.delete(key)},
   });
   vm.runInContext(fs.readFileSync(path.join(__dirname,'../progression-duration.js'),'utf8'), ctx);
+  vm.runInContext(fs.readFileSync(path.join(__dirname,'../tonal-context.js'),'utf8'), ctx);
   vm.runInContext(fs.readFileSync(path.join(__dirname,'../app.js'),'utf8'), ctx);
   const run = code => JSON.parse(JSON.stringify(vm.runInContext(code, ctx)));
   const runRaw = code => vm.runInContext(code, ctx);
