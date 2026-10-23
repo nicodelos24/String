@@ -175,10 +175,13 @@ function validateChord(value) {
 // al guardar (validVariants, app.js:245-256, tercera devolución QA-MOD-01):
 // vuelta entera 1..8 —el techo de las repeticiones de sección,
 // MIN/MAX_REPEAT—, valor con la forma exacta {ghostMode} y modo fantasma no
-// vacío presente en MODES. Es la misma regla que la biblioteca aplica con
-// Object.hasOwn (song-library-ui.js:25-26). En el documento puro nada se
-// limpia a silencio como en la app: fuera del contrato es rechazo en voz
-// alta, sin mutar la entrada, en vez de colarse al reproductor de T-40.
+// vacío presente en MODES. La clave de la vuelta es la canónica del entero
+// (séptima devolución QA-MOD-01): una alias («01», «1.0», «1e0», «+1», « 1»,
+// «0x1») canoniza con Number() a una vuelta ya vista y la copia fresca pisa
+// el dato sin avisar — la app (validVariants) degrada así ese documento, y
+// acá es rechazo en voz alta, sin mutar la entrada. En el documento puro
+// nada se limpia a silencio como en la app: fuera del contrato es rechazo
+// en voz alta, en vez de colarse al reproductor de T-40.
 function validateVariants(value) {
   if (value === undefined) return undefined;
   if (!isPlain(value)) throw new Error('Las variantes por vuelta deben ser un objeto.');
@@ -197,8 +200,16 @@ function validateVariants(value) {
       throw new Error(`La vuelta de una variante no puede ser una clave Symbol (${String(key)}): las vueltas viajan numeradas.`);
     }
     const vuelta = Number(key);
-    if (!Number.isInteger(vuelta) || vuelta < MIN_REPEAT || vuelta > MAX_REPEAT) {
-      throw new Error(`La vuelta de la variante debe ser un entero de ${MIN_REPEAT} a ${MAX_REPEAT}: ${JSON.stringify(key)}.`);
+    // La clave de la vuelta es la canónica del entero ('1'..'8'), la misma
+    // convención que validateDenseList aplica a los índices de las tres
+    // listas. Una alias («01», «1.0», «1e0», «+1», « 1», «0x1») canoniza con
+    // Number() a una vuelta ya vista y la copia fresca la pisa en silencio —
+    // séptima devolución QA-MOD-01: {'1': dorian, '01': lydian} salía con una
+    // sola vuelta y el otro modo desaparecía sin aviso (igual de ambos
+    // órdenes). Se rechaza en voz alta, sin mutar la entrada, en vez de
+    // normalizar a espaldas del que escribe.
+    if (!/^\d+$/.test(key) || String(vuelta) !== key || !Number.isInteger(vuelta) || vuelta < MIN_REPEAT || vuelta > MAX_REPEAT) {
+      throw new Error(`La vuelta de la variante debe viajar como la clave canónica de su entero de ${MIN_REPEAT} a ${MAX_REPEAT}, sin alias que canonice a una vuelta ya vista («01», «1.0», «+1»…): ${JSON.stringify(key)}.`);
     }
     const variant = value[key];
     if (!isPlain(variant)) throw new Error(`La variante de la vuelta ${vuelta} debe ser un objeto.`);

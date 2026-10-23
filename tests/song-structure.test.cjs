@@ -501,6 +501,65 @@ test('sexta devolución QA-MOD-01: el barrido propio ve los no enumerables y los
   assert.equal(docAlaOculta.blocks[0].chords[0].variants['2'].ghostMode, 'dorian', 'la vuelta contractual escondida de una variante viaja canonizada como siempre');
 });
 
+test('séptima devolución QA-MOD-01: las claves de las vueltas viajan canónicas, sin alias que se pisen', () => {
+  // El repro exacto de QA (2026-10-23, sobre 54d937c): validateVariants()
+  // canonizaba la clave de la vuelta con Number(), así que claves distintas
+  // que representan la MISMA vuelta — {'1': dorian, '01': lydian} — daban
+  // isValidStructure() en true y la copia fresca salía con una sola
+  // propiedad {1: …}: el dórico se perdió sin que nadie lo supiera, y al
+  // intercambiar los dos modos sobrevivía el otro. Number() colapsa a la
+  // misma vuelta también las alias «1.0», «1e0», «+1», « 1» y «0x1». En el
+  // modelo nada se pisa a silencio: la clave de la vuelta es la canónica
+  // del entero 1..8 — la misma convención que ya rige los índices densos —
+  // o es rechazo en voz alta, sin mutar la entrada.
+  const base = clone({blocks: [{id: 'x', name: 'X', chords: [{root: 0, type: 'maj'}]}], arrangement: [{blockId: 'x', repeat: 1}]});
+
+  // el repro de QA: dos claves para una vuelta — la segunda ya no se come a
+  // la primera en silencio
+  const colision = clone(base);
+  colision.blocks[0].chords[0].variants = {'1': {ghostMode: 'dorian'}, '01': {ghostMode: 'lydian'}};
+  assert.equal(isValidStructure(colision), false, 'el repro de QA: dos claves que canonizan a una misma vuelta no viajan');
+  assert.throws(() => createStructure(colision), /clave canónica/);
+  const antesColision = clone(colision);
+  assert.throws(() => createStructure(colision));
+  assert.deepEqual(colision, antesColision, 'el rechazo no muta la entrada');
+  // y en el orden contrario: ninguna de las dos claves sobrevive pisando
+  const colisionInversa = clone(base);
+  colisionInversa.blocks[0].chords[0].variants = {'01': {ghostMode: 'lydian'}, '1': {ghostMode: 'dorian'}};
+  assert.equal(isValidStructure(colisionInversa), false, 'el intercambio de los dos modos tampoco viaja');
+  assert.throws(() => createStructure(colisionInversa), /clave canónica/);
+
+  // la familia de alias que Number() lleva a la misma vuelta: sola, una
+  // alias tampoco viaja — nada se normaliza a espaldas del que escribe
+  for (const alias of ['01', '1.0', '1e0', '+1', ' 1', '0x1']) {
+    const doc = clone(base);
+    doc.blocks[0].chords[0].variants = {[alias]: {ghostMode: 'dorian'}};
+    assert.equal(isValidStructure(doc), false, `la alias ${JSON.stringify(alias)} no canoniza en silencio`);
+    assert.throws(() => createStructure(doc), /clave canónica/);
+    const antes = clone(doc);
+    assert.throws(() => createStructure(doc));
+    assert.deepEqual(doc, antes, 'el rechazo no muta la entrada');
+  }
+
+  // lo verde queda verde: las claves canónicas 1..8 —el texto que el JSON
+  // escribe y el índice numérico que viaja en memoria— valen igual que
+  // siempre, y la vuelta sigue viajando entera y en forma exacta
+  for (let vuelta = MIN_REPEAT; vuelta <= MAX_REPEAT; vuelta++) {
+    const doc = clone(base);
+    doc.blocks[0].chords[0].variants = {[String(vuelta)]: {ghostMode: 'dorian'}};
+    assert.equal(isValidStructure(doc), true, `la clave canónica ${vuelta} vale`);
+    assert.deepEqual(createStructure(doc).blocks[0].chords[0].variants, {[vuelta]: {ghostMode: 'dorian'}});
+  }
+
+  // y todas las puertas validan: la edición también pasa por createStructure
+  assert.throws(() => updateBlock(BASE, 'verso', {chords: [
+    {root: 0, type: 'maj', variants: {'1': {ghostMode: 'dorian'}, '01': {ghostMode: 'lydian'}}}
+  ]}), /clave canónica/);
+  assert.throws(() => addBlock(BASE, {name: 'Raro', chords: [
+    {root: 0, type: 'maj', variants: {'1e0': {ghostMode: 'lydian'}}}
+  ]}), /clave canónica/);
+});
+
 test('guarda de fuente única: los modos del modelo son las claves vigentes de modes en la app', () => {
   const appJs = fs.readFileSync(path.join(__dirname, '..', 'app.js'), 'utf8');
   const m = appJs.match(/const modes = \{[\s\S]*?\n\};/);
