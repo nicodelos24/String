@@ -2,7 +2,7 @@
   const $=id=>document.getElementById(id);
   const title=$('song-title'), list=$('song-list'), status=$('song-status');
   const settingIds=['player-bpm','player-style','player-percussion','player-loop','player-volume','player-drum-volume'];
-  let openedId=null;
+  let openedId=null,openedFromStructure=false;
   function chordReference(value=''){
     if(typeof value!=='string' || value.length>2000)throw new Error('Enlace de acordes no válido.');
     if(!value.trim())return '';
@@ -33,6 +33,23 @@
     // siempre. Una clave que la app no conoce (un respaldo corrido) rechaza la
     // canción completa en vez de colar una tonalidad inventada.
     if(song.tonality!==undefined && !tonalities.some(item=>item.key===song.tonality)) throw new Error('No es una tonalidad de canción válida.');
+    // T-40 · QA-MOD-02: la estructura de bloques es un campo opcional de la
+    // canción v1 (el mismo patrón de tonality y sections): sin el campo, la
+    // canción valida byte a byte como hoy; con el campo, el sobre versionado
+    // se valida por la vía del adaptador antes de reemplazar algo — y una
+    // versión o forma futura se rechaza en voz alta, sin limpiarla a silencio.
+    let structure;
+    if(song.structure!==undefined){
+      structure=SongStructureAdapter.parseStructure(song.structure);
+      // La tonalidad que viaja dentro de la estructura vale la misma regla
+      // whitelist que la del selector, y las dos autoridades no se
+      // contradicen: iguales o una sola, está bien; distintas, la canción
+      // completa se rechaza.
+      if(structure.tonality!==undefined){
+        if(!tonalities.some(item=>item.key===structure.tonality.key)) throw new Error('La tonalidad de la estructura no es una tonalidad de canción válida.');
+        if(song.tonality!==undefined && song.tonality!==structure.tonality.key) throw new Error('La canción trae dos tonalidades distintas: la del selector y la de la estructura.');
+      }
+    }
     const settings={};
     for(const id of settingIds) {
       const control=$(id), value=song.settings?.[id];
@@ -41,7 +58,7 @@
       else if(typeof value!=='number' || !Number.isInteger(value) || value<Number(control.min) || value>Number(control.max)) throw new Error('Valor fuera de rango.');
       settings[id]=value;
     }
-    return {id:song.id,title:song.title.trim(),video:song.video,chordUrl:chordReference(song.chordUrl),videoMarks:validateVideoMarks(song.videoMarks,chords.length),chords,settings,sections:validateSections(song.sections,chords.length),tonality:song.tonality||undefined};
+    return {id:song.id,title:song.title.trim(),video:song.video,chordUrl:chordReference(song.chordUrl),videoMarks:validateVideoMarks(song.videoMarks,chords.length),chords,settings,sections:validateSections(song.sections,chords.length),...(structure!==undefined?{structure}:{}),tonality:song.tonality||undefined};
   }
   // El acceso puede fallar si el usuario bloquea el almacenamiento.
   const library=new SongLibrary({getItem:key=>localStorage.getItem(key),setItem:(key,value)=>localStorage.setItem(key,value)},validate);
@@ -56,7 +73,16 @@
   function snapshot(id) {
     const settings={};
     for(const key of settingIds) {const control=$(key); settings[key]=control.type==='checkbox'?control.checked:control.tagName==='SELECT'?control.value:Number(control.value);}
-    return validate({id,title:title.value,video:$('youtube-url').value.trim(),videoMarks:window.StringVideoSync.save($('youtube-url').value.trim()),chordUrl:$('song-chord-url').value,chords:progression,settings,sections:window.StringSections.serialize(),tonality:songTonality?.key});
+    const sections=window.StringSections.serialize();
+    const song={id,title:title.value,video:$('youtube-url').value.trim(),videoMarks:window.StringVideoSync.save($('youtube-url').value.trim()),chordUrl:$('song-chord-url').value,chords:progression,settings,sections,tonality:songTonality?.key};
+    // T-40 · QA-MOD-02: si el estado abierto viene de una composición de
+    // bloques, la estructura se deriva del estado de trabajo al guardar (una
+    // sola autoridad): la inversa del adaptador traslada tarjetas y secciones
+    // al sobre versionado, y rechaza en voz alta lo que no puede representar
+    // sin reemplazar nada. Una canción v1 abierta sin estructura no estrena
+    // el campo al guardar.
+    if(openedFromStructure) song.structure=SongStructureAdapter.workingToStructure(progression,sections,songTonality?.key);
+    return validate(song);
   }
   function save(update) {run(()=>{
     const song=snapshot(update?openedId:crypto.randomUUID());
@@ -70,14 +96,29 @@
     if(!song) {status.textContent='Selecciona una progresión guardada.';return;}
     if(draggingProgressionItem) return;
     window.dispatchEvent(new Event('traste:load-song'));
-    progression=song.chords.map(chord=>({...chord})); playingProgressionItem=null; selectProgressionChord(0);window.StringSections.load(song.sections);
+    // T-40 · QA-MOD-02: una canción con estructura abre por el adaptador: el
+    // estado de trabajo equivalente (una sección legada por entrada del
+    // arreglo) es lo que la app ya sabe pintar y reproducir, y las tarjetas
+    // comparten los acordes del bloque, así que una edición toca el bloque.
+    let effectiveTonality=song.tonality;
+    if(song.structure!==undefined){
+      const working=SongStructureAdapter.structureToWorking(song.structure);
+      progression=working.chords; playingProgressionItem=null; selectProgressionChord(0);window.StringSections.load(working.sections);
+      openedFromStructure=true;
+      if(effectiveTonality===undefined && working.tonality!==undefined) effectiveTonality=working.tonality.key;
+    }else{
+      progression=song.chords.map(chord=>({...chord})); playingProgressionItem=null; selectProgressionChord(0);window.StringSections.load(song.sections);
+      openedFromStructure=false;
+    }
     for(const id of settingIds) {const control=$(id);if(control.type==='checkbox') control.checked=song.settings[id];else control.value=song.settings[id];control.dispatchEvent(new Event('input'));}
     title.value=song.title; openedId=song.id; refresh(song.id);
     $('song-chord-url').value=song.chordUrl;updateChordLink();
     // T-45 · QA-TONAL-02: la tonalidad vuelve con el resto de la canción. Sin
-    // campo guardado, «Sin tonalidad fija»: el mástil no nota nada.
-    $('song-tonality').value=song.tonality??'';
-    setSongTonality(song.tonality??'');
+    // campo guardado, «Sin tonalidad fija»: el mástil no nota nada. En una
+    // composición de bloques, la tonalidad efectiva puede venir de la
+    // estructura cuando la canción no la declara (T-40).
+    $('song-tonality').value=effectiveTonality??'';
+    setSongTonality(effectiveTonality??'');
     window.StringVideoSync.load(song.videoMarks,song.video);
     window.dispatchEvent(new CustomEvent('traste:load-video',{detail:song.video}));
     status.textContent=`Abierta: ${song.title}. Los cambios se guardan con «Actualizar».`;

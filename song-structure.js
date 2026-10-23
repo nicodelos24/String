@@ -16,7 +16,6 @@
 // 64 bloques, 4096 acordes por bloque (el techo de la progresión y la
 // biblioteca) y 32768 entradas aplanadas («Estructura demasiado larga»).
 
-const NOTE_PC = {C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11};
 const CHORD_FIELDS = ['root', 'rootNoteName', 'type', 'mode', 'ghostMode', 'variants', 'beats'];
 // Los tipos de acorde que la app conoce: la lista vigente de chordTypes en
 // app.js, la misma contra la que valida la biblioteca (song-library-ui.js:24)
@@ -99,7 +98,11 @@ function checkFields(value, allowed, what) {
 // La tónica con la grafía del cómputo ('C', 'F#', 'Bb'… — la misma regla que
 // el contrato tonal): cualquier otra cosa es null, sin adivinar. La prueba
 // cruza esta copia contra TonalContext.parsePitchClass para que no diverjan.
+// El mapa letra→clase vive dentro de la función: es su única consumidora y la
+// página carga este módulo como script clásico junto a tonal-context.js, que
+// declara el mismo nombre — un const al nivel superior colisionaría.
 function parseTonic(text) {
+  const NOTE_PC = {C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11};
   if (typeof text !== 'string' || text.length < 1) return null;
   const base = NOTE_PC[text[0].toUpperCase()];
   if (base === undefined) return null;
