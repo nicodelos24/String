@@ -2194,6 +2194,16 @@ footer {
 .improvisation-switch { margin: 0; }
 .improvisation-status { margin: 0; font: 11px var(--mono); color: var(--muted); text-align: right; }
 .improvisation-status.is-live { color: var(--rust); }
+/* La pelotita del pulso (T-18): rebota por pulso con la rejilla de Improvisar,
+   al lado del estado, en la columna de al lado de las tarjetas. El rebote lo
+   escribe beat-ball.js pegando el transform a cada pulso de la rejilla; el
+   CSS no lleva animación propia, para no dibujar con su curva un tiempo que
+   no es el que la rejilla está contando. Es ornamento: el estado ya explica
+   por su cuenta (role="status") en qué compás va la escucha. */
+.improv-ball { display: inline-block; width: 10px; height: 10px; margin-bottom: 2px; border-radius: 50%; background: var(--rust); transform-origin: center bottom; transition: transform 0.09s linear; }
+.improv-ball[hidden] { display: none; }
+.improv-ball.is-beat { background: var(--ink); }
+@media(prefers-reduced-motion: reduce) { .improv-ball { transform: none !important; transition: none; } }
 .improvisation-control .inline-help { align-self: flex-end; }
 .improvisation-control .inline-help p { top: auto; bottom: calc(100% + 8px); left: auto; right: 0; white-space: normal; width: 290px; }
 
