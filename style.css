@@ -1713,16 +1713,21 @@ footer {
 }
 
 .metronome {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 12px 18px;
-  padding: 12px;
+  padding: 10px 14px;
   margin: 16px 0;
   border: 1px solid var(--line);
   background: var(--paper-light);
   font: 11px var(--sans);
 }
+/* T-48: el metrónomo avanzado no se usa mientras suena lo demás; arranca
+   plegado (details sin open) y se abre con un clic. El summary conserva el
+   nombre y el chevrón de la biblioteca para que los dos paneles se lean igual. */
+.metronome > summary { display: flex; align-items: center; gap: 8px; list-style: none; cursor: pointer; font-weight: 700; }
+.metronome > summary::-webkit-details-marker { display: none; }
+.metronome > summary::before { content: ''; flex: 0 0 7px; width: 7px; height: 7px; margin: 0 7px; border-right: 2px solid var(--rust); border-bottom: 2px solid var(--rust); transform: rotate(-45deg); transition: transform .25s ease; }
+.metronome[open] > summary::before { transform: translateY(-2px) rotate(45deg); }
+@media(prefers-reduced-motion: reduce) { .metronome > summary::before { transition: none; } }
+.metronome-body { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; margin-top: 10px; }
 .metronome-heading, .metronome label { display: flex; align-items: center; gap: 8px; }
 .metronome input, .metronome select, .metronome button { accent-color: var(--rust); font: inherit; }
 .metronome input[type="number"] { width: 62px; }
@@ -2108,7 +2113,10 @@ footer {
 .player-compact-status { margin: 5px 0 0; font: 10px var(--mono); color: var(--muted); }
 .collapsible-content { display: grid; grid-template-rows: 1fr; opacity: 1; transition: grid-template-rows .28s ease, opacity .2s ease; }
 .collapsible-content.is-collapsed { grid-template-rows: 0fr; opacity: 0; }
-.collapsible-inner { overflow: hidden; min-height: 0; }
+/* La caja que se pliega contiene sus posicionados: sin `position:relative`, un
+   estado `.sr-only` absoluto escapaba del `overflow:hidden` y estiraba el
+   scrollHeight del body aunque el panel estuviera cerrado (T-48). */
+.collapsible-inner { position: relative; overflow: hidden; min-height: 0; }
 .player-topline button:focus-visible { outline: 2px solid var(--rust); outline-offset: 3px; }
 .youtube-panel { margin-top: 18px; padding: 16px; border: 1px solid var(--line); background: var(--paper-light); font: 12px/1.5 var(--sans); }
 .youtube-heading .eyebrow { display: block; margin-bottom: 5px; }
@@ -2224,6 +2232,12 @@ footer {
 #youtube-content { grid-column: 1; grid-row: 3; }
 .youtube-panel > .youtube-video-wrap { grid-column: 2; grid-row: 3 / 6; margin: 0; }
 #youtube-status, #youtube-external { grid-column: 1; }
+/* T-48: con la divulgación cerrada el panel queda como una franja de una línea
+   (el título y el play). El transporte, el estado y el enlace solo aparecen al
+   abrirlo: eran 114,5 px de panel para dos botones apagados. */
+.youtube-panel:has(#youtube-disclosure[aria-expanded="false"]) .video-transport,
+.youtube-panel:has(#youtube-disclosure[aria-expanded="false"]) #youtube-status,
+.youtube-panel:has(#youtube-disclosure[aria-expanded="false"]) #youtube-external { display: none; }
 .youtube-panel:has(.youtube-video-wrap[hidden]), .youtube-panel:has(.is-floating) { grid-template-columns: minmax(0,1fr); }
 @media(max-width:1100px) { .youtube-panel { grid-template-columns: minmax(0,1fr); } .youtube-panel > .youtube-video-wrap { grid-column: 1; grid-row: auto; } }
 @media(max-width: 600px) { .player-topline { flex-wrap: wrap; } .float-option { flex-basis: 100%; } .intro { padding-top: 20px; padding-bottom: 20px; } }
@@ -2467,3 +2481,42 @@ html[data-theme="dark"] .fret-numbers, html[data-theme="dark"] .open-strings-hea
 }
 
 @media (prefers-reduced-motion: reduce) { .mobile-tabs button { transition: none; } }
+
+/* ==========================================================================
+   T-48 · Presupuesto de alto (A-11/A-12)
+   La vista de tocar tiene que entrar en el pliegue real del autor: ≈650 px
+   útiles (pantalla 768 − barra de omarchy − controles de Chromium). En la base
+   de T-47 la página medía 1550 px a 1366×650 y el mástil caía en y=687,4.
+
+   En el escritorio de tres columnas y ventana baja, el documento se ancla al
+   viewport y cada columna se queda con su scroll: así no hay una página larga
+   que empuje el mástil, ni el vacío beige que dejaba la columna izquierda al
+   estirarse con la más alta. El pie (58 px) no pertenece a la vista de tocar.
+
+   Solo ≥1101 px: por debajo, la leyenda baja a una segunda fila del grid y el
+   móvil (≤800) usa pestañas; ahí el documento sigue scrolleando como siempre.
+   ========================================================================== */
+@media (min-width: 1101px) and (max-height: 900px) {
+  html, body { height: 100%; overflow: hidden; }
+  body { display: flex; flex-direction: column; }
+  .shell { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+  /* La barra y la banda no se encogen: el flex repartiría su alto con el main. */
+  .topbar { flex: 0 0 auto; }
+  /* El título no se encoge (el flex lo haría para hacer sitio) pero sí cede su
+     aire: la banda mínima de T-46 ya es una línea. */
+  .intro { flex: 0 0 auto; padding: 0; }
+  .workspace { flex: 1 1 auto; min-height: 0; }
+  .control-panel, .fretboard-section, .legend-panel { min-height: 0; overflow-y: auto; }
+  footer { display: none; }
+  /* Palancas fuera de la grilla aprobada de T-46: la línea «Detenido» (26 px de
+     min-height más márgenes) y el aire del rótulo del mástil. */
+  .progression-playback { min-height: 0; margin: 0; font-size: 10px; }
+  .board-toolbar .eyebrow { margin-bottom: 0; }
+  /* Lo que sobra del bloque de tarjetas: el relleno muerto del grid y el aire
+     entre tarjetas y banda (la banda de T-47 conserva su estructura). */
+  .progression { padding-bottom: 0; }
+  .progression-stack { row-gap: 2px; }
+  /* El panel de la biblioteca ya nace cerrado; en el shell se le quita el aire
+     de arriba para que la franja no sume un scroll extra. */
+  .library-panel { margin-top: 10px; padding: 10px 14px; }
+}

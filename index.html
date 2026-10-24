@@ -152,15 +152,17 @@
           <p id="youtube-status" role="status">Carga una canción para practicar.</p><a id="youtube-external" class="youtube-external" target="_blank" rel="noopener noreferrer" hidden>Abrir en YouTube</a>
         </section>
 
-      <section class="metronome" aria-label="Metr&#243;nomo">
-            <div class="metronome-heading"><strong>Metr&#243;nomo</strong><button type="button" id="metronome-toggle" aria-pressed="false">Iniciar</button></div>
+      <details class="metronome" aria-label="Metr&#243;nomo">
+        <summary><span>Metr&#243;nomo</span></summary>
+        <div class="metronome-body">
+            <div class="metronome-heading"><button type="button" id="metronome-toggle" aria-pressed="false">Iniciar</button><span id="metronome-status" role="status">En pausa</span></div>
             <label for="metronome-bpm">BPM <input id="metronome-bpm" type="number" min="30" max="240" step="1" value="100"></label>
             <label for="metronome-beats">Pulsos por comp&#225;s <select id="metronome-beats"><option>1</option><option>2</option><option>3</option><option selected>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select></label>
             <label for="metronome-accent" class="metronome-accent"><input id="metronome-accent" type="checkbox" checked>Acentuar primero</label>
             <label for="metronome-volume">Volumen <input id="metronome-volume" type="range" min="0" max="100" value="35"></label>
             <div id="metronome-pulses" aria-hidden="true"></div>
-            <span id="metronome-status" role="status">En pausa</span>
-          </section>
+        </div>
+      </details>
         <details class="library-panel"><summary>Mis progresiones <span>Guardar · abrir · respaldar</span></summary><div class="song-library">
           <label for="song-title">Nombre de la progresión</label>
           <input id="song-title" maxlength="100" placeholder="Por ejemplo: Blues en La">
