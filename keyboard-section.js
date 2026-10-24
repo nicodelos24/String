@@ -101,11 +101,11 @@ function keyTargetOwnsChordAdd(target) {
 }
 
 // Controles de reproducción cuyo Espacio puede pasar al atajo de añadir
-// acorde: el transporte rápido junto al mástil y los tres Play/Pausa nativos a
-// los que su clic va a parar (Backtrack, MIDI y Metrónomo). El resto de los
-// botones de la app no es transporte: ni vale convertir cada botón en un
-// atajo global (T-37).
-var TRANSPORT_PLAY_IDS = ['quick-play', 'player-toggle', 'midi-play', 'metronome-toggle'];
+// acorde: el transporte rápido junto al mástil, su duplicado atado arriba del
+// Tempo (T-23) y los tres Play/Pausa nativos a los que su clic va a parar
+// (Backtrack, MIDI y Metrónomo). El resto de los botones de la app no es
+// transporte: ni vale convertir cada botón en un atajo global (T-37).
+var TRANSPORT_PLAY_IDS = ['quick-play', 'tempo-play', 'player-toggle', 'midi-play', 'metronome-toggle'];
 
 // ¿El foco quedó en un control de reproducción del transporte?
 function isTransportPlayControl(target) {

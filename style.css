@@ -1177,6 +1177,13 @@ html[data-theme="dark"] .board-add-button {
 #progression-transport button::after, #midi-transport button::after { content: attr(aria-label); margin-left: 6px; }
 .source-switch button { padding: 6px 8px; border: 0; border-radius: 5px; background: transparent; color: var(--muted); font: 11px var(--sans); cursor: pointer; }
 .source-switch button[aria-pressed="true"] { background: var(--rust); color: var(--paper-light); }
+/* El play duplicado de la cápsula junto al Tempo (T-23): es un botón que
+   reusa la caja estética de .source-switch a propósito (se ve como una opción
+   más del grupo, queda a la izquierda del cuadro), pero no lleva ni estilo
+   ni handler de fuente: comparte estado y clic con #quick-play vía
+   panel-controls.js. Solo el icono necesita tamaño. */
+#tempo-play { display: inline-flex; align-items: center; justify-content: center; }
+#tempo-play svg { width: 14px; height: 14px; fill: currentColor; }
 #midi-transport:not([hidden]) { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
 #progression-transport button, #midi-transport button { padding: 7px 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--paper); color: var(--ink); cursor: pointer; font: 11px var(--sans); }
 #progression-transport button:hover, #midi-transport button:hover:not(:disabled), #youtube-toggle:hover:not(:disabled) { border-color: var(--rust); color: var(--rust); }

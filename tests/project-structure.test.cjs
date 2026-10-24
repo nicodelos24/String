@@ -33,3 +33,22 @@ test('el interruptor de la tarjeta pulsada está en el HTML, marcado por defecto
   assert(html.match(/<label[^>]*for="player-card-start"[^>]*>[\s\S]*?Reproducir desde la tarjeta pulsada[\s\S]*?<\/label>/),
     'la etiqueta visible hace falta para poder verla y activarla');
 });
+
+// T-23 (IA_GUIDE.md:645): un duplicado del play atado arriba del botón de
+// Tempo que comparte la cápsula estética del switch de fuente. El botón es
+// transporte (aria-pressed como los otros tres Play) pero NO opción del
+// switch: sin data-source no loquee el grupo que la elige.
+test('el play duplicado #tempo-play está justo arriba del Tempo y fuera del grupo de fuente',()=>{
+  const html=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
+  const button=html.match(/<button[^>]*id="tempo-play"[^>]*>/);
+  assert(button,'falta el play duplicado #tempo-play en index.html');
+  const attrs=button[0];
+  assert(!/\bdata-source=/.test(attrs),'#tempo-play no es una opción del switch de fuente: no puede llevar data-source');
+  assert(/aria-pressed="false"/.test(attrs),'#tempo-play nace apagado, como el transporte detenido');
+  assert(/aria-label="Reproducir"/.test(attrs) && /title="Reproducir"/.test(attrs),'el duplicado se anuncia igual que los otros Play');
+  const stand=html.indexOf('id="tempo-play-stand"');
+  const tempo=html.indexOf('class="progression-tempo"');
+  assert(stand!==-1 && tempo!==-1 && stand<tempo,'la cápsula del duplicado queda antes del bloque del Tempo en el HTML');
+  const groupId=html.match(/<div[^>]*id="tempo-play-stand"[^>]*class="source-switch"/)||html.match(/<div[^>]*class="source-switch"[^>]*id="tempo-play-stand"/);
+  assert(groupId,'la cápsula #tempo-play-stand comparte el cuadro estético vía la clase .source-switch');
+});

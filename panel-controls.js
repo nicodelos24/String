@@ -2,24 +2,33 @@
   const $=id=>document.getElementById(id);
   let currentSource='progression';
   const quickPlay=$('quick-play'),quickTime=$('quick-midi-time');
+  // El play duplicado atado arriba del Tempo (T-23): comparte el cuadro del
+  // switch y TODO lo que escribe/click el transporte rápido, sin ser opción
+  // de fuente. Si un sandbox no lo trae, queda solo #quick-play.
+  const playTwins=[quickPlay,$('tempo-play')].filter(Boolean);
   const metronomeIcon = running => `<svg viewBox="0 0 24 24" aria-hidden="true">${running ? '<path d="M6 6h12v12H6z"/>' : '<path d="M8 5v14l11-7z"/>'}</svg>`;
   function syncQuickPlayer(){
     if(currentSource==='metronome'){
       const running=$('metronome-toggle').getAttribute('aria-pressed')==='true';
-      quickPlay.innerHTML=metronomeIcon(running);
-      quickPlay.disabled=false;
-      quickPlay.title=running?'Pausar metrónomo':'Iniciar metrónomo';
-      quickPlay.setAttribute('aria-label',running?'Pausar metrónomo':'Iniciar metrónomo');
-      quickPlay.setAttribute('aria-pressed',String(running));
+      const icon=metronomeIcon(running),label=running?'Pausar metrónomo':'Iniciar metrónomo';
+      playTwins.forEach(play=>{
+        play.innerHTML=icon;
+        play.disabled=false;
+        play.title=label;
+        play.setAttribute('aria-label',label);
+        play.setAttribute('aria-pressed',String(running));
+      });
       quickTime.hidden=true;
       return;
     }
     const original=$(currentSource==='midi'?'midi-play':'player-toggle');
-    quickPlay.innerHTML=original.innerHTML;
-    quickPlay.disabled=original.disabled;
-    quickPlay.title=original.title;
-    quickPlay.setAttribute('aria-label',original.getAttribute('aria-label'));
-    quickPlay.setAttribute('aria-pressed',original.getAttribute('aria-pressed')||'false');
+    playTwins.forEach(play=>{
+      play.innerHTML=original.innerHTML;
+      play.disabled=original.disabled;
+      play.title=original.title;
+      play.setAttribute('aria-label',original.getAttribute('aria-label'));
+      play.setAttribute('aria-pressed',original.getAttribute('aria-pressed')||'false');
+    });
     quickTime.hidden=currentSource!=='midi';
     quickTime.textContent=$('midi-time').textContent;
   }
@@ -36,7 +45,7 @@
   // La fuente activa la consultan otros módulos (p. ej. al pulsar una tarjeta,
   // para no arrancar el acompañamiento encima de un MIDI o un metrónomo).
   globalThis.StringSources = {get active(){return currentSource;}};
-  quickPlay.addEventListener('click',()=>{
+  const toggleTransport=()=>{
     if(currentSource==='metronome'){
       const metronome=window.StringMetronome;
       if(!metronome)return;
@@ -46,7 +55,8 @@
       return;
     }
     $(currentSource==='midi'?'midi-play':'player-toggle').click();
-  });
+  };
+  playTwins.forEach(play=>play.addEventListener('click',toggleTransport));
   const transportObserver=new MutationObserver(syncQuickPlayer);
   ['player-toggle','midi-play','midi-time','metronome-toggle'].forEach(id=>transportObserver.observe($(id),{
     attributes:true,attributeFilter:['disabled','aria-label','aria-pressed','title'],childList:true,subtree:true,characterData:true
