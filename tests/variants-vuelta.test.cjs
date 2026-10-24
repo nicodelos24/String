@@ -344,3 +344,24 @@ test('al duplicar, cada clon queda con sus propias variantes', () => {
   runRaw(`progression[1].variants['2'].ghostMode = 'dorian';`);
   assert.equal(run("progression[0].variants['2'].ghostMode"), 'lydian', '…pero ya no comparten el objeto');
 });
+
+// Acotación QA de la re-entrega T-31: al cambiar una vuelta con el teclado,
+// el foco caía al BODY — updateVariantsEditor reescribe innerHTML (desde
+// renderProgression) y el select enfocado se destruye con la escritura. Para
+// editar las ocho vueltas había que volver a tabular desde el principio. El
+// repintado tiene que devolver el foco al select de la misma vuelta.
+test('cambiar una vuelta repinta el panel y el foco vuelve al select de esa vuelta', () => {
+  const {run, runRaw, element} = setup();
+  runRaw(`progression = [{root: 7, rootNoteName: 'G', type: 'maj', mode: 'ionian', variants: {'2': {ghostMode: 'lydian'}}}];
+    activeProgression = 0;
+    document.activeElement = {dataset: {vuelta: '2'}, closest: s => s === '[data-vuelta]' ? document.activeElement : null};`);
+  // El select que updateVariantsEditor vuelve a crear tras el repaint es un
+  // nodo nuevo: el espía mira que el foco le caiga justo a ese.
+  let focado = 0;
+  const reelegido = element('#variants-editorselect[data-vuelta="2"]');
+  reelegido.focus = () => { focado++; };
+  element('#variants-editor').handlers.change(
+    {target: fakeTarget('[data-vuelta]', {dataset: {vuelta: '2'}, value: 'mixolydian'})});
+  assert.deepEqual(run('progression[0].variants'), {'2': {ghostMode: 'mixolydian'}}, 'La edición quedó guardada (comportamiento ya aprobado, no se re-trabaja)');
+  assert.equal(focado, 1, 'Tras repintar el panel, el select de la vuelta 2 vuelve a recibir el foco');
+});

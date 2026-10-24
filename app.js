@@ -780,6 +780,18 @@ function updateGhostModeSelector() {
 function updateVariantsEditor() {
   const editor = document.querySelector('#variants-editor');
   if (!editor) return;
+  // Re-entrega T-31 (acotación QA): el repintado reescribe innerHTML y tiraba
+  // el foco al BODY justo cuando se cambiaba una vuelta con el teclado — para
+  // editar las ocho vueltas había que volver a tabular desde el principio.
+  // Antes de reescribir se anota el [data-vuelta] enfocado; al terminar, el
+  // foco vuelve al select de la misma vuelta (nodo nuevo tras el repaint).
+  // Guarda por el sandbox de los tests: no todo documento fake define
+  // activeElement ni propaga closest.
+  const marcado = document.activeElement;
+  const enfocado = marcado && typeof marcado.closest === 'function'
+    ? marcado.closest('[data-vuelta]')
+    : null;
+  const vueltaFoco = enfocado ? Number(enfocado.dataset.vuelta) : null;
   const activo = Number.isInteger(activeProgression) && activeProgression >= 0 ? progression[activeProgression] : null;
   if (!activo) {
     editor.innerHTML = '<summary>Variantes por vuelta</summary><p class="variants-hint">Elegí una tarjeta: el panel edita sus vueltas.</p>';
@@ -804,6 +816,12 @@ function updateVariantsEditor() {
   }
   const nombre = (activo.rootNoteName || noteName(activo.root)) + (type ? type.suffix : '');
   editor.innerHTML = `<summary>Variantes por vuelta · ${cuenta ? `${cuenta} variante${cuenta === 1 ? '' : 's'}` : 'sin variantes'} <span class="variants-chord">de ${nombre}</span></summary><div class="variants-rows">${filas}</div><p class="variants-hint">Cada vuelta del Acompañamiento puede mostrar en el mástil otra escala adicional sin cambiar el acorde. La opción base es el modo del acorde; las variantes viajan con la tarjeta al guardar, reabrir y duplicar.</p>`;
+  // Re-entrega T-31: restauro el foco solo si la vuelta enfocada sigue en el
+  // panel repintado (tras borrar la tarjeta las filas ya no están ahí).
+  if (vueltaFoco !== null) {
+    const reelegido = editor.querySelector(`select[data-vuelta="${vueltaFoco}"]`);
+    if (reelegido && typeof reelegido.focus === 'function') reelegido.focus();
+  }
 }
 
 // T-31 · Escribe o borra la variante de una vuelta (1 a 8) del acorde activo.

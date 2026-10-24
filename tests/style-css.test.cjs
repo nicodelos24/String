@@ -141,6 +141,51 @@ test('el diapasón recorta el resplandor de las notas resaltadas', () => {
   }
 });
 
+// Re-entrega T-31 (devolución QA de revision-t31-eb10203-2026-10-24):
+// abierto, el panel de variantes se salía de su propia caja. El aside de la
+// leyenda deja ~103px de contenido útil y .variants-rows pedía columnas
+// mínimas de 150px: la fila pasaba el borde interior 48px a 1366×768 (38px
+// del borde exterior) y 49,5px a 320, con los selects sobre el fondo de la
+// página y la ayuda aplastada en una columna de ~100px — en claro y oscuro.
+// La salida es un popover fijo arriba a la derecha cuando [open]: sale del
+// aside del todo y su ancho no depende de él. position: fixed es estable
+// acá porque la suite ya vela que .workspace no retiene tras su animación
+// rise ningún transform (la misma base que el video flotante).
+test('el panel de variantes abierto es un popover fijo fuera del aside', () => {
+  const decls = declarationsFor(selector => selector.includes('#variants-editor[open]'));
+  assert.ok(decls.length > 0, 'no hay regla #variants-editor[open]: abierto, el panel sigue clavado al aside de 123px y desborda');
+  const posicion = decls.filter(d => d.property === 'position');
+  assert.ok(posicion.some(d => d.value === 'fixed'), 'sin position: fixed el panel abierto no sale del aside y la fila de 150px desborda el borde');
+  const ancho = decls.filter(d => d.property === 'width');
+  assert.ok(ancho.some(d => /\bmin\(\s*320px\s*,\s*calc\(100vw\s*-\s*24px\)\)/.test(d.value)),
+    'sin ancho acotado al viewport (min con 100vw) el panel puede pasarse del ancho de una ventana chica a 320');
+  const tope = decls.filter(d => d.property === 'max-height');
+  assert.ok(tope.some(d => /calc\(100vh\s*-\s*24px\)/.test(d.value)), 'sin tope de alto, el panel abierto puede crecer más que el pliegue');
+  const scroll = decls.filter(d => d.property === 'overflow-y');
+  assert.ok(scroll.some(d => d.value === 'auto'), 'el tope de alto sin scroll propio tira las vueltas fuera de la ventana');
+});
+
+test('la grilla de vueltas usa columnas mínimas que caben en el panel', () => {
+  const cols = declarationsFor(s => s.includes('.variants-rows'))
+    .filter(d => d.property === 'grid-template-columns');
+  assert.ok(cols.length > 0, 'no hay grilla .variants-rows: los selects quedan sin caja');
+  const valor = cols.map(d => d.value).join('; ');
+  assert.match(valor, /minmax\(\s*120px\s*,\s*1fr\s*\)/,
+    'las columnas mínimas deben caber en ~143px que reparte un panel de 320px: con mínimas de 150px la fila desborda la caja');
+  assert.doesNotMatch(valor, /150px/, 'la columna mínima de 150px que desbordaba la caja (48px a 1366) sigue en el CSS');
+});
+
+test('el badge de variantes ya no declara un font-size letra muerta', () => {
+  // Acotación QA: .variants-badge (0,1,0) pierde por especificidad contra
+  // .progression-card button (0,1,1) que declara font-size: 14px, así que el
+  // 9px no se aplicó nunca (el badge computó 14px siempre). Se acepta el 14px
+  // (igual que la ×, cero cambio visual) y la declaración muerta se quita.
+  const decls = declarationsFor(s => s.includes('.variants-badge'));
+  assert.ok(decls.some(d => d.property === 'margin-right'), 'la regla del badge desapareció del CSS');
+  const tamano = decls.filter(d => d.property === 'font-size');
+  assert.deepEqual(tamano, [], '.variants-badge pierde (0,1,0) contra .progression-card button (0,1,1) con font-size: 14px: la declaración de 9px no se aplicaba nunca; si algún día se quiere otro tamaño, se gana la especificidad, no se deja letra muerta');
+});
+
 test('los controles del compositor de secciones se reparten media tarjeta', () => {
   // Devolución QA (revision-t41-31e3a7b): en la tarjeta medida de 114.5px la
   // fila de botones reparte 6 columnas; le tocaba ~15px a cada control y los
