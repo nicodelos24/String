@@ -106,3 +106,32 @@ test('La Cumparsita: plantilla de Montevideo con la aproximación declarada',()=
   assert.deepEqual(preset.chords.map(c=>[c.root,c.type]),
     [[7,'m'],[7,'m'],[2,'7'],[2,'7'],[7,'m'],[0,'m7'],[2,'7'],[7,'m']]);
 });
+
+test('anclaje menú↔módulo: toda plantilla del módulo es seleccionable en #progression-preset',()=>{
+  // T-19: la ronda entregó progressionPresets.cumparsita pero el <select> del
+  // HTML es estático y no la traía: forzar el valor quedaba '' (sin opción) y
+  // el handler de «Usar» cortaba en `if(!preset)return;` — datos muertos.
+  // La regresión ata las dos listas, hoy y cuando la lista crezca.
+  const html=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
+  const select=html.match(/<select id="progression-preset">[\s\S]*?<\/select>/);
+  assert(select,'#progression-preset falta en index.html');
+  const menu=[...select[0].matchAll(/<option value="([^"]+)"/g)].map(m=>m[1]);
+  const keys=Object.keys(progressionPresets);
+  for(const key of keys)
+    assert(menu.includes(key),
+      `la plantilla ${key} existe en el módulo pero no tiene <option value="${key}"> en #progression-preset`);
+  // La otra dirección: un <option> que el módulo no conozca también es datos
+  // muertos (el handler sale por `if(!preset)return;`). «custom» es la única
+  // del menú que no es plantilla del módulo.
+  const sinCustom=menu.filter(value=>value!=='custom');
+  assert.deepEqual([...new Set(sinCustom)].sort(),[...keys].sort(),
+    '#progression-preset trae opciones que el módulo no conoce');
+  // El emplazamiento que pidió QA: dentro del optgroup de Río de la Plata,
+  // donde van candombe/milonga/valsCriollo/salsa — y que su rótulo del MENÚ
+  // conserve el aviso de «aproximación», no solo el name del módulo.
+  const hogar=html.indexOf('— Río de la Plata / Uruguayos —');
+  assert(hogar>=0,'el optgroup de Río de la Plata falta en index.html');
+  const grupo=html.slice(hogar,html.indexOf('<optgroup',hogar+1));
+  assert.match(grupo,/<option value="cumparsita">[^<]*aproximac/,
+    'la opción de La Cumparsita va en el optgroup de Río de la Plata y conserva el aviso');
+});
