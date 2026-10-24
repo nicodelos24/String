@@ -49,7 +49,7 @@ if(typeof document!=='undefined')(()=>{
     if(drag)return;
     if(active&&!sections.includes(active))active=null;
     $('section-all').setAttribute('aria-pressed',String(!active));
-    $('section-view-label').textContent=active?active.name:'Todos los acordes';
+    $('section-view-label').textContent=active?`${active.name} · ×${active.repeat}`:'Todos los acordes';
     const list=$('section-list');list.replaceChildren();
     sections.forEach((s,index)=>{
       const row=document.createElement('li'),label=document.createElement('button');row.dataset.section=index;row.className='section-card';row.classList.toggle('selected',active===s);
@@ -70,8 +70,63 @@ if(typeof document!=='undefined')(()=>{
         const button=document.createElement('button');button.type='button';button.textContent=text;button.setAttribute('aria-label',`${delta===0?'Quitar':delta<0?'Subir':'Bajar'} ${s.name}`);
         button.disabled=delta<0?index===0:delta>0?index===sections.length-1:false;
         button.onclick=()=>{window.dispatchEvent(new Event('traste:load-song'));if(delta===0)sections.splice(index,1);else [sections[index],sections[index+delta]]=[sections[index+delta],sections[index]];render();renderProgression();};row.append(button);
-      }list.append(row);
+      }
+      // T-41 (QA-MOD-03): los dos controles del compositor de bloques. Cada uno
+      // es un botón propio con acción unaria — nada de doble clic compartido —
+      // y el nombre de la sección viaja en el aria-label para el teclado.
+      const repeatButton=document.createElement('button');repeatButton.type='button';repeatButton.className='section-composer';repeatButton.textContent='Repetir';repeatButton.setAttribute('aria-label',`Repetir ${s.name}`);
+      repeatButton.disabled=s.repeat>=8;
+      repeatButton.onclick=()=>{if(s.repeat>=8)return;window.dispatchEvent(new Event('traste:load-song'));try{
+        s.repeat+=1;render();renderProgression();$('section-status').textContent=`${s.name} ahora suena ${s.repeat} veces.`;
+      }catch(error){$('section-status').textContent=error.message;render();}};row.append(repeatButton);
+      const duplicateButton=document.createElement('button');duplicateButton.type='button';duplicateButton.className='section-composer';duplicateButton.textContent='Duplicar';duplicateButton.setAttribute('aria-label',`Duplicar bloque ${s.name}`);
+      duplicateButton.onclick=()=>{
+        window.dispatchEvent(new Event('traste:load-song'));
+        try{
+          // La copia del bloque toma la única API que ya existe para clonar
+          // tarjetas (duplicateProgressionChord de app.js): cada acorde de la
+          // copia es una tarjeta nueva de la progresión, así que editar el
+          // bloque duplicado nunca toca al original. El `include` interno de
+          // esa API inserta junto a la sección activa: se neutraliza mientras
+          // duplico (la copia es un bloque nuevo, no un añadido de la vista).
+          const previous=active;active=null;
+          const clones=[];try{
+            for(const item of s.items.filter(entry=>progression.includes(entry))){
+              const at=progression.indexOf(item);
+              if(typeof duplicateProgressionChord!=='function')throw new Error('No hay editor de tarjetas disponible.');
+              duplicateProgressionChord(at,true);
+              if(progression[at+1]!==item)clones.push(progression[at+1]);
+            }
+          }finally{active=previous;}
+          if(!clones.length)throw new Error('No se encontraron acordes para duplicar.');
+          // Los clones se recolocan al final del editor: las filas y las
+          // otras secciones que referencian tarjetas viejas no se mueven ni
+          // un índice; el original queda byte a byte donde estaba.
+          for(const clone of clones){
+            const at=progression.indexOf(clone);
+            if(at>=0){progression.splice(at,1);progression.push(clone);}
+          }
+          // Devolución QA de T-41: el autoguardado se escribe UNA vez, aquí al
+          // final del flujo y con las copias ya recolocadas (app.js lo difiere
+          // con `deferSave`). Los guardados por tarjeta adentro del bucle
+          // dejaban el slot «Mi progresión» con el orden intermedio, y al
+          // recargar volvían las tarjetas de a mitad del camino.
+          if(typeof saveCustomProgression==='function')saveCustomProgression();
+          const name=uniqueSectionName(s.name);
+          sections.splice(index+1,0,{name,repeat:1,items:clones});
+          $('section-status').textContent=` Bloque duplicado: ${name} es una copia independiente.`;
+          render();renderProgression();
+        }catch(error){$('section-status').textContent=error.message;render();}
+      };row.append(duplicateButton);
+      list.append(row);
     });
+  }
+  function uniqueSectionName(base){
+    const taken=new Set(sections.map(entry=>entry.name));
+    for(let n=1;;n++){
+      const candidate=n===1?`${base} (copia)`:`${base} (copia ${n})`;
+      if(!taken.has(candidate))return candidate;
+    }
   }
   window.StringSections={serialize,
     visible(){if(active&&!active.items.some(item=>progression.includes(item)))active=null;return (active?active.items.filter(item=>progression.includes(item)):progression).map(item=>({item,index:progression.indexOf(item)}));},

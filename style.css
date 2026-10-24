@@ -1095,7 +1095,7 @@ html[data-theme="dark"] .board-add-button {
 .progression-playback { min-height: 26px; margin: -4px 0 12px; color: var(--rust); font: 11px var(--mono); }
 .section-view-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 10px 0; font: 11px var(--mono); color: var(--muted); }
 .sections-panel #section-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-content: start; gap: 6px; max-height: 250px; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; scrollbar-gutter: stable; margin: 8px 0; padding: 2px; }
-.sections-panel #section-list .section-card { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 2px; min-width: 0; margin: 0; padding: 6px; border: 1px solid var(--line); border-radius: 9px; transition: border-color .18s, box-shadow .18s; }
+.sections-panel #section-list .section-card { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 2px; min-width: 0; margin: 0; padding: 6px; border: 1px solid var(--line); border-radius: 9px; transition: border-color .18s, box-shadow .18s; }
 .sections-panel .section-card .section-select { grid-column: 1 / -1; min-width: 0; display: grid; gap: 2px; text-align: left; border: 0; background: transparent; padding: 2px; cursor: pointer; }
 .section-select strong { font: 600 12px var(--sans); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sections-panel #section-list .section-card > button:not(.section-select) { width: 100%; min-width: 0; height: 28px; margin: 0; padding: 0; }
@@ -1105,6 +1105,17 @@ html[data-theme="dark"] .board-add-button {
 .section-grip { touch-action: none; cursor: grab; margin-right: auto; }
 .section-card.dragging { opacity: .55; }
 .sections-panel #section-list .section-card.drop-target { outline: 2px dashed var(--rust); outline-offset: -3px; }
+/* T-41: los dos controles del compositor de bloques. Declaran su propia fuente
+   con `font: inherit` (lección DEF-02/DEF-03: el navegador no la hereda a los
+   <button>; los tres botones viejos de la fila la deben en DEF-03, ronda
+   propia). Devolución QA de esta ronda: en la fila de 6 columnas le tocaba
+   ~15px de caja a cada control y los rótulos «Repetir»/«Duplicar» miden
+   34/38px (medición con tarjeta de 114.5px): cada control quedaba en una caja
+   que no podía mostrar su rótulo. Cada `.section-composer` abarca media tarjeta
+   (`span 3`): los dos quedan en una fila propia, con caja real, sin desbordes
+   a 320px; el aria-label conserva el nombre completo de la sección. El recorte
+   con puntos es la guarda para anchos menores a los medidos: no actúa a 320px. */
+.sections-panel #section-list .section-card .section-composer { grid-column: span 3; font: inherit; font-size: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 @media(prefers-reduced-motion: reduce) { .sections-panel #section-list .section-card { transition: none; } }
 .player-topline .player-disclosure { justify-content: flex-start; }
 .source-switch { display: inline-flex; padding: 3px; gap: 2px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); }
