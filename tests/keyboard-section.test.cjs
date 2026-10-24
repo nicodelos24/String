@@ -297,6 +297,7 @@ test('keyboard: es transporte, para Espacio, solo el play rápido y sus tres pla
   const { isTransportPlayControl } = require('../keyboard-section.js');
   const el = id => ({ id, tagName: 'BUTTON' });
   assert.equal(isTransportPlayControl(el('quick-play')), true, 'el transporte rápido junto al mástil');
+  assert.equal(isTransportPlayControl(el('tempo-play')), true, 'el duplicado del play atado arriba del Tempo (T-23)');
   assert.equal(isTransportPlayControl(el('player-toggle')), true, 'el play del transporte de Backtrack');
   assert.equal(isTransportPlayControl(el('midi-play')), true, 'el play del transporte de MIDI');
   assert.equal(isTransportPlayControl(el('metronome-toggle')), true, 'el play del panel del metrónomo');
