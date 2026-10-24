@@ -48,13 +48,18 @@ test('Secciones del tema no duplica la vista activa y deja su ampliación en la 
   const panel = rule('.sections-panel');
   const summary = rule('.sections-panel > summary');
   const maximize = rule('#sections-maximize');
-  const contents = rule('.sections-panel > :not(summary, #sections-maximize)');
+  const contents = rule('.sections-panel-content');
 
-  assert.match(panel, /display:\s*grid/, 'el panel usa una grilla compacta para compartir la cabecera');
-  assert.match(panel, /grid-template-columns:\s*minmax\(0, ?1fr\) auto/,
-    'el summary y el botón de ampliar ocupan la misma fila');
+  assert.ok(has(panel, 'position', 'relative'),
+    'el botón de ampliar se ancla a la cabecera sin convertir el contenido de details en una columna lateral');
+  assert.ok(has(summary, 'min-height', '29px'),
+    'el summary reserva una primera fila compacta, del alto de sus controles');
   assert.ok(has(summary, 'margin', '0'), 'el summary no agrega una fila vacía sobre el contenido');
+  assert.ok(has(maximize, 'position', 'absolute'),
+    '«Ampliar secciones» se mantiene en esa primera fila sin afectar el flujo del contenido');
   assert.ok(has(maximize, 'margin', '0'), '«Ampliar secciones» deja de abrir una fila propia');
-  assert.match(contents, /grid-column:\s*1 \/ -1/,
-    'el editor, la vista y la lista siguen debajo de la única fila de cabecera');
+  assert.match(html, /class="sections-panel-content"/,
+    'el contenido del panel se agrupa debajo de la cabecera compacta');
+  assert.ok(has(contents, 'display', 'block'),
+    'el editor, la vista y la lista vuelven al flujo de ancho completo debajo de la cabecera');
 });

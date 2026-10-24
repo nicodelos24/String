@@ -2524,10 +2524,10 @@ html[data-theme="dark"] .fret-numbers, html[data-theme="dark"] .open-strings-hea
 
 /* T-50: cabecera compacta de Secciones. La etiqueta de estado queda solo para
    lectores de pantalla: el botón ya comunica la vista activa sin duplicarla. */
-.sections-panel { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 8px; row-gap: 6px; }
-.sections-panel > summary { grid-column: 1; margin: 0; }
-#sections-maximize { grid-column: 2; grid-row: 1; margin: 0; align-self: center; }
-.sections-panel > :not(summary, #sections-maximize) { grid-column: 1 / -1; }
+.sections-panel { position: relative; }
+.sections-panel > summary { min-height: 29px; box-sizing: border-box; margin: 0; padding-right: 123px; }
+#sections-maximize { position: absolute; top: 8px; right: 12px; margin: 0; }
+.sections-panel-content { display: block; min-width: 0; }
 
 /* Regla final deliberada: el hero recupera su escala fuera del modo móvil
    (donde ya se oculta) y el documento nunca captura su desplazamiento. */
