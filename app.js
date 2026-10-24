@@ -497,6 +497,14 @@ function getAvailableModes(qualityValue) {
   return qualities[qualityValue]?.modes || [];
 }
 
+// T-31 · La calidad de un acorde según su tipo: la misma regla con la que
+// showProgressionChord arma los controles. La usan las variantes por vuelta
+// para acotar su oferta de modos.
+function chordQualityOf(item) {
+  const type = chordTypes.find(candidate => candidate.value === item.type) || chordTypes[0];
+  return type.intervals.includes(6) ? 'diminished' : type.intervals.includes(3) ? 'minor' : 'major';
+}
+
 // Función para encontrar el modo más cercano para una raíz en una tonalidad dada
 function findClosestMode(targetRoot, majorRoot, qualityValue) {
   const availableModes = getAvailableModes(qualityValue);
@@ -760,6 +768,85 @@ function updateGhostModeSelector() {
     }).join('');
 
   ghostModeSelect.innerHTML = `<option value="" ${ghostMode === '' ? 'selected' : ''}>Ninguna</option>` + options;
+}
+
+// T-31 · Panel de variantes por vuelta: crear, mostrar, cambiar y quitar las
+// excepciones de fantasma de las vueltas 1 a 8 del acorde seleccionado, desde
+// la interfaz y sin editar JSON. La oferta por vuelta es la de la calidad del
+// acorde sin su modo (acotación de QA en T-20): nunca un modo que la app no
+// dibuje. Se vuelve a pintar con renderProgression y showProgressionChord,
+// así la carga, la biblioteca, las plantillas y la selección lo dejan siempre
+// acorde con la tarjeta activa.
+function updateVariantsEditor() {
+  const editor = document.querySelector('#variants-editor');
+  if (!editor) return;
+  // Re-entrega T-31 (acotación QA): el repintado reescribe innerHTML y tiraba
+  // el foco al BODY justo cuando se cambiaba una vuelta con el teclado — para
+  // editar las ocho vueltas había que volver a tabular desde el principio.
+  // Antes de reescribir se anota el [data-vuelta] enfocado; al terminar, el
+  // foco vuelve al select de la misma vuelta (nodo nuevo tras el repaint).
+  // Guarda por el sandbox de los tests: no todo documento fake define
+  // activeElement ni propaga closest.
+  const marcado = document.activeElement;
+  const enfocado = marcado && typeof marcado.closest === 'function'
+    ? marcado.closest('[data-vuelta]')
+    : null;
+  const vueltaFoco = enfocado ? Number(enfocado.dataset.vuelta) : null;
+  const activo = Number.isInteger(activeProgression) && activeProgression >= 0 ? progression[activeProgression] : null;
+  if (!activo) {
+    editor.innerHTML = '<summary>Variantes por vuelta</summary><p class="variants-hint">Elegí una tarjeta: el panel edita sus vueltas.</p>';
+    return;
+  }
+  const type = chordTypes.find(candidate => candidate.value === activo.type);
+  const calidad = chordQualityOf(activo);
+  const modoBase = activo.mode || defaultChordMode(activo);
+  const ofrecidos = getAvailableModes(calidad).filter(modeKey => modeKey !== modoBase);
+  // validVariants da el objeto normalizado (vueltas 1–8, modos conocidos): lo
+  // leen el contador del resumen y cada fila. Las claves pueden ser texto
+  // («2») del JSON restaurado o número: la lectura por índice cubre ambas.
+  const variantes = validVariants(activo.variants) || {};
+  const cuenta = Object.keys(variantes).length;
+  let filas = '';
+  for (let vuelta = 1; vuelta <= 8; vuelta++) {
+    const vigente = validGhostMode(variantes[vuelta] && variantes[vuelta].ghostMode);
+    // Una variante que el modo base no deja ofrecer pero ya estaba guardada
+    // no desaparece: entra a la lista para poder verla y volver a la base.
+    const opciones = vigente && !ofrecidos.includes(vigente) ? [vigente].concat(ofrecidos) : ofrecidos;
+    filas += `<label class="variants-row"><span class="variants-vuelta">V${vuelta}</span><select data-vuelta="${vuelta}" aria-label="Fantasma de la vuelta ${vuelta} del acorde ${activeProgression + 1}"><option value=""${vigente ? '' : ' selected'}>(base del acorde)</option>${opciones.map(modeKey => `<option value="${modeKey}"${modeKey === vigente ? ' selected' : ''}>${modes[modeKey]?.name || modeKey}</option>`).join('')}</select></label>`;
+  }
+  const nombre = (activo.rootNoteName || noteName(activo.root)) + (type ? type.suffix : '');
+  editor.innerHTML = `<summary>Variantes por vuelta · ${cuenta ? `${cuenta} variante${cuenta === 1 ? '' : 's'}` : 'sin variantes'} <span class="variants-chord">de ${nombre}</span></summary><div class="variants-rows">${filas}</div><p class="variants-hint">Cada vuelta del Acompañamiento puede mostrar en el mástil otra escala adicional sin cambiar el acorde. La opción base es el modo del acorde; las variantes viajan con la tarjeta al guardar, reabrir y duplicar.</p>`;
+  // Re-entrega T-31: restauro el foco solo si la vuelta enfocada sigue en el
+  // panel repintado (tras borrar la tarjeta las filas ya no están ahí).
+  if (vueltaFoco !== null) {
+    const reelegido = editor.querySelector(`select[data-vuelta="${vueltaFoco}"]`);
+    if (reelegido && typeof reelegido.focus === 'function') reelegido.focus();
+  }
+}
+
+// T-31 · Escribe o borra la variante de una vuelta (1 a 8) del acorde activo.
+// La oferta manda: un modo que no esté en la calidad correspondiente (o que
+// sea el modo del acorde, que es la base) no se guarda aunque llegue por el
+// evento. Volver la vuelta a base la borra; sin una sola variante, la clave
+// sale del acorde. Persistencia por la puerta de siempre: saveCustomProgression.
+function setProgressionVariants(index, vuelta, ghost) {
+  if (!Number.isInteger(index) || index < 0 || index >= progression.length) return;
+  const item = progression[index];
+  if (!Number.isInteger(vuelta) || vuelta < 1 || vuelta > 8) return;
+  const modo = validGhostMode(ghost);
+  const ofrecidos = getAvailableModes(chordQualityOf(item)).filter(modeKey => modeKey !== (item.mode || defaultChordMode(item)));
+  if (modo && ofrecidos.includes(modo)) {
+    const variantes = validVariants(item.variants) || {};
+    variantes[vuelta] = {ghostMode: modo};
+    item.variants = variantes;
+  } else if (item.variants && typeof item.variants === 'object') {
+    delete item.variants[vuelta];
+    delete item.variants[String(vuelta)];
+    if (!validVariants(item.variants)) item.variants = undefined;
+  }
+  progressionEdited = true;
+  saveCustomProgression();
+  renderProgression();
 }
 function getDegreeLabel(interval, modeKey = selectedMode) {
   const normalized = ((interval % 12) + 12) % 12;
@@ -1062,6 +1149,10 @@ function updateModeLegend() {
 
 function renderProgression() {
   if (draggingProgressionItem) return;
+  // T-31 · El panel de variantes pinta con la tarjeta activa: es el mismo
+  // punto de re-pintado que usan la carga, la biblioteca, las plantillas y
+  // la selección (updateView llama renderProgression).
+  updateVariantsEditor();
   const entries=globalThis.StringSections?globalThis.StringSections.visible():progression.map((item,index)=>({item,index}));
   const list=document.querySelector('#progression');
   if(!entries.length){
@@ -1078,8 +1169,12 @@ function renderProgression() {
     // guardado, así que no se oculta: el selector muestra el valor real como
     // opción extra, y elegir alguna de las ocho vuelve a la cuadrícula.
     const fueraDeRejilla = beatOptions.includes(beats) ? '' : `<option value="${beats}" selected>${beatsLabel(beats)}</option>`;
+    // T-31 · El badge de variantes: cuenta las vueltas con excepción válida
+    // (el mismo normalizador del guardado) y abre el panel al clicar.
+    const cuentaVariantes = Object.keys(validVariants(item.variants) || {}).length;
+    const badgeVariantes = `<button type="button" class="variants-badge" data-variants="${index}" title="Variantes por vuelta" aria-label="Variantes por vuelta del acorde ${index + 1}">♪${cuentaVariantes ? ' ' + cuentaVariantes : ''}</button>`;
     const beatsSelect = `<label class="beats-control" title="Duración: ${beatsLabel(beats)} de compás"><span class="sr-only">Duración del acorde ${index + 1}</span><select data-beats="${index}" aria-label="Duración del acorde ${index + 1}">${fueraDeRejilla}${beatOptions.map(option => `<option value="${option}"${option === beats ? ' selected' : ''}>${beatsLabel(option)}</option>`).join('')}</select></label>`;
-    return `<div class="progression-card ${index === activeProgression ? 'active' : ''} ${item === playingProgressionItem ? 'playing' : ''}" data-index="${index}" tabindex="0" role="group" aria-label="Acorde ${index + 1}, compás ${barNumber}, ${beatsLabel(beats)} de compás. Arrastrar o usar Alt y flechas para mover. Flechas arriba y abajo para recorrer. Supr para borrar.">><button type="button" data-remove="${index}" aria-label="Quitar acorde ${index + 1}">×</button><small>${index + 1}${item === playingProgressionItem ? ' · sonando' : ''}</small><span class="progression-mode">${modes[item.mode || defaultChordMode(item)]?.name || ''}</span>${beatsSelect}<span class="drag-grip" aria-hidden="true">⠿</span><strong>${item.rootNoteName || noteName(item.root)}${type ? type.suffix : ''}</strong></div>`;
+    return `<div class="progression-card ${index === activeProgression ? 'active' : ''} ${item === playingProgressionItem ? 'playing' : ''}" data-index="${index}" tabindex="0" role="group" aria-label="Acorde ${index + 1}, compás ${barNumber}, ${beatsLabel(beats)} de compás. Arrastrar o usar Alt y flechas para mover. Flechas arriba y abajo para recorrer. Supr para borrar.">><button type="button" data-remove="${index}" aria-label="Quitar acorde ${index + 1}">×</button>${badgeVariantes}<small>${index + 1}${item === playingProgressionItem ? ' · sonando' : ''}</small><span class="progression-mode">${modes[item.mode || defaultChordMode(item)]?.name || ''}</span>${beatsSelect}<span class="drag-grip" aria-hidden="true">⠿</span><strong>${item.rootNoteName || noteName(item.root)}${type ? type.suffix : ''}</strong></div>`;
   }).join('');
 }
 instrumentSelect.addEventListener('change', event => { instrument = event.target.value; updateView(); });
@@ -1116,6 +1211,19 @@ if (ghostModeSelect) {
     activeProgression = -1;
     renderProgression();
     renderFretboard();
+  });
+}
+
+// T-31 · Los select del panel de variantes: cada change escribe o borra la
+// variante de esa vuelta del acorde activo (misma puerta que el resto del
+// autoguardado). El badge de la tarjeta y el resumen quedan al día porque
+// setProgressionVariants repinta las tarjetas.
+const variantsEditor = document.querySelector('#variants-editor');
+if (variantsEditor) {
+  variantsEditor.addEventListener('change', event => {
+    const select = event.target.closest('[data-vuelta]');
+    if (!select) return;
+    setProgressionVariants(activeProgression, Number(select.dataset.vuelta), select.value);
   });
 }
 
@@ -1208,7 +1316,7 @@ function showProgressionChord(item, index = -1) {
   root = item.root;
   rootNoteName = item.rootNoteName || noteName(root);
   chordType = chordTypes.find(type => type.value === item.type) || chordTypes[0];
-  quality = chordType.intervals.includes(6) ? 'diminished' : chordType.intervals.includes(3) ? 'minor' : 'major';
+  quality = chordQualityOf(item);
   selectedMode = item.mode || defaultChordMode(item);
   ghostMode = item.ghostMode || '';
   populateControls();
@@ -1238,9 +1346,23 @@ function moveProgressionChord(from, to) {
 // bucle (devolución QA de T-41): el flujo entero persiste UNA vez, cuando el
 // que orquesta termina. Los demás usos (una tarjeta a la vez) no lo pasan y
 // guardan como siempre.
+// T-31 · Copia de las variantes para duplicar: superficial hacia afuera y
+// profunda en cada vuelta, para que el clon herede las variantes pero ya no
+// comparta el objeto con la original (mutar uno no mueve al otro).
+function cloneVariants(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return value;
+  const out = {};
+  for (const key of Object.keys(value)) {
+    const turno = value[key];
+    out[key] = turno && typeof turno === 'object' && !Array.isArray(turno) ? {...turno} : turno;
+  }
+  return out;
+}
+
 function duplicateProgressionChord(index, deferSave=false) {
   if (!Number.isInteger(index) || !progression[index] || progression.length >= 4096 || draggingProgressionItem) return;
-  progression.splice(index + 1, 0, {...progression[index]});
+  const clon = {...progression[index], variants: cloneVariants(progression[index].variants)};
+  progression.splice(index + 1, 0, clon);
   globalThis.StringSections?.include(progression[index],progression[index+1]);
   progressionEdited=true;
   if(!deferSave)saveCustomProgression();
@@ -1299,6 +1421,16 @@ document.querySelector('#progression').addEventListener('click', event => {
   if (event.target.closest('select')) return;
   const remove = event.target.closest('[data-remove]');
   if (remove) { removeProgressionChord(Number(remove.dataset.remove)); return; }
+  // T-31 · El badge de variantes: deja al acorde seleccionado y abre el
+  // panel, sin arrancar el Acompañamiento (no cae en el branch de la
+  // tarjeta, que sí reproduce desde ahí).
+  const badge = event.target.closest('[data-variants]');
+  if (badge) {
+    selectProgressionChord(Number(badge.dataset.variants));
+    const editor = document.querySelector('#variants-editor');
+    if (editor) editor.open = true;
+    return;
+  }
   const card = event.target.closest('[data-index]');
   if (card) {
     const index = Number(card.dataset.index);

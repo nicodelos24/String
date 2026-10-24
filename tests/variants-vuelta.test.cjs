@@ -254,3 +254,114 @@ test('con la página real, editar las variantes en vivo no arrastra lo que suena
   const frozenAgain = run("window.StringSections.playback().map(entry => entry.saved.variants['2'].ghostMode)");
   assert.deepEqual(frozenAgain, ['lydian'], 'La nueva copia tomó la variante editada');
 });
+
+// T-31 · La interfaz de variantes por vuelta: un panel junto a «Seleccionar
+// escala adicional» que edita las variantes del acorde seleccionado, un badge
+// en la tarjeta y una oferta de modos ceñida a la calidad del acorde (T-20).
+// Los manejadores van delegados (#variants-editor y #progression), así que
+// acá se disparan a mano contra los fakes del sandbox.
+function fakeTarget(attr, payload) {
+  return {closest: select => select === attr ? payload : null};
+}
+
+test('el panel de variantes ofrece por vuelta solo los modos de la calidad del acorde', () => {
+  const {run, runRaw} = setup();
+  runRaw(`progression = [
+    {root: 7, rootNoteName: 'G', type: 'maj', mode: 'ionian', ghostMode: 'minorPentatonic', variants: {'2': {ghostMode: 'lydian'}}}
+  ]; activeProgression = 0; updateVariantsEditor();`);
+  const html = run("document.querySelector('#variants-editor').innerHTML");
+  assert.match(html, /Variantes por vuelta/, 'El resumen mantiene su título');
+  assert.match(html, /data-vuelta="8"/, 'Las vueltas 1 a 8 están');
+  assert.match(html, /value="mixolydian"/, 'Un modo mayor disponible se ofrece');
+  assert.match(html, /value="lydian"[^>]*selected/, 'La variante existente queda marcada');
+  assert.doesNotMatch(html, /value="ionian"/, 'El modo del acorde es la base y no se ofrece como variante');
+  assert.doesNotMatch(html, /value="dorian"/, 'Un modo menor no entra en un acorde mayor');
+});
+
+test('elegir un modo en una vuelta, desde la tarjeta, lo guarda en el acorde y en el autoguardado', () => {
+  const {run, runRaw, element} = setup();
+  runRaw(`progression = [{root: 7, rootNoteName: 'G', type: 'maj', mode: 'ionian'}];
+    globalThis.playProgressionFrom = () => { playedFrom = true; }; playedFrom = false;`);
+  element('#progression').handlers.click(
+    {target: fakeTarget('[data-variants]', {dataset: {variants: '0'}})});
+  assert.equal(run('activeProgression'), 0, 'El badge deja al acorde seleccionado');
+  assert.equal(run('playedFrom'), false, 'Editar variantes no arranca el Acompañamiento');
+  assert.equal(element('#variants-editor').open, true, 'El badge deja el panel abierto');
+  assert.match(run("document.querySelector('#progression').innerHTML"),
+    /data-variants="0"/, 'La tarjeta muestra el botón de variantes');
+  element('#variants-editor').handlers.change(
+    {target: fakeTarget('[data-vuelta]', {dataset: {vuelta: '2'}, value: 'mixolydian'})});
+  assert.deepEqual(run('progression[0].variants'), {'2': {ghostMode: 'mixolydian'}}, 'La variante quedó en el acorde');
+  const saved = JSON.parse(run('localStorage.getItem("traste.customProgression.v1")'));
+  assert.deepEqual(saved[0].variants, {'2': {ghostMode: 'mixolydian'}}, '…y en el autoguardado por la misma puerta de siempre');
+});
+
+test('volver la vuelta a «la base del acorde» borra la variante y limpia el guardado', () => {
+  const {run, runRaw, element} = setup();
+  runRaw(`progression = [
+    {root: 7, rootNoteName: 'G', type: 'maj', mode: 'ionian', variants: {'2': {ghostMode: 'mixolydian'}, '4': {ghostMode: 'lydian'}}}
+  ]; activeProgression = 0; updateVariantsEditor();`);
+  element('#variants-editor').handlers.change(
+    {target: fakeTarget('[data-vuelta]', {dataset: {vuelta: '2'}, value: ''})});
+  assert.deepEqual(run('progression[0].variants'), {'4': {ghostMode: 'lydian'}}, 'La vuelta 2 volvió a la base; la 4 sigue');
+  element('#variants-editor').handlers.change(
+    {target: fakeTarget('[data-vuelta]', {dataset: {vuelta: '4'}, value: ''})});
+  assert.equal(run('progression[0].variants || null'), null, 'Sin variantes el acorde no carga la clave');
+  const saved = JSON.parse(run('localStorage.getItem("traste.customProgression.v1")'));
+  assert.equal(saved[0].variants, undefined, 'El autoguardado tampoco');
+  const sinVariantes = run("document.querySelector('#variants-editor').innerHTML");
+  assert.doesNotMatch(sinVariantes, /value="(?:mixolydian|lydian)"[^>]*selected/, 'Las vueltas ya no marcan las variantes borradas');
+  assert.match(sinVariantes, /\(base del acorde\)"?/,
+    'Las vueltas quedan en la base, listas para una variante nueva');
+  assert.match(sinVariantes, /data-vuelta="8"/, 'El panel sigue listo para escribir variantes');
+});
+
+test('cambiar de tarjeta refresca el panel con las variantes del acorde elegido', () => {
+  const {run, runRaw, element} = setup();
+  runRaw(`progression = [
+    {root: 7, type: 'maj', mode: 'ionian', variants: {'1': {ghostMode: 'mixolydian'}}},
+    {root: 0, type: 'm', mode: 'aeolian', variants: {'3': {ghostMode: 'phrygian'}}}
+  ];`);
+  const irACard = index => element('#progression').handlers.click(
+    {target: fakeTarget('[data-index]', {dataset: {index: String(index)}})});
+  irACard(1);
+  assert.equal(run('activeProgression'), 1);
+  let html = run("document.querySelector('#variants-editor').innerHTML");
+  assert.match(html, /value="phrygian"[^>]*selected/, 'La variante de vuelta 3 del m queda marcada');
+  assert.match(html, /value="dorian"/, 'Un acorde minor ofrece sus modos de calidad');
+  assert.doesNotMatch(html, /value="ionian"/, 'Un modo mayor no entra en un acorde minor');
+  irACard(0);
+  html = run("document.querySelector('#variants-editor').innerHTML");
+  assert.match(html, /value="mixolydian"[^>]*selected/, 'Las vueltas del mayor quedan marcadas');
+  assert.doesNotMatch(html, /value="phrygian"/, 'El panel del mayor ya no ofrece modos menores');
+});
+
+test('al duplicar, cada clon queda con sus propias variantes', () => {
+  const {run, runRaw} = setup();
+  runRaw(`progression = [{root: 0, type: 'maj', mode: 'ionian', variants: {'2': {ghostMode: 'lydian'}}}];
+    duplicateProgressionChord(0);`);
+  assert.deepEqual(run('progression[1].variants'), {'2': {ghostMode: 'lydian'}}, 'El clon hereda la variante');
+  runRaw(`progression[1].variants['2'].ghostMode = 'dorian';`);
+  assert.equal(run("progression[0].variants['2'].ghostMode"), 'lydian', '…pero ya no comparten el objeto');
+});
+
+// Acotación QA de la re-entrega T-31: al cambiar una vuelta con el teclado,
+// el foco caía al BODY — updateVariantsEditor reescribe innerHTML (desde
+// renderProgression) y el select enfocado se destruye con la escritura. Para
+// editar las ocho vueltas había que volver a tabular desde el principio. El
+// repintado tiene que devolver el foco al select de la misma vuelta.
+test('cambiar una vuelta repinta el panel y el foco vuelve al select de esa vuelta', () => {
+  const {run, runRaw, element} = setup();
+  runRaw(`progression = [{root: 7, rootNoteName: 'G', type: 'maj', mode: 'ionian', variants: {'2': {ghostMode: 'lydian'}}}];
+    activeProgression = 0;
+    document.activeElement = {dataset: {vuelta: '2'}, closest: s => s === '[data-vuelta]' ? document.activeElement : null};`);
+  // El select que updateVariantsEditor vuelve a crear tras el repaint es un
+  // nodo nuevo: el espía mira que el foco le caiga justo a ese.
+  let focado = 0;
+  const reelegido = element('#variants-editorselect[data-vuelta="2"]');
+  reelegido.focus = () => { focado++; };
+  element('#variants-editor').handlers.change(
+    {target: fakeTarget('[data-vuelta]', {dataset: {vuelta: '2'}, value: 'mixolydian'})});
+  assert.deepEqual(run('progression[0].variants'), {'2': {ghostMode: 'mixolydian'}}, 'La edición quedó guardada (comportamiento ya aprobado, no se re-trabaja)');
+  assert.equal(focado, 1, 'Tras repintar el panel, el select de la vuelta 2 vuelve a recibir el foco');
+});

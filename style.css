@@ -1333,6 +1333,63 @@ html[data-theme="dark"] .board-add-button {
   outline-offset: 1px;
 }
 
+/* T-31 · Panel de variantes por vuelta y su badge en la tarjeta. */
+/* Re-entrega T-31 (acotación QA): el badge computa 14px de
+   .progression-card button (0,1,1), que le gana a este selector (0,1,0), así
+   que el font-size de 9px era letra muerta. Aceptamos el 14px — igual que
+   la ×, cero cambio visual — y no dejamos la declaración muerta acá. */
+.variants-badge { margin-right: 2px; line-height: 15px; }
+#variants-editor {
+  display: block;
+  margin-top: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  background: var(--paper-light);
+  font: 11px var(--sans);
+}
+#variants-editor > summary { cursor: pointer; color: var(--rust); font-weight: 600; }
+/* Re-entrega T-31 (defecto QA revision-t31-eb10203): el aside de la leyenda
+   deja ~103px de contenido útil (caja de 123px a 1366) y cualquier grilla
+   adentro desbordaba — la fila de columnas mínimas 150px pasaba el borde
+   48px, y a 320 49,5px, con la ayuda aplastada en una columna de ~100px, en
+   los dos temas. Abierto, el panel sale del aside y va como popover fijo del
+   borde superior derecho: el ancho y el alto dependen del viewport, no del
+   aside. position: fixed es estable acá porque .workspace no retiene
+   transform tras la animación rise (lo vela tests/style-css.test.cjs), la
+   misma base que el video flotante. Cerrado, la ubicación en el aside no
+   cambia: el resumen sigue en su lugar de siempre. */
+#variants-editor[open] {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  margin: 0;
+  width: min(320px, calc(100vw - 24px));
+  max-height: calc(100vh - 24px);
+  overflow-y: auto;
+  z-index: 120;
+  box-shadow: 0 12px 28px #0003;
+}
+.variants-chord { color: var(--muted); font-weight: 400; }
+/* Re-entrega T-31 (defecto QA): dentro del popover de 320px quedan ~298px
+   útiles que reparten dos columnas de ~143px; la mínima de 120px cabe. La de
+   150px era la que desbordaba la caja del aside. */
+.variants-rows { display: grid; grid-template-columns: repeat(2, minmax(120px, 1fr)); gap: 6px 12px; margin-top: 8px; }
+.variants-row { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.variants-row .variants-vuelta { flex: 0 0 auto; color: var(--muted); font: 9px var(--mono); white-space: nowrap; }
+.variants-row select {
+  flex: 1;
+  min-width: 0;
+  padding: 2px 4px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--paper);
+  color: var(--ink);
+  font: 10px var(--mono);
+  cursor: pointer;
+}
+.variants-row select:focus-visible { outline: 2px solid var(--rust); outline-offset: 1px; }
+.variants-hint { margin: 8px 0 0; color: var(--muted); font: 10px/1.6 var(--sans); }
+
 .progression-note {
   margin: 20px 0 0;
   color: var(--muted);
