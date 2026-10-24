@@ -310,7 +310,7 @@ test('MIX-01: triads and extended chords use equal squared gain with moderate tr
 });
 
 test('new styles schedule distinct complete bars with cancellable percussion',async()=>{
-  for(const [style,attacks,noiseHits] of [['funk',5,14],['bossa',4,11],['reggaeton',4,12],['reggae',4,5],['disco',4,6],['ballad',1,5]]) {
+  for(const [style,attacks,noiseHits] of [['funk',5,14],['bossa',4,11],['reggaeton',4,12],['reggae',4,5],['disco',4,6],['ballad',1,5],['candombe',5,11],['salsa',3,10]]) {
     const {player,buffers,oscillators}=setup();
     await player.start(chords,{bpm:240,style});
     assert.equal(oscillators.length,attacks*3+accompanimentStyles[style].kick.length);
@@ -319,6 +319,19 @@ test('new styles schedule distinct complete bars with cancellable percussion',as
     assert(buffers.every(source=>source.stopped));
     assert.equal(player.voices.size,0);
   }
+});
+
+test('candombe and salsa carry their own beat patterns, not the pop borrow',()=>{
+  // El candombe vive del tambor piano: golpes bajos fuera de la rejilla de corcheas
+  // (el 3.25 cae en semicorchea) con la base del chico corriendo en corcheas.
+  assert.deepEqual(accompanimentStyles.candombe.kick,[0,1.75,2.5,3.25]);
+  assert(accompanimentStyles.candombe.chords.some(([beat])=>beat%1===0.75),
+    'la frase de piano necesita síncopa en semicorchea');
+  assert(accompanimentStyles.candombe.hat.every((beat,index)=>index===0 || beat>accompanimentStyles.candombe.hat[index-1]));
+  // El tumbao del bajo de salsa aterriza en 1, 2½ y 4½, no en el backbeat del pop.
+  assert.deepEqual(accompanimentStyles.salsa.kick,[0,1.5,3.5]);
+  assert.notDeepEqual(accompanimentStyles.salsa.kick,accompanimentStyles.pop.kick);
+  assert.notDeepEqual(accompanimentStyles.candombe.kick,accompanimentStyles.pop.kick);
 });
 
 test('PLY-16: each chord follows its own beat duration and invalid durations are rejected',async()=>{

@@ -1,6 +1,6 @@
 # Ritmos y sonido
 
-Actualizado el 2026-09-11. Los resultados históricos de niveles están en QA; las comprobaciones automáticas no sustituyen la escucha humana.
+Actualizado el 2026-10-23. Los resultados históricos de niveles están en QA; las comprobaciones automáticas no sustituyen la escucha humana.
 
 ## Qué se agregó
 
@@ -18,8 +18,12 @@ Ahora puedo elegir un acompañamiento antes de reproducir. Cada tarjeta sigue du
 | Reggae | Acordes cortos en contratiempos | Bombo/caja en el tercer pulso e hi-hats en contratiempos |
 | Disco | Cuatro ataques de acorde | Bombo en cada pulso, caja en 2 y 4 |
 | Balada | Acorde sostenido | Patrón espaciado de bombo, caja e hi-hats |
+| Candombe | Cinco ataques en semicorchea siguiendo la frase del tambor piano | Bombo con la frase del piano (golpes fuera de la rejilla de corcheas), llamada corta de repique como caja y la base del chico corre en corcheas |
+| Salsa / montuno | Tres staccatos de montuno con anticipación | Tumbao del bajo (1, 2½ y 4½), toque seco de conga como caja y cáscara/campana en corcheas |
 
-Son patrones sintetizados simples para estudiar. No son una simulación completa de cada género, ni una grabación de músicos. No se agregó bajo ni generación automática de canciones.
+Son patrones sintetizados simples para estudiar. No son una simulación completa de cada género, ni una grabación de músicos. No se agregó bajo ni generación automática de canciones. Para candombe y salsa hay una limitación declarada (2026-10-23, `T-19`): el motor arma un patrón por compás de acorde, así que las claves de dos compases (la clave son 3-2 y la línea completa del candombe) no entran; estos estilos resumen el compás en su lugar. La Cumparsita entra como plantilla nueva con armonía aproximada y estilo de balada.
+
+El detalle: en el candombe el bombo sigue la frase del tambor piano (golpes en las posiciones 0, 1¾, 2½ y 3¼, medidas en pulsos como todo el patrón) y la caja hace de repique con llamadas cortas; en salsa el bombo es el tumbao (1, 2½ y 4½) y la caja es el toque seco de la conga.
 
 Lo anterior se refiere al acompañamiento: la escucha individual del mástil sí tiene un timbre sintetizado de bajo tipo slap y otro de guitarra. El piano usa una onda triangular. La reproducción de notas respeta silencio en cero y cancela la voz anterior.
 

@@ -85,3 +85,53 @@ test('mi progresión: las plantillas no sobrescriben el slot guardado',()=>{
   assert.equal(localStorage.getItem('traste.customProgression.v1'),JSON.stringify([{root:0,type:'maj',beats:4}]));
   assert.equal(runs('progression.length'),4);
 });
+
+test('Río de la Plata: candombe y salsa pegan a su ritmo propio, no al pop prestado',()=>{
+  // La revisión de QA constató (T-19) que ambas plantillas cargaban style:'pop':
+  // el nombre estaba sin el ritmo.
+  const {accompanimentStyles}=require('../progression-player.js');
+  assert.equal(progressionPresets.candombe.style,'candombe');
+  assert.equal(progressionPresets.salsa.style,'salsa');
+  for(const [key,preset] of Object.entries(progressionPresets))
+    assert(accompanimentStyles[preset.style],`la plantilla ${key} apunta al estilo inexistente ${preset.style}`);
+  assert.equal(progressionPresets.candombe.chords.some(c=>c.type==='7'),true,'la quinta del candombe es dominante');
+  assert.equal(progressionPresets.salsa.chords.some(c=>c.type==='maj7'),true,'el montuno ancla en séptimas mayores');
+});
+
+test('La Cumparsita: plantilla de Montevideo con la aproximación declarada',()=>{
+  const preset=progressionPresets.cumparsita;
+  assert(preset,'la plantilla nueva debe existir');
+  assert.match(preset.name,/aproximaci/,'el rótulo declara la aproximación');
+  assert.equal(preset.style,'ballad');
+  assert.deepEqual(preset.chords.map(c=>[c.root,c.type]),
+    [[7,'m'],[7,'m'],[2,'7'],[2,'7'],[7,'m'],[0,'m7'],[2,'7'],[7,'m']]);
+});
+
+test('anclaje menú↔módulo: toda plantilla del módulo es seleccionable en #progression-preset',()=>{
+  // T-19: la ronda entregó progressionPresets.cumparsita pero el <select> del
+  // HTML es estático y no la traía: forzar el valor quedaba '' (sin opción) y
+  // el handler de «Usar» cortaba en `if(!preset)return;` — datos muertos.
+  // La regresión ata las dos listas, hoy y cuando la lista crezca.
+  const html=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
+  const select=html.match(/<select id="progression-preset">[\s\S]*?<\/select>/);
+  assert(select,'#progression-preset falta en index.html');
+  const menu=[...select[0].matchAll(/<option value="([^"]+)"/g)].map(m=>m[1]);
+  const keys=Object.keys(progressionPresets);
+  for(const key of keys)
+    assert(menu.includes(key),
+      `la plantilla ${key} existe en el módulo pero no tiene <option value="${key}"> en #progression-preset`);
+  // La otra dirección: un <option> que el módulo no conozca también es datos
+  // muertos (el handler sale por `if(!preset)return;`). «custom» es la única
+  // del menú que no es plantilla del módulo.
+  const sinCustom=menu.filter(value=>value!=='custom');
+  assert.deepEqual([...new Set(sinCustom)].sort(),[...keys].sort(),
+    '#progression-preset trae opciones que el módulo no conoce');
+  // El emplazamiento que pidió QA: dentro del optgroup de Río de la Plata,
+  // donde van candombe/milonga/valsCriollo/salsa — y que su rótulo del MENÚ
+  // conserve el aviso de «aproximación», no solo el name del módulo.
+  const hogar=html.indexOf('— Río de la Plata / Uruguayos —');
+  assert(hogar>=0,'el optgroup de Río de la Plata falta en index.html');
+  const grupo=html.slice(hogar,html.indexOf('<optgroup',hogar+1));
+  assert.match(grupo,/<option value="cumparsita">[^<]*aproximac/,
+    'la opción de La Cumparsita va en el optgroup de Río de la Plata y conserva el aviso');
+});
