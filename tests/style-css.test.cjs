@@ -140,3 +140,17 @@ test('el diapasón recorta el resplandor de las notas resaltadas', () => {
     assert.ok(found, selector + ' no recorta el desbordamiento y las notas resaltadas abren barras de desplazamiento');
   }
 });
+
+test('los controles del compositor de secciones se reparten media tarjeta', () => {
+  // Devolución QA (revision-t41-31e3a7b): en la tarjeta medida de 114.5px la
+  // fila de botones reparte 6 columnas; le tocaba ~15px a cada control y los
+  // rótulos «Repetir»/«Duplicar» miden 34/38px: caja chata, rótulo cruzado con
+  // el del vecino. Que cada .section-composer abarque tres columnas (media
+  // tarjeta) es lo que da caja real de ~ mitad de tarjeta a los dos controles:
+  // sin grid-column el defecto vuelve.
+  const decls = declarationsFor(selector => selector.includes('.section-composer'));
+  const span = decls.find(d => d.property === 'grid-column' && /span\s*3/.test(d.value));
+  assert.ok(span,
+    '.section-composer debe declarar grid-column: span 3 para que «Repetir» (34px) y «Duplicar» (38px) quepan en su caja: declaraciones: ' +
+    decls.map(d => d.property + ': ' + d.value).join('; '));
+});

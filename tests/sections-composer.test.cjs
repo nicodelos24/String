@@ -80,15 +80,28 @@ function setup(){
     renderProgression:()=>{},
     draggingProgressionItem:false,
     renderTask:null,
+    // Para el test del autoguardado: administra un id por objeto del array
+    // progresión, a primera vista. Los clones de app.js son `{...item}` (copia
+    // plana), así que ningún campo distinguiría copia de original; por
+    // identidad sí, y el id queda asignado al orden que vio cada guardado.
+    progressionSnapshot: items=>items.map(item=>{
+      if(!seen.has(item))seen.set(item,seen.size);
+      return seen.get(item);
+    }),
   });
+  const seen=new Map();
   ctx.globalThis=ctx;
-  // La API existente de app.js:2337: clonar la tarjeta y meterla inmediatamente
-  // después de la original, y avisar a StringSections con `include`. Es la
-  // misma línea `progression.splice(index + 1, 0, {...progression[index]})`.
-  vm.runInContext(`function duplicateProgressionChord(index){
+  // La API existente de app.js (duplicateProgressionChord, ~línea 1235): clonar
+  // la tarjeta y meterla inmediatamente después de la original, avisar a
+  // StringSections con `include` y autoguardar la progresión. Es el espejo de la
+  // firma y del cuerpo real de app.js, con el mismo `deferSave`.
+  vm.runInContext(`var progressionSaves=[];
+    function saveCustomProgression(){progressionSaves.push(progressionSnapshot(progression));}`,ctx);
+  vm.runInContext(`function duplicateProgressionChord(index,deferSave){
     if(!Number.isInteger(index)||!progression[index]||progression.length>=4096||draggingProgressionItem)return;
     progression.splice(index+1,0,{...progression[index]});
     globalThis.StringSections&&globalThis.StringSections.include&&globalThis.StringSections.include(progression[index],progression[index+1]);
+    if(!deferSave)saveCustomProgression();
   }`,ctx);
   vm.runInContext(fs.readFileSync(path.join(__dirname,'../sections.js'),'utf8'),ctx);
 
@@ -177,4 +190,26 @@ test('duplicar conserva el orden: la copia viaja después del original y la vist
   assert.equal(after[0].name,'Verso','la fila original sigue primera');
   assert.equal(after[1].name,'Verso (copia)','la copia se inserta inmediatamente después del original');
   assert.deepEqual(after[0].indices,before,'los índices del original no cambian');
+});
+
+test('el autoguardado del «Duplicar» corre una vez, al final del flujo, con el orden ya recolocado',()=>{
+  // Devolución QA (revision-t41-31e3a7b, hallazgo del rasguño): al duplicar un
+  // bloque, cada tarjeta clonada disparaba su propio saveCustomProgression()
+  // dentro del bucle, y la recolocación al final del editor ya no guardaba.
+  // customProgression.v1 quedaba con el orden intermedio — p. ej. [0,0,5,5,7]
+  // en lugar del [0,5,7,0,5] que se veía en pantalla — y un recargado traía de
+  // vuelta unas tarjetas que no están donde el autor las dejó. El autoguardado
+  // es una consecuencia del clic, no un efecto por tarjeta: una sola escritura
+  // al terminar, con el orden definitivo.
+  const t=setup();
+  // Bloque de tres tarjetas sobre una progresión de cuatro: [A B C D].
+  t.load([{name:'Verso',repeat:1,indices:[0,1,2]}]);
+  t.byText(0,'Duplicar').onclick();
+  // El flujo duplica 3 tarjetas y las recoloca al final: [A B C D a b c].
+  // La primera vez que el autoguardado ve cada objeto le asigna su id, así
+  // que un guardado final es exactamente esa secuencia.
+  const saves=t.runRaw('progressionSaves');
+  assert.equal(saves.length,1,'un clic del Duplicar, un autoguardado: no uno por tarjeta clonada');
+  assert.deepEqual(saves[0],[0,1,2,3,4,5,6],
+    `el guardado persiste el orden final del editor (clones al final), no el intermedio del bucle: guardó ${JSON.stringify(saves)}`);
 });

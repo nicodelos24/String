@@ -1232,12 +1232,18 @@ function moveProgressionChord(from, to) {
   renderProgression();
 }
 
-function duplicateProgressionChord(index) {
+// `deferSave`: el compositor de bloques (sections.js) duplica un bloque entero
+// en un bucle y después recoloca las copias al final. Si cada clon escribe su
+// propio autoguardado, customProgression.v1 queda con el orden intermedio del
+// bucle (devolución QA de T-41): el flujo entero persiste UNA vez, cuando el
+// que orquesta termina. Los demás usos (una tarjeta a la vez) no lo pasan y
+// guardan como siempre.
+function duplicateProgressionChord(index, deferSave=false) {
   if (!Number.isInteger(index) || !progression[index] || progression.length >= 4096 || draggingProgressionItem) return;
   progression.splice(index + 1, 0, {...progression[index]});
   globalThis.StringSections?.include(progression[index],progression[index+1]);
   progressionEdited=true;
-  saveCustomProgression();
+  if(!deferSave)saveCustomProgression();
   selectProgressionChord(index + 1);
 }
 

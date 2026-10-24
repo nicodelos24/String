@@ -94,7 +94,7 @@ if(typeof document!=='undefined')(()=>{
             for(const item of s.items.filter(entry=>progression.includes(entry))){
               const at=progression.indexOf(item);
               if(typeof duplicateProgressionChord!=='function')throw new Error('No hay editor de tarjetas disponible.');
-              duplicateProgressionChord(at);
+              duplicateProgressionChord(at,true);
               if(progression[at+1]!==item)clones.push(progression[at+1]);
             }
           }finally{active=previous;}
@@ -106,6 +106,12 @@ if(typeof document!=='undefined')(()=>{
             const at=progression.indexOf(clone);
             if(at>=0){progression.splice(at,1);progression.push(clone);}
           }
+          // Devolución QA de T-41: el autoguardado se escribe UNA vez, aquí al
+          // final del flujo y con las copias ya recolocadas (app.js lo difiere
+          // con `deferSave`). Los guardados por tarjeta adentro del bucle
+          // dejaban el slot «Mi progresión» con el orden intermedio, y al
+          // recargar volvían las tarjetas de a mitad del camino.
+          if(typeof saveCustomProgression==='function')saveCustomProgression();
           const name=uniqueSectionName(s.name);
           sections.splice(index+1,0,{name,repeat:1,items:clones});
           $('section-status').textContent=` Bloque duplicado: ${name} es una copia independiente.`;

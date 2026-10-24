@@ -1108,9 +1108,14 @@ html[data-theme="dark"] .board-add-button {
 /* T-41: los dos controles del compositor de bloques. Declaran su propia fuente
    con `font: inherit` (lección DEF-02/DEF-03: el navegador no la hereda a los
    <button>; los tres botones viejos de la fila la deben en DEF-03, ronda
-   propia); 10px para que «Repetir»/«Duplicar» quepan en la columna sin
-   desbordes a 320px. */
-.sections-panel #section-list .section-card .section-composer { font: inherit; font-size: 10px; }
+   propia). Devolución QA de esta ronda: en la fila de 6 columnas le tocaba
+   ~15px de caja a cada control y los rótulos «Repetir»/«Duplicar» miden
+   34/38px (medición con tarjeta de 114.5px): cada control quedaba en una caja
+   que no podía mostrar su rótulo. Cada `.section-composer` abarca media tarjeta
+   (`span 3`): los dos quedan en una fila propia, con caja real, sin desbordes
+   a 320px; el aria-label conserva el nombre completo de la sección. El recorte
+   con puntos es la guarda para anchos menores a los medidos: no actúa a 320px. */
+.sections-panel #section-list .section-card .section-composer { grid-column: span 3; font: inherit; font-size: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 @media(prefers-reduced-motion: reduce) { .sections-panel #section-list .section-card { transition: none; } }
 .player-topline .player-disclosure { justify-content: flex-start; }
 .source-switch { display: inline-flex; padding: 3px; gap: 2px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); }
