@@ -125,6 +125,13 @@ if (typeof document !== 'undefined') (() => {
   let rejected = false;
   // Último texto escrito en el estado, para no repetirlo en cada sondeo.
   let shown = '';
+  // La pelota del pulso (beat-ball.js) se alimenta de esta misma rejilla: la
+  // vida y la posición salen las dos desde paint, pegadas al mismo flag que
+  // pinta `is-live` en el texto y al mismo grid que ya se contó — la regla de
+  // T-18: la pelota no lleva cuenta propia que pueda desincronizarse. El
+  // arranque en falso no se avisa (la pelota ya nace escondida): solo viajan
+  // los cambios de vida.
+  let wasLive = false;
 
   const tempoNow = () => {
     const field = document.getElementById('tempo-tap-bpm') || document.getElementById('player-bpm');
@@ -186,6 +193,14 @@ if (typeof document !== 'undefined') (() => {
     // pantalla lo repita.
     if (text !== shown) { shown = text; status.textContent = text; }
     status.classList.toggle('is-live', live);
+    if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function' && typeof CustomEvent === 'function') {
+      // La vida solo avisa cuando cambia: la pelota escucha el trámite, no
+      // los veinticinco avisos por segundo que no dicen nada nuevo.
+      if (live !== wasLive) { wasLive = live; window.dispatchEvent(new CustomEvent('traste:improv-live', {detail: {live}})); }
+      // Y la posición del pulso, con su fracción, en cada repaso del sondeo:
+      // sin rejilla el detalle va vacío y la pelota queda de pie, esperando.
+      if (live) window.dispatchEvent(new CustomEvent('traste:improv-beat', {detail: grid || null}));
+    }
   };
 
   const stop = () => {
