@@ -1333,6 +1333,35 @@ html[data-theme="dark"] .board-add-button {
   outline-offset: 1px;
 }
 
+/* T-31 · Panel de variantes por vuelta y su badge en la tarjeta. */
+.variants-badge { margin-right: 2px; font-size: 9px; line-height: 15px; }
+#variants-editor {
+  display: block;
+  margin-top: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  background: var(--paper-light);
+  font: 11px var(--sans);
+}
+#variants-editor > summary { cursor: pointer; color: var(--rust); font-weight: 600; }
+.variants-chord { color: var(--muted); font-weight: 400; }
+.variants-rows { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px 14px; margin-top: 8px; }
+.variants-row { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.variants-row .variants-vuelta { flex: 0 0 auto; color: var(--muted); font: 9px var(--mono); white-space: nowrap; }
+.variants-row select {
+  flex: 1;
+  min-width: 0;
+  padding: 2px 4px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--paper);
+  color: var(--ink);
+  font: 10px var(--mono);
+  cursor: pointer;
+}
+.variants-row select:focus-visible { outline: 2px solid var(--rust); outline-offset: 1px; }
+.variants-hint { margin: 8px 0 0; color: var(--muted); font: 10px/1.6 var(--sans); }
+
 .progression-note {
   margin: 20px 0 0;
   color: var(--muted);
