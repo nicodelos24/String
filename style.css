@@ -1218,12 +1218,22 @@ html[data-theme="dark"] .board-add-button {
 #section-list li span { flex: 1; overflow-wrap: anywhere; min-width: 0; }
 .contextual-help { margin: 8px 0; }
 .inline-help.contextual-help > p { position: static; width: auto; max-width: 100%; box-sizing: border-box; margin-top: 8px; font: 11px/1.6 var(--sans); }
-.progression-view-controls { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; font: 11px var(--mono); color: var(--muted); }
-.progression-stack { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; column-gap: 10px; min-width: 0; }
-.progression-stack > .progression { min-width: 0; margin-bottom: 6px; }
-.progression-stack > .progression-view-controls { margin-top: 2px; }
+/* T-47 (A-11): los controles del plano central dejan la columna que colgaba a
+   la derecha de las tarjetas (169,8 × 380 px a 1366×650, en cascada diagonal) y
+   pasan a una banda debajo, con caja común y dos filas por función: transporte
+   (plegar, Silencio, Play, Tempo) y captura en vivo (Improvisar, Tempo con
+   notas, Entrar al tocar, Seguir acorde MIDI). Solo forma: los ids y los
+   manejadores que ya existían no cambian, tampoco el orden de tabulación. */
+.progression-view-controls { display: flex; flex-direction: column; align-items: stretch; gap: 6px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--paper-light); font: 11px var(--mono); color: var(--muted); }
+.progression-controls-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; }
+.progression-controls-row + .progression-controls-row { border-top: 1px solid var(--line); padding-top: 6px; }
+.capture-row { align-items: flex-start; }
+.transport-row .inline-help { margin-left: auto; }
+.progression-stack { display: grid; grid-template-columns: minmax(0, 1fr); align-items: start; row-gap: 8px; min-width: 0; }
+.progression-stack > .progression { min-width: 0; margin-bottom: 0; }
+.progression-stack > .progression-view-controls { margin-top: 0; }
 .progression-stack .follow-midi { margin: 0; }
-.progression-stack > .progression-view-controls .inline-help p { top: auto; bottom: calc(100% + 8px); left: auto; right: 0; white-space: normal; width: 250px; }
+.progression-stack .progression-view-controls .inline-help p { top: auto; bottom: calc(100% + 8px); left: auto; right: 0; white-space: normal; width: 250px; }
 .progression-disclosure { display: grid; place-items: center; width: 32px; height: 32px; padding: 0; border: 1px solid var(--line); border-radius: 8px; background: var(--paper-light); cursor: pointer; }
 .progression-disclosure:hover { background: #f1e8dc; }
 .progression-disclosure:focus-visible { outline: 2px solid var(--rust); outline-offset: 2px; }
@@ -2259,52 +2269,55 @@ footer {
 .progression-workspace > .sections-panel[open] { width: 280px; }
 .progression-workspace > .progression-stack,
 .progression-workspace > .progression-playback { grid-column: 1; min-width: 0; }
-/* El tempo vive en la columna de la derecha de las tarjetas, junto al
-   interruptor «Seguir acorde MIDI», para tenerlo a mano al trabajar la
-   progresión sin bajar hasta el mástil. */
-.progression-view-controls > .progression-tempo { display: flex; align-items: center; gap: 8px; }
-.progression-view-controls > .progression-tempo .tempo-tap { margin-top: 0; }
+/* El tempo vive en la fila de transporte de la banda, junto a Silencio y Play,
+   para tenerlo a mano al trabajar la progresión sin bajar hasta el mástil. */
+.progression-view-controls .progression-tempo { display: flex; align-items: center; gap: 8px; }
+.progression-view-controls .progression-tempo .tempo-tap { margin-top: 0; }
 
-/* Improvisar: el interruptor y su estado, en la columna de al lado de las
-   tarjetas, debajo del Tempo. Va alineado a la derecha como el resto de la
-   columna, y el estado se aparta un poco para que el texto largo de los pasos
-   («1. Enciende el micrófono») no dispute con el interruptor. Cuando está
+/* Improvisar (T-47): dentro de la fila de captura es una grilla de dos líneas —
+   interruptor y pelotita arriba, ayuda al costado, estado abajo a lo ancho—.
+   Así queda alineado con «Tempo con notas» y «Seguir acorde MIDI» sin que el
+   texto del paso («1. Enciende el micrófono») empuje la fila. Cuando está
    escuchando, el texto se pone en el color de acento y deja de ser una
    instrucción para pasar a ser una lectura. */
-.improvisation-control { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; max-width: 100%; }
+.capture-row .improvisation-control { display: grid; grid-template-columns: auto auto auto; align-items: center; gap: 3px 8px; max-width: 100%; }
 .improvisation-switch { margin: 0; }
-.improvisation-status { margin: 0; font: 11px var(--mono); color: var(--muted); text-align: right; }
+.capture-row .improvisation-status { grid-area: 2 / 1 / 3 / -1; margin: 0; font: 11px var(--mono); color: var(--muted); text-align: left; white-space: nowrap; }
 .improvisation-status.is-live { color: var(--rust); }
 /* La pelotita del pulso (T-18): rebota por pulso con la rejilla de Improvisar,
-   al lado del estado, en la columna de al lado de las tarjetas. El rebote lo
+   al lado del interruptor, en la primera línea de su control. El rebote lo
    escribe beat-ball.js pegando el transform a cada pulso de la rejilla; el
    CSS no lleva animación propia, para no dibujar con su curva un tiempo que
    no es el que la rejilla está contando. Es ornamento: el estado ya explica
    por su cuenta (role="status") en qué compás va la escucha. */
-.improv-ball { display: inline-block; width: 10px; height: 10px; margin-bottom: 2px; border-radius: 50%; background: var(--rust); transform-origin: center bottom; transition: transform 0.09s linear; }
+.improv-ball { grid-area: 1 / 2; display: inline-block; width: 10px; height: 10px; margin-bottom: 2px; border-radius: 50%; background: var(--rust); transform-origin: center bottom; transition: transform 0.09s linear; }
 .improv-ball[hidden] { display: none; }
 .improv-ball.is-beat { background: var(--ink); }
 @media(prefers-reduced-motion: reduce) { .improv-ball { transform: none !important; transition: none; } }
-.improvisation-control .inline-help { align-self: flex-end; }
-.improvisation-control .inline-help p { top: auto; bottom: calc(100% + 8px); left: auto; right: 0; white-space: normal; width: 290px; }
+.capture-row .improvisation-control .inline-help { grid-area: 1 / 3; }
+.capture-row .improvisation-control .inline-help p { top: auto; bottom: calc(100% + 8px); left: auto; right: 0; white-space: normal; width: 290px; }
 
 /* Los dos controles que hacen que el micrófono lleve la canción: el tempo
-   marcando con notas y la entrada al tocar. Van en la misma columna, debajo del
-   bloque de Improvisar, alineados a la derecha como el resto. Cada uno con su
-   línea de estado, porque uno cuenta golpes y el otro avisa de que ha entrado:
-   con una sola línea, uno taparía al otro. */
-.mic-follow-control { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; max-width: 100%; }
+   marcando con notas y la entrada al tocar. En la fila de captura comparten
+   grilla: botón y casilla en la primera línea, cada estado debajo del suyo.
+   Cada uno con su línea de estado, porque uno cuenta golpes y el otro avisa de
+   que ha entrado: con una sola línea, uno taparía al otro. */
+.capture-row .mic-follow-control { display: grid; grid-template-columns: auto auto auto auto; align-items: center; gap: 3px 10px; max-width: 100%; }
+.capture-row #tempo-tap-mic { grid-area: 1 / 1; }
 .tempo-tap-mic { display: inline-flex; align-items: center; gap: 6px; padding: 5px 9px; border: 1px solid var(--line); border-radius: 6px; background: var(--paper); color: var(--ink); font: 11px var(--mono); cursor: pointer; }
 .tempo-tap-mic:hover { border-color: var(--rust); }
 .tempo-tap-mic[aria-pressed="true"] { background: var(--rust); border-color: var(--rust); color: #fff; }
 .tempo-tap-mic:focus-visible { outline: 2px solid var(--rust); outline-offset: 2px; }
-.enter-on-note { display: inline-flex; align-items: center; gap: 6px; margin: 2px 0 0; font: 11px var(--mono); color: var(--muted); cursor: pointer; }
+.capture-row .enter-on-note { grid-area: 1 / 2; margin: 0; }
+.enter-on-note { display: inline-flex; align-items: center; gap: 6px; font: 11px var(--mono); color: var(--muted); cursor: pointer; }
 .enter-on-note input { accent-color: var(--rust); }
-.mic-follow-status { margin: 0; font: 10px var(--mono); color: var(--muted); text-align: right; max-width: 30ch; }
+.capture-row #mic-tempo-status { grid-area: 2 / 1 / 3 / 3; }
+.capture-row #enter-status { grid-area: 2 / 3 / 3 / 4; }
+.capture-row .mic-follow-control .inline-help { grid-area: 1 / 4; }
+.mic-follow-status { margin: 0; font: 10px var(--mono); color: var(--muted); text-align: left; max-width: 30ch; white-space: nowrap; }
 /* Mientras se cuenta, el tempo es una estimación: se dice con el color, para que
    nadie lo tome por el tempo ya aplicado. */
 .mic-follow-status.is-counting { color: var(--rust); }
-.mic-follow-control .inline-help { align-self: flex-end; }
 .mic-follow-control .inline-help p { top: auto; bottom: calc(100% + 8px); left: auto; right: 0; white-space: normal; width: 300px; }
 .mic-follow-control .inline-help p + p { margin-top: 8px; }
 .progression-workspace .section-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -2315,7 +2328,7 @@ footer {
   .progression-workspace > .sections-panel { grid-column: 1; grid-row: auto; justify-self: end; }
   .progression-workspace > .sections-panel[open] { width: 100%; }
   .progression-stack { grid-template-columns: minmax(0, 1fr); }
-  .progression-stack > .progression-view-controls { grid-column: 1; grid-row: auto; flex-direction: row; flex-wrap: wrap; align-items: center; margin: 2px 0 4px; }
+  .progression-stack > .progression-view-controls { grid-column: 1; grid-row: auto; margin: 0; }
   .progression-stack > .progression-view-controls .inline-help p { top: calc(100% + 8px); bottom: auto; left: auto; right: 0; }
 }
 .sections-panel > summary { font-size: 11px; }
