@@ -47,7 +47,7 @@ footer {
 }
 
 .topbar {
-  height: 78px;
+  height: 46px;
   padding: 0 5.5vw;
   display: flex;
   align-items: center;
@@ -194,7 +194,7 @@ footer {
 
 .fretboard-section {
   min-width: 0;
-  padding: 20px 20px 22px;
+  padding: 10px 20px 22px;
   background: #eeeade;
   overflow-y: auto;
 }
@@ -491,7 +491,7 @@ html[data-theme="dark"] .legend-add-button { background: var(--paper); border-co
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  margin-bottom: 20px;
+  margin-bottom: 12px;
   margin-top: 0;
 }
 
@@ -1278,7 +1278,7 @@ html[data-theme="dark"] .board-add-button {
 .note-feedback { display: flex; align-items: center; gap: 12px; min-width: 0; }
 @media(max-width: 900px) { .note-feedback { flex-wrap: wrap; } }
 @media(prefers-reduced-motion: reduce) { .spelling-switch .spelling-track, .spelling-switch .spelling-track::after, .fret-lock .lock-symbol, .fret-lock .lock-symbol path { transition: none; } }
-.board-view-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 8px 0 10px; }
+.board-view-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 8px 0 6px; }
 .pentatonic-control { display: inline-flex; align-items: center; gap: 8px; margin-left: auto; }
 .pentatonic-switch { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font: 11px var(--mono); color: var(--muted); }
 .pentatonic-switch input { position: absolute; width: 1px; height: 1px; opacity: 0; }
@@ -2133,9 +2133,14 @@ footer {
 .song-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
 #song-status { color: var(--muted); font-size: 12px; }
 
-/* String: transportes compactos y herramientas agrupadas. */
-.intro { padding-top: 28px; padding-bottom: 28px; }
-.intro h1 { font-size: clamp(30px, 4vw, 48px); }
+/* String: encabezado compacto (T-46, A-11/A-12). La banda mínima deja el mástil arriba
+   del pliegue real del autor (1366×650): título de una línea y, detrás del «?», el texto
+   de presentación. El resto de la zona de progresión se reparte en las rondas de T-47 y
+   T-48; acá solo se cede el alto muerto del encabezado y el padding superior del instrumento. */
+.intro { display: flex; align-items: center; gap: 12px; padding: 6px 0 8px; }
+.intro-help { margin: 0; }
+.intro-help p { max-width: 300px; }
+.intro h1 { font-size: clamp(20px, 2.4vw, 33px); line-height: 1.02; }
 .chord-player, .youtube-panel { margin: 0 0 12px; padding: 10px 14px; border-radius: 10px; }
 .player-topline { min-height: 30px; gap: 10px; }
 .player-disclosure { padding: 0; }

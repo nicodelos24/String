@@ -186,6 +186,55 @@ test('el badge de variantes ya no declara un font-size letra muerta', () => {
   assert.deepEqual(tamano, [], '.variants-badge pierde (0,1,0) contra .progression-card button (0,1,1) con font-size: 14px: la declaración de 9px no se aplicaba nunca; si algún día se quiere otro tamaño, se gana la especificidad, no se deja letra muerta');
 });
 
+// Encargo T-46 (A-11 del autor, corregido por A-12): a 1366×650 —el pliegue real de su
+// equipo— el héroe de marketing medía 254px (sonda CDP: intro 78→332) y el mástil
+// arrancaba en y=887: 237px debajo del pliegue. La página abría en texto de presentación
+// y el instrumento quedaba fuera de la primera vista (evidencia agenteCoo/pliegue-real-1366x650.png).
+// La ficha da dos salidas y la banda nueva las hace las dos: título de una línea y el
+// texto de presentación detrás de un «?». Además la barra superior cede alto: sin las
+// dos reducciones el mástil sube a y≈650 exacto —sin margen— y el reparto no alcanza.
+test('el título del encabezado es de una línea y el texto de presentación queda detrás del «?»', () => {
+  const intro = html.match(/<section class="intro">([\s\S]*?)<\/section>/);
+  assert.ok(intro, 'la sección .intro debe seguir existiendo en index.html');
+  const banda = intro[1];
+  assert.doesNotMatch(banda, /<br/, 'el <br> del título obliga dos líneas de héroe (254px de banda): el mástil queda en y=887 a 1366×650, detrás del pliegue');
+  const ayuda = banda.match(/<details[^>]*\binline-help\b[\s\S]*?<\/details>/);
+  assert.ok(ayuda, 'el texto de presentación debe quedar detrás de un «?» en la banda: sin él, el subtítulo y el eyebrow vuelven a comer el pliegue');
+  assert.match(ayuda[0], /GUITARRA \/ MAPA ARMÓNICO/, 'el eyebrow de la banda desapareció sin recogerse dentro de la burbuja del «?»');
+  assert.match(ayuda[0], /Elige un acorde, prueba una escala/, 'el subtítulo de la banda desapareció sin recogerse dentro de la burbuja del «?»');
+  assert.doesNotMatch(banda, /<p class="eyebrow"/, 'el eyebrow fuera del «?» mete otra línea (~31px) en la banda: el mástil vuelve a caer bajo el pliegue');
+  assert.doesNotMatch(banda, /<p class="intro-copy"/, 'el subtítulo fuera del «?» mete ~72px en la banda: el mástil vuelve a caer bajo el pliegue');
+});
+
+test('la banda del héroe es una fila compacta con techo de título angosto', () => {
+  // Los tres techos de h1 que se pisan en el cascade: base 73px, compacto 48px
+  // (clamped 30/4vw/48) y el de paisaje/portátil 22px. Ninguno de los dos primeros
+  // cabe en la banda mínima: con 48px de título la banda mide ~95px y el mástil cae
+  // por debajo del pliegue. La banda nueva debe declarar su propio clamp (≤ 34px).
+  const display = declarationsFor(selector => /(^|,)\s*\.intro\s*$/.test(selector.trim()))
+    .filter(d => d.property === 'display');
+  assert.ok(display.some(d => d.value === 'flex'),
+    'sin .intro en flex, el «?» queda en su propia línea y la banda supera los 90px: el mástil no sube al pliegue');
+  const tacos = declarationsFor(selector => /(^|,)\s*\.intro h1/.test(selector.trim()))
+    .filter(d => d.property === 'font-size')
+    .map(d => (d.value.match(/clamp\([^,]+,[^,]+,\s*(\d+)px\)/) || [])[1])
+    .filter(Boolean).map(Number);
+  assert.ok(tacos.length > 0 && Math.min(...tacos) <= 34,
+    'ningún .intro h1 declara un clamp con techo ≤ 34px (el techo vigente menor es 48px): la banda no entra en el pliegue con el mástil encima');
+});
+
+test('la barra superior cede alto para que el mástil arranque al pliegue real', () => {
+  // Presupuesto medido (sonda CDP a 1366×650): con título de una línea (~48px) el
+  // mástil quedaba en y≈650 justo; la barra de 78px es el único bloque que puede
+  // ceder alto sin tocar la zona de progresión (de eso otra ronda: T-47/T-48).
+  const match = css.match(/\.topbar\s*\{([^}]*)\}/);
+  assert.ok(match, 'regla .topbar presente');
+  const alto = match[1].match(/height\s*:\s*(\d+)px/);
+  assert.ok(alto, 'la barra declara height');
+  assert.ok(Number(alto[1]) <= 50,
+    '.topbar de ' + alto[1] + 'px: con la banda de título mínima el mástil quedaba pegado al borde del pliegue; la barra cede alto (46px) para dejar margen');
+});
+
 test('los controles del compositor de secciones se reparten media tarjeta', () => {
   // Devolución QA (revision-t41-31e3a7b): en la tarjeta medida de 114.5px la
   // fila de botones reparte 6 columnas; le tocaba ~15px a cada control y los
