@@ -206,21 +206,19 @@ test('el título del encabezado es de una línea y el texto de presentación que
   assert.doesNotMatch(banda, /<p class="intro-copy"/, 'el subtítulo fuera del «?» mete ~72px en la banda: el mástil vuelve a caer bajo el pliegue');
 });
 
-test('la banda del héroe es una fila compacta con techo de título angosto', () => {
-  // Los tres techos de h1 que se pisan en el cascade: base 73px, compacto 48px
-  // (clamped 30/4vw/48) y el de paisaje/portátil 22px. Ninguno de los dos primeros
-  // cabe en la banda mínima: con 48px de título la banda mide ~95px y el mástil cae
-  // por debajo del pliegue. La banda nueva debe declarar su propio clamp (≤ 34px).
+test('el héroe recupera presencia antes de la zona de tocar', () => {
+  // A-16 acotó el presupuesto: la primera pantalla vuelve a presentar la app;
+  // el viewport fijo empieza recién en .workspace. El título no debe volver a
+  // caer al techo técnico de 33px de T-46.
   const display = declarationsFor(selector => /(^|,)\s*\.intro\s*$/.test(selector.trim()))
     .filter(d => d.property === 'display');
-  assert.ok(display.some(d => d.value === 'flex'),
-    'sin .intro en flex, el «?» queda en su propia línea y la banda supera los 90px: el mástil no sube al pliegue');
+  assert.ok(display.some(d => d.value === 'grid'),
+    'el hero necesita su propia composición antes de la zona de tocar, no la fila mínima de T-46');
   const tacos = declarationsFor(selector => /(^|,)\s*\.intro h1/.test(selector.trim()))
     .filter(d => d.property === 'font-size')
-    .map(d => (d.value.match(/clamp\([^,]+,[^,]+,\s*(\d+)px\)/) || [])[1])
-    .filter(Boolean).map(Number);
-  assert.ok(tacos.length > 0 && Math.min(...tacos) <= 34,
-    'ningún .intro h1 declara un clamp con techo ≤ 34px (el techo vigente menor es 48px): la banda no entra en el pliegue con el mástil encima');
+    .map(d => d.value);
+  assert.ok(tacos.some(value => /clamp\(\s*38px\s*,/.test(value)),
+    'el título debe recuperar una escala expresiva desde 38px; el clamp técnico de T-46 le quitaba presencia');
 });
 
 test('la barra superior cede alto para que el mástil arranque al pliegue real', () => {

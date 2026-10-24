@@ -53,12 +53,11 @@ function mediaBlocks() {
 const has = (body, property, value) =>
   new RegExp('(^|;)\\s*' + property + '\\s*:\\s*' + value + '\\s*(;|$)', 'i').test(body);
 
-test('en escritorio bajo la página se ancla al viewport y cada columna scrollea sola', () => {
-  // La ventana del autor: 1366 de ancho por 650 útiles. El shell solo tiene
-  // sentido donde el layout ya es de tres columnas (≥1101 px): por debajo, la
-  // leyenda baja a una segunda fila y el móvil usa pestañas; ahí la página debe
-  // seguir scrolleando como hoy. El tope de alto es la ventana baja, no una
-  // pantalla grande cualquiera.
+test('en escritorio bajo la zona de tocar ocupa un viewport sin capturar el scroll del documento', () => {
+  // A-16 corrigió el alcance: el hero vuelve a formar parte de la primera
+  // pantalla. El presupuesto de T-48 se conserva dentro de .workspace, que
+  // ocupa un viewport cuando se llega a ella; el documento no se ancla ni se
+  // oculta antes de ese punto.
   const shells = mediaBlocks().filter(block =>
     /min-width\s*:\s*1101px/.test(block.condition) && /max-height\s*:\s*\d+px/.test(block.condition));
   assert.equal(shells.length, 1,
@@ -69,26 +68,25 @@ test('en escritorio bajo la página se ancla al viewport y cada columna scrollea
 
   const rules = rulesIn(shells[0].body);
   const find = selector => rules.find(rule => rule.selector === selector);
+  const workspace = find('.workspace');
+  assert.ok(workspace && has(workspace.body, 'height', '100vh') && has(workspace.body, 'min-height', '0'),
+    '.workspace ocupa un viewport al llegar a tocar y suelta el mínimo de 550 px');
+
   const documento = find('html, body');
-  assert.ok(documento, 'el shell declara html, body juntos: el overflow de body solo no ancla el documento (medido: 932 px)');
-  assert.ok(has(documento.body, 'height', '100%'), 'html, body toman el alto del viewport');
-  assert.ok(has(documento.body, 'overflow', 'hidden'), 'html, body recortan el scroll de página: sin overflow:hidden el scrollHeight sigue en 932');
+  assert.ok(!documento || !has(documento.body, 'overflow', 'hidden'),
+    'el documento no puede capturar el scroll: el hero y el pie siguen siendo alcanzables');
 
   const shell = find('.shell');
-  assert.ok(shell && has(shell.body, 'display', 'flex') && has(shell.body, 'min-height', '0'),
-    '.shell pasa a columna flex con min-height:0 para repartir el alto del viewport');
-
-  const workspace = find('.workspace');
-  assert.ok(workspace && has(workspace.body, 'min-height', '0'),
-    '.workspace suelta su min-height de 550 px y se queda con el alto que sobra');
+  assert.ok(!shell || !has(shell.body, 'display', 'flex'),
+    '.shell no reparte todo el documento como viewport: el presupuesto empieza en la zona de tocar');
 
   const columnas = rules.find(rule => /\.control-panel/.test(rule.selector) && /\.fretboard-section/.test(rule.selector) && /\.legend-panel/.test(rule.selector));
   assert.ok(columnas && has(columnas.body, 'overflow-y', 'auto') && has(columnas.body, 'min-height', '0'),
     'las tres columnas scrollean por dentro (overflow-y:auto, min-height:0): el vacío muerto de la columna izquierda desaparece');
 
   const pie = rules.find(rule => /(^|,)\s*footer\s*$/.test(rule.selector));
-  assert.ok(pie && has(pie.body, 'display', 'none'),
-    'el pie de página se retira en el shell: son 58 px que no pertenecen a la vista de tocar');
+  assert.ok(!pie || !has(pie.body, 'display', 'none'),
+    'el pie se conserva en el documento y aparece al seguir desplazándose después de la zona de tocar');
 
   const estado = find('.progression-playback');
   assert.ok(estado && has(estado.body, 'min-height', '0') && has(estado.body, 'margin', '0'),
