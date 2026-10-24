@@ -235,6 +235,55 @@ test('la barra superior cede alto para que el mástil arranque al pliegue real',
     '.topbar de ' + alto[1] + 'px: con la banda de título mínima el mástil quedaba pegado al borde del pliegue; la barra cede alto (46px) para dejar margen');
 });
 
+// Devolución QA (revision-t46-2602d82-2026-10-24, corrección de T-46): con la banda y la
+// topbar ya aprobadas, la grilla que se toca —#fretboard, no su contenedor .fretboard-wrap—
+// arrancaba en y=659,4 a 1366×650: 9,4 px debajo del pliegue real del autor, en los dos temas
+// (sonda CDP del dev reproduciendo la de QA: wrap 628,4, números 633,4–655,4, exceso 9,4).
+// QA señalizó tres palancas que no tocan lo aprobado: el aire de la toolbar
+// (.board-toolbar margin-bottom), el padding-top del wrap y la fila de números (pista de 26
+// para 22 de contenido). Presupuesto, computable del CSS como texto: lo que hay que achicar
+// entre fila de vista y grilla es máx(margin-bottom de toolbar, margin-top de
+// .board-view-row) + padding-top del wrap + pista de números; con los valores de base mide
+// 12 + 5 + 26 = 43 (mezcla de colapsos + contenidos, medida en la sonda: gap 12, gap 6,
+// padding 5, pista 26). Hacen falta ≥ 10 px: el hueco abajo hasta 8 (el piso lo pone
+// margin-top 8 de la fila: declarar menos no gana, medido), el padding-top a 0 y la pista a
+// 22. 13 ≥ 10: la grilla queda ~3,6 px dentro del pliegue; sin los cortes vuelve el defecto.
+test('la grilla #fretboard (la que se toca) entra al pliegue real de 1366×650', () => {
+  const le = (re, prop) => declarationsFor(sel => re.test(sel.trim()))
+    .filter(d => d.property === prop).map(d => d.value);
+  const numero = v => parseFloat(v);
+  const filaMargin = le(/^\.board-view-row$/, 'margin');
+  const tbMargin = le(/^\.board-toolbar$/, 'margin-bottom');
+  const wrapPadding = le(/(^|,)\s*\.fretboard-wrap\s*$/, 'padding');
+  const filas = le(/(^|,)\s*\.fretboard-layout\s*$/, 'grid-template-rows');
+  const numerosMb = le(/(^|,)\s*\.fret-numbers\s*$/, 'margin-bottom');
+  assert.ok(filaMargin.length === 1 && !Number.isNaN(numero(filaMargin[0].split(/\s+/)[0])),
+    '.board-view-row debe declarar su margin (es el piso del hueco toolbar→fila, colapso medido en la sonda)');
+  assert.ok(tbMargin.length === 1 && !Number.isNaN(numero(tbMargin[0])),
+    '.board-toolbar debe declarar margin-bottom (la primera palanca que señalizó QA)');
+  assert.ok(wrapPadding.length >= 1 && !wrapPadding.some(v => Number.isNaN(numero(v.trim().split(/\s+/)[0]))),
+    'el padding de .fretboard-wrap declara su reparto (la segunda palanca)');
+  assert.ok(filas.length >= 1 && filas.every(v => !Number.isNaN(numero(v.trim().split(/\s+/)[0]))),
+    '.fretboard-layout declara grid-template-rows (la pista de la fila de números)');
+  assert.ok(numerosMb.length === 1 && !Number.isNaN(numero(numerosMb[0])),
+    '.fret-numbers declara su margin-bottom');
+
+  const huecoToolbar = Math.max(numero(tbMargin[0]), numero(filaMargin[0].split(/\s+/)[0]));
+  const ptWrap = numero(wrapPadding[0].trim().split(/\s+/)[0]);
+  const pistaNumeros = filas.map(v => numero(v.trim().split(/\s+/)[0]));
+  assert.ok(huecoToolbar <= 8,
+    'hueco toolbar→fila de ' + huecoToolbar + 'px (medido 12 en 2602d82): el piso es margin-top 8px de .board-view-row; dejarlo en 12 come 4px del presupuesto del pliegue');
+  assert.ok(ptWrap <= 0,
+    'padding-top de .fretboard-wrap de ' + ptWrap + 'px: los 5px de la base (2602d82) separan los números del techo del wrap y empujan #fretboard bajo el pliegue');
+  assert.ok(pistaNumeros.length >= 1 && !pistaNumeros.some(Number.isNaN) && Math.max(...pistaNumeros) <= 22,
+    'algún .fretboard-layout declara la pista de la fila de números por encima de 22px: la fila pasa de 26px (2602d82) a su contenido limpio de 22 — la tercera palanca');
+  assert.ok(numero(numerosMb[0]) === 0,
+    'el margin-bottom de 4px de .fret-numbers quedaba colgado de una pista que ya no existe: sin la pista de 26px es margen muerto sobre el diapasón');
+  const recorte = (12 - huecoToolbar) + (5 - ptWrap) + (26 - numero(filas[0].trim().split(/\s+/)[0]));
+  assert.ok(recorte >= 10,
+    'cortes de ' + recorte + 'px < 10: QA midió 9,4px de exceso de #fretboard sobre el pliegue (y=659,4 a 1366×650); sin ellos la grilla sortable vuelve a quedar debajo');
+});
+
 test('los controles del compositor de secciones se reparten media tarjeta', () => {
   // Devolución QA (revision-t41-31e3a7b): en la tarjeta medida de 114.5px la
   // fila de botones reparte 6 columnas; le tocaba ~15px a cada control y los

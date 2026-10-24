@@ -491,7 +491,11 @@ html[data-theme="dark"] .legend-add-button { background: var(--paper); border-co
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  margin-bottom: 12px;
+  /* T-46 (devolución QA): el mástil tocable (#fretboard) arrancaba en y=659,4 — 9,4px
+     bajo el pliegue real de 1366×650. El hueco real con la fila de vista es el colapso
+     con su margin-top 8px: 6px declarados bajan el gap a 8 (ganancia medida 4px);
+     declarar menos no gana nada. */
+  margin-bottom: 6px;
   margin-top: 0;
 }
 
@@ -548,7 +552,9 @@ html[data-theme="dark"] .legend-add-button { background: var(--paper); border-co
   font: 8px var(--mono);
   text-align: center;
   align-items: center;
-  margin-bottom: 4px;
+  /* Su caja es la pista entera de 22px (T-46): un margin-bottom aquí no añade aire
+     visible (la fuente de 8px se centra en la caja) y colgaba sobre el diapasón. */
+  margin-bottom: 0;
 }
 
 .open-strings {
@@ -1586,8 +1592,11 @@ footer {
   overflow: clip;
 }
 
-/* Un solo desplazamiento mantiene alineados los 22 trastes y sus números. */
-.fretboard-wrap { width: 100%; min-width: 0; overflow-x: auto; padding: 5px 0 10px; overscroll-behavior-x: contain; }
+/* Un solo desplazamiento mantiene alineados los 22 trastes y sus números. El padding
+   superior era aire del ancho completo: en el presupuesto del pliegue real (T-46,
+   devolución QA: #fretboard a y=659,4 vs 650 a 1366×650) no hay 5px que regalar — los
+   números arrancan al tope del wrap, con el aire de la fila de vista (6px) por encima. */
+.fretboard-wrap { width: 100%; min-width: 0; overflow-x: auto; padding: 0 0 10px; overscroll-behavior-x: contain; }
 .workspace { grid-template-columns: 220px minmax(0, 1fr) 160px; }
 .fretboard-wrap:focus-visible { outline: 2px solid var(--rust); outline-offset: 3px; }
 @media(max-width: 1100px) {
@@ -1643,10 +1652,13 @@ footer {
 }
 
 /* Open strings sit outside the nut and share the fretboard's row height. */
+/* La fila de números y el encabezado de cuerdas abren la grilla: la pista es 22px, el
+   alto limpio del contenido (T-46, devolución QA: los 4px que sobraban de la pista de
+   26px empujaban #fretboard a y=659,4 — bajo el pliegue real de 650 a 1366×650). */
 .fretboard-layout {
   display: grid;
   grid-template-columns: 48px minmax(0, 1fr);
-  grid-template-rows: 26px auto;
+  grid-template-rows: 22px auto;
 }
 .open-strings-heading {
   grid-column: 1;
