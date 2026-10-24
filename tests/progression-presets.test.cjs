@@ -85,3 +85,24 @@ test('mi progresión: las plantillas no sobrescriben el slot guardado',()=>{
   assert.equal(localStorage.getItem('traste.customProgression.v1'),JSON.stringify([{root:0,type:'maj',beats:4}]));
   assert.equal(runs('progression.length'),4);
 });
+
+test('Río de la Plata: candombe y salsa pegan a su ritmo propio, no al pop prestado',()=>{
+  // La revisión de QA constató (T-19) que ambas plantillas cargaban style:'pop':
+  // el nombre estaba sin el ritmo.
+  const {accompanimentStyles}=require('../progression-player.js');
+  assert.equal(progressionPresets.candombe.style,'candombe');
+  assert.equal(progressionPresets.salsa.style,'salsa');
+  for(const [key,preset] of Object.entries(progressionPresets))
+    assert(accompanimentStyles[preset.style],`la plantilla ${key} apunta al estilo inexistente ${preset.style}`);
+  assert.equal(progressionPresets.candombe.chords.some(c=>c.type==='7'),true,'la quinta del candombe es dominante');
+  assert.equal(progressionPresets.salsa.chords.some(c=>c.type==='maj7'),true,'el montuno ancla en séptimas mayores');
+});
+
+test('La Cumparsita: plantilla de Montevideo con la aproximación declarada',()=>{
+  const preset=progressionPresets.cumparsita;
+  assert(preset,'la plantilla nueva debe existir');
+  assert.match(preset.name,/aproximaci/,'el rótulo declara la aproximación');
+  assert.equal(preset.style,'ballad');
+  assert.deepEqual(preset.chords.map(c=>[c.root,c.type]),
+    [[7,'m'],[7,'m'],[2,'7'],[2,'7'],[7,'m'],[0,'m7'],[2,'7'],[7,'m']]);
+});

@@ -96,7 +96,7 @@ Justo encima del botón **Tempo** está el interruptor **Silencio**, para armar 
 - Cambiar de fuente detiene la anterior. Volver a pulsar la fuente activa no detiene.
 - Plegar Acompañamiento no detiene el audio.
 - Cada tarjeta dura un compás de cuatro pulsos por defecto; su selector ajusta la duración y el acompañamiento la respeta. BPM entre 30 y 240.
-- Estilos: Sin ritmo, Pop / rock, Jazz suave, Trap suave, Funk, Bossa suave, Reggaetón suave, Reggae, Disco y Balada.
+- Estilos: Sin ritmo, Pop / rock, Jazz suave, Trap suave, Funk, Bossa suave, Reggaetón suave, Reggae, Disco, Balada, Candombe y Salsa / montuno.
 - Plantillas: **Mi progresión** (se guarda sola al editar las tarjetas, con la escala fantasma de cada acorde, y siempre se puede volver a elegir; si borras todas las tarjetas, la lista vacía también se conserva), ejemplos de estándares, Río de la Plata y clásicos. Usarlas reemplaza las tarjetas y ajustan estilo y tempo, salvo «Mi progresión», que solo restaura las tarjetas. La descripción musical de cuatro ejemplos nuevos está en revisión antes de corregirse (`T-10`); no cambia la reproducción de ninguna plantilla.
 - Volumen general y percusión se pueden ajustar; el metrónomo es independiente.
 

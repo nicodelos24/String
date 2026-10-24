@@ -41,7 +41,18 @@ const accompanimentStyles = {
   bossa: {name:'Bossa suave', chords:[[0,0.8,0.7],[1.5,0.6,0.65],[2.5,0.6,0.75],[3.5,0.45,0.6]],
     kick:[0,1.5,2,3.5],snare:[0,1.5,3],hat:[0,0.5,1,1.5,2,2.5,3,3.5]},
   reggaeton: {name:'Reggaetón suave', chords:[[0,1.3,0.85],[1.5,0.4,0.7],[2,1.3,0.85],[3.5,0.45,0.7]],
-    kick:[0,2],snare:[0.75,1.5,2.75,3.5],hat:[0,0.5,1,1.5,2,2.5,3,3.5]}
+    kick:[0,2],snare:[0.75,1.5,2.75,3.5],hat:[0,0.5,1,1.5,2,2.5,3,3.5]},
+  // Uruguayo y caribeño (T-19): versiones didácticas de lo que cabe en UN compás
+  // — la clave son de dos compases queda fuera del modelo de un patrón por
+  // acorde; la limitación queda escrita en docs/RITMOS-Y-SONIDO.md.
+  candombe: {name:'Candombe',
+    // La frase del tambor piano en semicorcheas contra la base del chico en corcheas.
+    chords:[[0,0.7,0.9],[0.75,0.5,0.7],[1.5,0.95,0.8],[2.5,0.7,0.75],[3.25,0.5,0.85]],
+    kick:[0,1.75,2.5,3.25],snare:[0.75,2.25,3.75],hat:[0,0.5,1,1.5,2,2.5,3,3.5]},
+  salsa: {name:'Salsa / montuno',
+    // Staccatos de montuno con anticipación sobre el tumbao del bajo (1, 2½ y 4½).
+    chords:[[0.75,0.35,0.8],[2.25,0.45,0.85],[3.5,0.45,0.7]],
+    kick:[0,1.5,3.5],snare:[1,2.5],hat:[0,0.5,1,1.5,2,2.5,3,3.5]}
 };
 
 function chordLevels(notes) {

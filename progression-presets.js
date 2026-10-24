@@ -23,7 +23,7 @@ const progressionPresets={
   ]},
   turnaround:{name:'Jazz · I–vi–ii–V en Do',bpm:110,style:'jazz',chords:[{root:0,type:'maj7',mode:'ionian'},{root:9,type:'m7',mode:'aeolian'},{root:2,type:'m7',mode:'dorian'},{root:7,type:'7',mode:'mixolydian'}]},
   // === Uruguayos / Río de la Plata ===
-  candombe:{name:'Candombe · Progresión típica (I–IV–V)',bpm:105,style:'pop',chords:[
+  candombe:{name:'Candombe · Progresión típica (I–IV–V)',bpm:105,style:'candombe',chords:[
     {root:0,type:'maj',mode:'ionian',beats:2},{root:0,type:'maj',mode:'ionian',beats:2},
     {root:5,type:'maj',mode:'lydian',beats:2},{root:5,type:'maj',mode:'lydian',beats:2},
     {root:7,type:'7',mode:'mixolydian',beats:2},{root:7,type:'7',mode:'mixolydian',beats:2},
@@ -37,7 +37,15 @@ const progressionPresets={
     {root:2,type:'m7',mode:'dorian'},{root:7,type:'7',mode:'mixolydian'},
     {root:0,type:'maj7',mode:'ionian'},{root:0,type:'maj7',mode:'ionian'}
   ]},
-  salsa:{name:'Salsa · I–IV–V–IV (montuno)',bpm:180,style:'pop',chords:[
+  // La sección A con la armonía de los cancioneros; el tango real tiene detalles
+  // de paso que esta versión didáctica no reproduce (por eso el rótulo lo avisa).
+  cumparsita:{name:'La Cumparsita · Tango de Montevideo (aproximación)',bpm:124,style:'ballad',chords:[
+    {root:7,type:'m',mode:'aeolian'},{root:7,type:'m',mode:'aeolian'},
+    {root:2,type:'7',mode:'mixolydian'},{root:2,type:'7',mode:'mixolydian'},
+    {root:7,type:'m',mode:'aeolian'},{root:0,type:'m7',mode:'aeolian'},
+    {root:2,type:'7',mode:'mixolydian'},{root:7,type:'m',mode:'aeolian'}
+  ]},
+  salsa:{name:'Salsa · I–IV–V–IV (montuno)',bpm:180,style:'salsa',chords:[
     {root:0,type:'maj7',mode:'ionian',beats:2},{root:0,type:'maj7',mode:'ionian',beats:2},
     {root:5,type:'maj7',mode:'lydian',beats:2},{root:5,type:'maj7',mode:'lydian',beats:2},
     {root:7,type:'7',mode:'mixolydian',beats:2},{root:7,type:'7',mode:'mixolydian',beats:2},
