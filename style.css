@@ -1451,6 +1451,15 @@ footer {
 }
 
 @media (max-width: 800px) {
+  /* T-49: en retrato el contenido puede ser más bajo que el viewport. Sin un
+     shell flexible, tras el pie quedaban ~400px de fondo antes de la barra
+     fija; la pestaña visible ahora ocupa ese alto disponible. */
+  body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
   .topbar {
     height: 64px;
     padding: 0 5vw;
@@ -1462,6 +1471,10 @@ footer {
 
   .shell {
     width: 90vw;
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
   }
 
   .intro {
@@ -1472,6 +1485,15 @@ footer {
     display: grid;
     grid-template-columns: 1fr;
     grid-template-rows: auto auto auto;
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  /* Cuando la barra elige una sola pestaña, su panel activo se estira junto
+     con el workspace: no queda una franja blanca entre la sección y el pie. */
+  body[data-mobile-tab] .fretboard-section {
+    flex: 1 1 auto;
+    min-height: 0;
   }
 
   .control-panel {
