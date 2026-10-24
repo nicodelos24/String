@@ -2185,14 +2185,13 @@ footer {
 .song-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
 #song-status { color: var(--muted); font-size: 12px; }
 
-/* String: encabezado compacto (T-46, A-11/A-12). La banda mínima deja el mástil arriba
-   del pliegue real del autor (1366×650): título de una línea y, detrás del «?», el texto
-   de presentación. El resto de la zona de progresión se reparte en las rondas de T-47 y
-   T-48; acá solo se cede el alto muerto del encabezado y el padding superior del instrumento. */
-.intro { display: flex; align-items: center; gap: 12px; padding: 6px 0 8px; }
+/* T-50 (A-16): el presupuesto de alto empieza al llegar al instrumento, no en
+   la primera pantalla. El hero vuelve a presentar la aplicación antes de que
+   la persona elija bajar a tocar. */
+.intro { display: grid; gap: 18px; padding: 68px 0 54px; }
 .intro-help { margin: 0; }
 .intro-help p { max-width: 300px; }
-.intro h1 { font-size: clamp(20px, 2.4vw, 33px); line-height: 1.02; }
+.intro h1 { font-size: clamp(38px, 5.2vw, 73px); line-height: .99; }
 .chord-player, .youtube-panel { margin: 0 0 12px; padding: 10px 14px; border-radius: 10px; }
 .player-topline { min-height: 30px; gap: 10px; }
 .player-disclosure { padding: 0; }
@@ -2504,32 +2503,12 @@ html[data-theme="dark"] .fret-numbers, html[data-theme="dark"] .open-strings-hea
 
 @media (prefers-reduced-motion: reduce) { .mobile-tabs button { transition: none; } }
 
-/* ==========================================================================
-   T-48 · Presupuesto de alto (A-11/A-12)
-   La vista de tocar tiene que entrar en el pliegue real del autor: ≈650 px
-   útiles (pantalla 768 − barra de omarchy − controles de Chromium). En la base
-   de T-47 la página medía 1550 px a 1366×650 y el mástil caía en y=687,4.
-
-   En el escritorio de tres columnas y ventana baja, el documento se ancla al
-   viewport y cada columna se queda con su scroll: así no hay una página larga
-   que empuje el mástil, ni el vacío beige que dejaba la columna izquierda al
-   estirarse con la más alta. El pie (58 px) no pertenece a la vista de tocar.
-
-   Solo ≥1101 px: por debajo, la leyenda baja a una segunda fila del grid y el
-   móvil (≤800) usa pestañas; ahí el documento sigue scrolleando como siempre.
-   ========================================================================== */
+/* T-50: al desplazar la página hasta la zona de tocar, cada columna resuelve
+   su contenido dentro de un viewport. El documento conserva su scroll para
+   que el hero y el pie sigan formando parte de la experiencia. */
 @media (min-width: 1101px) and (max-height: 900px) {
-  html, body { height: 100%; overflow: hidden; }
-  body { display: flex; flex-direction: column; }
-  .shell { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
-  /* La barra y la banda no se encogen: el flex repartiría su alto con el main. */
-  .topbar { flex: 0 0 auto; }
-  /* El título no se encoge (el flex lo haría para hacer sitio) pero sí cede su
-     aire: la banda mínima de T-46 ya es una línea. */
-  .intro { flex: 0 0 auto; padding: 0; }
-  .workspace { flex: 1 1 auto; min-height: 0; }
+  .workspace { height: 100vh; min-height: 0; }
   .control-panel, .fretboard-section, .legend-panel { min-height: 0; overflow-y: auto; }
-  footer { display: none; }
   /* Palancas fuera de la grilla aprobada de T-46: la línea «Detenido» (26 px de
      min-height más márgenes) y el aire del rótulo del mástil. */
   .progression-playback { min-height: 0; margin: 0; font-size: 10px; }
@@ -2542,3 +2521,17 @@ html[data-theme="dark"] .fret-numbers, html[data-theme="dark"] .open-strings-hea
      de arriba para que la franja no sume un scroll extra. */
   .library-panel { margin-top: 10px; padding: 10px 14px; }
 }
+
+/* T-50: cabecera compacta de Secciones. La etiqueta de estado queda solo para
+   lectores de pantalla: el botón ya comunica la vista activa sin duplicarla. */
+.sections-panel { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 8px; row-gap: 6px; }
+.sections-panel > summary { grid-column: 1; margin: 0; }
+#sections-maximize { grid-column: 2; grid-row: 1; margin: 0; align-self: center; }
+.sections-panel > :not(summary, #sections-maximize) { grid-column: 1 / -1; }
+
+/* Regla final deliberada: el hero recupera su escala fuera del modo móvil
+   (donde ya se oculta) y el documento nunca captura su desplazamiento. */
+html, body { min-height: 100%; }
+.intro { padding: 68px 0 54px; }
+.intro h1 { font-size: clamp(38px, 5.2vw, 73px); }
+.workspace { height: 100vh; min-height: 0; }
