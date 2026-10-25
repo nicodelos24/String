@@ -8,6 +8,10 @@ estético por decisión del autor»*, así que acá va la medición con números
 la paleta la elige el autor y se aplica en la ronda siguiente. Lo único que se escribe es este
 documento.
 
+**Ronda 1 corregida (2026-10-25, devolución de QA):** la sonda que acompañaba la entrega no
+ejecutaba las cuatro vistas que esta tabla declara. Está corregida, con prueba propia, y las
+cuatro vistas se regeneraron **sin cambiar ningún número** — ver §Reproducibilidad.
+
 ## Qué se midió y con qué
 
 Sonda propia sobre la página real en Chromium 155 por CDP (`sonda-contraste.mjs`, evidencia al
@@ -43,6 +47,30 @@ así que esto **no cierra `DEF-02`/`DEF-03`**.
 
 «Visibles» excluye lo que está dentro de paneles plegados (`opacity: 0`, alto 0). Se midieron
 igual: el autor los abre, y los números completos quedan en la evidencia.
+
+## Reproducibilidad (corrección de la ronda 1)
+
+QA devolvió la primera entrega (`a47cbcc`) por un defecto del instrumento, no de la medición:
+`sonda-contraste.mjs` hacía `const VISTAS = (…).split(',')` y después comparaba
+`VISTAS === 'todas'` —un arreglo contra un string, siempre falso—, así que `VISTAS=todas`
+ejecutaba sólo las dos vistas de 1366×650. Las filas de 1366×768 y 320×740 no tenían
+instrumento que las produjera.
+
+Corregido en la misma rama, sin tocar paleta, CSS, JS ni HTML:
+
+- La selección vive en **`vistas.mjs`** (catálogo único de las cuatro vistas) y la usa tanto la
+  sonda como **`vistas.test.mjs`**, 6 casos con `node --test` que **nacieron rojos** contra un
+  puerto fiel de la lógica devuelta (2/6; la roja es exactamente «todas cae en escritorio») y
+  quedan verdes 6/6. `node vistas.mjs --plan todas` imprime el plan sin abrir Chromium.
+- La sonda escribe **`manifiesto.json`** con las vistas que corrió y los totales de cada una:
+  la evidencia dice qué se ejecutó, no sólo qué archivos quedaron.
+- El tema ya no se cambia por un clic: se pide por `localStorage` + recarga y cada vista
+  **falla en voz alta** si el tema medido no es el declarado. Sin eso, una corrida quedó con
+  tres vistas en oscuro y el número salía plausible pero falso.
+
+Las cuatro vistas se regeneraron desde el tip corregido y dan **los mismos números de la tabla
+de arriba, uno a uno** (`base/manifiesto.json`). Dos corridas completas seguidas dan idéntico.
+La roja y las salidas están en `red-first.txt` de la evidencia.
 
 ## Dónde falla, en claro y visible (189)
 
@@ -103,7 +131,8 @@ pieza y va en su propia ronda: acá queda medida y con nombre, no arreglada a ci
 
 ## Comparación visual
 
-Misma vista, mismo desplazamiento (`#fretboard` al tope), claro y oscuro:
+Misma vista, mismo desplazamiento (`#fretboard` al tope), claro y oscuro. En `preview/` de la
+evidencia corregida:
 
 - `preview/1366x650-claro-base.png` · `-A.png` · `-AB2.png`
 - `preview/1366x650-oscuro-base.png` · `-A.png` · `-AB2.png`
@@ -120,12 +149,21 @@ Las variantes se inyectaron **solo en la sonda** (`:root{--muted:#5d6560}` y
 
 ## Cómo se re-verifica
 
+Evidencia corregida: `agenteDesarrollador/evidencias/ronda-t36-fix-sonda-2026-10-25/`
+(la carpeta original `ronda-t36-base-f96cd2a-2026-10-25/` queda como historia de la entrega
+devuelta; la sonda vieja está congelada ahí como `sonda-devuelta-a47cbcc.mjs`).
+
 ```
-node agenteDesarrollador/evidencias/ronda-t36-base-f96cd2a-2026-10-25/servidor.mjs   # :8001
-chromium --headless=new --remote-debugging-port=9225 …                              # CDP
-EV=<salida> node …/sonda-contraste.mjs                                              # mide y captura
-node …/analisis.mjs                                                                 # ratios de candidatos
+node vistas.mjs --plan todas                        # 4 vistas, sin Chromium
+node --test vistas.test.mjs                         # 6/6 · la selección probada
+node agenteDesarrollador/evidencias/ronda-t36-fix-sonda-2026-10-25/servidor.mjs   # :8001
+chromium --headless=new --remote-debugging-port=9225 …                            # CDP
+EV=<salida> VISTAS=todas node …/sonda-contraste.mjs                               # 4 vistas + manifiesto
+node …/validacion.mjs                               # 9/9 del medidor
+EV=<salida> node …/analisis.mjs                     # ratios de candidatos
 ```
 
+`manifiesto.json` deja escrito qué vistas corrió y sus totales: si un día vuelve a ejecutarse
+menos de lo que el informe declara, se ve ahí y no en la buena voluntad de quien lee.
 `analisis.mjs` calcula los ratios de cada candidato contra **las superficies observadas**, no
 contra una lista escrita a mano: si mañana una superficie cambia, el número lo dice.
