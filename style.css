@@ -2054,6 +2054,21 @@ footer {
 .kp-key.has-key { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--rust) 35%, transparent); }
 .kp-key:focus-visible { outline: 2px solid var(--rust); outline-offset: 1px; z-index: 3; }
 
+/* T-06 · Teclas del piano que no tienen posición en el mástil del instrumento
+   activo: el bajo de 4 cuerdas y 22 trastes llega a fa4, así que el punto y el
+   guion de la fila grave (y el tramo alto de la fila media) no se pueden pisar.
+   La marca es una banda rayada en el borde de arriba: no cambia el tamaño de la
+   tecla ni la tinta, que desde T-36 se elige por contraste. La tecla sigue
+   sonando; la explicación va en el title y en el texto para lectores. */
+.kp-key.kp-off-mast {
+  background-image: repeating-linear-gradient(135deg,
+    color-mix(in srgb, var(--rust) 55%, transparent) 0 3px,
+    transparent 3px 7px);
+  background-repeat: no-repeat;
+  background-size: 100% 6px;
+  background-position: top;
+}
+
 .fretboard-section.keyboard-open .fretboard-wrap,
 .fretboard-section.keyboard-open .board-footer { display: none; }
 

@@ -183,6 +183,29 @@ function mastilBaseDrop(instrument, inMastil) {
   return instrument === 'bass' ? 0 : 12;
 }
 
+// El mástil dibujado tiene 22 trastes (app.js) y el piano muestra cuatro
+// octavas: hay notas del piano que ningún traste del instrumento activo puede
+// pisar. Se miden con los mismos números del dibujo, sin tocar el motor ni el
+// audio, para poder avisarlo en el piano (T-06).
+var MAST_FRETS = 22;
+
+// Rango de notas que el mástil puede tocar: de la cuerda más grave al aire a la
+// más aguda en el último traste. Con el bajo de 4 cuerdas (28 33 38 43) llega a
+// fa4 (65); con la guitarra (40 45 50 55 59 64), a re6 (86).
+function mastMidiRange(strings, frets) {
+  var list = (strings || []).filter(function (midi) { return Number.isFinite(midi); });
+  var count = Number.isFinite(frets) ? frets : MAST_FRETS;
+  if (!list.length) return null;
+  return { lowest: Math.min.apply(null, list), highest: Math.max.apply(null, list) + count };
+}
+
+// ¿Esta nota tiene alguna posición en el mástil del instrumento activo?
+function midiOnMast(strings, midi, frets) {
+  var range = mastMidiRange(strings, frets);
+  if (!range || !Number.isFinite(midi)) return false;
+  return midi >= range.lowest && midi <= range.highest;
+}
+
 // Estado visual de un modo del teclado para la lógica pura: si el panel queda
 // oculto o visible y qué clase recibe la sección del mástil.
 function keyboardLayoutClasses(mode) {
@@ -508,6 +531,9 @@ if (typeof module !== 'undefined' && module.exports) module.exports = {
   transportSpaceCaptures: transportSpaceCaptures,
   recognizedChordSource: recognizedChordSource,
   mastilKeyToggle: mastilKeyToggle,
+  mastMidiRange: mastMidiRange,
+  midiOnMast: midiOnMast,
+  MAST_FRETS: MAST_FRETS,
   keyboardLayoutClasses: keyboardLayoutClasses,
   chordFromNotes: chordFromNotes,
   liveNoteChord: liveNoteChord,
@@ -547,6 +573,20 @@ if (typeof document !== 'undefined') (function () {
 
   function octaveDirection() { return octaveUp ? 1 : octaveDown ? -1 : 0; }
   function effectiveBase() { return activeBaseMidi(baseMidi, octaveDirection(), OCTAVE_START, OCTAVE_COUNT); }
+  // Cuerdas del instrumento activo, tal como las dibuja el mástil: de acá sale
+  // qué notas tienen traste y cuáles no (T-06). No se copia la tabla.
+  function mastStrings() {
+    var inst = typeof instruments !== 'undefined' ? instruments[instrument] : null;
+    return inst && inst.strings ? inst.strings : null;
+  }
+  function mastTopNote() {
+    var range = mastMidiRange(mastStrings());
+    return range ? keyboardNoteLabel(range.highest) : '';
+  }
+  function instrumentName() {
+    var inst = typeof instruments !== 'undefined' ? instruments[instrument] : null;
+    return inst && inst.name ? inst.name : '';
+  }
   // Base para una tecla en concreto: igual en el piano y en el mástil, `a`
   // suena en do central (C4) y la fila media queda a=do s=re d=mi f=fa… Las
   // teclas + y } del teclado latam se escriben con Shift, que ya no mueve la
@@ -630,7 +670,11 @@ if (typeof document !== 'undefined') (function () {
     keysEl.style.setProperty('--key-total', String(strip.totalWhite));
     keysEl.innerHTML = strip.whites.map(keyButton).join('')
       + strip.blacks.map(keyButton).join('');
-    if (rangeEl) rangeEl.textContent = 'C' + OCTAVE_START + '–B' + (OCTAVE_START + OCTAVE_COUNT - 1);
+    if (rangeEl) {
+      var top = mastTopNote();
+      rangeEl.textContent = 'C' + OCTAVE_START + '–B' + (OCTAVE_START + OCTAVE_COUNT - 1)
+        + (top ? ' · mástil hasta ' + top : '');
+    }
     if (octaveEl) octaveEl.textContent = keyboardNoteLabel(base);
     pressed.forEach(function (midi) { setPlaying(midi, true); });
     pointerNotes.forEach(function (midi) { setPlaying(midi, true); });
@@ -654,10 +698,15 @@ if (typeof document !== 'undefined') (function () {
     var white = key.pitchClass === 0 || key.pitchClass === 2 || key.pitchClass === 4 || key.pitchClass === 5 || key.pitchClass === 7 || key.pitchClass === 9 || key.pitchClass === 11;
     var label = keyboardKeyLabel(key.pitchClass);
     var hint = key.mapped ? '<small>' + key.mapped + '</small>' : '';
+    // T-06: el bajo de 4 cuerdas no llega a todo el piano. La tecla sin traste
+    // no se apaga —suena igual— y se marca con una banda y una explicación.
+    var off = !midiOnMast(mastStrings(), key.midi);
+    var offLabel = off ? ' · sin posición en el mástil (' + instrumentName() + ' hasta ' + mastTopNote() + ')' : '';
+    var offMark = off ? '<span class="sr-only">' + offLabel + '</span>' : '';
     return '<button type="button" class="kp-key kp-' + (white ? 'white' : 'black')
-      + (key.mapped ? ' has-key' : '') + '" data-midi="' + key.midi + '"'
+      + (key.mapped ? ' has-key' : '') + (off ? ' kp-off-mast' : '') + '" data-midi="' + key.midi + '"'
       + (white ? '' : ' style="--key-position:' + key.position + '"')
-      + ' title="' + label + (key.mapped ? ' · tecla ' + key.mapped : '') + '"><span>' + label + '</span>' + hint + '</button>';
+      + ' title="' + label + (key.mapped ? ' · tecla ' + key.mapped : '') + offLabel + '"><span>' + label + '</span>' + hint + offMark + '</button>';
   }
 
   function onPointerDown(event) {
@@ -957,6 +1006,10 @@ if (typeof document !== 'undefined') (function () {
   keysEl.addEventListener('pointerleave', onPointerEnd);
 
   if (timbreSel) timbreSel.addEventListener('change', function () { synth.setTimbre(timbreSel.value); });
+  // T-06: cambiar de instrumento cambia qué teclas tienen traste (el bajo llega
+  // a fa4; la guitarra, a re6). El panel abierto se vuelve a marcar.
+  var instrumentSelect = document.getElementById('instrument-select');
+  if (instrumentSelect) instrumentSelect.addEventListener('change', function () { if (!panel.hidden) render(); });
   if (delayIn) delayIn.addEventListener('change', function () { synth.setDelay(delayIn.checked); });
   if (reverbIn) reverbIn.addEventListener('change', function () { synth.setReverb(reverbIn.checked); });
   var volumeInputs = []; if (volumeIn) volumeInputs.push(volumeIn); if (mastilVolumeIn) volumeInputs.push(mastilVolumeIn);
