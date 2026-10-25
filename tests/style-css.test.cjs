@@ -186,51 +186,44 @@ test('el badge de variantes ya no declara un font-size letra muerta', () => {
   assert.deepEqual(tamano, [], '.variants-badge pierde (0,1,0) contra .progression-card button (0,1,1) con font-size: 14px: la declaración de 9px no se aplicaba nunca; si algún día se quiere otro tamaño, se gana la especificidad, no se deja letra muerta');
 });
 
-// Encargo T-46 (A-11 del autor, corregido por A-12): a 1366×650 —el pliegue real de su
-// equipo— el héroe de marketing medía 254px (sonda CDP: intro 78→332) y el mástil
-// arrancaba en y=887: 237px debajo del pliegue. La página abría en texto de presentación
-// y el instrumento quedaba fuera de la primera vista (evidencia agenteCoo/pliegue-real-1366x650.png).
-// La ficha da dos salidas y la banda nueva las hace las dos: título de una línea y el
-// texto de presentación detrás de un «?». Además la barra superior cede alto: sin las
-// dos reducciones el mástil sube a y≈650 exacto —sin margen— y el reparto no alcanza.
-test('el título del encabezado es de una línea y el texto de presentación queda detrás del «?»', () => {
+// A-17 reemplaza solo el contrato visual de T-46/T-50: el autor quiere de vuelta
+// el encabezado exacto anterior a esa familia. La zona de tocar conserva su propio
+// presupuesto; estas guardas no deben intentar volver a compactar el encabezado.
+test('el encabezado conserva su composición editorial original', () => {
   const intro = html.match(/<section class="intro">([\s\S]*?)<\/section>/);
   assert.ok(intro, 'la sección .intro debe seguir existiendo en index.html');
   const banda = intro[1];
-  assert.doesNotMatch(banda, /<br/, 'el <br> del título obliga dos líneas de héroe (254px de banda): el mástil queda en y=887 a 1366×650, detrás del pliegue');
-  const ayuda = banda.match(/<details[^>]*\binline-help\b[\s\S]*?<\/details>/);
-  assert.ok(ayuda, 'el texto de presentación debe quedar detrás de un «?» en la banda: sin él, el subtítulo y el eyebrow vuelven a comer el pliegue');
-  assert.match(ayuda[0], /GUITARRA \/ MAPA ARMÓNICO/, 'el eyebrow de la banda desapareció sin recogerse dentro de la burbuja del «?»');
-  assert.match(ayuda[0], /Elige un acorde, prueba una escala/, 'el subtítulo de la banda desapareció sin recogerse dentro de la burbuja del «?»');
-  assert.doesNotMatch(banda, /<p class="eyebrow"/, 'el eyebrow fuera del «?» mete otra línea (~31px) en la banda: el mástil vuelve a caer bajo el pliegue');
-  assert.doesNotMatch(banda, /<p class="intro-copy"/, 'el subtítulo fuera del «?» mete ~72px en la banda: el mástil vuelve a caer bajo el pliegue');
+  assert.match(banda, /<p class="eyebrow">GUITARRA \/ MAPA ARMÓNICO<\/p>/,
+    'la ceja editorial vuelve a ser visible en el encabezado');
+  assert.match(banda, /<h1>Encuentra tu próximo<br><em>camino<\/em> para improvisar\.<\/h1>/,
+    'el título recupera el salto de línea del original');
+  assert.match(banda, /<p class="intro-copy">Elige un acorde, prueba una escala y mira cómo respira sobre el mástil\.<\/p>/,
+    'el texto de presentación vuelve debajo del título');
+  assert.doesNotMatch(banda, /class="inline-help intro-help"/,
+    'la ayuda compactada ya no sustituye el contenido editorial original');
 });
 
-test('el héroe recupera presencia antes de la zona de tocar', () => {
-  // A-16 acotó el presupuesto: la primera pantalla vuelve a presentar la app;
-  // el viewport fijo empieza recién en .workspace. El título no debe volver a
-  // caer al techo técnico de 33px de T-46.
+test('el héroe conserva la escala original antes de la zona de tocar', () => {
+  // El viewport fijo empieza recién en .workspace. A-17 repone la escala de
+  // referencia sin revertir esa delimitación de la zona tocable.
   const display = declarationsFor(selector => /(^|,)\s*\.intro\s*$/.test(selector.trim()))
     .filter(d => d.property === 'display');
-  assert.ok(display.some(d => d.value === 'grid'),
-    'el hero necesita su propia composición antes de la zona de tocar, no la fila mínima de T-46');
+  assert.ok(!display.some(d => d.value === 'grid'),
+    'la grilla añadida para el encabezado de T-50 no pertenece a la referencia original');
   const tacos = declarationsFor(selector => /(^|,)\s*\.intro h1/.test(selector.trim()))
     .filter(d => d.property === 'font-size')
     .map(d => d.value);
-  assert.ok(tacos.some(value => /clamp\(\s*38px\s*,/.test(value)),
-    'el título debe recuperar una escala expresiva desde 38px; el clamp técnico de T-46 le quitaba presencia');
+  assert.ok(tacos.some(value => /clamp\(\s*30px\s*,\s*4vw\s*,\s*48px\s*\)/.test(value)),
+    'el título recupera el clamp de 30–48px de la referencia original');
 });
 
-test('la barra superior cede alto para que el mástil arranque al pliegue real', () => {
-  // Presupuesto medido (sonda CDP a 1366×650): con título de una línea (~48px) el
-  // mástil quedaba en y≈650 justo; la barra de 78px es el único bloque que puede
-  // ceder alto sin tocar la zona de progresión (de eso otra ronda: T-47/T-48).
+test('la barra superior conserva el alto original del encabezado', () => {
   const match = css.match(/\.topbar\s*\{([^}]*)\}/);
   assert.ok(match, 'regla .topbar presente');
   const alto = match[1].match(/height\s*:\s*(\d+)px/);
   assert.ok(alto, 'la barra declara height');
-  assert.ok(Number(alto[1]) <= 50,
-    '.topbar de ' + alto[1] + 'px: con la banda de título mínima el mástil quedaba pegado al borde del pliegue; la barra cede alto (46px) para dejar margen');
+  assert.equal(Number(alto[1]), 78,
+    '.topbar debe recuperar sus 78px de la referencia original, no el recorte de T-46');
 });
 
 // Devolución QA (revision-t46-2602d82-2026-10-24, corrección de T-46): con la banda y la

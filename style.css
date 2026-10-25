@@ -47,7 +47,7 @@ footer {
 }
 
 .topbar {
-  height: 46px;
+  height: 78px;
   padding: 0 5.5vw;
   display: flex;
   align-items: center;
@@ -2185,13 +2185,10 @@ footer {
 .song-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
 #song-status { color: var(--muted); font-size: 12px; }
 
-/* T-50 (A-16): el presupuesto de alto empieza al llegar al instrumento, no en
-   la primera pantalla. El hero vuelve a presentar la aplicación antes de que
-   la persona elija bajar a tocar. */
-.intro { display: grid; gap: 18px; padding: 68px 0 54px; }
-.intro-help { margin: 0; }
-.intro-help p { max-width: 300px; }
-.intro h1 { font-size: clamp(38px, 5.2vw, 73px); line-height: .99; }
+/* T-51 (A-17): el encabezado vuelve al render exacto de b47fa3c. El
+   presupuesto de la zona de tocar empieza más abajo, en .workspace. */
+.intro { padding-top: 28px; padding-bottom: 28px; }
+.intro h1 { font-size: clamp(30px, 4vw, 48px); }
 .chord-player, .youtube-panel { margin: 0 0 12px; padding: 10px 14px; border-radius: 10px; }
 .player-topline { min-height: 30px; gap: 10px; }
 .player-disclosure { padding: 0; }
@@ -2529,9 +2526,7 @@ html[data-theme="dark"] .fret-numbers, html[data-theme="dark"] .open-strings-hea
 #sections-maximize { position: absolute; top: 8px; right: 12px; margin: 0; }
 .sections-panel-content { display: block; min-width: 0; }
 
-/* Regla final deliberada: el hero recupera su escala fuera del modo móvil
-   (donde ya se oculta) y el documento nunca captura su desplazamiento. */
+/* El documento conserva el desplazamiento; la zona de tocar se delimita en
+   el bloque de escritorio bajo anterior. */
 html, body { min-height: 100%; }
-.intro { padding: 68px 0 54px; }
-.intro h1 { font-size: clamp(38px, 5.2vw, 73px); }
 .workspace { height: 100vh; min-height: 0; }

@@ -25,16 +25,10 @@ function has(body, property, value) {
   return new RegExp('(^|;)\\s*' + property + '\\s*:\\s*' + value + '\\s*(;|$)', 'i').test(body);
 }
 
-test('el hero recupera presencia y el documento vuelve a desplazarse antes de la zona de tocar', () => {
-  const intro = rule('.intro');
-  const title = rule('.intro h1');
+test('el documento vuelve a desplazarse antes de la zona de tocar', () => {
   const document = rule('html, body');
   const workspace = rule('.workspace');
 
-  assert.ok(/padding:\s*(?:[5-9]\d|[1-9]\d{2})px 0 (?:[4-9]\d|[1-9]\d{2})px/.test(intro),
-    'el hero necesita aire vertical otra vez; 6px/8px lo dejaba reducido a una línea técnica');
-  assert.match(title, /font-size:\s*clamp\((?:3[89]|[4-9]\d)px,/,
-    'el título recupera la escala expresiva de la primera pantalla');
   assert.ok(!/overflow:\s*hidden/.test(document),
     'el documento debe volver a scrollear: el presupuesto no puede borrar el hero');
   assert.ok(has(workspace, 'height', '100vh') && has(workspace, 'min-height', '0'),
