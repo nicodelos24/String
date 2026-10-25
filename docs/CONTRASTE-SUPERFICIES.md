@@ -167,3 +167,107 @@ EV=<salida> node …/analisis.mjs                     # ratios de candidatos
 menos de lo que el informe declara, se ve ahí y no en la buena voluntad de quien lee.
 `analisis.mjs` calcula los ratios de cada candidato contra **las superficies observadas**, no
 contra una lista escrita a mano: si mañana una superficie cambia, el número lo dice.
+
+---
+
+# Ronda 2 · los 84 rótulos del mástil (línea 2 de `T-36`)
+
+Fecha: 2026-10-25 · rama `agente1/rotulos-mastil` · base `main` `bd04529` · autor de la
+medición: Agente Desarrollador · verificación: Agente QA.
+
+**Esta ronda sí cambia la app**, a diferencia de la ronda 1: la línea 2 no dependía de la
+paleta (`D-8`) y su tinta no es una decisión de carácter sino un número que no llegaba a AA.
+
+## El defecto, y por qué era uno solo
+
+La tinta del rótulo la eligíaba la **clase** de la nota: `#f3f0e8` para la raíz y las notas del
+acorde, `#1d2521` para las de escala y `#666` sobre el gris `#bbb` de las no resaltadas. Una
+sola tinta por clase no puede cubrir todos los rellenos de la tabla de intervalos, que son 16
+colores muy distintos: los 84 rótulos visibles del arranque (Do mayor, tríada, AA GRADOS) daban
+**1,64 / 2,44 / 2,99 / 3,71**.
+
+## El arreglo
+
+1. **`note-ink.js` es la única autoridad** del par relleno/tinta: calcula la luminancia WCAG y
+   devuelve, entre negro (`#000000`) y blanco (`#ffffff`), el de más contraste sobre ese
+   relleno. Todo relleno de la tabla llega a 4,5; el más justo es el 7ª mayor (`#AB47BC`, 4,82
+   con blanco) y le siguen el 4ª justa (`#00897B`, 4,86 con negro) y la raíz (`#E53935`, 4,97
+   con negro).
+2. **No se toca ningún relleno.** El color del intervalo es el lenguaje de la escala y vive en
+   una sola tabla (`intervalClasses` de `app.js`); adapta la tinta, no la paleta. Por eso esta
+   ronda no invade `D-8`.
+3. **El micrófono usa la misma autoridad.** `micFretColor` (`microphone-ui.js`, la ruta de
+   `T-21`) elegía la tinta por clase y repetía el defecto en vivo: `#f3f0e8` sobre la raíz
+   (3,71) y `#1d2521` sobre el violeta del 7ª menor (2,49). Ahora pide la tinta a `note-ink.js`.
+4. **El halo de la nota que suena sigue a la tinta, no a la clase.** `app.js` escribe
+   `ink-dark`/`ink-light` junto con el color y `style.css` elige el halo al revés de esa clase.
+   Sin eso, la raíz y las notas del acorde habrían quedado con tinta oscura y halo oscuro.
+
+## Resultado (misma sonda de la ronda 1, cuatro vistas)
+
+| Vista | Visibles bajo AA antes | Ahora | Rótulos del mástil |
+| --- | --- | --- | --- |
+| 1366×650 claro | 189 | **105** | 84 medidos, **0 fallan** |
+| 1366×650 oscuro | 90 | **6** | 84 medidos, **0 fallan** |
+| 1366×768 claro | 189 | **105** | 84 con 0 fallan |
+| 320×740 claro | 142 | **58** | 84 con 0 fallan |
+
+Los cuatro pares medidos del arranque, ya con la tinta nueva:
+
+| Relleno | Tinta antes | Ratio antes | Tinta ahora | Ratio ahora |
+| --- | --- | --- | --- | --- |
+| `#e6b800` (5ª) | `#f3f0e8` | 1,64 | `#000000` | **11,22** |
+| `#4caf50` (3ª mayor) | `#f3f0e8` | 2,44 | `#000000` | **7,56** |
+| `#bbbbbb` (escala sin resaltar) | `#666666` | 2,99 | `#000000` | **10,94** |
+| `#e53935` (raíz) | `#f3f0e8` | 3,71 | `#000000` | **4,97** |
+
+**Los 84 que se van son exactamente los del mástil**: 189 − 84 = 105 en claro y 90 − 84 = 6 en
+oscuro, sin que ningún otro grupo cambiara de número.
+
+## Los rellenos que el arranque no muestra
+
+La sonda mide el estado de arranque (Do mayor), que solo enseña cuatro rellenos. `estados.mjs`
+cambia el acorde y la vista en la página real y mide los siete estados que interesan, incluidos
+los oscuros que ahora piden tinta clara:
+
+| Estado | Rótulos | Rellenos | Mínimo | Fallan |
+| --- | --- | --- | --- | --- |
+| arranque (Do mayor) | 84 | 4 | 4,97 | 0 |
+| Do m7, vista Acorde 7ma | 84 | 5 | **4,82** | 0 |
+| Do maj7, vista Acorde 7ma | 84 | 5 | 4,82 | 0 |
+| Fa mayor, tríada | 83 | 4 | 4,97 | 0 |
+| Do dim7, vista Acorde 7ma | 84 | 5 | 4,82 | 0 |
+| Re aumentado, tríada | 93 | 4 | 4,97 | 0 |
+| La menor, vista grados | 84 | 7 | 4,86 | 0 |
+
+## Lo que esta ronda no arregla, y por qué
+
+- **El número de octava** (`.octave-number`, 1,71 en oscuro): es la **línea 3** de la ficha y
+  es una decisión del autor (¿se muestra la octava?). Coordinación la pregunta cuando esta
+  ronda cierre; no se toca sin su palabra.
+- **`--muted` (77) y `--rust` como texto (18), más las 5 piezas con texto claro sobre el cobre
+  y los 5 glifos decorativos**: son la línea 1 y siguen esperando **`D-8`**. Los 6 que quedan
+  en oscuro son esos: 4 glifos `aria-hidden`, el control activo «Acorde» (2,23, su propia
+  ronda) y la octava.
+- **La tinta de la nota fantasma** (`rgba(29,37,33,.5)`) y la de la **nota fuera de escala
+  sobre la madera** (`#999`, solo visible con MÁSTIL encendido): la primera es la identidad del
+  modo fantasma; la segunda se apoya en un fondo con degradado, que el propio instrumento marca
+  como no concluyente. Quedan anotadas, medidas en su contexto y sin cambio, para que la
+  decisión sea explícita y no un olvido.
+
+## Cómo se re-verifica
+
+Evidencia: `agenteDesarrollador/evidencias/ronda-t36-r2-rotulos-mastil-2026-10-25/`.
+
+```
+node --test tests/rotulos-mastil-contraste.test.cjs   # la guarda nueva (5 casos, nació roja)
+npm test                                              # 475/475
+node servidor.mjs &                                   # sirve wt-agente1
+chromium --headless=new --remote-debugging-port=9225 --user-data-dir=<perfil> about:blank &
+EV=<salida> VISTAS=todas node sonda-contraste.mjs     # las cuatro vistas
+EV=<salida> node estados.mjs                          # los siete estados del mástil
+```
+
+La guarda no usa `note-ink.js` para calcular: mide con su propia aritmética WCAG y barre los 23
+tipos de acorde × los modos × tres vistas × los dos instrumentos, así que un relleno nuevo en
+la tabla entra en la medición sin que nadie se acuerde de anotarlo.

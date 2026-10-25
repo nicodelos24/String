@@ -949,22 +949,24 @@ function renderFretboard() {
       // Verificar si el intervalo debe ser resaltado según el modo de visualización
       const shouldHighlight = shouldHighlightInterval(intervalFromRoot, displayModeIndex);
 
+      // La tinta sale del relleno, no de la clase: note-ink.js elige la de más
+      // contraste y así todo relleno de la tabla llega a AA (T-36, línea 2).
       if (isRoot) {
         bgColor = intervalInfo.color;
-        textColor = '#f3f0e8';
+        textColor = NoteInk.inkOverFill(bgColor);
         noteClass += ' root-note scale-note';
       } else if (inChord && shouldHighlight) {
         bgColor = intervalInfo.color;
-        textColor = '#f3f0e8';
+        textColor = NoteInk.inkOverFill(bgColor);
         noteClass += ' chord-note scale-note';
       } else if (inSelectedMode && shouldHighlight) {
         bgColor = intervalInfo.color;
-        textColor = '#1d2521';
+        textColor = NoteInk.inkOverFill(bgColor);
         noteClass += ' scale-note';
       } else if (inSelectedMode && !shouldHighlight) {
         // Nota de la escala pero no resaltada en este modo - gris
         bgColor = '#bbb';
-        textColor = '#666';
+        textColor = NoteInk.inkOverFill(bgColor);
         noteClass += ' scale-note';
       } else if (ghostNotesMap.has(pitchClass) && displayModeIndex < 3) {
         // Nota fantasma de otro modo
@@ -982,10 +984,16 @@ function renderFretboard() {
       // entran las notas del acorde que quedan fuera de la escala.
       const inScaleZone = inSelectedMode || (!pentatonicView && (isRoot || inChord));
 
+      // El halo de la nota que suena va al revés de la tinta (style.css). Como
+      // la tinta ya no la decide la clase, la polaridad viaja con la clase que
+      // escribe este render: `ink-dark` pide halo claro y `ink-light`, oscuro.
+      const inkClass = textColor === NoteInk.NOTE_INK_LIGHT ? ' ink-light'
+        : textColor === NoteInk.NOTE_INK_DARK ? ' ink-dark' : '';
+
       // El color que ya decidió getIntervalClass para esta posición se queda
       // escrito en la posición (`data-interval-color`): es de donde lee el
       // micrófono al tintar la nota que suena, sin una tabla propia (T-21).
-      return `<div class="fret"><span class="${noteClass}" data-midi="${openNote + actualFret}" data-note="${displayNote(pitchClass)}" data-interval="${intervalInfo.name}" data-interval-color="${intervalInfo.color}" style="background-color: ${bgColor}; color: ${textColor};${displayModeIndex >= 3 && !shouldHighlight ? ' opacity: 0;' : ''}" title="${displayNote(pitchClass)} · ${intervalInfo.name}">${getFretLabel(pitchClass, intervalForLabel, inScaleZone)}</span></div>`;
+      return `<div class="fret"><span class="${noteClass}${inkClass}" data-midi="${openNote + actualFret}" data-note="${displayNote(pitchClass)}" data-interval="${intervalInfo.name}" data-interval-color="${intervalInfo.color}" style="background-color: ${bgColor}; color: ${textColor};${displayModeIndex >= 3 && !shouldHighlight ? ' opacity: 0;' : ''}" title="${displayNote(pitchClass)} · ${intervalInfo.name}">${getFretLabel(pitchClass, intervalForLabel, inScaleZone)}</span></div>`;
     }).join('');
     return `<div class="string-row" style="--string-width: ${stringIndex < (instrument === 'guitar' ? 3 : 2) ? 2 : 1}px">${frets}</div>`;
   }).join('');
@@ -1040,22 +1048,24 @@ function renderOpenStrings() {
       // Verificar si el intervalo debe ser resaltado según el modo de visualización
       const shouldHighlight = shouldHighlightInterval(intervalFromRoot, displayModeIndex);
 
+      // La tinta sale del relleno, no de la clase: note-ink.js elige la de más
+      // contraste y así todo relleno de la tabla llega a AA (T-36, línea 2).
       if (isRoot) {
         bgColor = intervalInfo.color;
-        textColor = '#f3f0e8';
+        textColor = NoteInk.inkOverFill(bgColor);
         noteClass += ' root-note scale-note';
       } else if (inChord && shouldHighlight) {
         bgColor = intervalInfo.color;
-        textColor = '#f3f0e8';
+        textColor = NoteInk.inkOverFill(bgColor);
         noteClass += ' chord-note scale-note';
       } else if (inSelectedMode && shouldHighlight) {
         bgColor = intervalInfo.color;
-        textColor = '#1d2521';
+        textColor = NoteInk.inkOverFill(bgColor);
         noteClass += ' scale-note';
       } else if (inSelectedMode && !shouldHighlight) {
         // Nota de la escala pero no resaltada en este modo - gris
         bgColor = '#bbb';
-        textColor = '#666';
+        textColor = NoteInk.inkOverFill(bgColor);
         noteClass += ' scale-note';
       } else if (ghostNotesMap.has(pitchClass) && displayModeIndex < 3) {
         // Nota fantasma de otro modo
@@ -1072,9 +1082,13 @@ function renderOpenStrings() {
       // La zona de VER: la escala dibujada (ver renderFretboard).
       const inScaleZone = inSelectedMode || (!pentatonicView && (isRoot || inChord));
 
+      // La polaridad del halo, igual que en el mástil (ver renderFretboard).
+      const inkClass = textColor === NoteInk.NOTE_INK_LIGHT ? ' ink-light'
+        : textColor === NoteInk.NOTE_INK_DARK ? ' ink-dark' : '';
+
       // `data-interval-color` igual que en renderFretboard: el color que el
       // mástil ya decidió para la posición, de donde lee el micrófono (T-21).
-      return `<div class="open-string-row"><span class="${noteClass}" data-midi="${openNote}" data-note="${displayNote(pitchClass)}" data-interval="${intervalInfo.name}" data-interval-color="${intervalInfo.color}" style="background-color: ${bgColor}; color: ${textColor};${displayModeIndex >= 3 && !shouldHighlight ? ' opacity: 0;' : ''}" title="${displayNote(pitchClass)} · ${intervalInfo.name}">${getFretLabel(pitchClass, intervalForLabel, inScaleZone)}</span></div>`;
+      return `<div class="open-string-row"><span class="${noteClass}${inkClass}" data-midi="${openNote}" data-note="${displayNote(pitchClass)}" data-interval="${intervalInfo.name}" data-interval-color="${intervalInfo.color}" style="background-color: ${bgColor}; color: ${textColor};${displayModeIndex >= 3 && !shouldHighlight ? ' opacity: 0;' : ''}" title="${displayNote(pitchClass)} · ${intervalInfo.name}">${getFretLabel(pitchClass, intervalForLabel, inScaleZone)}</span></div>`;
     }).join('');
 
   document.querySelector('#open-strings').innerHTML = openStringsHtml;

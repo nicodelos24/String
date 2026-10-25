@@ -905,12 +905,21 @@ html[data-theme="dark"] .legend-add-button { background: var(--paper); border-co
 .open-string-note.live.root-note,
 .open-string-note.live.chord-note {
   font-size: 11px;
-  text-shadow: 0 0 3px rgba(0, 0, 0, .6), 0 1px 0 rgba(0, 0, 0, .5);
 }
 
-.fret-note.live.scale-note:not(.root-note):not(.chord-note),
-.open-string-note.live.scale-note:not(.root-note):not(.chord-note) {
+/* T-36 (línea 2): la tinta del rótulo ya no la decide la clase —la raíz y las
+   notas del acorde iban claras, el resto oscuras— sino el relleno, que es lo
+   único medible (`note-ink.js`). El halo sigue yendo al revés de la tinta, así
+   que la polaridad viaja en la clase que escribe `app.js` junto con el color:
+   `ink-dark` pide halo claro e `ink-light`, halo oscuro. */
+.fret-note.live.ink-dark,
+.open-string-note.live.ink-dark {
   text-shadow: 0 0 3px rgba(255, 255, 255, .85), 0 -1px 0 rgba(255, 255, 255, .6);
+}
+
+.fret-note.live.ink-light,
+.open-string-note.live.ink-light {
+  text-shadow: 0 0 3px rgba(0, 0, 0, .6), 0 1px 0 rgba(0, 0, 0, .5);
 }
 
 /* Fuera de la escala no hay relleno: la nota se apoya en la madera y su halo
