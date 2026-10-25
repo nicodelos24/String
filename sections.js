@@ -30,7 +30,10 @@ function playbackEntries(data,progression,live=[]){
 }
 if(typeof module!=='undefined')module.exports={validateSections,playbackEntries,playbackCopy};
 if(typeof document!=='undefined')(()=>{
-  let sections=[],active=null,drag=null;
+  // T-07: `editing` es la sección que tiene abierto su formulario en la fila.
+  // Es una sola a la vez: abrir otra cierra la anterior y cancelar no toca el
+  // estado. El nombre y la ×N son del modelo (`sections`), no del formulario.
+  let sections=[],active=null,drag=null,editing=null;
   const $=id=>document.getElementById(id);
   const workspace=document.querySelector('.progression-workspace');
   const panel=document.querySelector('.sections-panel');
@@ -44,10 +47,22 @@ if(typeof document!=='undefined')(()=>{
   }
   $('sections-maximize').onclick=()=>setWorkspace(workspace.classList.contains('sections-expanded')?'compact':'sections');
   panel.addEventListener('toggle',()=>{if(!panel.open && workspace.classList.contains('sections-expanded'))setWorkspace('chords');});
-  function serialize(){return sections.map(s=>({name:s.name,repeat:s.repeat,indices:s.items.map(item=>progression.indexOf(item)).filter(i=>i>=0)})).filter(s=>s.indices.length);}
+  function serializeSection(s){return {name:s.name,repeat:s.repeat,indices:s.items.map(item=>progression.indexOf(item)).filter(i=>i>=0)};}
+  function serialize(){return sections.map(serializeSection).filter(s=>s.indices.length);}
+  // Un solo lugar decide si la edición es válida. Los mensajes son los que el
+  // autor lee en `#section-status`; `validateSections` vuelve a pasar al final
+  // como guarda del mismo contrato que el guardado de la canción.
+  function editProblem(current,name,repeat){
+    if(!name)return 'La sección necesita un nombre.';
+    if(name.length>40)return 'El nombre de la sección no puede pasar de 40 caracteres.';
+    if(!Number.isInteger(repeat)||repeat<1||repeat>8)return 'Las repeticiones van de 1 a 8.';
+    if(name!==current.name&&sections.some(other=>other!==current&&other.name===name))return `Ya hay una sección llamada «${name}».`;
+    return '';
+  }
   function render(){
     if(drag)return;
     if(active&&!sections.includes(active))active=null;
+    if(editing&&!sections.includes(editing))editing=null;
     $('section-all').setAttribute('aria-pressed',String(!active));
     $('section-view-label').textContent=active?`${active.name} · ×${active.repeat}`:'Todos los acordes';
     const list=$('section-list');list.replaceChildren();
@@ -64,6 +79,47 @@ if(typeof document!=='undefined')(()=>{
         item.append(name,mode);chordList.append(item);
       });
 
+      // T-07: la fila en edición reemplaza sus controles por el formulario. No
+      // se duplican acciones (subir/bajar/borrar/duplicar quedan fuera hasta
+      // guardar o cancelar) y el rango de tarjetas no se toca: esta ficha es
+      // nombre y repeticiones.
+      if(editing===s){
+        row.classList.add('editing');
+        const form=document.createElement('div');form.className='section-edit';
+        const nameLabel=document.createElement('label');nameLabel.textContent='Nombre';
+        const nameInput=document.createElement('input');nameInput.type='text';nameInput.maxLength=40;nameInput.value=s.name;
+        nameInput.setAttribute('id','section-edit-name');nameInput.setAttribute('aria-describedby','section-status');
+        nameLabel.append(nameInput);
+        const repeatLabel=document.createElement('label');repeatLabel.textContent='Repeticiones';
+        const repeatInput=document.createElement('input');repeatInput.type='number';repeatInput.min='1';repeatInput.max='8';repeatInput.value=String(s.repeat);
+        repeatInput.setAttribute('id','section-edit-repeat');repeatInput.setAttribute('aria-describedby','section-status');
+        repeatLabel.append(repeatInput);
+        const actions=document.createElement('div');actions.className='section-edit-actions';
+        const save=document.createElement('button');save.type='button';save.textContent='Guardar';save.setAttribute('id','section-edit-save');save.setAttribute('aria-label',`Guardar cambios de ${s.name}`);
+        const cancel=document.createElement('button');cancel.type='button';cancel.textContent='Cancelar';cancel.setAttribute('id','section-edit-cancel');cancel.setAttribute('aria-label',`Cancelar la edición de ${s.name}`);
+        const close=()=>{editing=null;render();};
+        save.onclick=()=>{
+          const name=nameInput.value.trim(),repeat=Number(repeatInput.value);
+          nameInput.setAttribute('aria-invalid','false');repeatInput.setAttribute('aria-invalid','false');
+          const problem=editProblem(s,name,repeat);
+          if(problem){nameInput.setAttribute('aria-invalid','true');repeatInput.setAttribute('aria-invalid','true');$('section-status').textContent=problem;return;}
+          try{
+            validateSections(sections.map(other=>other===s?{name,repeat,indices:other.items.map(item=>progression.indexOf(item)).filter(i=>i>=0)}:serializeSection(other)),progression.length);
+          }catch(error){$('section-status').textContent=error.message;return;}
+          window.dispatchEvent(new Event('traste:load-song'));
+          s.name=name;s.repeat=repeat;editing=null;
+          render();renderProgression();
+          $('section-status').textContent=`Sección «${name}»: ahora suena ${repeat===1?'1 vez':`${repeat} veces`}.`;
+        };
+        cancel.onclick=()=>{close();$('section-status').textContent='Edición cancelada.';};
+        for(const input of [nameInput,repeatInput])input.addEventListener('keydown',event=>{
+          if(event.key==='Enter'){event.preventDefault?.();save.onclick();}
+          else if(event.key==='Escape'){event.preventDefault?.();cancel.onclick();}
+        });
+        actions.append(save,cancel);form.append(nameLabel,repeatLabel,actions);row.append(form);
+        list.append(row);nameInput.focus?.({preventScroll:true});
+        return;
+      }
       label.append(title,meta,notes,chordList);label.onclick=()=>{active=s;render();const first=s.items.find(item=>progression.includes(item));if(first)selectProgressionChord(progression.indexOf(first));};row.append(label);
       const grip=document.createElement('button');grip.type='button';grip.className='section-grip';grip.textContent='⠿';grip.setAttribute('aria-label','Arrastrar '+s.name);row.append(grip);
       for(const [text,delta] of [['↑',-1],['↓',1],['×',0]]){
@@ -118,6 +174,11 @@ if(typeof document!=='undefined')(()=>{
           render();renderProgression();
         }catch(error){$('section-status').textContent=error.message;render();}
       };row.append(duplicateButton);
+      // T-07: la edición directa del nombre y la ×N. Control propio (un clic,
+      // sin doble clic compartido) y nombre de la sección en el aria-label.
+      const editButton=document.createElement('button');editButton.type='button';editButton.className='section-edit-open';editButton.textContent='Editar';editButton.setAttribute('aria-label',`Editar ${s.name}`);
+      editButton.onclick=()=>{editing=s;$('section-status').textContent='';render();};
+      row.append(editButton);
       list.append(row);
     });
   }
