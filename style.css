@@ -1487,6 +1487,10 @@ footer {
     grid-template-rows: auto auto auto;
     flex: 1 1 auto;
     min-height: 0;
+    /* T-53: el alto de viewport que T-50 fijaba para todo el archivo sigue
+       haciendo falta en móvil (el body no tiene alto definido); la franja de
+       tarjetas se suma arriba y el resto se reparte como siempre. */
+    height: 100vh;
   }
 
   /* Cuando la barra elige una sola pestaña, su panel activo se estira junto
@@ -2455,6 +2459,12 @@ html[data-theme="dark"] .fret-numbers, html[data-theme="dark"] .open-strings-hea
   /* «Más»: controles, leyenda, biblioteca, YouTube y metrónomo. */
   body[data-mobile-tab="mas"] :is(.board-toolbar, .board-view-row, .fretboard-wrap, .board-footer, .board-add-row, .scale-summary, .keyboard-panel, .progression-workspace, .chord-player) { display: none; }
   body[data-mobile-tab="mas"] .fretboard-section:not(:is(.keyboard-split, .keyboard-band)) { padding-top: 0; }
+  /* T-53: «Secciones del tema» viaja con la banda, ya no dentro de
+     .progression-workspace; en las otras pestañas no debe aparecer sobre el
+     mástil ni empujar el diapasón 64 px hacia abajo. */
+  body[data-mobile-tab="mastil"] .sections-panel,
+  body[data-mobile-tab="acomp"] .sections-panel,
+  body[data-mobile-tab="mas"] .sections-panel { display: none; }
 
   /* En el mástil la sección se ordena para que el diapasón esté arriba del
      todo; el estado inicial y los tres modos, por separado. */
@@ -2500,11 +2510,64 @@ html[data-theme="dark"] .fret-numbers, html[data-theme="dark"] .open-strings-hea
 
 @media (prefers-reduced-motion: reduce) { .mobile-tabs button { transition: none; } }
 
+/* T-53 · A-23 (2026-10-25): la banda de tarjetas sale de la columna central y
+   pasa a la primera fila del workspace, a todo su ancho. Así nace donde
+   termina el encabezado y, al detenerse la página en la zona de tocar, queda a
+   la vista mientras las columnas de abajo resuelven su propio scroll. En móvil
+   (≤800) la pestaña «Progresión» la sigue mostrando como en T-47; las otras
+   pestañas no la necesitan y la ocultan.
+   Solo forma: ids, orden DOM y manejadores intactos. */
+.cards-band { grid-column: 1 / -1; min-width: 0; }
+.cards-band .progression-workspace { grid-template-columns: minmax(0, 1fr); column-gap: 0; }
+.cards-band .progression-workspace > .progression-stack,
+.cards-band .progression-workspace > .progression-playback { grid-column: 1; }
+
+@media (min-width: 801px) {
+  .cards-band {
+    position: sticky; top: 0; z-index: 6;
+    padding: 10px 20px 8px;
+    background: var(--paper-light);
+    border-bottom: 1px solid var(--line);
+    box-shadow: 0 8px 14px rgba(44, 50, 40, .06);
+  }
+  /* La banda es una franja: las tarjetas no crecen sin límite; con más de una
+     fila el bloc scrollea por dentro, como ya hacía, y la franja se mantiene. */
+  .cards-band .progression { max-height: 158px; min-height: 0; }
+  .cards-band .progression-empty { min-height: 143px; }
+}
+
+@media (min-width: 1101px) {
+  /* Compacidad para el pliegue real: las dos filas de T-47 (transporte y
+     captura en vivo) se leen de izquierda a derecha en una sola línea cuando el
+     ancho alcanza. La caja conserva todos sus controles y, si no alcanza,
+     envuelve sin desbordar. */
+  .cards-band .progression-view-controls { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 6px 18px; }
+  .cards-band .progression-controls-row + .progression-controls-row { border-top: 0; padding-top: 0; }
+  .cards-band .capture-row { align-items: center; }
+}
+
+@media (max-width: 800px) {
+  .cards-band { padding: 12px 14px 8px; }
+  /* La pestaña «Progresión» es la única que enseña la banda. En las demás no
+     puede dejar una franja vacía arriba del mástil: sin esto medía 20 px de
+     relleno y corría el diapasón hacia abajo. */
+  body[data-mobile-tab="mastil"] .cards-band,
+  body[data-mobile-tab="acomp"] .cards-band,
+  body[data-mobile-tab="mas"] .cards-band { display: none; }
+  /* En su pestaña la banda es el contenido de arriba: al bajar hasta el pie
+     sigue a la vista. */
+  body[data-mobile-tab="progresion"] .cards-band { padding-top: 4px; position: sticky; top: 0; z-index: 5; }
+}
+
 /* T-50: al desplazar la página hasta la zona de tocar, cada columna resuelve
    su contenido dentro de un viewport. El documento conserva su scroll para
    que el hero y el pie sigan formando parte de la experiencia. */
 @media (min-width: 1101px) and (max-height: 900px) {
-  .workspace { height: 100vh; min-height: 0; }
+  /* T-53: la fila de la banda es automática y la de las columnas toma el
+     resto. El alto resta el pie (58 px medidos) para que, al llegar al tope
+     del documento, el borde superior del workspace quede en 0 y la banda no
+     pierda sus últimos 58 px bajo el pliegue. */
+  .workspace { grid-template-rows: auto minmax(0, 1fr); height: 100vh; min-height: 0; height: calc(100dvh - 58px); }
   .control-panel, .fretboard-section, .legend-panel { min-height: 0; overflow-y: auto; }
   /* Palancas fuera de la grilla aprobada de T-46: la línea «Detenido» (26 px de
      min-height más márgenes) y el aire del rótulo del mástil. */
@@ -2527,9 +2590,10 @@ html[data-theme="dark"] .fret-numbers, html[data-theme="dark"] .open-strings-hea
 .sections-panel-content { display: block; min-width: 0; }
 
 /* El documento conserva el desplazamiento; la zona de tocar se delimita en
-   el bloque de escritorio bajo anterior. */
+   el bloque de escritorio bajo anterior. El alto de .workspace vive ahí desde
+   T-53: en móvil lo reparte el shell flexible de T-49 y en escritorio alto la
+   página sigue scrolleando con la banda sticky. */
 html, body { min-height: 100%; }
-.workspace { height: 100vh; min-height: 0; }
 
 /* T-52 · A-19 (2026-10-25): las barras de desplazamiento dejan de verse
    genéricas y acompañan la paleta de la página. Desde T-48/T-50 el documento y
