@@ -51,6 +51,15 @@
   list.addEventListener('dragstart', event => event.preventDefault());
   list.addEventListener('click', event => {
     if (suppressClick) {event.preventDefault(); event.stopImmediatePropagation(); suppressClick=false;}
+    // T-09 · El minuto de la tarjeta pide el salto del video. Es una acción de
+    // la tarjeta, no su selección: no toca la tarjeta activa ni el doble clic.
+    // Acepta `detail: 0` porque así llega la activación por teclado (Enter o
+    // Espacio sobre el botón enfocado), no solo el clic del puntero.
+    else if(event.target.closest('.video-jump')){
+      const chip=event.target.closest('.video-jump');
+      event.preventDefault(); event.stopImmediatePropagation();
+      window.StringVideoSync?.jump?.(Number(chip.dataset.videoJump));
+    }
     else if(event.detail>0 && !event.target.closest('button, select, label')) {
       const card=event.target.closest('.progression-card');
       if(!card)return;

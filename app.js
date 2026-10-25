@@ -1187,8 +1187,18 @@ function renderProgression() {
     // (el mismo normalizador del guardado) y abre el panel al clicar.
     const cuentaVariantes = Object.keys(validVariants(item.variants) || {}).length;
     const badgeVariantes = `<button type="button" class="variants-badge" data-variants="${index}" title="Variantes por vuelta" aria-label="Variantes por vuelta del acorde ${index + 1}">♪${cuentaVariantes ? ' ' + cuentaVariantes : ''}</button>`;
+    // T-09 · Si la tarjeta tiene marca de tiempo del video, su minuto es un
+    // botón que salta el video a ese punto. Sin marca no se pinta nada: no hay
+    // destino al que saltar. Va en la fila de controles que ya existe para no
+    // mover el alto de la banda fija de T-53.
+    const marcaVideo = globalThis.StringVideoSync?.labelFor?.(index) || '';
+    const saltoVideo = marcaVideo ? `<button type="button" class="video-jump" data-video-jump="${index}" title="Salta el video a ${marcaVideo}" aria-label="Salta el video a ${marcaVideo} (acorde ${index + 1})">${marcaVideo}</button>` : '';
     const beatsSelect = `<label class="beats-control" title="Duración: ${beatsLabel(beats)} de compás"><span class="sr-only">Duración del acorde ${index + 1}</span><select data-beats="${index}" aria-label="Duración del acorde ${index + 1}">${fueraDeRejilla}${beatOptions.map(option => `<option value="${option}"${option === beats ? ' selected' : ''}>${beatsLabel(option)}</option>`).join('')}</select></label>`;
-    return `<div class="progression-card ${index === activeProgression ? 'active' : ''} ${item === playingProgressionItem ? 'playing' : ''}" data-index="${index}" tabindex="0" role="group" aria-label="Acorde ${index + 1}, compás ${barNumber}, ${beatsLabel(beats)} de compás. Arrastrar o usar Alt y flechas para mover. Flechas arriba y abajo para recorrer. Supr para borrar.">><button type="button" data-remove="${index}" aria-label="Quitar acorde ${index + 1}">×</button>${badgeVariantes}<small>${index + 1}${item === playingProgressionItem ? ' · sonando' : ''}</small><span class="progression-mode">${modes[item.mode || defaultChordMode(item)]?.name || ''}</span>${beatsSelect}<span class="drag-grip" aria-hidden="true">⠿</span><strong>${item.rootNoteName || noteName(item.root)}${type ? type.suffix : ''}</strong></div>`;
+    // El minuto del video comparte la línea de la duración: así el chip no
+    // agrega alto y la banda de T-53 no crece. Sin marca se deja la duración
+    // sola, con el mismo marcado de antes.
+    const filaBeats = saltoVideo ? `<span class="beats-row">${beatsSelect}${saltoVideo}</span>` : beatsSelect;
+    return `<div class="progression-card ${index === activeProgression ? 'active' : ''} ${item === playingProgressionItem ? 'playing' : ''}" data-index="${index}" tabindex="0" role="group" aria-label="Acorde ${index + 1}, compás ${barNumber}, ${beatsLabel(beats)} de compás. Arrastrar o usar Alt y flechas para mover. Flechas arriba y abajo para recorrer. Supr para borrar.">><button type="button" data-remove="${index}" aria-label="Quitar acorde ${index + 1}">×</button>${badgeVariantes}<small>${index + 1}${item === playingProgressionItem ? ' · sonando' : ''}</small><span class="progression-mode">${modes[item.mode || defaultChordMode(item)]?.name || ''}</span>${filaBeats}<span class="drag-grip" aria-hidden="true">⠿</span><strong>${item.rootNoteName || noteName(item.root)}${type ? type.suffix : ''}</strong></div>`;
   }).join('');
 }
 instrumentSelect.addEventListener('change', event => { instrument = event.target.value; updateView(); });
