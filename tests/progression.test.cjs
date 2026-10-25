@@ -31,6 +31,7 @@ function setup() {
   const ctx = vm.createContext({document:{querySelector:element,querySelectorAll:()=>[]},Event:FakeEvent});
   vm.runInContext(fs.readFileSync(path.join(__dirname,'../progression-duration.js'),'utf8'),ctx);
   vm.runInContext(fs.readFileSync(path.join(__dirname,'../tonal-context.js'),'utf8'),ctx);
+  vm.runInContext(fs.readFileSync(path.join(__dirname,'../note-ink.js'),'utf8'),ctx);
   vm.runInContext(fs.readFileSync(path.join(__dirname,'../app.js'),'utf8'),ctx);
   const run = code => vm.runInContext(code,ctx);
   const change = (key,value) => element(key).handlers.change({target:{value}});

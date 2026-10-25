@@ -94,6 +94,7 @@ function setupUi() {
   vm.createContext(sandbox);
   vm.runInContext(fs.readFileSync(path.join(__dirname,'../progression-duration.js'),'utf8'),sandbox);
   vm.runInContext(fs.readFileSync(path.join(__dirname,'../tonal-context.js'),'utf8'),sandbox);
+  vm.runInContext(fs.readFileSync(path.join(__dirname,'../note-ink.js'),'utf8'),sandbox);
   vm.runInContext(fs.readFileSync(path.join(__dirname,'../app.js'),'utf8'),sandbox);
   // T-40: el orden replica el de la página (index.html): la clase de
   // biblioteca, el modelo de bloques y su adaptador, y encima la UI — su

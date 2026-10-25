@@ -69,6 +69,9 @@ function setup() {
     setChordSpelling(useFlats) { context.spelling = useFlats; },
     renderProgression() {}, showProgressionChord(chord) { context.root = chord.root; context.selectedMode = chord.mode; },
   });
+  // La página carga note-ink.js antes: el sandbox lo imita para que el tintado
+  // del micrófono tenga la misma autoridad de tinta que el mástil (T-36).
+  vm.runInContext(fs.readFileSync(path.join(__dirname, '../note-ink.js'), 'utf8'), context);
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../microphone-ui.js'), 'utf8'), context);
   return { context, callbacks, element, click(id) { element(id).click(); } };
 }
@@ -322,6 +325,9 @@ function setupLabels() {
     getDegreeLabel: interval => DEGREES[interval],
     renderProgression() {}, showProgressionChord() {},
   });
+  // La página carga note-ink.js antes: el sandbox lo imita para que el tintado
+  // del micrófono tenga la misma autoridad de tinta que el mástil (T-36).
+  vm.runInContext(fs.readFileSync(path.join(__dirname, '../note-ink.js'), 'utf8'), context);
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../microphone-ui.js'), 'utf8'), context);
   return {
     context, notes, element, labelButtons,
@@ -480,6 +486,9 @@ function setupPitch() {
     isInTune: detection => Math.abs(detection.cents) <= 40,
     renderProgression() {}, showProgressionChord(chord) { context.root = chord.root; context.selectedMode = chord.mode; },
   });
+  // La página carga note-ink.js antes: el sandbox lo imita para que el tintado
+  // del micrófono tenga la misma autoridad de tinta que el mástil (T-36).
+  vm.runInContext(fs.readFileSync(path.join(__dirname, '../note-ink.js'), 'utf8'), context);
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../microphone-ui.js'), 'utf8'), context);
   return {
     callbacks,
@@ -555,26 +564,31 @@ test('cada nota confirmada avisa con un evento, y el silencio no', () => {
 
 test('micFretColor: el relleno y la tinta del grado, tal como los pinta el mástil', () => {
   const { micFretColor } = require('../microphone-ui.js');
-  // Donde el mástil mismo pinta con tinta clara (raíz y notas del acorde), el
-  // tintado escribe el mismo par: no cambia nada visible.
+  // La tinta se elige por contraste sobre el relleno (T-36, línea 2), no por la
+  // clase de la nota: sobre los rellenos claros —raíz, acorde o escala— va la
+  // oscura, que es la que llega a AA; la clase no cambia el par.
   assert.deepEqual(
     micFretColor({ color: '#E53935', className: 'fret-note root-note scale-note' }),
-    { color: '#E53935', ink: '#f3f0e8' });
+    { color: '#E53935', ink: '#000000' });
   assert.deepEqual(
     micFretColor({ color: '#4CAF50', className: 'fret-note chord-note scale-note' }),
-    { color: '#4CAF50', ink: '#f3f0e8' });
-  // En las demás posiciones (grises, vacías u ocultas), la tinta es la oscura
-  // que el mástil usa sobre ese relleno en sus notas de escala.
+    { color: '#4CAF50', ink: '#000000' });
   assert.deepEqual(
     micFretColor({ color: '#00BCD4', className: 'fret-note scale-note' }),
-    { color: '#00BCD4', ink: '#1d2521' });
+    { color: '#00BCD4', ink: '#000000' });
   assert.deepEqual(
     micFretColor({ color: ' #EF8700 ', className: 'fret-note' }),
-    { color: '#EF8700', ink: '#1d2521' },
-    'sin clase de raíz/acorde la tinta es la oscura, aunque el relleno traiga espacios');
-  // Sin color de grado no hay que inventar relleno.
+    { color: '#EF8700', ink: '#000000' },
+    'el relleno trae espacios y la clase no manda: se limpia el color y se mide');
+  // Los rellenos oscuros piden la tinta clara: el violeta del 7ª menor con la
+  // oscura daba 2,49, el peor caso del tintado anterior.
+  assert.deepEqual(
+    micFretColor({ color: '#9C27B0', className: 'fret-note scale-note' }),
+    { color: '#9C27B0', ink: '#ffffff' });
+  // Sin color de grado, o sin un sólido del que sacar tinta, no se inventa nada.
   assert.equal(micFretColor(null), null);
   assert.equal(micFretColor({ className: 'fret-note' }), null);
+  assert.equal(micFretColor({ color: 'transparent', className: 'fret-note' }), null);
 });
 
 test('la nota que suena luce el color de su grado y lo devuelve al soltarla', () => {
@@ -589,7 +603,7 @@ test('la nota que suena luce el color de su grado y lo devuelve al soltarla', ()
   Object.assign(mi.style.props, { 'background-color': '#bbb', color: '#666' });
   callbacks.onPitch({ midi: 64, freq: 329.63, cents: 0 });
   assert.equal(mi.style.props['background-color'], '#4CAF50', 'mientras suena lleva el relleno de su grado, no el gris');
-  assert.equal(mi.style.props.color, '#1d2521', 'con la tinta oscura que se lee sobre ese relleno');
+  assert.equal(mi.style.props.color, '#000000', 'con la tinta que se lee sobre ese relleno (T-36, línea 2)');
   assert.equal(mi.dataset.micStyle, 'background-color: #bbb; color: #666;', 'el estilo de la página se guardó aparte');
   assert.equal(mi.isLive(), true);
   // Al apagar el micrófono, la posición vuelve exactamente a como estaba.

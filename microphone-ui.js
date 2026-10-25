@@ -10,6 +10,15 @@ function nextMicLivePhase(phase) {
   return phase === 'note' ? 'chord' : 'note';
 }
 
+// T-36 (línea 2): la tinta del rótulo sobre el relleno la decide una sola
+// autoridad, `note-ink.js`. En la página lo carga index.html antes que este
+// archivo; en Node, el require del mismo módulo. El nombre no puede ser
+// `NoteInk` a secas: ese identificador ya vive en el ámbito global porque
+// note-ink.js lo declara, y redeclararlo sería un error.
+const NoteInkForLabels = (typeof module !== 'undefined' && module.exports)
+  ? require('./note-ink.js')
+  : (typeof NoteInk !== 'undefined' ? NoteInk : undefined);
+
 // Escala en vivo: igual que el selector «Acorde en vivo» del teclado, tres
 // fases controlan si el mástil sigue al micrófono. «Apagado» no cambia la
 // escala; «Nota» usa el tipo y el modo elegidos a la izquierda para una sola
@@ -104,17 +113,20 @@ function micFretLabel(note, mode, ctx) {
 
 // El color del grado de una nota que suena: es el que app.js ya decidió al
 // pintar el mástil y dejó escrito en la posición (`data-interval-color`), así
-// que acá no hay ninguna tabla propia que despegar del mástil. La tinta va
-// pareja a la clase de la nota: clara (la que pinta el mástil) sobre la raíz
-// y las notas del acorde, oscura en las demás, igual que en el resto del
-// mástil. Devuelve el par {color, ink} o null si la posición no lo lleva
-// (posición pintada antes de que exista el atributo, o sin color que leer).
+// que acá no hay ninguna tabla propia que despegar del mástil. La tinta sale de
+// la misma autoridad que la del reposo (`note-ink.js`, T-36 línea 2): se elige
+// por contraste sobre ESE relleno. Antes la decidía la clase de la nota —clara
+// sobre la raíz y el acorde, oscura en las demás— y eso repetía el defecto que
+// esta ronda corrige: `#f3f0e8` sobre el rojo de la raíz daba 3,71 y `#1d2521`
+// sobre el violeta del 7ª menor, 2,49. Devuelve el par {color, ink}, o null si
+// la posición no lo lleva (posición pintada antes de que exista el atributo, o
+// sin un color sólido del que se pueda calcular la tinta).
 function micFretColor(note) {
   if (!note || typeof note !== 'object') return null;
   const color = typeof note.color === 'string' ? note.color.trim() : '';
   if (!color) return null;
-  const className = typeof note.className === 'string' ? note.className : '';
-  const ink = /(^|\s)(root-note|chord-note)(\s|$)/.test(className) ? '#f3f0e8' : '#1d2521';
+  const ink = NoteInkForLabels ? NoteInkForLabels.inkOverFill(color) : null;
+  if (!ink) return null;
   return { color: color, ink: ink };
 }
 
