@@ -31,8 +31,12 @@ test('el documento vuelve a desplazarse antes de la zona de tocar', () => {
 
   assert.ok(!/overflow:\s*hidden/.test(document),
     'el documento debe volver a scrollear: el presupuesto no puede borrar el hero');
-  assert.ok(has(workspace, 'height', '100vh') && has(workspace, 'min-height', '0'),
-    'al llegar al workspace, la zona de tocar ocupa un viewport y sus columnas pueden resolver su propio scroll');
+  // T-54 (A-26) revirtió el alto de viewport del workspace: los paneles
+  // laterales vuelven a crecer con su contenido y la página es la que
+  // desplaza. Lo que sigue acotado es solo la columna central, que conserva
+  // su scroll (lo mide tests/paneles-tarjetas.test.cjs).
+  assert.ok(has(workspace, 'height', 'auto') && has(workspace, 'min-height', '0'),
+    'el workspace crece con los paneles laterales: sin scroll propio, como antes de T-48');
 });
 
 test('Secciones del tema no duplica la vista activa y deja su ampliación en la fila del resumen', () => {

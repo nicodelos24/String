@@ -2620,16 +2620,29 @@ html[data-theme="dark"] .fret-numbers, html[data-theme="dark"] .open-strings-hea
   body[data-mobile-tab="progresion"] .cards-band { padding-top: 4px; position: sticky; top: 0; z-index: 5; }
 }
 
-/* T-50: al desplazar la página hasta la zona de tocar, cada columna resuelve
-   su contenido dentro de un viewport. El documento conserva su scroll para
-   que el hero y el pie sigan formando parte de la experiencia. */
+/* T-50: al desplazar la página hasta la zona de tocar, cada columna resolvía
+   su contenido dentro de un viewport. T-54 (palabra nueva del autor, A-26)
+   devuelve los paneles laterales al régimen de antes: sin desplazamiento
+   propio, con todo su contenido a la vista, y deja el scroll de la zona de
+   tocar solo en la columna central, que es donde vive lo principal.
+   El documento conserva su scroll para que el hero, los paneles completos y
+   el pie sigan formando parte de la experiencia (regla de A-16). */
 @media (min-width: 1101px) and (max-height: 900px) {
-  /* T-53: la fila de la banda es automática y la de las columnas toma el
-     resto. El alto resta el pie (58 px medidos) para que, al llegar al tope
-     del documento, el borde superior del workspace quede en 0 y la banda no
-     pierda sus últimos 58 px bajo el pliegue. */
-  .workspace { grid-template-rows: auto minmax(0, 1fr); height: 100vh; min-height: 0; height: calc(100dvh - 58px); }
-  .control-panel, .fretboard-section, .legend-panel { min-height: 0; overflow-y: auto; }
+  /* La banda mide 240 px a este ancho (medido con tarjetas y vacía): la fila
+     de arriba es automática y las columnas crecen lo que su contenido pide.
+     El workspace ya no se ancla a un viewport: los laterales no tienen barra
+     propia y la página es la que desplaza. */
+  :root { --banda-alto: 240px; }
+  .workspace { grid-template-rows: auto auto; height: auto; min-height: 0; }
+  .control-panel, .legend-panel { min-height: 0; overflow-y: visible; }
+  /* La central conserva su propio desplazamiento con una caja acotada: alta
+     como el viewport que queda entre la banda fija y el pie (58 px medidos),
+     y pegada debajo de la banda mientras la página recorre los laterales. */
+  .fretboard-section {
+    position: sticky; top: var(--banda-alto, 240px); align-self: start;
+    height: calc(100dvh - 58px - var(--banda-alto, 240px));
+    min-height: 0; overflow-y: auto;
+  }
   /* Palancas fuera de la grilla aprobada de T-46: la línea «Detenido» (26 px de
      min-height más márgenes) y el aire del rótulo del mástil. */
   .progression-playback { min-height: 0; margin: 0; font-size: 10px; }
@@ -2716,4 +2729,116 @@ html[data-theme="dark"] {
     scrollbar-width: thin;
     scrollbar-color: var(--scroll-thumb) var(--scroll-track);
   }
+}
+
+/* T-54 · A-26 (2026-10-25): la banda de tarjetas deja de ser una franja con
+   relleno propio y pasa a leerse como una abertura de la página: el mismo
+   papel y los mismos puntos del fondo, fijos al viewport (misma receta que
+   body::before, desplazamiento 0), para que la textura no se corte ni se
+   corra al desplazar. Las tarjetas pierden su relleno: quedan flotando sobre
+   esa textura con una sombra sutil propia y el borde fino de siempre. La
+   franja sigue siendo opaca —es sticky— : lo que pasa por debajo no se ve a
+   través de ella.
+   El estado activo no usa relleno: se marca con el borde del acento, la barra
+   interior que ya traía y una sombra algo más presente. Toda la función
+   (selección, duración, chip del video, arrastre, doble clic, tinte del
+   micrófono) queda intacta: solo cambia la pintura. */
+.cards-band {
+  background-color: var(--paper);
+  background-image: radial-gradient(rgba(187, 181, 166, .32) .7px, transparent .7px);
+  background-size: 7px 7px;
+  background-attachment: fixed;
+  border-bottom-color: transparent;
+  box-shadow: none;
+}
+
+.progression-card,
+html[data-theme="dark"] .progression-card {
+  background-color: transparent;
+  box-shadow: 0 2px 6px rgba(44, 50, 40, .10), 0 1px 2px rgba(44, 50, 40, .07);
+}
+
+.progression-card:hover,
+html[data-theme="dark"] .progression-card:hover {
+  border-color: var(--rust);
+  box-shadow: 0 4px 10px rgba(44, 50, 40, .16), 0 1px 2px rgba(44, 50, 40, .08);
+}
+
+.progression-card.active,
+html[data-theme="dark"] .progression-card.active {
+  background-color: transparent;
+  border-color: var(--rust);
+  box-shadow: inset 0 -3px 0 var(--rust), 0 3px 9px rgba(44, 50, 40, .15);
+}
+
+.progression-card.playing,
+html[data-theme="dark"] .progression-card.playing {
+  background-color: transparent;
+  border-color: var(--rust);
+  box-shadow: inset 0 -4px 0 var(--rust), 0 3px 9px rgba(201, 87, 53, .20);
+}
+
+/* El arrastre conserva su fantasma con relleno: mientras vuela sobre la
+   página la tarjeta necesita leerse, y no es una tarjeta en reposo. */
+.progression-card.drag-ghost,
+html[data-theme="dark"] .progression-card.drag-ghost {
+  background-color: var(--paper-light);
+  box-shadow: 0 12px 28px #30241935;
+}
+.progression-card.drag-placeholder,
+html[data-theme="dark"] .progression-card.drag-placeholder {
+  background-color: transparent;
+  border: 1px dashed var(--rust);
+  box-shadow: none;
+}
+
+/* T-54 · la barra del medio: la misma familia de T-52, con el tirador más
+   fino y más marcado, y el tono del tema en vez del gris. También las barras
+   que quedan adentro de la central —la pila de tarjetas y las secciones— y la
+   de la banda, que es la que el autor ve al recorrer las tarjetas. El riel
+   conserva los 15 px nativos: el layout no se mueve; la finura sale del borde
+   transparente. */
+:root {
+  --scroll-thumb-fuerte: #8f8779;
+}
+html[data-theme="dark"] {
+  --scroll-thumb-fuerte: #7d8a80;
+}
+
+:where(.fretboard-section, .progression, #section-list)::-webkit-scrollbar-thumb {
+  background-color: var(--scroll-thumb-fuerte);
+  border: 6px solid transparent;
+  border-radius: 999px;
+  background-clip: padding-box;
+}
+:where(.fretboard-section, .progression, #section-list)::-webkit-scrollbar-thumb:hover,
+:where(.fretboard-section, .progression, #section-list)::-webkit-scrollbar-thumb:active {
+  background-color: var(--rust);
+}
+:where(.fretboard-section, .progression, #section-list)::-webkit-scrollbar-track {
+  background-color: color-mix(in srgb, var(--scroll-track) 55%, transparent);
+}
+
+@supports not selector(::-webkit-scrollbar) {
+  :where(.fretboard-section, .progression, #section-list) {
+    scrollbar-width: thin;
+    scrollbar-color: var(--scroll-thumb-fuerte) transparent;
+  }
+}
+
+/* En oscuro el fondo de la página cae a #171d1a y su textura baja a .08
+   (body::before), así que la banda copia esa misma densidad: con el .32 del
+   tema claro los puntos brillarían de más. */
+html[data-theme="dark"] .cards-band {
+  background-image: radial-gradient(rgba(187, 181, 166, .08) .7px, transparent .7px);
+}
+
+/* La tarjeta transparente deja ver el papel de la página (#f3f0e8) en vez del
+   papel claro de antes (#faf9f5): el rótulo pequeño en --muted bajaba de 3,85
+   a 3,57. Esta tinta, un paso más oscura, devuelve 3,99 sin cambiar el diseño
+   del texto; en oscuro el fondo nuevo es más oscuro y el contraste sube solo,
+   así que no se toca. */
+html[data-theme="light"] .cards-band .progression-card :is(small, .progression-mode),
+html:not([data-theme]) .cards-band .progression-card :is(small, .progression-mode) {
+  color: #707873;
 }
