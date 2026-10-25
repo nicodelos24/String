@@ -1131,6 +1131,26 @@ html[data-theme="dark"] .board-add-button {
    a 320px; el aria-label conserva el nombre completo de la sección. El recorte
    con puntos es la guarda para anchos menores a los medidos: no actúa a 320px. */
 .sections-panel #section-list .section-card .section-composer { grid-column: span 3; font: inherit; font-size: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* T-07: «Editar» va en su propia fila de la tarjeta (span completo) para no
+   mover las cajas medidas en T-41: «Repetir»/«Duplicar» conservan su `span 3`
+   y el formulario reemplaza a los controles mientras está abierto. Los dos
+   campos caben en la misma fila (nombre flexible + ×N de caja fija) y las
+   acciones usan `font: inherit` como el resto de los botones de la fila
+   (lección DEF-02/DEF-03: el navegador no hereda la fuente a los <button>). */
+.sections-panel #section-list .section-card .section-edit-open { grid-column: 1 / -1; font: inherit; font-size: 10px; }
+/* La fila en edición ocupa las dos columnas de la lista SOLO en móvil: a 320 px
+   la tarjeta mide 107,5 px y con el formulario abierto no alcanzaba para
+   nombre + ×N (medido: el campo de nombre quedaba en 45 px y la ×N desbordaba
+   la tarjeta). En escritorio conserva el ancho de tarjeta de la lista. */
+.sections-panel #section-list .section-card .section-edit { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1fr) 72px; gap: 6px; align-items: end; }
+@media (max-width: 480px) { .sections-panel #section-list .section-card.editing { grid-column: 1 / -1; } }
+.sections-panel #section-list .section-card .section-edit label { display: grid; grid-template-columns: minmax(0, 1fr); gap: 3px; min-width: 0; font: 10px var(--sans); color: var(--muted); }
+.sections-panel #section-list .section-card .section-edit input { width: 100%; min-width: 0; box-sizing: border-box; height: 26px; padding: 3px 5px; border: 1px solid var(--line); border-radius: 5px; background: var(--paper); color: var(--ink); font: 11px var(--sans); }
+.sections-panel #section-list .section-card .section-edit input[aria-invalid="true"] { border-color: var(--rust); }
+.sections-panel #section-list .section-card .section-edit .section-edit-actions { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 6px; }
+.sections-panel #section-list .section-card .section-edit .section-edit-actions button { height: 26px; padding: 0 4px; border: 1px solid var(--line); border-radius: 5px; background: var(--paper); color: var(--ink); font: inherit; font-size: 10px; cursor: pointer; }
+.sections-panel #section-list .section-card .section-edit .section-edit-actions button:hover { border-color: var(--rust); color: var(--rust); }
+.sections-panel #section-list .section-card .section-edit .section-edit-actions button:focus-visible { outline: 2px solid var(--rust); outline-offset: 2px; }
 @media(prefers-reduced-motion: reduce) { .sections-panel #section-list .section-card { transition: none; } }
 .player-topline .player-disclosure { justify-content: flex-start; }
 .source-switch { display: inline-flex; padding: 3px; gap: 2px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); }
