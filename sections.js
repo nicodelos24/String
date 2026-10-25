@@ -127,6 +127,16 @@ if(typeof document!=='undefined')(()=>{
         button.disabled=delta<0?index===0:delta>0?index===sections.length-1:false;
         button.onclick=()=>{window.dispatchEvent(new Event('traste:load-song'));if(delta===0)sections.splice(index,1);else [sections[index],sections[index+delta]]=[sections[index+delta],sections[index]];render();renderProgression();};row.append(button);
       }
+      // T-09 · El salto de la sección: su primer acorde con marca de tiempo.
+      // Va en esta fila (columnas 5-6 de la grilla de 6) para no agregar alto
+      // ni mover los controles que midió T-41.
+      const video=videoTarget(s);
+      if(video){
+        const jump=document.createElement('button');jump.type='button';jump.className='section-video';jump.textContent=video.label;
+        jump.setAttribute('aria-label',`Salta el video al inicio de ${s.name} (${video.label})`);
+        jump.onclick=()=>{window.StringVideoSync?.jump?.(video.index);};
+        row.append(jump);
+      }
       // T-41 (QA-MOD-03): los dos controles del compositor de bloques. Cada uno
       // es un botón propio con acción unaria — nada de doble clic compartido —
       // y el nombre de la sección viaja en el aria-label para el teclado.
@@ -189,7 +199,22 @@ if(typeof document!=='undefined')(()=>{
       if(!taken.has(candidate))return candidate;
     }
   }
+  // T-09 · A dónde salta una sección: su primer acorde con marca de tiempo, en
+  // el orden de la sección (no en el orden de la progresión). `null` si
+  // ninguno tiene marca: la fila no ofrece un destino que no existe.
+  function videoTarget(s){
+    for(const item of s.items){
+      const at=progression.indexOf(item);
+      if(at<0)continue;
+      const label=window.StringVideoSync?.labelFor?.(at);
+      if(label)return {index:at,label};
+    }
+    return null;
+  }
   window.StringSections={serialize,
+    // T-09 · Las marcas del video cambian el minuto que ofrecen las filas; el
+    // aviso de video-sync repinta con este punto, sin recargar la canción.
+    refresh(){render();},
     visible(){if(active&&!active.items.some(item=>progression.includes(item)))active=null;return (active?active.items.filter(item=>progression.includes(item)):progression).map(item=>({item,index:progression.indexOf(item)}));},
     follow(entry){const next=sections.includes(entry.sectionRef)?entry.sectionRef:null;if(active!==next){$('progression').scrollTop=0;$('progression').scrollLeft=0;}active=next;render();},
     clearView(){active=null;render();renderProgression();},

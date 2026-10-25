@@ -1138,6 +1138,11 @@ html[data-theme="dark"] .board-add-button {
    acciones usan `font: inherit` como el resto de los botones de la fila
    (lección DEF-02/DEF-03: el navegador no hereda la fuente a los <button>). */
 .sections-panel #section-list .section-card .section-edit-open { grid-column: 1 / -1; font: inherit; font-size: 10px; }
+/* T-09 · El minuto de la sección con marca del video. Comparte la fila de la
+   grilla de 6 con el asa y las flechas (columnas 5-6): no agrega alto ni mueve
+   los controles que midió T-41. Sin marca, el botón no existe. */
+.sections-panel #section-list .section-card .section-video { grid-column: span 2; font: inherit; font-size: 10px; color: var(--rust); }
+.sections-panel #section-list .section-card .section-video:hover { border-color: var(--rust); }
 /* La fila en edición ocupa las dos columnas de la lista SOLO en móvil: a 320 px
    la tarjeta mide 107,5 px y con el formulario abierto no alcanzaba para
    nombre + ×N (medido: el campo de nombre quedaba en 45 px y la ×N desbordaba
@@ -1357,6 +1362,18 @@ html[data-theme="dark"] .board-add-button {
   cursor: pointer;
   font-size: 14px;
 }
+
+/* T-09 · El minuto de la tarjeta que tiene marca del video: es un botón que
+   salta el video a ese punto. Comparte la línea de la duración (`.beats-row`)
+   para no mover el alto de la banda fija de T-53: flotado o con borde empujaba
+   el número a otra línea y la tarjeta crecía 7 px (la banda pasaba de 240 a
+   247,14 en el pliegue de 1366×650). El selector sube a (0,2,0) porque
+   `.progression-card button` fija 14 px y `float:right`. */
+.progression-card .beats-row { display: flex; align-items: center; justify-content: space-between; gap: 4px; margin-top: 4px; }
+.progression-card .beats-row > .beats-control { margin-top: 0; }
+.progression-card .video-jump { float: none; display: inline; margin: 0; padding: 0; border: 0; white-space: nowrap; color: var(--rust); text-decoration: underline; text-underline-offset: 1px; font: 9px/1 var(--mono); }
+.progression-card .video-jump:hover { color: var(--ink); }
+.progression-card .video-jump:focus-visible { outline: 2px solid var(--rust); outline-offset: 1px; }
 
 .beats-control {
   display: inline-flex;

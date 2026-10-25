@@ -138,6 +138,16 @@
   }
   toggle.addEventListener('click',()=>{if(ready){if(player.getPlayerState()===1)player.pauseVideo();else player.playVideo();tick();}});
   seek.addEventListener('change',()=>{if(ready)player.seekTo(Number(seek.value),true);});
+  // T-09 · Salto desde una tarjeta o una sección. Quien elige el punto es
+  // video-sync (la marca del acorde); acá solo se mueve el reproductor. No se
+  // toca play/pausa: se pidió saltar, no arrancar la canción.
+  window.addEventListener('string:video-seek',event=>{
+    const time=Number(event.detail?.time);
+    if(!Number.isFinite(time)||time<0)return;
+    if(!ready||!player){status.textContent='Carga un video para saltar a un punto.';return;}
+    player.seekTo(time,true);
+    tick();
+  });
   $('youtube-form').addEventListener('submit',event=>{event.preventDefault();load($('youtube-url').value.trim());});
   window.addEventListener('traste:load-video',event=>load(event.detail));
   window.addEventListener('pagehide',()=>{generation++;clearInterval(poll);clearTimeout(timeout);player?.destroy();player=null;ready=false;});
