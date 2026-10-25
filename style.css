@@ -2530,3 +2530,65 @@ html[data-theme="dark"] .fret-numbers, html[data-theme="dark"] .open-strings-hea
    el bloque de escritorio bajo anterior. */
 html, body { min-height: 100%; }
 .workspace { height: 100vh; min-height: 0; }
+
+/* T-52 · A-19 (2026-10-25): las barras de desplazamiento dejan de verse
+   genéricas y acompañan la paleta de la página. Desde T-48/T-50 el documento y
+   las tres columnas de la zona de tocar —con YouTube, Metrónomo y Biblioteca
+   adentro de la banda— desplazan su propio contenido; también llevan scroll
+   propio el bloc de tarjetas, la lista de secciones, el panel de variantes, la
+   vista previa MIDI y las marcas del video.
+   Solo se pinta la barra: el riel conserva el grosor nativo de Chromium/Linux
+   (15 px) y el tirador se dibuja fino dentro de él con un borde transparente,
+   así el layout no se mueve ni un píxel (medido a 1366×650: 1351 px de ancho
+   de documento antes y después) y en cambio desaparecen las flechas y el gris
+   del sistema. Pista tenue, tirador más marcado, acento --rust al pasar; el
+   tema oscuro redefine solo los dos primeros.
+   El wrap del mástil (`.fretboard-wrap`) queda fuera a propósito: en 320 su
+   scroll horizontal vive en una franja de 10 px y forzarle un riel clásico la
+   aplastaría —medido—, así que conserva el dibujo nativo del navegador. */
+:root {
+  --scroll-track: #e7e2d6;
+  --scroll-thumb: #ada598;
+}
+
+html[data-theme="dark"] {
+  --scroll-track: #232b26;
+  --scroll-thumb: #66736a;
+}
+
+:where(html, .control-panel, .fretboard-section, .legend-panel, .progression, #section-list, #variants-editor, #midi-preview, #video-marks)::-webkit-scrollbar {
+  width: 15px;
+  height: 15px;
+}
+
+:where(html, .control-panel, .fretboard-section, .legend-panel, .progression, #section-list, #variants-editor, #midi-preview, #video-marks)::-webkit-scrollbar-track {
+  background-color: var(--scroll-track);
+  border: 4px solid transparent;
+  border-radius: 999px;
+  background-clip: padding-box;
+}
+
+:where(html, .control-panel, .fretboard-section, .legend-panel, .progression, #section-list, #variants-editor, #midi-preview, #video-marks)::-webkit-scrollbar-thumb {
+  background-color: var(--scroll-thumb);
+  border: 4px solid transparent;
+  border-radius: 999px;
+  background-clip: padding-box;
+}
+
+:where(html, .control-panel, .fretboard-section, .legend-panel, .progression, #section-list, #variants-editor, #midi-preview, #video-marks)::-webkit-scrollbar-thumb:hover,
+:where(html, .control-panel, .fretboard-section, .legend-panel, .progression, #section-list, #variants-editor, #midi-preview, #video-marks)::-webkit-scrollbar-thumb:active {
+  background-color: var(--rust);
+}
+
+:where(html, .control-panel, .fretboard-section, .legend-panel, .progression, #section-list, #variants-editor, #midi-preview, #video-marks)::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Quien no entiende las pseudoclases WebKit (Firefox) recibe la misma paleta
+   por el camino estándar; ahí el grosor lo decide el navegador. */
+@supports not selector(::-webkit-scrollbar) {
+  :where(html, .control-panel, .fretboard-section, .legend-panel, .progression, #section-list, #variants-editor, #midi-preview, #video-marks) {
+    scrollbar-width: thin;
+    scrollbar-color: var(--scroll-thumb) var(--scroll-track);
+  }
+}
