@@ -50,7 +50,12 @@ const ROOT_MIN_SHARE = 0.3;
 // acorde debe ser claramente mejor; dentro se decide por la nota más grave.
 const TIE_BREAK_WINDOW = 0.05;
 
-function detectChord(spectrum, sampleRate, fftSize = spectrum.length * 2) {
+// La medición del espectro, una sola vez para las dos preguntas que la página
+// hace sobre el mismo fotograma: «¿qué acorde es?» (detectChord, que lo nombra)
+// y «¿qué notas suenan a la vez?» (detectSoundingNotes, que solo lo dibuja).
+// Separarla evita que el mástil dependa de que el acorde tenga nombre: con dos
+// notas no hay acorde que nombrar y, aun así, hay notas que mostrar (T-57).
+function analyzeSpectrum(spectrum, sampleRate, fftSize) {
   if (!Number.isFinite(sampleRate) || sampleRate <= 0 || fftSize < 8192 || spectrum.length !== fftSize / 2) return null;
   const binHz = sampleRate / fftSize;
   let maxDb = -Infinity;
@@ -96,14 +101,21 @@ function detectChord(spectrum, sampleRate, fftSize = spectrum.length * 2) {
   const maximum = Math.max(...chroma);
   if (!maximum) return null;
   const present = [...chroma].map((energy, pitch) => energy >= maximum * PRESENCE ? pitch : -1).filter(pitch => pitch >= 0);
-  // Hasta seis clases: las cuartas y sextas tienen seis notas distintas. Con
-  // cinco, un G13 completo se rechazaba siempre. El penalizador por «extra»
-  // de más abajo y el suelo de confianza siguen impidiendo que se inventen.
-  if (present.length < 3 || present.length > 6) return null;
   const total = chroma.reduce((sum, value) => sum + value, 0);
   // La nota más grave que suena de verdad: sirve para desempatar (abajo) y para
   // colocar después la forma del acorde en un punto del mástil.
   const lowestMidi = audible.reduce((lowest, peak) => peak.midi < lowest ? peak.midi : lowest, Infinity);
+  return { present, chroma, total, maximum, lowestMidi, audible };
+}
+
+function detectChord(spectrum, sampleRate, fftSize = spectrum.length * 2) {
+  const analysis = analyzeSpectrum(spectrum, sampleRate, fftSize);
+  if (!analysis) return null;
+  const { present, chroma, total, maximum, lowestMidi, audible } = analysis;
+  // Hasta seis clases: las cuartas y sextas tienen seis notas distintas. Con
+  // cinco, un G13 completo se rechazaba siempre. El penalizador por «extra»
+  // de más abajo y el suelo de confianza siguen impidiendo que se inventen.
+  if (present.length < 3 || present.length > 6) return null;
   const candidates = [];
   for (let root = 0; root < 12; root++) {
     for (const template of LIVE_CHORD_TEMPLATES) {
@@ -142,10 +154,39 @@ function detectChord(spectrum, sampleRate, fftSize = spectrum.length * 2) {
   return Number.isFinite(lowestMidi) ? { ...best, bass: lowestMidi } : best;
 }
 
+// Las notas que suenan a la vez, sin nombrar ningún acorde. Es lo que el mástil
+// necesita para dibujar una doble nota o una tríada: `detectChord` exige tres
+// clases para afirmar una calidad (decisión medida de T-21 y no se toca), así
+// que con dos notas no hay acorde y, sin esta puerta, tampoco dibujo.
+// Devuelve las clases presentes y la más grave real; `null` si no hay
+// simultaneidad (silencio o una nota sola).
+function detectSoundingNotes(spectrum, sampleRate, fftSize = spectrum.length * 2) {
+  const analysis = analyzeSpectrum(spectrum, sampleRate, fftSize);
+  if (!analysis) return null;
+  const { present, lowestMidi } = analysis;
+  if (present.length < 2 || present.length > 6) return null;
+  return Number.isFinite(lowestMidi)
+    ? { pitches: present.slice().sort((a, b) => a - b), bass: lowestMidi }
+    : { pitches: present.slice().sort((a, b) => a - b) };
+}
+
+// El mismo seguimiento estable que un acorde, pero con la clave del CONJUNTO de
+// notas: para el dibujo, dos notas son las mismas dos aunque cambie el orden en
+// que el espectro las devuelva.
+function followStableNotes(detected, state, now, options) {
+  return followStableByKey(
+    notes => notes && Array.isArray(notes.pitches) ? notes.pitches.slice().sort((a, b) => a - b).join(':') : null,
+    detected, state, now, options);
+}
+
 // Los tiempos son milisegundos reales, independientes de la tasa de refresco.
-function followStableChord(detected, state, now, { confirmMs = 350, releaseMs = 550 } = {}) {
+// Una sola versión del seguimiento: cambia la clave que identifica «lo mismo»
+// (la raíz y la calidad de un acorde, o el conjunto de notas que suenan). El
+// nombre lleva `ByKey` porque `microphone.js` ya declara `followStable` para la
+// nota monofónica y los dos scripts comparten el ámbito global de la página.
+function followStableByKey(keyOf, detected, state, now, { confirmMs = 350, releaseMs = 550 } = {}) {
   const previous = state || { current: null, pending: null, since: now };
-  const key = detected ? `${detected.root}:${detected.type}` : null;
+  const key = keyOf(detected);
   const next = { ...previous };
   if (key !== previous.pending) { next.pending = key; next.since = now; }
   if (key !== previous.current && now - next.since >= (key === null ? releaseMs : confirmMs)) {
@@ -155,4 +196,8 @@ function followStableChord(detected, state, now, { confirmMs = 350, releaseMs = 
   return { state: next };
 }
 
-if (typeof module !== 'undefined' && module.exports) module.exports = { detectChord, followStableChord, LIVE_CHORD_TEMPLATES };
+function followStableChord(detected, state, now, options) {
+  return followStableByKey(chord => chord ? `${chord.root}:${chord.type}` : null, detected, state, now, options);
+}
+
+if (typeof module !== 'undefined' && module.exports) module.exports = { detectChord, followStableChord, detectSoundingNotes, followStableNotes, analyzeSpectrum, LIVE_CHORD_TEMPLATES };

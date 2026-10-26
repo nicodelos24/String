@@ -96,6 +96,118 @@ function chordFretMidis(pitches, bass, bounds) {
   return chosen.sort((a, b) => a - b);
 }
 
+// La FORMA que se dibuja: una posición por nota, cada una en una cuerda
+// distinta. Es lo que separa «se ven las tres notas del acorde» de la nube que
+// medía el defecto (T-57): una misma altura existe en todas las cuerdas, así
+// que marcar por altura pintaba nueve aros para un Do mayor y no dejaba leer
+// ninguna forma.
+//
+// Se elige la asignación nota→cuerda que da la forma más compacta y más cerca
+// del bajo que se oye: el traste de referencia es el más grave del bajo, las
+// notas caben en una ventana de seis trastes sobre él y las cuerdas al aire
+// siguen valiendo (son traste 0). Si el instrumento no trae su tabla de
+// cuerdas —los dobles de los tests— se mantiene el mapa de octavas de
+// `chordFretMidis`, que es una posición por nota aunque no sepa en qué cuerda.
+const SHAPE_WINDOW = 5;      // trastes por encima del bajo que entran en la forma
+const SHAPE_BACKSTEP = 3;    // trastes por debajo del bajo, por si la forma baja
+// Un acorde de seis notas (un 13 completo) no entra en cuatro trastes: primero
+// se busca una posición de mano cómoda y, si no hay, se abre la mano antes que
+// volver a la nube de todas las apariciones.
+const SHAPE_SPANS = [6, 9];
+
+function chordFretShape(pitches, bass, ctx) {
+  ctx = ctx || {};
+  const low = Number.isInteger(ctx.low) ? ctx.low : 0;
+  const high = Number.isInteger(ctx.high) ? ctx.high : 127;
+  const strings = Array.isArray(ctx.strings) ? ctx.strings.filter(midi => Number.isInteger(midi)) : [];
+  const classes = [...new Set((Array.isArray(pitches) ? pitches : [])
+    .filter(pitch => Number.isInteger(pitch))
+    .map(pitch => ((pitch % 12) + 12) % 12))];
+  if (!classes.length) return [];
+  const octaveMap = () => chordFretMidis(classes, bass, { low, high })
+    .map(midi => ({ midi, string: null, fret: null }));
+  if (strings.length < classes.length) return octaveMap();
+
+  // Traste de referencia: el más grave del bajo. Un Do3 se toca en el 3 de La
+  // o en el 8 de Mi; el 3 es la posición de la mano que lo produce.
+  let anchorFret = null;
+  if (Number.isInteger(bass)) {
+    for (const open of strings) {
+      const fret = bass - open;
+      if (fret < 0 || fret > 22 || open + fret < low || open + fret > high) continue;
+      if (anchorFret === null || fret < anchorFret) anchorFret = fret;
+    }
+  }
+  if (anchorFret === null) anchorFret = 0;
+
+  // Candidatos por nota: cada cuerda y traste donde esa clase suena dentro de
+  // la ventana de la forma y sin bajar del bajo. La forma vive dentro de una
+  // octava sobre el bajo —un acorde no salta dos octavas—; si con eso no hay
+  // forma (un 13 de seis notas no entra: la mano no llega a seis cuerdas en una
+  // octava), se abre al mástil entero antes que volver a la nube.
+  const floor = Number.isInteger(bass) ? Math.max(low, bass) : low;
+  const pools = classes.map(pitchClass => {
+    const all = [];
+    for (let string = 0; string < strings.length; string++) {
+      for (let fret = 0; fret <= 22; fret++) {
+        const midi = strings[string] + fret;
+        if (midi < floor || midi > high || midi % 12 !== pitchClass) continue;
+        if (fret > anchorFret + SHAPE_WINDOW) continue;
+        if (fret > 0 && fret < anchorFret - SHAPE_BACKSTEP) continue;
+        all.push({ midi, string, fret });
+      }
+    }
+    return { all, within: all.filter(position => position.midi <= floor + 11) };
+  });
+  // Una nota sin ninguna posición tocable no se dibuja: no hay dónde marcarla.
+  if (pools.some(pool => !pool.all.length)) return octaveMap();
+
+  const chosen = [];
+  const usedStrings = new Set();
+  let best = null;
+  let maxSpan = SHAPE_SPANS[0];
+  // Backtracking con las notas de menos opciones primero, para podar temprano.
+  const walk = (order, step, frets) => {
+    if (step === order.length) {
+      const span = Math.max(...frets) - Math.min(...frets);
+      if (span > maxSpan) return;
+      const average = frets.reduce((sum, fret) => sum + fret, 0) / frets.length;
+      // Compacta, cerca del bajo y sin subirse una octava: una forma que deja
+      // el bajo sonando abajo y pinta el acorde doce trastes arriba no es la
+      // que tocó el autor.
+      const lift = chosen.reduce((sum, position) => sum + (position.midi - floor) / 12, 0);
+      const cost = span * 2 + Math.abs(average - anchorFret) + lift * 4;
+      if (!best || cost < best.cost) best = { cost, chosen: chosen.slice() };
+      return;
+    }
+    for (const candidate of order[step].list) {
+      if (usedStrings.has(candidate.string)) continue;
+      const next = frets.concat(candidate.fret);
+      if (Math.max(...next) - Math.min(...next) > maxSpan) continue;
+      usedStrings.add(candidate.string);
+      chosen.push(candidate);
+      walk(order, step + 1, next);
+      chosen.pop();
+      usedStrings.delete(candidate.string);
+    }
+  };
+  // Primero la octava del bajo, después la mano abierta. Cada intento se queda
+  // con la forma más cómoda de su pool.
+  for (const key of ['within', 'all']) {
+    const order = pools.map(pool => ({ list: pool[key] })).filter(entry => entry.list.length)
+      .sort((a, b) => a.list.length - b.list.length);
+    if (order.length < classes.length) continue;
+    for (const span of SHAPE_SPANS) {
+      maxSpan = span;
+      walk(order, 0, []);
+      if (best) break;
+    }
+    if (best) break;
+  }
+  if (!best) return octaveMap();
+  return best.chosen.slice().sort((a, b) => a.midi - b.midi);
+}
+
 // Rótulo que el micrófono escribe en las posiciones que están sonando. Es un
 // estado propio del micrófono, aparte de los botones AA y MÁSTIL: estos siguen
 // decidiendo el resto del mástil. «Nota» reutiliza el nombre que la página ya
@@ -178,6 +290,7 @@ if (typeof document !== 'undefined') (() => {
   if (!toggle || !readout) return;
 
   let liveChord = null;   // último acorde estable detectado por el micrófono
+  let liveNotes = null;   // notas que suenan a la vez, cuando no hay acorde que nombrar
   let micPitch = null;    // última nota monofónica confirmada (MIDI)
   let microLiveKey = '';  // raíz:tipo:modo ya aplicado desde el micrófono
 
@@ -216,15 +329,32 @@ if (typeof document !== 'undefined') (() => {
       recomputeMicroLive();
     },
     onChord: detection => {
-      if (keyboardOwnsChord()) { liveChord = null; highlightChord(null); return; }
+      if (keyboardOwnsChord()) { liveChord = null; liveNotes = null; highlightChord(null); return; }
       liveChord = detection;
-      // Un acorde conocido se marca entero, no solo la nota que YIN acierta:
-      // de cada nota se dibuja la posición más cercana a la más grave que suena.
-      highlightChord(detection ? chordFretMidis(detection.pitches, detection.bass, fretboardBounds()) : null);
+      // Un acorde nombrado trae las mismas notas que el conjunto suelto y además
+      // su nombre: manda él. Al soltarse, el conjunto vuelve a hablar si sigue
+      // sonando (dos notas no tienen acorde, pero sí dibujo).
+      if (detection) liveNotes = null;
+      drawDetectedChord();
       recomputeMicroLive();
+    },
+    onNotes: detection => {
+      if (keyboardOwnsChord()) { liveNotes = null; return; }
+      liveNotes = detection;
+      if (!liveChord) drawDetectedChord();
     },
     onState: renderState,
   });
+
+  // La forma que se dibuja: la del acorde si lo hay; si no, la de las notas que
+  // suenan a la vez. Una posición por nota, nunca todas sus apariciones.
+  function drawDetectedChord() {
+    const source = liveChord && Array.isArray(liveChord.pitches) ? liveChord : liveNotes;
+    const pitches = source && Array.isArray(source.pitches) ? source.pitches : null;
+    highlightChord(pitches && pitches.length
+      ? chordFretShape(pitches, source.bass, fretboardShapeContext())
+      : null);
+  }
 
   // Mientras el teclado muestra un acorde en vivo, el micrófono cede la palabra
   // para no pisar la escala del mástil.
@@ -435,6 +565,7 @@ if (typeof document !== 'undefined') (() => {
   // del acorde reconocido, que se dibujan a la vez.
   let liveMidi = null;
   let liveChordMidis = null;
+  let liveChordShape = null;
   let heldMidi = null;
   let heldSince = 0;
   let holdTimer = null;
@@ -481,11 +612,24 @@ if (typeof document !== 'undefined') (() => {
     document.querySelectorAll('.open-string-note.live').forEach(fadeOut);
     liveMidi = null;
     liveChordMidis = null;
+    liveChordShape = null;
+    liveNotes = null;
   }
 
   // El alcance del mástil con el instrumento elegido: la cuerda más grave por
   // el primer traste y la más aguda por el vigésimo segundo. Es lo que decide
   // qué posiciones existen para colocar la forma de un acorde.
+  // El contexto de la forma: las cuerdas del instrumento elegido, de grave a
+  // aguda. A diferencia de `fretboardBounds`, el piso es la cuerda más grave al
+  // aire: una forma puede empezar en una cuerda al aire (traste 0).
+  function fretboardShapeContext() {
+    const table = typeof instruments !== 'undefined' ? instruments : null;
+    const key = typeof instrument !== 'undefined' ? instrument : 'guitar';
+    const strings = table && table[key] && table[key].strings;
+    if (!Array.isArray(strings) || !strings.length) return fretboardBounds();
+    return { strings: strings.slice(), low: Math.min(...strings), high: Math.max(...strings) + 22 };
+  }
+
   function fretboardBounds() {
     const table = typeof instruments !== 'undefined' ? instruments : null;
     const key = typeof instrument !== 'undefined' ? instrument : 'guitar';
@@ -498,12 +642,33 @@ if (typeof document !== 'undefined') (() => {
   // silencio, y las posiciones que dejan de sonar se atenúan. Son dos
   // detecciones distintas —la nota que YIN confirma y las del acorde reconocido—
   // y mientras hay un acorde estable en el mástil solo se dibuja la del acorde.
+  // La clave de una POSICIÓN: cuerda y traste. Una misma nota está en varias
+  // cuerdas y trastes, y la forma del acorde elige uno solo de cada uno.
+  function positionKey(note) {
+    const data = note && note.dataset;
+    if (!data || data.string === undefined || data.fret === undefined) return null;
+    if (data.string === '' || data.fret === '') return null;
+    return data.string + ':' + data.fret;
+  }
+
   function applyLive() {
+    // La forma manda por posición; el mapa de alturas queda para cuando no hay
+    // cuerdas que repartir (o para la nota monofónica, que no tiene forma).
+    const shapeKeys = new Set();
+    if (liveChordShape) for (const position of liveChordShape) {
+      if (Number.isInteger(position.string) && Number.isInteger(position.fret)) {
+        shapeKeys.add(position.string + ':' + position.fret);
+      }
+    }
     const sounding = new Set();
-    if (liveChordMidis) for (const midi of liveChordMidis) sounding.add(midi);
-    else if (liveMidi !== null) sounding.add(liveMidi);
+    if (liveChordMidis && !shapeKeys.size) for (const midi of liveChordMidis) sounding.add(midi);
+    else if (!liveChordMidis && liveMidi !== null) sounding.add(liveMidi);
     document.querySelectorAll('#fretboard [data-midi], #open-strings [data-midi]').forEach(note => {
-      if (sounding.has(Number(note.dataset.midi))) {
+      const key = shapeKeys.size ? positionKey(note) : null;
+      const on = shapeKeys.size
+        ? key !== null && shapeKeys.has(key)
+        : sounding.has(Number(note.dataset.midi));
+      if (on) {
         note.classList.remove('live-fade');
         note.classList.add('live');
         applyMicLabel(note);
@@ -527,8 +692,9 @@ if (typeof document !== 'undefined') (() => {
   // monofónica sigue llegando en cada fotograma, así que la elección no puede
   // ser solo la de llegar: mientras haya forma, `applyLive` dibuja la forma y
   // descarta la nota. Al soltarse el acorde, esta vuelve a dibujar sola.
-  function highlightChord(midis) {
-    liveChordMidis = Array.isArray(midis) && midis.length ? midis : null;
+  function highlightChord(shape) {
+    liveChordShape = Array.isArray(shape) && shape.length ? shape : null;
+    liveChordMidis = liveChordShape ? liveChordShape.map(position => position.midi) : null;
     applyLive();
   }
 
@@ -588,6 +754,7 @@ if (typeof document !== 'undefined') (() => {
       liveChord = null;
       micPitch = null;
       microLiveKey = '';
+      liveNotes = null;
       if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
       heldMidi = null;
     }
@@ -704,4 +871,4 @@ if (typeof document !== 'undefined') (() => {
   window.addEventListener('pagehide', () => reader.stop());
 })();
 
-if (typeof module !== 'undefined' && module.exports) module.exports = { micLiveChord, preferredRootSpelling, tunerReading, micFretLabel, micFretColor, chordFretMidis, nextMicLivePhase };
+if (typeof module !== 'undefined' && module.exports) module.exports = { micLiveChord, preferredRootSpelling, tunerReading, micFretLabel, micFretColor, chordFretMidis, chordFretShape, nextMicLivePhase };

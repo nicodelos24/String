@@ -37,11 +37,18 @@ class MicrophoneReader {
     this.cancelFrame = options.cancelFrame || (id => cancelAnimationFrame(id));
     this.onPitch = options.onPitch || (() => {});
     this.onChord = options.onChord || (() => {});
+    // Las notas que suenan a la vez sin acorde que nombrar (una doble, una
+    // tríada que el detector no se anima a bautizar): el mástil las dibuja
+    // igual. Va por un aviso propio para no tocar el significado de onChord.
+    this.onNotes = options.onNotes || (() => {});
     this.onState = options.onState || (() => {});
     this.detect = options.detect || (typeof detectPitch === 'function' ? detectPitch : () => null);
     this.detectChord = options.detectChord || (typeof detectChord === 'function' ? detectChord : null);
     this.followChord = options.followChord || ((detected, state, now) =>
       typeof followStableChord === 'function' ? followStableChord(detected, state, now, { confirmMs: CHORD_CONFIRM_MS, releaseMs: CHORD_RELEASE_MS }) : null);
+    this.detectNotes = options.detectNotes || (typeof detectSoundingNotes === 'function' ? detectSoundingNotes : null);
+    this.followNotes = options.followNotes || ((detected, state, now) =>
+      typeof followStableNotes === 'function' ? followStableNotes(detected, state, now, { confirmMs: CHORD_CONFIRM_MS, releaseMs: CHORD_RELEASE_MS }) : null);
     this.chordFftSize = options.chordFftSize || CHORD_FFT_SIZE;
     this.now = options.now || (() => performance.now());
     this.fftSize = options.fftSize || DEFAULT_FFT_SIZE;
@@ -97,6 +104,7 @@ class MicrophoneReader {
       this.sampleRate = context.sampleRate;
       this.hysteresis = null;
       this.chordHysteresis = null;
+      this.notesHysteresis = null;
       this.lastChordFrame = -Infinity;
       this.onState('ready');
       this.framePointer = () => this.frame();
@@ -141,6 +149,16 @@ class MicrophoneReader {
       const stable = this.followChord(candidate, this.chordHysteresis, now);
       this.chordHysteresis = stable.state;
       if (stable.chord !== undefined) this.onChord(stable.chord);
+      // Mismo fotograma, misma lectura del espectro: cuando no hay acorde que
+      // nombrar se pregunta por el conjunto de notas, que es lo que dibuja una
+      // doble. Con acorde detectado se pasa el silencio, para que el aviso de
+      // notas se suelte y no compita con la forma del acorde.
+      if (this.detectNotes && this.followNotes) {
+        const notesCandidate = candidate ? null : this.detectNotes(this.chordBuffer, this.sampleRate, this.chordAnalyser.fftSize);
+        const stableNotes = this.followNotes(notesCandidate, this.notesHysteresis, now);
+        this.notesHysteresis = stableNotes.state;
+        if (stableNotes.chord !== undefined) this.onNotes(stableNotes.chord);
+      }
     }
     this.schedule();
   }
@@ -157,6 +175,7 @@ class MicrophoneReader {
     this.teardownContext();
     this.hysteresis = null;
     this.chordHysteresis = null;
+    this.notesHysteresis = null;
     this.onState('stopped');
   }
 
