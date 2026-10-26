@@ -225,7 +225,10 @@ function renderFretboard() {
       // El color que ya decidió getIntervalClass para esta posición se queda
       // escrito en la posición (`data-interval-color`): es de donde lee el
       // micrófono al tintar la nota que suena, sin una tabla propia (T-21).
-      return `<div class="fret"><span class="${noteClass}${inkClass}" data-midi="${openNote + actualFret}" data-note="${displayNote(pitchClass)}" data-interval="${intervalInfo.name}" data-interval-color="${intervalInfo.color}" style="background-color: ${bgColor}; color: ${textColor};${displayModeIndex >= 3 && !shouldHighlight ? ' opacity: 0;' : ''}" title="${displayNote(pitchClass)} · ${intervalInfo.name}">${getFretLabel(pitchClass, intervalForLabel, inScaleZone)}</span></div>`;
+      // `data-string` y `data-fret` identifican la POSICIÓN, no la altura: una
+      // misma nota existe en varias cuerdas y trastes, y el micrófono tiene que
+      // poder marcar la que se toca (T-57). Con solo `data-midi` marcaba todas.
+      return `<div class="fret"><span class="${noteClass}${inkClass}" data-midi="${openNote + actualFret}" data-string="${stringIndex}" data-fret="${actualFret}" data-note="${displayNote(pitchClass)}" data-interval="${intervalInfo.name}" data-interval-color="${intervalInfo.color}" style="background-color: ${bgColor}; color: ${textColor};${displayModeIndex >= 3 && !shouldHighlight ? ' opacity: 0;' : ''}" title="${displayNote(pitchClass)} · ${intervalInfo.name}">${getFretLabel(pitchClass, intervalForLabel, inScaleZone)}</span></div>`;
     }).join('');
     return `<div class="string-row" style="--string-width: ${stringIndex < (instrument === 'guitar' ? 3 : 2) ? 2 : 1}px">${frets}</div>`;
   }).join('');
@@ -261,6 +264,7 @@ function renderOpenStrings() {
 
   const openStringsHtml =
     inst.strings.slice().reverse().map((openNote, reversedIdx) => {
+      const stringIndex = inst.strings.length - 1 - reversedIdx;
       const pitchClass = openNote % 12;
       const inScale = scaleNotes.has(pitchClass);
       const isRoot = pitchClass === root;
@@ -322,7 +326,9 @@ function renderOpenStrings() {
 
       // `data-interval-color` igual que en renderFretboard: el color que el
       // mástil ya decidió para la posición, de donde lee el micrófono (T-21).
-      return `<div class="open-string-row"><span class="${noteClass}${inkClass}" data-midi="${openNote}" data-note="${displayNote(pitchClass)}" data-interval="${intervalInfo.name}" data-interval-color="${intervalInfo.color}" style="background-color: ${bgColor}; color: ${textColor};${displayModeIndex >= 3 && !shouldHighlight ? ' opacity: 0;' : ''}" title="${displayNote(pitchClass)} · ${intervalInfo.name}">${getFretLabel(pitchClass, intervalForLabel, inScaleZone)}</span></div>`;
+      // La cuerda al aire es la posición traste 0 de su cuerda (misma clave que
+      // el mástil, T-57).
+      return `<div class="open-string-row"><span class="${noteClass}${inkClass}" data-midi="${openNote}" data-string="${stringIndex}" data-fret="0" data-note="${displayNote(pitchClass)}" data-interval="${intervalInfo.name}" data-interval-color="${intervalInfo.color}" style="background-color: ${bgColor}; color: ${textColor};${displayModeIndex >= 3 && !shouldHighlight ? ' opacity: 0;' : ''}" title="${displayNote(pitchClass)} · ${intervalInfo.name}">${getFretLabel(pitchClass, intervalForLabel, inScaleZone)}</span></div>`;
     }).join('');
 
   document.querySelector('#open-strings').innerHTML = openStringsHtml;
