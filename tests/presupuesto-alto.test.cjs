@@ -53,11 +53,11 @@ function mediaBlocks() {
 const has = (body, property, value) =>
   new RegExp('(^|;)\\s*' + property + '\\s*:\\s*' + value + '\\s*(;|$)', 'i').test(body);
 
-test('en escritorio bajo la zona de tocar deja los laterales sin scroll y acota la central', () => {
+test('en escritorio bajo la zona de tocar deja los laterales sin scroll y la página como único desplazamiento', () => {
   // A-16 corrigió el alcance: el hero vuelve a formar parte de la primera
-  // pantalla. T-54 (A-26) revirtió el régimen de T-48/T-50: los paneles
-  // laterales no se desplazan (crecen con la página) y solo la columna central
-  // conserva su caja acotada con barra propia.
+  // pantalla. T-54 (A-26) revirtió el régimen de T-48/T-50 en los laterales, y
+  // T-55 (A-28) completa la vuelta: también la central deja su caja acotada y
+  // el documento entero es el que desplaza.
   const shells = mediaBlocks().filter(block =>
     /min-width\s*:\s*1101px/.test(block.condition) && /max-height\s*:\s*\d+px/.test(block.condition));
   assert.equal(shells.length, 1,
@@ -85,10 +85,10 @@ test('en escritorio bajo la zona de tocar deja los laterales sin scroll y acota 
     'los dos paneles laterales pierden su barra: todo su contenido queda a la vista y la página desplaza');
 
   const central = find('.fretboard-section');
-  assert.ok(central && has(central.body, 'overflow-y', 'auto') && has(central.body, 'min-height', '0'),
-    'la columna central conserva su scroll propio (overflow-y:auto)');
-  assert.ok(has(central.body, 'position', 'sticky'),
-    'la central queda a la vista bajo la banda fija mientras la página recorre los laterales');
+  assert.ok(central && has(central.body, 'overflow-y', 'visible') && has(central.body, 'min-height', '0'),
+    'la columna central vuelve al régimen de antes: sin scroll propio, el documento es el que desplaza');
+  assert.ok(has(central.body, 'position', 'static'),
+    'la central no queda clavada bajo la banda: sin columna sticky (T-55)');
 
   const pie = rules.find(rule => /(^|,)\s*footer\s*$/.test(rule.selector));
   assert.ok(!pie || !has(pie.body, 'display', 'none'),
