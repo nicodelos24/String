@@ -1,14 +1,17 @@
 // Estado, controles y render de la aplicación.
-// Las tablas musicales y sus funciones puras viven en `music-model.js`,
-// que `index.html` carga antes que este archivo (T-01).
-let instrument = 'guitar';
-let selectedTonality = tonalities[0]; // Escala global base
+// Las tablas musicales y sus funciones puras viven en `music-model.js`, y el
+// estado en `app-state.js`; `index.html` carga los dos antes que este archivo
+// (T-01). Acá se declara el estado una sola vez y cada nombre queda publicado
+// como acceso al objeto central, así que el resto de los scripts lo sigue
+// leyendo y escribiendo por su nombre.
+declareAppState('instrument', 'guitar');
+declareAppState('selectedTonality', tonalities[0]); // Escala global base
 // T-45 · QA-TONAL-02: la tonalidad de la canción. Cuando está fijada es el
 // contexto tonal de la página: colores y grados se leen desde su tónica y el
 // modo diatónico lo decide el contrato T-44 (tonal-context.js). Lo de la
 // tarjeta no se toca: posiciones, resaltado y modo explícito siguen midiendo
 // desde la raíz, así que un acorde prestado o cromático no se infla.
-let songTonality = null;
+declareAppState('songTonality', null);
 const songTonalityByKey = key => tonalities.find(item => item.key === key) ?? null;
 function setSongTonality(key) {
   songTonality = key ? songTonalityByKey(key) : null;
@@ -39,15 +42,15 @@ function songInferredMode() {
     : null;
   return inferred && Object.hasOwn(modes, inferred) ? inferred : null;
 }
-let root = 0; // Raíz del acorde (índice)
-let rootNoteName = 'C'; // Nombre específico de la nota seleccionada por el usuario
-let quality = 'major'; // Calidad seleccionada (mayor, minor, diminished)
-let selectedMode = 'ionian'; // Modo seleccionado por defecto
-let chordType = chordTypes[0]; // Tipo de acorde específico (para compatibility)
-let progression = [{ root: 0, type: 'maj' }, { root: 5, type: 'm7' }, { root: 7, type: '7' }, { root: 0, type: 'maj' }];
+declareAppState('root', 0); // Raíz del acorde (índice)
+declareAppState('rootNoteName', 'C'); // Nombre específico de la nota seleccionada por el usuario
+declareAppState('quality', 'major'); // Calidad seleccionada (mayor, minor, diminished)
+declareAppState('selectedMode', 'ionian'); // Modo seleccionado por defecto
+declareAppState('chordType', chordTypes[0]); // Tipo de acorde específico (para compatibility)
+declareAppState('progression', [{ root: 0, type: 'maj' }, { root: 5, type: 'm7' }, { root: 7, type: '7' }, { root: 0, type: 'maj' }]);
 const initialProgression=progression;
 const initialProgressionSnapshot=JSON.stringify(progression);
-let progressionEdited=false;
+declareAppState('progressionEdited', false);
 const customProgressionKey='traste.customProgression.v1';
 function saveCustomProgression(){
   if(typeof localStorage==='undefined')return;
@@ -100,10 +103,10 @@ function restoreCustomProgression(){
   if(activeProgression>=0)selectProgressionChord(0);
   renderProgression();
 }
-let selectedFretMidi=null;
-let activeProgression = 0;
-let playingProgressionItem = null;
-let draggingProgressionItem = null;
+declareAppState('selectedFretMidi', null);
+declareAppState('activeProgression', 0);
+declareAppState('playingProgressionItem', null);
+declareAppState('draggingProgressionItem', null);
 // Qué se ve en cada traste y cuánto del mástil se muestra. Antes eran dos
 // variables que las dos hablaba del alcance («escala» o «todas»), y por eso los
 // botones se pisaban: ahora cada botón contesta una sola pregunta.
@@ -119,12 +122,12 @@ let draggingProgressionItem = null;
 // apagada. Cambiar el arranque es cambiar esta línea y el `span` de
 // `index.html`, para que el HTML estático no contradiga a lo que se pinta.
 const FRET_OFF = 0, FRET_NOTES = 1, FRET_DEGREES = 2;
-let verLevel = FRET_DEGREES;    // qué pone en cada nota de la escala dibujada
-let mastilScope = FRET_OFF;     // qué pone en el resto del mástil
-let displayModeIndex = 1; // 0 = grados completos, 1 = raíz, 3ra, 5ta, 2 = raíz, 3ra, 5ta, 7ma
+declareAppState('verLevel', FRET_DEGREES);    // qué pone en cada nota de la escala dibujada
+declareAppState('mastilScope', FRET_OFF);     // qué pone en el resto del mástil
+declareAppState('displayModeIndex', 1); // 0 = grados completos, 1 = raíz, 3ra, 5ta, 2 = raíz, 3ra, 5ta, 7ma
 const displayModes = ['full', 'triad', 'seventh', 'modeChord', 'modeSeventh'];
 const displayModeLabels = ['grados', 'tríada', '7ma', 'Acorde', 'Acorde 7ma'];
-let ghostMode = ''; // Modo fantasma seleccionado (vacío = ninguno)
+declareAppState('ghostMode', ''); // Modo fantasma seleccionado (vacío = ninguno)
 
 // Inicializar el tipo de acorde según la calidad
 if (quality === 'major') chordType = chordTypes[0]; // Mayor
@@ -234,7 +237,7 @@ function shouldHighlightInterval(interval, displayModeIndex) {
 }
 
 
-let pianoUseFlats = false;
+declareAppState('pianoUseFlats', false);
 
 function renderRootPiano() {
   if (noteLabels[notes[root]]) pianoUseFlats = rootNoteName.includes('b');
@@ -525,7 +528,7 @@ function getFretLabel(pitchClass, interval, inScaleZone) {
   return displayNoteSpelled(pitchClass);
 }
 
-let pentatonicView=false;
+declareAppState('pentatonicView', false);
 function pentatonicMode(){
   if(selectedMode==='majorPentatonic'||selectedMode==='minorPentatonic')return selectedMode;
   return chordType.intervals.includes(3)?'minorPentatonic':'majorPentatonic';
