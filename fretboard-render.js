@@ -181,11 +181,13 @@ function renderFretboard() {
       // contraste y así todo relleno de la tabla llega a AA (T-36, línea 2).
       if (isRoot) {
         bgColor = intervalInfo.color;
-        textColor = NoteInk.inkOverFill(bgColor);
+        // Raíz y nota del acorde piden la tinta suave: el autor las quiere
+        // resaltadas, pero sin el negro pleno que le rompía la vista (A-33).
+        textColor = NoteInk.inkOverFill(bgColor, { soft: true });
         noteClass += ' root-note scale-note';
       } else if (inChord && shouldHighlight) {
         bgColor = intervalInfo.color;
-        textColor = NoteInk.inkOverFill(bgColor);
+        textColor = NoteInk.inkOverFill(bgColor, { soft: true });
         noteClass += ' chord-note scale-note';
       } else if (inSelectedMode && shouldHighlight) {
         bgColor = intervalInfo.color;
@@ -214,9 +216,11 @@ function renderFretboard() {
 
       // El halo de la nota que suena va al revés de la tinta (style.css). Como
       // la tinta ya no la decide la clase, la polaridad viaja con la clase que
-      // escribe este render: `ink-dark` pide halo claro y `ink-light`, oscuro.
-      const inkClass = textColor === NoteInk.NOTE_INK_LIGHT ? ' ink-light'
-        : textColor === NoteInk.NOTE_INK_DARK ? ' ink-dark' : '';
+      // escribe este render —`ink-dark` pide halo claro e `ink-light`, oscuro—
+      // y la decide la luminancia, que también funciona con la tinta suave del
+      // énfasis (A-33).
+      const shadowClass = NoteInk.inkShadowClass(bgColor, textColor);
+      const inkClass = shadowClass ? ` ${shadowClass}` : '';
 
       // El color que ya decidió getIntervalClass para esta posición se queda
       // escrito en la posición (`data-interval-color`): es de donde lee el
@@ -280,11 +284,13 @@ function renderOpenStrings() {
       // contraste y así todo relleno de la tabla llega a AA (T-36, línea 2).
       if (isRoot) {
         bgColor = intervalInfo.color;
-        textColor = NoteInk.inkOverFill(bgColor);
+        // Raíz y nota del acorde piden la tinta suave: el autor las quiere
+        // resaltadas, pero sin el negro pleno que le rompía la vista (A-33).
+        textColor = NoteInk.inkOverFill(bgColor, { soft: true });
         noteClass += ' root-note scale-note';
       } else if (inChord && shouldHighlight) {
         bgColor = intervalInfo.color;
-        textColor = NoteInk.inkOverFill(bgColor);
+        textColor = NoteInk.inkOverFill(bgColor, { soft: true });
         noteClass += ' chord-note scale-note';
       } else if (inSelectedMode && shouldHighlight) {
         bgColor = intervalInfo.color;
@@ -311,8 +317,8 @@ function renderOpenStrings() {
       const inScaleZone = inSelectedMode || (!pentatonicView && (isRoot || inChord));
 
       // La polaridad del halo, igual que en el mástil (ver renderFretboard).
-      const inkClass = textColor === NoteInk.NOTE_INK_LIGHT ? ' ink-light'
-        : textColor === NoteInk.NOTE_INK_DARK ? ' ink-dark' : '';
+      const shadowClass = NoteInk.inkShadowClass(bgColor, textColor);
+      const inkClass = shadowClass ? ` ${shadowClass}` : '';
 
       // `data-interval-color` igual que en renderFretboard: el color que el
       // mástil ya decidió para la posición, de donde lee el micrófono (T-21).

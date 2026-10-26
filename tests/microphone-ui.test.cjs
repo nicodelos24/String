@@ -566,13 +566,15 @@ test('micFretColor: el relleno y la tinta del grado, tal como los pinta el mást
   const { micFretColor } = require('../microphone-ui.js');
   // La tinta se elige por contraste sobre el relleno (T-36, línea 2), no por la
   // clase de la nota: sobre los rellenos claros —raíz, acorde o escala— va la
-  // oscura, que es la que llega a AA; la clase no cambia el par.
+  // oscura, que es la que llega a AA. La raíz y la nota del acorde llevan,
+  // además, el gris del énfasis discreto (`A-33`, T-55 ronda 3): el más suave
+  // que sigue en AA, que es el mismo que pinta el reposo.
   assert.deepEqual(
     micFretColor({ color: '#E53935', className: 'fret-note root-note scale-note' }),
-    { color: '#E53935', ink: '#000000' });
+    { color: '#E53935', ink: '#0e0e0e' });
   assert.deepEqual(
     micFretColor({ color: '#4CAF50', className: 'fret-note chord-note scale-note' }),
-    { color: '#4CAF50', ink: '#000000' });
+    { color: '#4CAF50', ink: '#323232' });
   assert.deepEqual(
     micFretColor({ color: '#00BCD4', className: 'fret-note scale-note' }),
     { color: '#00BCD4', ink: '#000000' });
