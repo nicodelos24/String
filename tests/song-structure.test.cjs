@@ -561,12 +561,12 @@ test('séptima devolución QA-MOD-01: las claves de las vueltas viajan canónica
 });
 
 test('guarda de fuente única: los modos del modelo son las claves vigentes de modes en la app', () => {
-  const appJs = fs.readFileSync(path.join(__dirname, '..', 'app.js'), 'utf8');
+  const appJs = fs.readFileSync(path.join(__dirname, '..', 'music-model.js'), 'utf8');
   const m = appJs.match(/const modes = \{[\s\S]*?\n\};/);
-  assert(m, 'app.js sigue declarando el objeto modes');
+  assert(m, 'music-model.js sigue declarando el objeto modes');
   const enApp = [...m[0].matchAll(/^  ([A-Za-z]+?):\s*\{/gm)].map(x => x[1]);
-  assert(enApp.length, 'la lista de claves de app.js no se leyó vacía');
-  assert.deepEqual(MODES, enApp, 'si app.js gana o pierde un modo, la lista del modelo exige la misma ronda');
+  assert(enApp.length, 'la lista de claves de music-model.js no se leyó vacía');
+  assert.deepEqual(MODES, enApp, 'si music-model.js gana o pierde un modo, la lista del modelo exige la misma ronda');
   const libJs = fs.readFileSync(path.join(__dirname, '..', 'song-library-ui.js'), 'utf8');
   assert(libJs.includes('(chord.mode!==undefined && !Object.hasOwn(modes,chord.mode))') &&
     libJs.includes('(chord.ghostMode && !Object.hasOwn(modes,chord.ghostMode))'), 'la fuente que el modelo refleja sigue siendo la validación de la biblioteca');
@@ -699,12 +699,12 @@ test('guarda de fuente única: la whitelist del modelo es la lista que el guarda
 });
 
 test('guarda de fuente única: los tipos del modelo son la lista chordTypes vigente de la app', () => {
-  const appJs = fs.readFileSync(path.join(__dirname, '..', 'app.js'), 'utf8');
+  const appJs = fs.readFileSync(path.join(__dirname, '..', 'music-model.js'), 'utf8');
   const m = appJs.match(/const chordTypes = \[([\s\S]*?)\n\];/);
-  assert(m, 'app.js sigue declarando chordTypes');
+  assert(m, 'music-model.js sigue declarando chordTypes');
   const enApp = [...m[1].matchAll(/value:\s*'([^']+)'/g)].map(x => x[1]);
-  assert(enApp.length, 'la lista de app.js no se leyó vacía');
-  assert.deepEqual(CHORD_TYPES, enApp, 'si app.js gana o pierde un tipo de acorde, la lista del modelo exige la misma ronda');
+  assert(enApp.length, 'la lista de music-model.js no se leyó vacía');
+  assert.deepEqual(CHORD_TYPES, enApp, 'si music-model.js gana o pierde un tipo de acorde, la lista del modelo exige la misma ronda');
   const libJs = fs.readFileSync(path.join(__dirname, '..', 'song-library-ui.js'), 'utf8');
   assert(libJs.includes('chordTypes.some(type=>type.value===chord.type)'), 'la fuente que el modelo refleja sigue siendo la validación de la biblioteca');
 });
@@ -712,13 +712,13 @@ test('guarda de fuente única: los tipos del modelo son la lista chordTypes vige
 test('guarda de fuente única: las variantes del modelo son la regla de validVariants de la app', () => {
   // La regla que el modelo exige (vueltas enteras 1..8, forma exacta
   // {ghostMode}, fantasma no vacío y clave de modes) es la misma que
-  // validVariants (app.js) aplica al guardar y que la biblioteca valida con
-  // Object.hasOwn. Si app.js gana o pierde un límite o cambia la forma, la
+  // validVariants (music-model.js) aplica al guardar y que la biblioteca valida con
+  // Object.hasOwn. Si music-model.js gana o pierde un límite o cambia la forma, la
   // regla del modelo exige la misma ronda (guarda nacida verde: coteja texto
   // fuente, no comportamiento).
-  const appJs = fs.readFileSync(path.join(__dirname, '..', 'app.js'), 'utf8');
+  const appJs = fs.readFileSync(path.join(__dirname, '..', 'music-model.js'), 'utf8');
   const m = appJs.match(/function validVariants\(value\)\{([\s\S]*?)\n\}/);
-  assert(m, 'app.js sigue declarando validVariants');
+  assert(m, 'music-model.js sigue declarando validVariants');
   const cuerpo = m[1];
   const bounds = cuerpo.match(/vuelta<(\d+)\|\|vuelta>(\d+)/);
   assert(bounds, 'validVariants sigue fijando el techo de vueltas');

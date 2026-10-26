@@ -35,6 +35,7 @@ function setup() {
   // así que app.js ve `TonalContext` sin puente extra.
   const windowStub = {};
   const ctx = vm.createContext({document:{querySelector:element,querySelectorAll:()=>[]},Event:FakeEvent,window:windowStub});
+  vm.runInContext(fs.readFileSync(path.join(__dirname,'../music-model.js'),'utf8'),ctx);
   vm.runInContext(fs.readFileSync(path.join(__dirname,'../progression-duration.js'),'utf8'),ctx);
   vm.runInContext(fs.readFileSync(path.join(__dirname,'../tonal-context.js'),'utf8'),ctx);
   vm.runInContext(fs.readFileSync(path.join(__dirname,'../note-ink.js'),'utf8'),ctx);
