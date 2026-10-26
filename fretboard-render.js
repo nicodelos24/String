@@ -13,8 +13,8 @@
 // se puede cargar sin `document` y no pinta nada al cargarse. `index.html` lo
 // carga después de `note-ink.js` y antes de `app.js`.
 
-function displayNote(index) { 
-  const name = noteName(index); 
+function displayNote(index) {
+  const name = noteName(index);
 
   // Si es la raíz, usar el nombre exacto seleccionado por el usuario
   if (index === root && rootNoteName) {
@@ -206,7 +206,7 @@ function renderFretboard() {
         textColor = '#999';
       }
 
-      
+
 
       // La zona de VER: la escala dibujada. Con la pentatónica apagada también
       // entran las notas del acorde que quedan fuera de la escala.
@@ -305,7 +305,7 @@ function renderOpenStrings() {
         textColor = '#1d2521';
       }
 
-      
+
 
       // La zona de VER: la escala dibujada (ver renderFretboard).
       const inScaleZone = inSelectedMode || (!pentatonicView && (isRoot || inChord));
