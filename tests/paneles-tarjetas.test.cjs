@@ -7,10 +7,12 @@
 // su sombrita».
 //
 // Estas pruebas leen HTML y CSS como texto y fijan la forma que sostiene esa
-// reversión: los laterales sin desplazamiento propio (overflow visible), la
-// central con su caja acotada y su barra, la banda con la textura de la página
-// y las tarjetas transparentes con sombra propia. El alto real, la textura y
-// la lectura se verifican en Chromium: npm test no mide estilos (PACTO §5).
+// reversión: los laterales sin desplazamiento propio (overflow visible), las
+// tarjetas con su fondo claro y sin contornos, y la banda con la textura de la
+// página. Desde T-55 (A-28) la vuelta al régimen pre-scroll también alcanza a
+// la central: ninguna columna queda clavada ni con caja propia. El alto real,
+// la textura y la lectura se verifican en Chromium: npm test no mide estilos
+// (PACTO §5).
 
 const {test} = require('node:test');
 const assert = require('node:assert/strict');
@@ -19,7 +21,6 @@ const path = require('node:path');
 
 const root = path.resolve(__dirname, '..');
 const css = fs.readFileSync(path.join(root, 'style.css'), 'utf8');
-const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 
 function rulesIn(source) {
   const clean = source.replace(/\/\*[\s\S]*?\*\//g, '');
@@ -58,7 +59,7 @@ const bajo = () => mediaBlocks(css).filter(block =>
 const marca = css.indexOf('/* T-54');
 const bloque = marca === -1 ? '' : css.slice(marca);
 
-test('los paneles laterales no desplazan su contenido y la central conserva el scroll', () => {
+test('los paneles laterales no desplazan su contenido y la central tampoco (T-55)', () => {
   const bloques = bajo();
   assert.equal(bloques.length, 1,
     'debe haber un único @media de escritorio bajo (min-width 1101px + max-height 900px) para la zona de tocar');
@@ -71,14 +72,14 @@ test('los paneles laterales no desplazan su contenido y la central conserva el s
     'los laterales no tienen barra propia: su contenido se ve entero y la página es la que desplaza');
   assert.ok(has(laterales.body, 'min-height', '0'), 'los laterales sueltan el mínimo que los estiraba');
 
+  // T-55 (A-28): la vuelta al régimen pre-scroll también alcanza a la central.
+  // Ya no queda clavada ni resuelve su contenido en una caja propia: el
+  // documento es el único que desplaza y la columna crece con lo que tiene.
   const central = find('.fretboard-section');
-  assert.ok(central, 'la columna central conserva su propio desplazamiento');
-  assert.ok(has(central.body, 'overflow-y', 'auto'), 'la central sí scrollea por dentro');
-  assert.ok(has(central.body, 'position', 'sticky'), 'la central queda pegada bajo la banda fija mientras se recorren los laterales');
-  assert.match(central.body, /top\s*:\s*var\(--banda-alto/,
-    'su tope es el alto real de la banda (variable publicada por el módulo), no un número escrito a mano');
-  assert.match(central.body, /height\s*:\s*calc\(100dvh\s*-\s*58px\s*-\s*var\(--banda-alto/,
-    'su caja es el viewport que queda entre la banda y los 58 px del pie');
+  assert.ok(central, 'la columna central declara su régimen en el shell de escritorio bajo');
+  assert.ok(has(central.body, 'overflow-y', 'visible'), 'la central no tiene barra propia');
+  assert.ok(has(central.body, 'position', 'static'), 'la central no queda clavada bajo la banda');
+  assert.ok(!/(^|;)\s*height\s*:/.test(central.body), 'su alto es el de su contenido: no se acota al viewport');
 
   const workspace = find('.workspace');
   assert.ok(workspace && has(workspace.body, 'height', 'auto'),
@@ -88,16 +89,6 @@ test('los paneles laterales no desplazan su contenido y la central conserva el s
   // La regla de la página: el documento conserva su scroll y el pie sigue vivo.
   const capturado = rulesIn(css).find(rule => rule.selector === 'html, body' && has(rule.body, 'overflow', 'hidden'));
   assert.ok(!capturado, 'nadie captura el scroll del documento: hero, paneles completos y pie son alcanzables');
-});
-
-test('el alto real de la banda se publica para el tope de la central', () => {
-  assert.match(html, /<script src="band-offset\.js"><\/script>/,
-    'la página carga el módulo que mide la banda');
-  const modulo = fs.readFileSync(path.join(root, 'band-offset.js'), 'utf8');
-  assert.match(modulo, /ResizeObserver/, 'el módulo sigue el alto de la banda cuando cambia');
-  assert.match(modulo, /--banda-alto/, 'publica el alto medido como --banda-alto del workspace');
-  assert.match(modulo, /\.cards-band/, 'mide la banda de tarjetas');
-  assert.ok(!/document\.write|innerHTML/.test(modulo), 'solo mide y publica: no pinta ni reescribe la página');
 });
 
 test('la banda de tarjetas se lee como una abertura de la página, con los puntos del fondo', () => {

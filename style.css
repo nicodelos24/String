@@ -1532,10 +1532,11 @@ footer {
     grid-template-rows: auto auto auto;
     flex: 1 1 auto;
     min-height: 0;
-    /* T-53: el alto de viewport que T-50 fijaba para todo el archivo sigue
-       haciendo falta en móvil (el body no tiene alto definido); la franja de
-       tarjetas se suma arriba y el resto se reparte como siempre. */
-    height: 100vh;
+    /* T-55 (A-28): el alto de viewport que T-48/T-53 fijaban acá recortaba la
+       pestaña activa (su contenido medía más que la caja y `overflow:hidden` lo
+       cortaba). Vuelve el régimen de antes: la caja crece con su contenido y el
+       documento es el que desplaza; el shell flexible de T-49 sigue llenando el
+       viewport en retrato, que no es parte del régimen de scroll. */
   }
 
   /* Cuando la barra elige una sola pestaña, su panel activo se estira junto
@@ -2579,10 +2580,10 @@ html[data-theme="dark"] .fret-numbers, html[data-theme="dark"] .open-strings-hea
 
 /* T-53 · A-23 (2026-10-25): la banda de tarjetas sale de la columna central y
    pasa a la primera fila del workspace, a todo su ancho. Así nace donde
-   termina el encabezado y, al detenerse la página en la zona de tocar, queda a
-   la vista mientras las columnas de abajo resuelven su propio scroll. En móvil
-   (≤800) la pestaña «Progresión» la sigue mostrando como en T-47; las otras
-   pestañas no la necesitan y la ocultan.
+   termina el encabezado y, al desplazarse el documento (T-55: la página entera
+   es la que recorre), queda a la vista arriba mientras el resto pasa por
+   debajo. En móvil (≤800) la pestaña «Progresión» la sigue mostrando como en
+   T-47; las otras pestañas no la necesitan y la ocultan.
    Solo forma: ids, orden DOM y manejadores intactos. */
 .cards-band { min-width: 0; }
 /* A-27 · T-54 r2: la caja grande —el `.workspace` con su borde y su sombra—
@@ -2607,8 +2608,12 @@ html[data-theme="dark"] .fret-numbers, html[data-theme="dark"] .open-strings-hea
     box-shadow: 0 8px 14px rgba(44, 50, 40, .06);
   }
   /* La banda es una franja: las tarjetas no crecen sin límite; con más de una
-     fila el bloc scrollea por dentro, como ya hacía, y la franja se mantiene. */
-  .cards-band .progression { max-height: 158px; min-height: 0; }
+     fila el bloc scrollea por dentro, como ya hacía, y la franja se mantiene.
+     T-55 (A-28): el bloc deja de arrastrar su margen y su relleno de abajo
+     dentro de la franja —eran 18 px de aire muerto bajo la última tarjeta que
+     el autor veía como «pading vacío» al desplazarse—; la franja conserva su
+     relleno para que la sombra de la tarjeta respire. */
+  .cards-band .progression { max-height: 158px; min-height: 0; margin-bottom: 0; padding-bottom: 0; }
   .cards-band .progression-empty { min-height: 143px; }
 }
 
@@ -2638,30 +2643,24 @@ html[data-theme="dark"] .fret-numbers, html[data-theme="dark"] .open-strings-hea
   body[data-mobile-tab="progresion"] .cards-band { padding-top: 4px; position: sticky; top: 0; z-index: 5; }
 }
 
-/* T-50: al desplazar la página hasta la zona de tocar, cada columna resolvía
-   su contenido dentro de un viewport. T-54 (palabra nueva del autor, A-26)
-   devuelve los paneles laterales al régimen de antes: sin desplazamiento
-   propio, con todo su contenido a la vista, y deja el scroll de la zona de
-   tocar solo en la columna central, que es donde vive lo principal.
+/* T-55 · A-28 (2026-10-26): palabra del autor, «que todo vuelva a verse…
+   justo como estaba antes de que implementemos el scroll». Cae la parte visual
+   del régimen de T-48/T-50/T-54 r1: ninguna columna resuelve su contenido en
+   una caja propia ni queda clavada; el documento vuelve a desplazarse entero,
+   desde el hero hasta el pie. Solo se conserva lo que el autor aceptó: la banda
+   de tarjetas de T-53, sus tarjetas de T-54 r2, la caja empezando en la fila
+   del transporte y el encabezado de T-51.
    El documento conserva su scroll para que el hero, los paneles completos y
    el pie sigan formando parte de la experiencia (regla de A-16). */
 @media (min-width: 1101px) and (max-height: 900px) {
-  /* La banda mide 176 px a este ancho (medido con tarjetas y vacía): la fila
-     de arriba es automática y las columnas crecen lo que su contenido pide.
-     El workspace ya no se ancla a un viewport: los laterales no tienen barra
-     propia y la página es la que desplaza. La cabecera del transporte ya no
+  /* La banda y las columnas crecen con su contenido: las filas son automáticas
+     y la página es la única que desplaza. La cabecera del transporte ya no
      suma a la banda: vive dentro de la caja, en su primera fila. */
-  :root { --banda-alto: 176px; }
   .workspace { grid-template-rows: auto auto; height: auto; min-height: 0; }
   .control-panel, .legend-panel { min-height: 0; overflow-y: visible; }
-  /* La central conserva su propio desplazamiento con una caja acotada: alta
-     como el viewport que queda entre la banda fija y el pie (58 px medidos),
-     y pegada debajo de la banda mientras la página recorre los laterales. */
-  .fretboard-section {
-    position: sticky; top: var(--banda-alto, 176px); align-self: start;
-    height: calc(100dvh - 58px - var(--banda-alto, 176px));
-    min-height: 0; overflow-y: auto;
-  }
+  /* La central vuelve al régimen de antes: sin caja acotada, sin sticky y sin
+     barra propia. Su alto es el de su contenido y el documento la recorre. */
+  .fretboard-section { position: static; min-height: 0; overflow-y: visible; }
   /* Palancas fuera de la grilla aprobada de T-46: la línea «Detenido» (26 px de
      min-height más márgenes) y el aire del rótulo del mástil. */
   .progression-playback { min-height: 0; margin: 0; font-size: 10px; }
@@ -2682,10 +2681,10 @@ html[data-theme="dark"] .fret-numbers, html[data-theme="dark"] .open-strings-hea
 #sections-maximize { position: absolute; top: 8px; right: 12px; margin: 0; }
 .sections-panel-content { display: block; min-width: 0; }
 
-/* El documento conserva el desplazamiento; la zona de tocar se delimita en
-   el bloque de escritorio bajo anterior. El alto de .workspace vive ahí desde
-   T-53: en móvil lo reparte el shell flexible de T-49 y en escritorio alto la
-   página sigue scrolleando con la banda sticky. */
+/* El documento es el único que desplaza (T-55): la zona de tocar crece con su
+   contenido y no delimita un viewport propio. En móvil el shell flexible de
+   T-49 reparte el alto disponible en retrato y en escritorio alto la página
+   sigue scrolleando con la banda sticky de T-53. */
 html, body { min-height: 100%; }
 
 /* T-52 · A-19 (2026-10-25): las barras de desplazamiento dejan de verse
