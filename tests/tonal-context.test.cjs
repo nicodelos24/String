@@ -102,18 +102,18 @@ test('el modo es pura función del grado: la tabla exportada es exacta y constan
   assert.deepEqual(MODES_BY_DEGREE,{0:'ionian',2:'dorian',4:'phrygian',5:'lydian',7:'mixolydian',9:'aeolian',11:'locrian'});
 });
 
-test('guarda de fuente única: la tabla local de intervalos coincide con chordTypes de app.js',()=>{
-  const appJs = fs.readFileSync(path.join(__dirname,'..','app.js'),'utf8');
+test('guarda de fuente única: la tabla local de intervalos coincide con chordTypes de music-model.js',()=>{
+  const appJs = fs.readFileSync(path.join(__dirname,'..','music-model.js'),'utf8');
   const enApp = new Map();
   for(const m of appJs.matchAll(/\{ value: '([^']+)',[^\n]*?intervals: \[([^\]]+)\]/g)){
     enApp.set(m[1], m[2].split(',').map(v=>Number(v.trim())));
   }
-  assert(enApp.size >= 23,'app.js declara los tipos de acorde del cómputo');
+  assert(enApp.size >= 23,'music-model.js declara los tipos de acorde del cómputo');
   for(const [value,intervals] of enApp){
-    assert.deepEqual(CHORD_INTERVALS[value],intervals,`el tipo ${value} existe en el módulo y en app.js con los mismos intervalos`);
+    assert.deepEqual(CHORD_INTERVALS[value],intervals,`el tipo ${value} existe en el módulo y en music-model.js con los mismos intervalos`);
   }
   for(const value of Object.keys(CHORD_INTERVALS)){
-    assert(enApp.has(value),`el módulo no declara tipos que app.js no conoce (${value})`);
+    assert(enApp.has(value),`el módulo no declara tipos que music-model.js no conoce (${value})`);
   }
 });
 

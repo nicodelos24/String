@@ -29,6 +29,7 @@ function setup() {
   }
   class FakeEvent { constructor(type, init) { this.type = type; Object.assign(this, init); } }
   const ctx = vm.createContext({document:{querySelector:element,querySelectorAll:()=>[]},Event:FakeEvent});
+  vm.runInContext(fs.readFileSync(path.join(__dirname,'../music-model.js'),'utf8'),ctx);
   vm.runInContext(fs.readFileSync(path.join(__dirname,'../progression-duration.js'),'utf8'),ctx);
   vm.runInContext(fs.readFileSync(path.join(__dirname,'../tonal-context.js'),'utf8'),ctx);
   vm.runInContext(fs.readFileSync(path.join(__dirname,'../note-ink.js'),'utf8'),ctx);
@@ -333,7 +334,7 @@ test('pentatonic signatures use the appropriate major reference', () => {
   const {run,element} = setup();
   for (const [pitch, name, mode, key] of [[9,'A','minorPentatonic','C'],[0,'C','minorPentatonic','Eb'],[4,'E','minorPentatonic','G'],[6,'F#','minorPentatonic','A'],[1,'Db','majorPentatonic','Db']]) {
     run(`root = ${pitch}; rootNoteName = '${name}'; selectedMode = '${mode}'; updateView();`);
-    assert.equal(run('calculateKeySignature(selectedMode, root).key'), key);
+    assert.equal(run('calculateKeySignature(selectedMode, root, rootNoteName).key'), key);
     assert.equal(run('selectedTonality.key'), key);
     assert(element('#key-signature-display').textContent.startsWith(key + ' Mayor'));
     const intervals = mode === 'minorPentatonic' ? [0,3,5,7,10] : [0,2,4,7,9];

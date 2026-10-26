@@ -59,6 +59,7 @@ function setup() {
   class FakeEvent { constructor(type, init) { this.type = type; Object.assign(this, init); } }
   const ctx = vm.createContext({ document: { querySelector: element, querySelectorAll: () => [] }, Event: FakeEvent });
   const load = file => vm.runInContext(fs.readFileSync(path.join(root, file), 'utf8'), ctx);
+  load('music-model.js');
   load('progression-duration.js');
   load('tonal-context.js');
   // En la base no existe: la guarda tiene que medir el defecto, no romperse por
@@ -140,9 +141,9 @@ test('todo tipo de acorde y modo de vista conserva la tinta legible', () => {
 });
 
 test('cada relleno de la tabla de intervalos tiene tinta que llega a AA', () => {
-  // Fuente única: los colores salen del propio `app.js`, así que un intervalo
+  // Fuente única: los colores salen del propio `music-model.js`, así que un intervalo
   // nuevo entra en la guarda sin que nadie se acuerde de anotarlo acá.
-  const source = fs.readFileSync(path.join(root, 'app.js'), 'utf8');
+  const source = fs.readFileSync(path.join(root, 'music-model.js'), 'utf8');
   const fills = [...new Set([...source.matchAll(/color:\s*'(#[0-9a-fA-F]{3,6})'/g)].map(match => match[1].toUpperCase()))];
   assert.ok(fills.length >= 14, `la tabla de intervalos tiene que estar completa (se leyeron ${fills.length} colores)`);
   const noteInk = require('../note-ink.js');
@@ -157,7 +158,7 @@ test('el tintado del micrófono escribe la misma tinta legible que el mástil', 
   // T-21 escribe el par relleno/tinta mientras la nota suena. Si eligiera su
   // propia tinta, el micrófono devolvería el defecto que esta ronda corrige.
   const { micFretColor } = require('../microphone-ui.js');
-  const source = fs.readFileSync(path.join(root, 'app.js'), 'utf8');
+  const source = fs.readFileSync(path.join(root, 'music-model.js'), 'utf8');
   const fills = [...new Set([...source.matchAll(/color:\s*'(#[0-9a-fA-F]{3,6})'/g)].map(match => match[1]))];
   const failures = [];
   for (const fill of fills) {
