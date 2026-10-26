@@ -66,6 +66,7 @@ function setup() {
   // un archivo que todavía no está.
   if (fs.existsSync(path.join(root, 'note-ink.js'))) load('note-ink.js');
   load('app-state.js');
+  if (fs.existsSync(path.join(root, 'fretboard-render.js'))) load('fretboard-render.js');
   load('app.js');
   return { run: code => vm.runInContext(code, ctx), element };
 }
@@ -173,7 +174,8 @@ test('el tintado del micrófono escribe la misma tinta legible que el mástil', 
 });
 
 test('la tinta del rótulo sale de una sola autoridad y no de literales por rama', () => {
-  const source = fs.readFileSync(path.join(root, 'app.js'), 'utf8');
+  // Desde el paso 4 de T-01 los dos renders viven en `fretboard-render.js`.
+  const source = fs.readFileSync(path.join(root, 'fretboard-render.js'), 'utf8');
   // Las cuatro ramas con relleno sólido de cada render (raíz, nota del acorde,
   // nota de escala resaltada y nota de escala sin resaltar) eligen por la misma
   // función; si quedara un literal de tinta, el defecto vuelve por ahí.
