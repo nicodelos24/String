@@ -53,15 +53,15 @@ function mediaBlocks() {
 const has = (body, property, value) =>
   new RegExp('(^|;)\\s*' + property + '\\s*:\\s*' + value + '\\s*(;|$)', 'i').test(body);
 
-test('en escritorio bajo la zona de tocar ocupa un viewport sin capturar el scroll del documento', () => {
+test('en escritorio bajo la zona de tocar deja los laterales sin scroll y acota la central', () => {
   // A-16 corrigió el alcance: el hero vuelve a formar parte de la primera
-  // pantalla. El presupuesto de T-48 se conserva dentro de .workspace, que
-  // ocupa un viewport cuando se llega a ella; el documento no se ancla ni se
-  // oculta antes de ese punto.
+  // pantalla. T-54 (A-26) revirtió el régimen de T-48/T-50: los paneles
+  // laterales no se desplazan (crecen con la página) y solo la columna central
+  // conserva su caja acotada con barra propia.
   const shells = mediaBlocks().filter(block =>
     /min-width\s*:\s*1101px/.test(block.condition) && /max-height\s*:\s*\d+px/.test(block.condition));
   assert.equal(shells.length, 1,
-    'debe haber un único @media de escritorio bajo (min-width 1101px + max-height) que ancle la vista al pliegue');
+    'debe haber un único @media de escritorio bajo (min-width 1101px + max-height) para la zona de tocar');
   const alto = Number(shells[0].condition.match(/max-height\s*:\s*(\d+)px/)[1]);
   assert.ok(alto >= 650 && alto <= 900,
     'el tope de alto del shell es ' + alto + 'px: tiene que cubrir los 650 del pliegue real sin invadir pantallas grandes');
@@ -69,8 +69,8 @@ test('en escritorio bajo la zona de tocar ocupa un viewport sin capturar el scro
   const rules = rulesIn(shells[0].body);
   const find = selector => rules.find(rule => rule.selector === selector);
   const workspace = find('.workspace');
-  assert.ok(workspace && has(workspace.body, 'height', '100vh') && has(workspace.body, 'min-height', '0'),
-    '.workspace ocupa un viewport al llegar a tocar y suelta el mínimo de 550 px');
+  assert.ok(workspace && has(workspace.body, 'height', 'auto') && has(workspace.body, 'min-height', '0'),
+    '.workspace crece con los paneles laterales y suelta el mínimo de 550 px');
 
   const documento = find('html, body');
   assert.ok(!documento || !has(documento.body, 'overflow', 'hidden'),
@@ -80,9 +80,15 @@ test('en escritorio bajo la zona de tocar ocupa un viewport sin capturar el scro
   assert.ok(!shell || !has(shell.body, 'display', 'flex'),
     '.shell no reparte todo el documento como viewport: el presupuesto empieza en la zona de tocar');
 
-  const columnas = rules.find(rule => /\.control-panel/.test(rule.selector) && /\.fretboard-section/.test(rule.selector) && /\.legend-panel/.test(rule.selector));
-  assert.ok(columnas && has(columnas.body, 'overflow-y', 'auto') && has(columnas.body, 'min-height', '0'),
-    'las tres columnas scrollean por dentro (overflow-y:auto, min-height:0): el vacío muerto de la columna izquierda desaparece');
+  const laterales = find('.control-panel, .legend-panel');
+  assert.ok(laterales && has(laterales.body, 'overflow-y', 'visible') && has(laterales.body, 'min-height', '0'),
+    'los dos paneles laterales pierden su barra: todo su contenido queda a la vista y la página desplaza');
+
+  const central = find('.fretboard-section');
+  assert.ok(central && has(central.body, 'overflow-y', 'auto') && has(central.body, 'min-height', '0'),
+    'la columna central conserva su scroll propio (overflow-y:auto)');
+  assert.ok(has(central.body, 'position', 'sticky'),
+    'la central queda a la vista bajo la banda fija mientras la página recorre los laterales');
 
   const pie = rules.find(rule => /(^|,)\s*footer\s*$/.test(rule.selector));
   assert.ok(!pie || !has(pie.body, 'display', 'none'),

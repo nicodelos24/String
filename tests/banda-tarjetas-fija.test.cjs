@@ -134,17 +134,25 @@ test('la banda ocupa todo el ancho y se sostiene arriba mientras se desplaza la 
     'en su pestaña móvil la banda sigue a la vista al llegar al pie');
 });
 
-test('el workspace reparte banda y columnas y descuenta el pie del alto', () => {
+test('la banda sigue fija sobre el workspace y el workspace crece con los laterales', () => {
   const bajo = reglas(media('@media (min-width: 1101px) and (max-height: 900px)'));
   const workspace = bajo.find(regla => regla.selector === '.workspace');
   assert.ok(workspace, 'falta la regla .workspace del shell de escritorio bajo');
-  assert.ok(tiene(workspace.cuerpo, 'grid-template-rows', 'auto minmax\\(0, 1fr\\)'),
-    'la primera fila mide la banda y la segunda se queda con el resto');
-  assert.ok(tiene(workspace.cuerpo, 'height', '100vh'),
-    'se conserva la declaración de viewport que leen las guardas de T-48/T-50');
-  assert.ok(tiene(workspace.cuerpo, 'height', 'calc\\(100dvh - 58px\\)'),
-    'el alto descuenta los 58 px medidos del pie: con el documento en su tope el workspace empieza en 0 y la banda no pierde su borde');
-  assert.ok(tiene(workspace.cuerpo, 'min-height', '0'), 'las columnas pueden resolver su scroll');
+  // T-54 (A-26) revirtió el alto de viewport: la banda y las columnas se
+  // reparten en filas automáticas y el workspace crece con los laterales, que
+  // ya no tienen barra propia. La banda conserva su sticky: sigue siempre a la
+  // vista, que es la guarda de esta ronda.
+  assert.ok(tiene(workspace.cuerpo, 'grid-template-rows', 'auto auto'),
+    'la fila de la banda y la de las columnas crecen con su contenido');
+  assert.ok(tiene(workspace.cuerpo, 'height', 'auto'),
+    'el workspace ya no se ancla a un viewport: los paneles laterales muestran todo su contenido');
+  assert.ok(!tiene(workspace.cuerpo, 'height', '100vh'),
+    'el alto de viewport de T-50 quedó revertido por la palabra nueva del autor');
+  assert.ok(tiene(workspace.cuerpo, 'min-height', '0'), 'las columnas pueden crecer sin mínimo heredado');
+
+  const fija = reglas(media('@media (min-width: 801px)')).find(regla => regla.selector === '.cards-band');
+  assert.ok(fija && tiene(fija.cuerpo, 'position', 'sticky') && tiene(fija.cuerpo, 'top', '0'),
+    'la guarda de la banda de T-53 sigue en pie: en escritorio se queda arriba al desplazar');
 
   const compacta = reglas(media('@media (min-width: 1101px)'));
   const controles = compacta.find(regla => regla.selector === '.cards-band .progression-view-controls');

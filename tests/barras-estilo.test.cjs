@@ -19,10 +19,12 @@ const path = require('node:path');
 const root = path.resolve(__dirname, '..');
 const css = fs.readFileSync(path.join(root, 'style.css'), 'utf8');
 
-// El bloque de la ronda, desde su comentario de cabecera hasta el final del
-// archivo: es el último tramo del CSS y permite afirmar qué NO toca.
+// El bloque de la ronda, desde su comentario de cabecera hasta el comienzo del
+// bloque siguiente (T-54). Así sigue siendo el tramo que T-52 agregó y permite
+// afirmar qué tocó —y qué no— esa ronda, aunque el archivo crezca después.
 const marca = css.indexOf('/* T-52');
-const bloque = marca === -1 ? '' : css.slice(marca);
+const siguiente = css.indexOf('/* T-54', Math.max(marca, 0));
+const bloque = marca === -1 ? '' : css.slice(marca, siguiente === -1 ? css.length : siguiente);
 
 function rulesIn(source) {
   const clean = source.replace(/\/\*[\s\S]*?\*\//g, '');
@@ -141,16 +143,18 @@ test('la ronda no toca overflow ni medidas: solo pinta la barra', () => {
   assert.ok(deCajas.length, 'el bloque declara al menos la paleta de tema');
   for (const rule of deCajas) {
     assert.doesNotMatch(rule.body, /(^|[;{\s])overflow(-[xy])?\s*:/,
-      `T-52 no declara overflow (${rule.selector}): el desplazamiento de T-48/T-50 queda como estaba`);
+      `T-52 no declara overflow (${rule.selector}): el desplazamiento queda como estaba en su ronda`);
     assert.doesNotMatch(rule.body, /(^|[;{\s])(width|height|max-height|min-height|grid-template-columns)\s*:/,
       `T-52 no declara medidas de caja (${rule.selector}): nada de layout se mueve`);
   }
 
-  // Y lo que T-50 dejó sigue en pie.
+  // Y el régimen de columnas que T-52 daba por vigente lo reescribió T-54
+  // (A-26): los laterales ya no se desplazan y solo la central conserva la
+  // barra. Lo mide tests/paneles-tarjetas.test.cjs; acá se vela que T-52 no lo
+  // haya dejado escrito al revés.
   const columnas = rulesIn(css).filter(
     rule => rule.selector === '.control-panel, .fretboard-section, .legend-panel',
   );
-  assert.ok(columnas.length, 'las tres columnas conservan su regla de scroll');
-  assert.ok(columnas.some(rule => /overflow-y\s*:\s*auto/.test(rule.body)),
-    'las columnas siguen desplazando su contenido');
+  assert.ok(!columnas.some(rule => /overflow-y\s*:\s*auto/.test(rule.body)),
+    'ninguna regla devuelve el scroll a las tres columnas: T-54 dejó el desplazamiento solo en la central');
 });
