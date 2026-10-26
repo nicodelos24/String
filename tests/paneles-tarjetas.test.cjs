@@ -117,29 +117,59 @@ test('la banda de tarjetas se lee como una abertura de la página, con los punto
     'la textura de la banda es la misma receta del fondo de la página');
 });
 
-test('las tarjetas flotan sin relleno y cada una lleva su sombra', () => {
-  const tarjetas = rulesIn(bloque).filter(rule => rule.selector.includes('.progression-card') && !rule.selector.includes('drag-'));
-  const reposo = tarjetas.find(rule => rule.selector.startsWith('.progression-card,'));
+test('las tarjetas recuperan su fondo claro y dejan de dibujar recuadros (A-27)', () => {
+  const tarjetas = rulesIn(bloque).filter(rule =>
+    rule.selector.includes('.progression-card') && !rule.selector.includes('drag-'));
+
+  const reposo = tarjetas.find(rule => rule.selector.trim().startsWith('.cards-band .progression-card,'));
   assert.ok(reposo, 'la ronda declara la tarjeta en reposo para el tema claro y el oscuro');
-  assert.ok(has(reposo.body, 'background-color', 'transparent'),
-    'la tarjeta pierde el relleno: el fondo punteado se ve detrás');
+  assert.ok(has(reposo.body, 'background-color', 'var\\(--paper-light\\)'),
+    'la tarjeta recupera el fondo más claro de 9616302, el que tenía antes de las barras');
+  assert.ok(has(reposo.body, 'border-color', 'transparent'),
+    'el contorno de la tarjeta deja de dibujarse: no hay líneas que la rodeen');
   assert.match(reposo.body, /box-shadow\s*:\s*0\s+2px\s+6px[^;]*,\s*0\s+1px\s+2px/,
-    'cada tarjeta lleva su sombra propia de dos capas, no la sombra de la banda');
+    'cada tarjeta conserva su sombra propia de dos capas sobre la banda');
 
-  const activa = rulesIn(bloque).find(rule => rule.selector.trim().startsWith('.progression-card.active,'));
-  assert.ok(activa, 'el estado activo se repinta sin volver al relleno');
-  assert.ok(has(activa.body, 'background-color', 'transparent'),
-    'la tarjeta activa no recupera el fondo blanco de antes');
+  // Ningún estado de la tarjeta vuelve a dibujar el recuadro: la caja del
+  // layout no cambia de tamaño (el borde sigue en el box model), solo su color.
+  for (const regla of tarjetas) {
+    const borde = regla.body.match(/(?:^|;)\s*border-color\s*:\s*([^;]+)/);
+    if (borde) {
+      assert.equal(borde[1].trim(), 'transparent',
+        `ningún estado dibuja contorno: ${regla.selector}`);
+    }
+  }
+  const caja = rulesIn(css).find(rule => rule.selector === '.progression-card' &&
+    has(rule.body, 'border', '1px solid var\\(--line\\)'));
+  assert.ok(caja, 'la caja de la tarjeta conserva su borde en el layout: se neutraliza el color, no se borra el tamaño');
+
+  const activa = tarjetas.find(rule => rule.selector.trim().startsWith('.cards-band .progression-card.active,'));
+  assert.ok(activa, 'el estado activo se repinta sin volver al contorno');
   assert.match(activa.body, /inset\s+0\s+-3px\s+0\s+var\(--rust\)/,
-    'el estado activo se marca con el borde y la barra del acento, sin relleno');
+    'el estado activo se marca con la barra interior del acento, no con líneas alrededor');
+  assert.match(activa.body, /0\s+3px\s+9px/, 'y con una sombra algo más presente que la del reposo');
 
-  const sonando = rulesIn(bloque).find(rule => rule.selector.trim().startsWith('.progression-card.playing,'));
-  assert.ok(sonando && has(sonando.body, 'background-color', 'transparent'),
-    'la tarjeta que suena tampoco vuelve al relleno: su marca es la barra interior');
+  const aclarada = tarjetas.find(rule => /data-theme="light"/.test(rule.selector) && has(rule.body, 'background-color', '#fff'));
+  assert.ok(aclarada, 'en claro la tarjeta activa se aclara un paso (el blanco de 9616302)');
+  const aclaradaOscura = tarjetas.find(rule => /data-theme="dark"/.test(rule.selector) &&
+    rule.selector.includes('.active') && has(rule.body, 'background-color', '#303b33'));
+  assert.ok(aclaradaOscura, 'en oscuro la activa también se aclara: #303b33, el relleno de 9616302');
 
-  const fantasma = rulesIn(bloque).find(rule => rule.selector.trim().startsWith('.progression-card.drag-ghost,'));
+  const sonando = tarjetas.find(rule => rule.selector.trim().startsWith('.cards-band .progression-card.playing,'));
+  assert.ok(sonando, 'la tarjeta que suena conserva su propio relleno, sin contorno');
+  assert.ok(has(sonando.body, 'background-color', '#f8dfce'),
+    'la que suena mantiene el tinte cálido de 9616302: el estado se lee sin dibujar líneas');
+  assert.match(sonando.body, /inset\s+0\s+-4px\s+0\s+var\(--rust\)/,
+    'y suma la barra interior, un punto más gruesa que la de la activa');
+  const sonandoOscura = tarjetas.find(rule => /data-theme="dark"/.test(rule.selector) &&
+    rule.selector.includes('.playing') && has(rule.body, 'background-color', '#45372c'));
+  assert.ok(sonandoOscura, 'en oscuro el tinte de la que suena es #45372c, también el de 9616302');
+
+  const fantasma = rulesIn(bloque).find(rule => rule.selector.trim().startsWith('.cards-band .progression-card.drag-ghost,'));
   assert.ok(fantasma && has(fantasma.body, 'background-color', 'var\\(--paper-light\\)'),
-    'el fantasma del arrastre conserva relleno: mientras vuela tiene que leerse como tarjeta');
+    'el fantasma del arrastre conserva relleno y contorno propio: mientras vuela tiene que leerse como tarjeta');
+  assert.ok(has(fantasma.body, 'border-color', 'var\\(--line\\)'),
+    'el fantasma sí dibuja su contorno: no es una tarjeta en reposo');
 });
 
 test('la barra central y las de adentro tienen la estética nueva, más fina y del tema', () => {

@@ -2577,10 +2577,19 @@ html[data-theme="dark"] .fret-numbers, html[data-theme="dark"] .open-strings-hea
    (≤800) la pestaña «Progresión» la sigue mostrando como en T-47; las otras
    pestañas no la necesitan y la ocultan.
    Solo forma: ids, orden DOM y manejadores intactos. */
-.cards-band { grid-column: 1 / -1; min-width: 0; }
-.cards-band .progression-workspace { grid-template-columns: minmax(0, 1fr); column-gap: 0; }
-.cards-band .progression-workspace > .progression-stack,
-.cards-band .progression-workspace > .progression-playback { grid-column: 1; }
+.cards-band { min-width: 0; }
+/* A-27 · T-54 r2: la caja grande —el `.workspace` con su borde y su sombra—
+   empieza en la fila del transporte, no en las tarjetas. Esta cabecera es la
+   primera fila de la grilla y lleva el transporte y la captura en vivo con el
+   papel claro de la caja; una línea fina la separa de las columnas. La banda
+   de tarjetas queda fuera de la caja, sobre la textura de puntos. */
+.workspace > .progression-workspace {
+  grid-column: 1 / -1;
+  box-sizing: border-box;
+  padding: 10px 20px;
+  background: var(--paper-light);
+  border-bottom: 1px solid var(--line);
+}
 
 @media (min-width: 801px) {
   .cards-band {
@@ -2601,13 +2610,16 @@ html[data-theme="dark"] .fret-numbers, html[data-theme="dark"] .open-strings-hea
      captura en vivo) se leen de izquierda a derecha en una sola línea cuando el
      ancho alcanza. La caja conserva todos sus controles y, si no alcanza,
      envuelve sin desbordar. */
-  .cards-band .progression-view-controls { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 6px 18px; }
-  .cards-band .progression-controls-row + .progression-controls-row { border-top: 0; padding-top: 0; }
-  .cards-band .capture-row { align-items: center; }
+  .progression-workspace .progression-view-controls { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 6px 18px; }
+  .progression-workspace .progression-controls-row + .progression-controls-row { border-top: 0; padding-top: 0; }
+  .progression-workspace .capture-row { align-items: center; }
 }
 
 @media (max-width: 800px) {
   .cards-band { padding: 12px 14px 8px; }
+  /* La cabecera del transporte es la primera fila de la caja: en móvil toma el
+     relleno de la casa y no deja un borde doble con la banda de arriba. */
+  .workspace > .progression-workspace { padding: 8px 14px; }
   /* La pestaña «Progresión» es la única que enseña la banda. En las demás no
      puede dejar una franja vacía arriba del mástil: sin esto medía 20 px de
      relleno y corría el diapasón hacia abajo. */
@@ -2627,19 +2639,20 @@ html[data-theme="dark"] .fret-numbers, html[data-theme="dark"] .open-strings-hea
    El documento conserva su scroll para que el hero, los paneles completos y
    el pie sigan formando parte de la experiencia (regla de A-16). */
 @media (min-width: 1101px) and (max-height: 900px) {
-  /* La banda mide 240 px a este ancho (medido con tarjetas y vacía): la fila
+  /* La banda mide 176 px a este ancho (medido con tarjetas y vacía): la fila
      de arriba es automática y las columnas crecen lo que su contenido pide.
      El workspace ya no se ancla a un viewport: los laterales no tienen barra
-     propia y la página es la que desplaza. */
-  :root { --banda-alto: 240px; }
+     propia y la página es la que desplaza. La cabecera del transporte ya no
+     suma a la banda: vive dentro de la caja, en su primera fila. */
+  :root { --banda-alto: 176px; }
   .workspace { grid-template-rows: auto auto; height: auto; min-height: 0; }
   .control-panel, .legend-panel { min-height: 0; overflow-y: visible; }
   /* La central conserva su propio desplazamiento con una caja acotada: alta
      como el viewport que queda entre la banda fija y el pie (58 px medidos),
      y pegada debajo de la banda mientras la página recorre los laterales. */
   .fretboard-section {
-    position: sticky; top: var(--banda-alto, 240px); align-self: start;
-    height: calc(100dvh - 58px - var(--banda-alto, 240px));
+    position: sticky; top: var(--banda-alto, 176px); align-self: start;
+    height: calc(100dvh - 58px - var(--banda-alto, 176px));
     min-height: 0; overflow-y: auto;
   }
   /* Palancas fuera de la grilla aprobada de T-46: la línea «Detenido» (26 px de
@@ -2730,18 +2743,18 @@ html[data-theme="dark"] {
   }
 }
 
-/* T-54 · A-26 (2026-10-25): la banda de tarjetas deja de ser una franja con
-   relleno propio y pasa a leerse como una abertura de la página: el mismo
-   papel y los mismos puntos del fondo, fijos al viewport (misma receta que
-   body::before, desplazamiento 0), para que la textura no se corte ni se
-   corra al desplazar. Las tarjetas pierden su relleno: quedan flotando sobre
-   esa textura con una sombra sutil propia y el borde fino de siempre. La
-   franja sigue siendo opaca —es sticky— : lo que pasa por debajo no se ve a
-   través de ella.
-   El estado activo no usa relleno: se marca con el borde del acento, la barra
-   interior que ya traía y una sombra algo más presente. Toda la función
-   (selección, duración, chip del video, arrastre, doble clic, tinte del
-   micrófono) queda intacta: solo cambia la pintura. */
+/* T-54 · A-26 (2026-10-25): la banda de tarjetas se lee como una abertura de
+   la página: el mismo papel y los mismos puntos del fondo, fijos al viewport
+   (misma receta que body::before, desplazamiento 0), para que la textura no se
+   corte ni se corra al desplazar. La franja sigue siendo opaca —es sticky—:
+   lo que pasa por debajo no se ve a través de ella.
+   T-54 r2 (A-27, palabra nueva del autor): las tarjetas recuperan su fondo
+   claro —el de 9616302, antes de las barras— y dejan de dibujar el recuadro
+   que las rodea. La caja del layout no cambia: el borde sigue en el box model
+   con el color transparente. El estado activo y el que suena se distinguen sin
+   líneas, con su relleno, la barra interior del acento y una sombra más
+   presente. Toda la función (selección, duración, chip del video, arrastre,
+   doble clic, tinte del micrófono) queda intacta: solo cambia la pintura. */
 .cards-band {
   background-color: var(--paper);
   background-image: radial-gradient(rgba(187, 181, 166, .32) .7px, transparent .7px);
@@ -2751,41 +2764,55 @@ html[data-theme="dark"] {
   box-shadow: none;
 }
 
-.progression-card,
-html[data-theme="dark"] .progression-card {
-  background-color: transparent;
+.cards-band .progression-card,
+html[data-theme="dark"] .cards-band .progression-card {
+  background-color: var(--paper-light);
+  border-color: transparent;
   box-shadow: 0 2px 6px rgba(44, 50, 40, .10), 0 1px 2px rgba(44, 50, 40, .07);
 }
 
-.progression-card:hover,
-html[data-theme="dark"] .progression-card:hover {
-  border-color: var(--rust);
+.cards-band .progression-card:hover,
+html[data-theme="dark"] .cards-band .progression-card:hover {
+  border-color: transparent;
   box-shadow: 0 4px 10px rgba(44, 50, 40, .16), 0 1px 2px rgba(44, 50, 40, .08);
 }
 
-.progression-card.active,
-html[data-theme="dark"] .progression-card.active {
-  background-color: transparent;
-  border-color: var(--rust);
+.cards-band .progression-card.active,
+html[data-theme="dark"] .cards-band .progression-card.active {
+  border-color: transparent;
   box-shadow: inset 0 -3px 0 var(--rust), 0 3px 9px rgba(44, 50, 40, .15);
 }
+html[data-theme="light"] .cards-band .progression-card.active,
+html:not([data-theme]) .cards-band .progression-card.active {
+  background-color: #fff;
+}
+html[data-theme="dark"] .cards-band .progression-card.active {
+  background-color: #303b33;
+}
 
-.progression-card.playing,
-html[data-theme="dark"] .progression-card.playing {
-  background-color: transparent;
-  border-color: var(--rust);
+/* La que suena conserva el tinte cálido de 9616302 —es un relleno, no una
+   línea— y se distingue de la activa por la barra interior, un punto más
+   gruesa, y su sombra. */
+.cards-band .progression-card.playing,
+html[data-theme="dark"] .cards-band .progression-card.playing {
+  background-color: #f8dfce;
+  border-color: transparent;
   box-shadow: inset 0 -4px 0 var(--rust), 0 3px 9px rgba(201, 87, 53, .20);
 }
+html[data-theme="dark"] .cards-band .progression-card.playing {
+  background-color: #45372c;
+}
 
-/* El arrastre conserva su fantasma con relleno: mientras vuela sobre la
-   página la tarjeta necesita leerse, y no es una tarjeta en reposo. */
-.progression-card.drag-ghost,
-html[data-theme="dark"] .progression-card.drag-ghost {
+/* El arrastre conserva su fantasma con relleno y contorno: mientras vuela
+   sobre la página la tarjeta necesita leerse, y no es una tarjeta en reposo. */
+.cards-band .progression-card.drag-ghost,
+html[data-theme="dark"] .cards-band .progression-card.drag-ghost {
   background-color: var(--paper-light);
+  border-color: var(--line);
   box-shadow: 0 12px 28px #30241935;
 }
-.progression-card.drag-placeholder,
-html[data-theme="dark"] .progression-card.drag-placeholder {
+.cards-band .progression-card.drag-placeholder,
+html[data-theme="dark"] .cards-band .progression-card.drag-placeholder {
   background-color: transparent;
   border: 1px dashed var(--rust);
   box-shadow: none;
@@ -2832,11 +2859,11 @@ html[data-theme="dark"] .cards-band {
   background-image: radial-gradient(rgba(187, 181, 166, .08) .7px, transparent .7px);
 }
 
-/* La tarjeta transparente deja ver el papel de la página (#f3f0e8) en vez del
-   papel claro de antes (#faf9f5): el rótulo pequeño en --muted bajaba de 3,85
-   a 3,57. Esta tinta, un paso más oscura, devuelve 3,99 sin cambiar el diseño
-   del texto; en oscuro el fondo nuevo es más oscuro y el contraste sube solo,
-   así que no se toca. */
+/* La tarjeta vuelve a su papel claro (#faf9f5), donde el rótulo pequeño en
+   --muted medía 3,85 —ya por debajo de AA—. Esta tinta, un paso más oscura,
+   devuelve 3,99 sin cambiar el diseño del texto ni la paleta de la página
+   (D-8 sigue esperando al autor); en oscuro el contraste sube solo, así que no
+   se toca. */
 html[data-theme="light"] .cards-band .progression-card :is(small, .progression-mode),
 html:not([data-theme]) .cards-band .progression-card :is(small, .progression-mode) {
   color: #707873;
