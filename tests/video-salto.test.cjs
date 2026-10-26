@@ -54,7 +54,7 @@ function setupApp(){
   }
   class FakeEvent{constructor(type,init){this.type=type;Object.assign(this,init);}}
   const ctx=vm.createContext({document:{querySelector:element,querySelectorAll:()=>[]},Event:FakeEvent});
-  for(const file of ['music-model.js','progression-duration.js','tonal-context.js','note-ink.js','app-state.js','app.js']){
+  for(const file of ['music-model.js','progression-duration.js','tonal-context.js','note-ink.js','app-state.js','fretboard-render.js','app.js']){
     vm.runInContext(fs.readFileSync(path.join(__dirname,'..',file),'utf8'),ctx);
   }
   return {run:code=>vm.runInContext(code,ctx),element};

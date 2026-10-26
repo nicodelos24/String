@@ -40,6 +40,7 @@ function setup() {
   vm.runInContext(fs.readFileSync(path.join(__dirname,'../tonal-context.js'),'utf8'),ctx);
   vm.runInContext(fs.readFileSync(path.join(__dirname,'../note-ink.js'),'utf8'),ctx);
   vm.runInContext(fs.readFileSync(path.join(__dirname,'../app-state.js'),'utf8'),ctx);
+  vm.runInContext(fs.readFileSync(path.join(__dirname,'../fretboard-render.js'),'utf8'),ctx);
   vm.runInContext(fs.readFileSync(path.join(__dirname,'../app.js'),'utf8'),ctx);
   const run = code => vm.runInContext(code,ctx);
   const change = (key,value) => element(key).handlers.change({target:{value}});

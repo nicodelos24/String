@@ -24,11 +24,12 @@ test('T-06: el mástil del bajo llega a fa4 y el de la guitarra pasa el piano en
   assert.deepEqual(bajo, { lowest: 28, highest: 65 }, 'E1 al aire y fa4 en el traste 22 de la cuerda G');
   const guitarra = mastMidiRange(GUITARRA);
   assert.deepEqual(guitarra, { lowest: 40, highest: 86 }, 'E2 al aire y re6 en el traste 22 de la primera');
-  // La constante no puede separarse del dibujo de app.js: si cambia el número
-  // de trastes, esta prueba lo dice antes de que el aviso mienta.
-  const app = leer('app.js');
-  const trastesDibujados = (app.match(new RegExp('length: ' + MAST_FRETS + '\\b', 'g')) || []).length;
-  assert.equal(trastesDibujados, 4, 'app.js dibuja columnas, números, trastes e incrustaciones con el mismo largo');
+  // La constante no puede separarse del dibujo del mástil: si cambia el número
+  // de trastes, esta prueba lo dice antes de que el aviso mienta. Desde el
+  // paso 4 de T-01 el dibujo vive en `fretboard-render.js`.
+  const render = leer('fretboard-render.js');
+  const trastesDibujados = (render.match(new RegExp('length: ' + MAST_FRETS + '\\b', 'g')) || []).length;
+  assert.equal(trastesDibujados, 4, 'fretboard-render.js dibuja columnas, números, trastes e incrustaciones con el mismo largo');
 });
 
 test('T-06: la coma del bajo queda en el borde y el punto y el guion fuera del mástil', () => {
