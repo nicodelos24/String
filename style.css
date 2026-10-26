@@ -1166,25 +1166,24 @@ html[data-theme="dark"] .board-add-button {
 #quick-play:hover:not(:disabled) { transform: scale(1.06); }
 #quick-play:disabled { opacity: .45; cursor: default; }
 #quick-midi-time { font: 11px var(--sans); color: var(--muted); font-variant-numeric: tabular-nums; }
-/* `font: inherit` faltaba acá y es lo que separaba este botón de todos los
-   demás: el navegador NO aplica al <button> la fuente del documento, así que
-   sin esto Tempo caía en Arial 13.33px mientras su hermano `.mute-toggle`
-   (que sí lo tiene) iba en DM Mono. No hay reset global de `font` para botones
-   en este archivo, por eso cada uno lo trae de a uno.
-   El `font-size: 13px` conserva el peso visual del botón grande: con el 11px
-   que hereda se quedaba corto dentro de una caja de 40px de alto. Ver DEF-02. */
-.tempo-tap { display: inline-flex; align-items: center; gap: 5px; min-height: 40px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); color: var(--muted); font: inherit; font-size: 13px; cursor: pointer; }
-.tempo-tap svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
-.tempo-tap:hover { border-color: var(--rust); color: var(--rust); }
-.tempo-tap:active { transform: scale(.97); }
-/* Silencio: mismo cuerpo que Tempo, que está justo debajo. Apagado enseña el
-   altavoz con sus ondas; encendido, solo el altavoz tachado y el fondo activations. */
-.mute-toggle { display: inline-flex; align-items: center; gap: 5px; min-height: 28px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); color: var(--muted); font: inherit; cursor: pointer; }
-.mute-toggle svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+/* T-05 · Los dos botones del transporte con el mismo cuerpo —Tempo y
+   Silencio— declaran una sola vez lo que comparten: cuerpo, icono, hover y
+   active. Nació de DEF-02: mientras fueron gemelos escritos por separado, uno
+   se quedó sin `font: inherit` y cayó en Arial 13.33px sin que nadie lo viera.
+   Lo propio de cada uno sigue en su regla: Silencio su altura de 28px, y Tempo
+   su altura de 40px y el `font-size: 13px` de DEF-02. Esa pareja de Tempo es
+   la que decide `D-5` (11px vs 13px), palabra del autor: sigue siendo un
+   cambio de una línea acá. */
+.tempo-tap, .mute-toggle { display: inline-flex; align-items: center; gap: 5px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); color: var(--muted); font: inherit; cursor: pointer; }
+.tempo-tap { min-height: 40px; font-size: 13px; }
+.mute-toggle { min-height: 28px; }
+.tempo-tap svg, .mute-toggle svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.tempo-tap:hover, .mute-toggle:hover { border-color: var(--rust); color: var(--rust); }
+.tempo-tap:active, .mute-toggle:active { transform: scale(.97); }
+/* Silencio: apagado enseña el altavoz con sus ondas; encendido, solo el altavoz
+   tachado sobre el fondo del acento. */
 .mute-toggle svg path:first-child { fill: currentColor; stroke: none; }
 .mute-toggle .mute-slash { display: none; }
-.mute-toggle:hover { border-color: var(--rust); color: var(--rust); }
-.mute-toggle:active { transform: scale(.97); }
 .mute-toggle[aria-pressed='true'] { border-color: var(--rust); background: var(--rust); color: var(--paper-light); }
 .mute-toggle[aria-pressed='true'] .mute-wave { display: none; }
 .mute-toggle[aria-pressed='true'] .mute-slash { display: block; }
