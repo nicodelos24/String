@@ -48,17 +48,64 @@ function contrastRatio(a, b) {
   return (light + 0.05) / (dark + 0.05);
 }
 
+// Mínimo de lectura (WCAG AA para texto normal) y el aire que se le deja a la
+// tinta suave: el gris se elige con un pelo de margen para que ninguna
+// aritmética de medición lo deje en 4,49.
+const AA_MIN_RATIO = 4.5;
+const SOFT_INK_MARGIN = 0.05;
+
+function grayHex(value) {
+  const channel = value.toString(16).padStart(2, '0');
+  return '#' + channel + channel + channel;
+}
+
 // Tinta del rótulo sobre ese relleno: la de más contraste de las dos, que en la
 // tabla de intervalos es siempre ≥ 4,5. Devuelve null si el relleno no es un
 // color sólido legible (`transparent`, `rgba(...)`): ahí manda quien pinta.
-function inkOverFill(fill) {
+//
+// Con `{ soft: true }` no devuelve el extremo sino **el gris más suave del mismo
+// lado que todavía llega a AA** (T-55 ronda 3, palabra `A-33` del autor: «algún
+// color más grisáceo de fuentes y no un negro tan disruptivo»). Es la misma
+// autoridad y la misma medición; solo cambia cuánto se aparta del extremo, y en
+// los rellenos apretados —el rojo de la raíz— el gris honesto queda casi negro
+// porque ahí el AA no deja más aire.
+function inkOverFill(fill, options) {
   const dark = contrastRatio(NOTE_INK_DARK, fill);
   const light = contrastRatio(NOTE_INK_LIGHT, fill);
   if (dark === null || light === null) return null;
-  return dark >= light ? NOTE_INK_DARK : NOTE_INK_LIGHT;
+  const darkSide = dark >= light;
+  if (!options || !options.soft) return darkSide ? NOTE_INK_DARK : NOTE_INK_LIGHT;
+
+  const limit = AA_MIN_RATIO + SOFT_INK_MARGIN;
+  const reachesAA = value => {
+    const ratio = contrastRatio(grayHex(value), fill);
+    return ratio !== null && ratio >= limit;
+  };
+  if (darkSide) {
+    // Del gris más claro al más oscuro: el primero que pasa es el más suave.
+    for (let value = 254; value >= 1; value--) if (reachesAA(value)) return grayHex(value);
+  } else {
+    for (let value = 1; value <= 254; value++) if (reachesAA(value)) return grayHex(value);
+  }
+  // Un relleno tan apretado que solo el extremo lee: se queda el extremo.
+  return darkSide ? NOTE_INK_DARK : NOTE_INK_LIGHT;
 }
 
-const NoteInk = { NOTE_INK_DARK, NOTE_INK_LIGHT, parseHexColor, relativeLuminance, contrastRatio, inkOverFill };
+// Polaridad del halo de `T-36` r2: va al revés de la tinta, y se decide por
+// luminancia, no por igualdad con el hex del extremo — con la tinta suave ese
+// hex ya no aparece y la nota que suena se quedaría sin halo. Devuelve '' donde
+// no hay par medible (relleno transparente o tinta con alfa).
+function inkShadowClass(fill, ink) {
+  const inkLuminance = relativeLuminance(ink);
+  const fillLuminance = relativeLuminance(fill);
+  if (inkLuminance === null || fillLuminance === null) return '';
+  return inkLuminance < fillLuminance ? 'ink-dark' : 'ink-light';
+}
+
+const NoteInk = {
+  NOTE_INK_DARK, NOTE_INK_LIGHT, AA_MIN_RATIO,
+  parseHexColor, relativeLuminance, contrastRatio, inkOverFill, inkShadowClass,
+};
 
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = NoteInk;

@@ -121,11 +121,18 @@ function micFretLabel(note, mode, ctx) {
 // sobre el violeta del 7ª menor, 2,49. Devuelve el par {color, ink}, o null si
 // la posición no lo lleva (posición pintada antes de que exista el atributo, o
 // sin un color sólido del que se pueda calcular la tinta).
+//
+// La raíz y las notas del acorde piden la tinta suave, la misma que el reposo
+// (`A-33`): si el micrófono escribiera el extremo, el rótulo saltaría de gris a
+// negro justo mientras suena. La clase sí decide eso, porque es la que distingue
+// el énfasis; la tinta sigue saliendo de una sola medición.
+const EMPHASIZED_LABEL = /(^|\s)(root-note|chord-note)(\s|$)/;
 function micFretColor(note) {
   if (!note || typeof note !== 'object') return null;
   const color = typeof note.color === 'string' ? note.color.trim() : '';
   if (!color) return null;
-  const ink = NoteInkForLabels ? NoteInkForLabels.inkOverFill(color) : null;
+  const soft = typeof note.className === 'string' && EMPHASIZED_LABEL.test(note.className);
+  const ink = NoteInkForLabels ? NoteInkForLabels.inkOverFill(color, { soft }) : null;
   if (!ink) return null;
   return { color: color, ink: ink };
 }
