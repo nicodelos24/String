@@ -65,6 +65,7 @@ function setup() {
   // En la base no existe: la guarda tiene que medir el defecto, no romperse por
   // un archivo que todavía no está.
   if (fs.existsSync(path.join(root, 'note-ink.js'))) load('note-ink.js');
+  load('app-state.js');
   load('app.js');
   return { run: code => vm.runInContext(code, ctx), element };
 }

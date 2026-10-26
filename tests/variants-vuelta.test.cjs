@@ -46,6 +46,7 @@ function setup() {
   vm.runInContext(fs.readFileSync(path.join(__dirname,'../tonal-context.js'),'utf8'), ctx);
   vm.runInContext(fs.readFileSync(path.join(__dirname,'../note-ink.js'),'utf8'), ctx);
   vm.runInContext(fs.readFileSync(path.join(__dirname,'../music-model.js'),'utf8'), ctx);
+  vm.runInContext(fs.readFileSync(path.join(__dirname,'../app-state.js'),'utf8'), ctx);
   vm.runInContext(fs.readFileSync(path.join(__dirname,'../app.js'),'utf8'), ctx);
   const run = code => JSON.parse(JSON.stringify(vm.runInContext(code, ctx)));
   const runRaw = code => vm.runInContext(code, ctx);
