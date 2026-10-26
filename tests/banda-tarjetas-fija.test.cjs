@@ -72,26 +72,41 @@ function todosLosMedia(condicion) {
 const tiene = (cuerpo, propiedad, valor) =>
   new RegExp('(^|;)\\s*' + propiedad + '\\s*:\\s*' + valor + '\\s*(;|$)').test(cuerpo);
 
-test('la banda de tarjetas es la primera fila del workspace, fuera de la columna del mástil', () => {
+test('la banda de tarjetas vive fuera de la caja grande, antes de sus columnas', () => {
   const banda = bloqueDiv(html, '<div class="cards-band">');
 
-  assert.ok(banda.includes('<div class="progression-workspace">'),
-    'la pila de tarjetas y sus controles viven dentro de la banda');
   assert.ok(banda.includes('id="progression"'), 'la banda contiene las tarjetas');
-  assert.ok(banda.includes('class="progression-view-controls"'),
-    'la banda contiene los controles del transporte y la captura');
+  assert.ok(!banda.includes('class="progression-view-controls"'),
+    'la banda no lleva los controles: la caja grande empieza en la fila del transporte (A-27)');
+  assert.ok(!banda.includes('<div class="progression-workspace">'),
+    'la banda ya no envuelve la cabecera del workspace');
 
-  const workspace = html.slice(html.indexOf('<section class="workspace"'));
-  assert.ok(html.indexOf('<div class="cards-band">') < html.indexOf('<aside class="control-panel">'),
-    'la banda se lee antes que el panel de instrumento');
-  assert.ok(html.indexOf('<div class="cards-band">') < html.indexOf('<div class="fretboard-section">'),
-    'la banda se lee antes que la columna del mástil');
-  assert.ok(workspace.indexOf('<div class="cards-band">') < workspace.indexOf('<div class="fretboard-section">'),
-    'dentro del workspace la banda abre la grilla y el mástil viene después');
+  const inicioWorkspace = html.indexOf('<section class="workspace"');
+  assert.ok(html.indexOf('<div class="cards-band">') < inicioWorkspace,
+    'la banda se lee antes de la caja grande: queda separada de ella');
+  const workspace = html.slice(inicioWorkspace);
+  assert.ok(!workspace.includes('class="cards-band"'),
+    'la caja grande no envuelve la banda: su borde superior no rodea las tarjetas');
 
   const maestil = bloqueDiv(html, '<div class="fretboard-section">');
   assert.ok(!maestil.includes('<div class="progression-workspace">'),
     'el mástil ya no envuelve la pila de tarjetas: su scroll no puede arrastrarla');
+});
+
+test('la caja grande empieza en la fila del transporte, no en las tarjetas', () => {
+  const workspace = html.slice(html.indexOf('<section class="workspace"'));
+  assert.ok(workspace.indexOf('<div class="progression-workspace">') < workspace.indexOf('<aside class="control-panel">'),
+    'la cabecera del transporte abre la grilla de la caja grande');
+
+  const cabecera = bloqueDiv(workspace, '<div class="progression-workspace">');
+  assert.ok(cabecera.includes('class="progression-view-controls"'),
+    'el transporte y la captura viven dentro de la caja grande');
+  assert.ok(!cabecera.includes('id="progression"'), 'las tarjetas no entran en la caja');
+
+  const regla = reglas(css).find(regla => regla.selector === '.workspace > .progression-workspace');
+  assert.ok(regla, 'falta la regla que monta la cabecera como primera fila de la caja');
+  assert.ok(tiene(regla.cuerpo, 'grid-column', '1 / -1'),
+    'la cabecera cruza las tres columnas de la caja');
 });
 
 test('las secciones viven con el mástil y no hacen crecer la banda', () => {
@@ -109,9 +124,9 @@ test('las secciones viven con el mástil y no hacen crecer la banda', () => {
 test('la banda ocupa todo el ancho y se sostiene arriba mientras se desplaza la página', () => {
   const banda = reglas(css).find(regla => regla.selector === '.cards-band');
   assert.ok(banda, 'falta la regla base de .cards-band');
-  assert.ok(tiene(banda.cuerpo, 'grid-column', '1 / -1'),
-    'la banda cruza las tres columnas del workspace');
   assert.ok(tiene(banda.cuerpo, 'min-width', '0'), 'la banda no impone un ancho mínimo');
+  assert.ok(!tiene(banda.cuerpo, 'grid-column', '1 / -1'),
+    'la banda ya no es una fila de la grilla: vive fuera de la caja grande');
 
   const escritorio = reglas(media('@media (min-width: 801px)'));
   const fija = escritorio.find(regla => regla.selector === '.cards-band');
@@ -155,9 +170,9 @@ test('la banda sigue fija sobre el workspace y el workspace crece con los latera
     'la guarda de la banda de T-53 sigue en pie: en escritorio se queda arriba al desplazar');
 
   const compacta = reglas(media('@media (min-width: 1101px)'));
-  const controles = compacta.find(regla => regla.selector === '.cards-band .progression-view-controls');
+  const controles = compacta.find(regla => regla.selector === '.progression-workspace .progression-view-controls');
   assert.ok(controles && tiene(controles.cuerpo, 'flex-direction', 'row'),
-    'con ancho de escritorio las dos filas de T-47 se leen en una sola línea y la banda entra en el pliegue');
+    'con ancho de escritorio las dos filas de T-47 se leen en una sola línea y la cabecera entra en el pliegue');
   assert.ok(tiene(controles.cuerpo, 'flex-wrap', 'wrap'),
     'si el ancho no alcanza, los controles envuelven sin desbordar');
 });
