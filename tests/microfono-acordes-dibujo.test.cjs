@@ -212,3 +212,19 @@ test('con dos notas el mástil también dibuja la doble, que antes no dibujaba n
   callbacks.onNotes(null);
   assert.deepEqual(live(), [], 'y el silencio limpia');
 });
+
+test('el seguimiento actualiza la inversión estable sin emitir cambios pasajeros de bajo', () => {
+  for (const [follow, first, inverted] of [
+    [followStableNotes, { pitches: [0, 4, 7], bass: 48 }, { pitches: [7, 4, 0], bass: 52 }],
+    [require('../chord-detection.js').followStableChord, { root: 0, type: 'maj', bass: 48 }, { root: 0, type: 'maj', bass: 52 }],
+  ]) {
+    let state;
+    const events = [];
+    for (const [now, value] of [[0, first], [350, first], [400, inverted], [500, first], [600, inverted], [950, inverted]]) {
+      const result = follow(value, state, now);
+      state = result.state;
+      if (result.chord !== undefined) events.push(result.chord);
+    }
+    assert.deepEqual(events, [first, inverted]);
+  }
+});

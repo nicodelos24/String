@@ -175,7 +175,7 @@ function detectSoundingNotes(spectrum, sampleRate, fftSize = spectrum.length * 2
 // que el espectro las devuelva.
 function followStableNotes(detected, state, now, options) {
   return followStableByKey(
-    notes => notes && Array.isArray(notes.pitches) ? notes.pitches.slice().sort((a, b) => a - b).join(':') : null,
+    notes => notes && Array.isArray(notes.pitches) ? JSON.stringify([notes.pitches.slice().sort((a, b) => a - b), notes.bass ?? null]) : null,
     detected, state, now, options);
 }
 
@@ -197,7 +197,7 @@ function followStableByKey(keyOf, detected, state, now, { confirmMs = 350, relea
 }
 
 function followStableChord(detected, state, now, options) {
-  return followStableByKey(chord => chord ? `${chord.root}:${chord.type}` : null, detected, state, now, options);
+  return followStableByKey(chord => chord ? JSON.stringify([chord.root, chord.type, chord.bass ?? null]) : null, detected, state, now, options);
 }
 
 if (typeof module !== 'undefined' && module.exports) module.exports = { detectChord, followStableChord, detectSoundingNotes, followStableNotes, analyzeSpectrum, LIVE_CHORD_TEMPLATES };
