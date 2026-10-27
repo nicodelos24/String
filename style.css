@@ -1604,16 +1604,13 @@ footer {
   opacity: 0.8;
 }
 
-/* El énfasis de la raíz y de la nota del acorde: sigue existiendo por tamaño y
-   opacidad, pero con peso 500 —susurra en vez de gritar (A-33: «se ven
-   resaltadas como en negritas… eso rompe mucho la vista»)—. La tinta, que es la
-   otra mitad del pedido, la elige `note-ink.js` en su modo suave; acá solo queda
-   la letra. */
+/* La raíz se distingue por el relleno, tamaño y opacidad; su peso normal evita
+   añadir negrita sobre el rojo (A-36). La tinta suave la elige note-ink.js. */
 .fret-note.root-note {
   min-height: 24px;
   min-width: 24px;
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 400;
   opacity: 1;
 }
 
