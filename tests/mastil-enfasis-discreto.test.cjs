@@ -104,12 +104,12 @@ function declared(list, property) {
   return found.length ? found[found.length - 1].value : null;
 }
 
-test('la raíz y la nota del acorde bajan a peso 500, sin perder el resaltado', () => {
-  // Roja sobre la base: hoy la raíz trae 700 y la nota del acorde, 600.
+test('la raíz usa peso 400 y la nota del acorde conserva 500', () => {
   for (const className of ['root-note', 'chord-note']) {
     const rule = emphasisRule(className);
-    assert.equal(declared(rule, 'font-weight'), '500',
-      `.fret-note.${className} tiene que susurrar el resaltado con peso 500 (A-33)`);
+    const weight = className === 'root-note' ? '400' : '500';
+    assert.equal(declared(rule, 'font-weight'), weight,
+      `.fret-note.${className} debe conservar el peso ${weight} (A-36)`);
     // El resaltado no se va: sigue más grande que la nota base y opaco.
     assert.equal(declared(rule, 'font-size'), '11px',
       `.fret-note.${className} conserva su tamaño de 11 px`);
