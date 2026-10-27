@@ -185,8 +185,14 @@ test('la animación es sutil y se apaga con movimiento reducido', () => {
   }
   const reduce = medios.find(bloqueMedio => /prefers-reduced-motion\s*:\s*reduce/.test(bloqueMedio.condicion));
   assert.ok(reduce, 'la ronda declara su bloque de movimiento reducido');
-  assert.match(reduce.cuerpo, /\.transport-row\.is-floating\s+\.transport-pill\s*\{[^}]*animation:\s*none/,
-    'con movimiento reducido la píldora aparece sin animación');
+  // La ronda 2 sumó estados con más especificidad, así que el reset puede ser
+  // una lista: lo que importa es que el estado flotante quede nombrado con
+  // `animation: none` en el mismo bloque.
+  const reset = reglas(reduce.cuerpo).find(regla =>
+    regla.selector.split(',').map(s => s.trim())
+      .includes('.transport-row.is-floating .transport-pill') &&
+    tiene(regla.cuerpo, 'animation', 'none'));
+  assert.ok(reset, 'con movimiento reducido la píldora aparece sin animación');
 });
 
 test('el observador es chico, publica el estado y no toca nada más', () => {

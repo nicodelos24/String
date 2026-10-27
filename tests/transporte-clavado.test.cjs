@@ -135,6 +135,54 @@ test('el borde superior de la banda conserva su línea al quedar pegada', () => 
   }
 });
 
+test('en movimiento reducido los dos estados flotantes quedan sin animación', () => {
+  // Devolución de QA sobre `4adba3e`: la regla heredada de la ronda 1
+  // (`.transport-row.is-floating .transport-pill`, tres clases) pierde en la
+  // cascada contra el estado clavado de la ronda 2 (cuatro clases, porque el
+  // `:not()` cuenta). La guarda exige que el reset nombre los dos estados con
+  // especificidad suficiente, no que confíe en el orden del archivo.
+  const medios = [...bloque.matchAll(/@media\s*([^{]+)\{((?:[^{}]*\{[^{}]*\})*)\s*\}/g)];
+  const reduce = medios.find(([, condicion]) => /prefers-reduced-motion\s*:\s*reduce/.test(condicion));
+  assert.ok(reduce, 'el bloque T-56 declara su media de movimiento reducido');
+
+  const especificidad = selector => {
+    const sinNot = selector.replace(/:not\(([^)]*)\)/g, ' $1 ');
+    const clases = (sinNot.match(/\.[\w-]+/g) || []).length +
+      (sinNot.match(/\[[^\]]*\]/g) || []).length;
+    const ids = (sinNot.match(/#[\w-]+/g) || []).length;
+    const elementos = (sinNot.replace(/\.[\w-]+|#[-\w]+|\[[^\]]*\]|\s+/g, ' ')
+      .match(/[a-zA-Z][\w-]*/g) || []).length;
+    return ids * 10000 + clases * 100 + elementos;
+  };
+
+  // Cada selector que enciende la animación de la píldora, con su peso.
+  const animados = reglas(bloque)
+    .filter(regla => /\.transport-pill\b/.test(regla.selector))
+    .filter(regla => /(^|;)\s*animation\s*:\s*transporte-pildora/.test(regla.cuerpo))
+    .map(regla => ({selector: regla.selector, peso: especificidad(regla.selector)}));
+  assert.ok(animados.length >= 2, 'los dos estados flotantes entran animados');
+
+  const resets = reglas(reduce[2])
+    .filter(regla => /\.transport-pill\b/.test(regla.selector))
+    .filter(regla => tiene(regla.cuerpo, 'animation', 'none'))
+    .map(regla => ({selector: regla.selector, peso: especificidad(regla.selector)}));
+
+  for (const animado of animados) {
+    const alcanza = resets.some(reset => reset.peso >= animado.peso);
+    assert.ok(alcanza,
+      `con movimiento reducido ${animado.selector} debe computar animation: none; ` +
+      'el reset tiene que nombrarlo con su misma especificidad');
+  }
+  // Y los dos estados se nombran de forma explícita, no por arrastre.
+  const todos = resets.map(reset => reset.selector).join(', ');
+  assert.match(todos, /:not\(\.is-transport-minimized\)/,
+    'el estado clavado queda nombrado en el reset');
+  assert.match(todos, /\.is-floating\.is-transport-minimized/,
+    'el estado minimizado también');
+  assert.ok(!/animation\s*:\s*none\s*!important/.test(reduce[2]),
+    'se corrige la cascada por especificidad, sin !important');
+});
+
 test('el observador publica los dos estados, el ancho de la franja y la banda pegada', () => {
   const js = fs.readFileSync(modulo, 'utf8')
     .replace(/\/\*[\s\S]*?\*\//g, '')

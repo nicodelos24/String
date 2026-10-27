@@ -3032,6 +3032,14 @@ html:not([data-theme]) .cards-band .progression-card :is(small, .progression-mod
   to { opacity: 1; transform: none; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .transport-row.is-floating .transport-pill { animation: none; }
+  /* El reset de la ronda 1 no alcanzaba a los estados de la ronda 2: los
+     selectores del estado clavado pesan cuatro clases (el `:not()` cuenta) y le
+     ganaban en la cascada a esta regla de tres, así que la barrita seguía
+     entrando con `transporte-pildora` aun con la preferencia activa (defecto
+     medido por QA sobre `4adba3e`). Se nombran los dos estados flotantes con su
+     propia especificidad, sin `!important`: el de reposo no se toca. */
+  .transport-row.is-floating .transport-pill,
+  .transport-row.is-floating:not(.is-transport-minimized) .transport-pill,
+  .transport-row.is-floating.is-transport-minimized .transport-pill { animation: none; }
   .transport-minimize-icon { transition: none; }
 }
