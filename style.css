@@ -2869,46 +2869,79 @@ html:not([data-theme]) .cards-band .progression-card :is(small, .progression-mod
   color: #707873;
 }
 
-/* T-56 · A-30 (2026-10-26). Palabra del autor: la fila del transporte le
-   encanta como quedó, pero al desplazarse quiere que se siga viendo y que sea
-   «aun más estética»: una píldora flotante más compacta, con el único fondo
-   claro en su rectángulo redondeado y sin el recuadro contenedor que hoy la
-   envuelve, como las tarjetas que flotan sobre la textura. Con una animación
-   simple en el paso.
-   Dos estados, y sólo dos: (1) arriba de la página todo queda idéntico a hoy —
-   la fila reparte sus controles con el mismo flex, el mismo centrado y el
-   mismo hueco de T-47, y la caja conserva borde, radio y papel—; (2) cuando la
-   fila de reposo cruza el borde inferior de la banda sticky, `transport-pill.js`
-   pone `is-floating` en la fila e `is-transport-floating` en la caja. La fila
-   se queda en el flujo con su alto y su ancho medidos (variables que publica el
-   observador) para que el paso no corra el contenido; la píldora interior se
-   fija debajo de la banda, se compacta y entra con un desplazamiento y una
-   escala cortos. Sólo forma: motor, audio, guardado, atajos y `traste.songs.v1`
-   no cambian, y ningún control se va de la barrita. */
+/* T-56 · A-30 (2026-10-26) y ronda 2 · A-35 + A-37 (2026-10-26). Palabra del
+   autor: la fila del transporte le encanta como quedó, pero al desplazarse
+   quiere que se siga viendo. La ronda 1 la convirtió en píldora flotante; su
+   ojo probó esa versión publicada y corrigió el dónde (A-35): la barrita no
+   flota sobre el contenido —queda clavada abajo de la banda de tarjetas, con
+   todo el ancho útil y más baja—, y sólo su fila viaja en el cuadro fino de
+   borde redondeado: el recuadro grande de la caja no la acompaña y lo de
+   alrededor queda sobre el fondo punteado. Una flechita a la derecha la
+   minimiza a la píldora de la ronda 1 (que no se descarta: pasa a ser el
+   segundo valor del mismo interruptor).
+   Dos estados, y sólo dos, más el reposo: (1) arriba de la página todo queda
+   idéntico a hoy —la fila reparte sus controles con el mismo flex, el mismo
+   centrado y el mismo hueco de T-47, y la caja conserva borde, radio y papel—;
+   (2) cuando la fila de reposo cruza el borde inferior de la banda sticky,
+   `transport-pill.js` pone `is-floating` en la fila e `is-transport-floating`
+   en la caja: la fila se queda en el flujo con su alto y su ancho medidos
+   (variables que publica el observador) para que el paso no corra el
+   contenido; la barrita interior se fija debajo de la banda con el ancho útil
+   de la caja (`--transporte-franja`), se compacta y entra con un
+   desplazamiento y una escala cortos. Con `is-transport-minimized` vuelve la
+   píldora de la ronda 1: ancho de su contenido y radio 999.
+   (3) A-37: con la banda pegada al viewport (`is-stuck`), el límite superior
+   conserva la línea de 1 px que el reposo tiene a la vista; en reposo la clase
+   no existe y no cambia un pixel.
+   Sólo forma: motor, audio, guardado, atajos y `traste.songs.v1` no cambian, y
+   ningún control se va de la barrita. */
 .progression-controls-row.transport-row { display: block; }
 .transport-pill { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; }
 .progression-view-controls { transition: border-color .18s ease, background-color .18s ease; }
 .progression-view-controls.is-transport-floating { border-color: transparent; background: transparent; }
 .transport-row.is-floating { width: var(--transporte-ancho, auto); height: var(--transporte-alto, auto); }
-.transport-row.is-floating .transport-pill {
+
+/* El estado clavado (A-35), por defecto al desplazarse: todo el ancho útil de
+   la caja, más baja que la fila de reposo y sólo su cuadro fino alrededor. El
+   botón de minimizar se lleva el extremo derecho con `margin-left: auto`. */
+.transport-row.is-floating:not(.is-transport-minimized) .transport-pill {
+  position: fixed;
+  top: var(--transporte-top, 8px);
+  left: var(--transporte-left, 8px);
+  z-index: 7;
+  width: var(--transporte-franja, max-content);
+  max-width: calc(100vw - var(--transporte-left, 8px) - 8px);
+  /* El relleno derecho le reserva su sitio a la flechita, que va posicionada
+     en el extremo para no empujar los controles a una línea más. */
+  padding: 2px 42px 2px 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper-light);
+  box-shadow: 0 8px 20px rgba(44, 50, 40, .14), 0 2px 6px rgba(44, 50, 40, .07);
+  gap: 4px 12px;
+  animation: transporte-pildora .18s ease-out;
+}
+
+/* El minimizado (A-35): la píldora de la ronda 1, tal cual quedó —se ajusta a
+   su contenido, radio 999 y el reparto de sus controles—, con la flechita en
+   el extremo para volver a desplegar. */
+.transport-row.is-floating.is-transport-minimized .transport-pill {
   position: fixed;
   top: var(--transporte-top, 8px);
   left: var(--transporte-left, 8px);
   z-index: 7;
   width: max-content;
   max-width: calc(100vw - var(--transporte-left, 8px) - 8px);
-  padding: 1px 8px;
+  padding: 1px 42px 1px 8px;
   border: 1px solid var(--line);
   border-radius: 999px;
   background: var(--paper-light);
   box-shadow: 0 10px 24px rgba(44, 50, 40, .16), 0 2px 6px rgba(44, 50, 40, .08);
   gap: 4px 7px;
-  /* En una sola línea la píldora mide justo su contenido y esto no hace nada;
-     cuando el ancho de un teléfono la obliga a dos líneas, reparte cada línea
-     de borde a borde en vez de dejar un hueco muerto a la derecha. */
   justify-content: space-between;
   animation: transporte-pildora .18s ease-out;
 }
+
 /* La compactación: el aire entre controles y las alturas que sobran. El botón
    del Tempo baja de los 40 px del reposo y la cápsula del Play recorta su
    relleno; la legibilidad y los blancos de clic se conservan. */
@@ -2917,25 +2950,88 @@ html:not([data-theme]) .cards-band .progression-card :is(small, .progression-mod
 .transport-row.is-floating .transport-pill .progression-tempo { gap: 6px; }
 .transport-row.is-floating .transport-pill .mute-toggle { min-height: 24px; }
 .transport-row.is-floating .transport-pill .progression-disclosure { width: 28px; height: 28px; }
+/* La ayuda es del transporte, no del extremo: en la barrita clavada se queda
+   junto al Tempo, y el extremo derecho es sólo de la flechita. */
+.transport-row.is-floating .transport-pill .inline-help { margin-left: 0; }
+
+/* La flechita del interruptor: en reposo no existe (la fila es idéntica a hoy);
+   con la barrita volando aparece en el extremo derecho. El icono apunta arriba
+   cuando se puede minimizar y abajo cuando ya está minimizada. */
+.transport-minimize { display: none; }
+.transport-row.is-floating .transport-minimize {
+  display: inline-grid;
+  place-items: center;
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  transform: translateY(-50%);
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--paper);
+  color: var(--muted);
+  cursor: pointer;
+}
+.transport-row.is-floating .transport-minimize:hover { border-color: var(--rust); color: var(--rust); }
+.transport-row.is-floating .transport-minimize:focus-visible { outline: 2px solid var(--rust); outline-offset: 2px; }
+.transport-minimize-icon {
+  width: 7px;
+  height: 7px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: translateY(-2px) rotate(-135deg);
+  transition: transform .18s ease;
+}
+.transport-row.is-floating.is-transport-minimized .transport-minimize-icon {
+  transform: translateY(2px) rotate(45deg);
+}
+
+/* En pantallas angostas la barrita clavada envuelve en dos líneas y el relleno
+   que le reserva sitio a la flechita en una sola línea le robaría el ancho a la
+   segunda: con la barrita envuelta, la flechita se apoya en el hueco que deja
+   la primera línea y la ayuda vuelve junto al Tempo. */
+@media (max-width: 800px) {
+  .transport-row.is-floating:not(.is-transport-minimized) .transport-pill.is-pill-wrapped {
+    padding-right: 10px;
+    gap: 4px 8px;
+  }
+  .transport-row.is-floating:not(.is-transport-minimized) .transport-pill.is-pill-wrapped .inline-help {
+    margin-left: 0;
+  }
+  /* En dos líneas la flechita se apoya arriba a la derecha, en el hueco que
+     deja la primera línea, en vez de quedar centrada sobre la segunda (donde
+     se cruzaría con la ayuda). */
+  .transport-row.is-floating .transport-pill.is-pill-wrapped .transport-minimize {
+    top: 4px;
+    transform: none;
+  }
+}
+
 /* Dos líneas (teléfonos): el Tempo se lleva la segunda junto a la ayuda. Sin
-   esto, a 414 px el Tempo entra arriba y la ayuda queda sola abajo. Y con dos
-   líneas la cápsula pasa a rectángulo redondeado: los extremos de media luna
-   dejaban la ayuda pegada al borde. */
-.transport-row.is-floating .transport-pill.is-pill-wrapped {
+   esto, a 414 px el Tempo entra arriba y la ayuda queda sola abajo. En la
+   píldora minimizada el cuadro pasa a rectángulo redondeado y se acota al
+   ancho de sus dos líneas —los extremos de media luna dejaban la ayuda pegada
+   al borde—; la barrita clavada conserva su ancho útil y su cuadro fino. */
+.transport-row.is-floating.is-transport-minimized .transport-pill.is-pill-wrapped {
   border-radius: 20px;
-  /* Ancho de la píldora de dos líneas: lo que ocupan sus controles más el aire
-     justo. Sin esto el ancho del teléfono estira la píldora y deja un hueco
-     muerto entre el BPM y la ayuda. */
   max-width: min(calc(100vw - var(--transporte-left, 8px) - 8px), 252px);
 }
 .transport-row.is-floating .transport-pill.is-pill-wrapped .progression-tempo {
   flex: 0 0 calc(100% - 40px);
   min-width: max-content;
 }
+
+/* A-37: la banda pegada al viewport conserva el límite superior del reposo.
+   La clase la pone y la quita el observador; en reposo no existe. */
+.cards-band.is-stuck { border-top: 1px solid var(--line); }
+
 @keyframes transporte-pildora {
   from { opacity: .35; transform: translateY(-6px) scale(.96); }
   to { opacity: 1; transform: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   .transport-row.is-floating .transport-pill { animation: none; }
+  .transport-minimize-icon { transition: none; }
 }
