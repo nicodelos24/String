@@ -101,26 +101,37 @@ test('el recuadro contenedor desaparece sólo en el estado de scroll', () => {
     'y su línea desaparece: la barrita flota sin recuadro, como las tarjetas');
 });
 
-test('la píldora del scroll es fija, redondeada, con sombra y anclada debajo de la banda', () => {
-  const pill = reglaEn(bloque, '.transport-row.is-floating .transport-pill', 'el bloque T-56');
+test('la barrita del scroll es fija, con fondo, sombra y anclada debajo de la banda', () => {
+  const pill = reglaEn(bloque, '.transport-row.is-floating:not(.is-transport-minimized) .transport-pill',
+    'el bloque T-56');
   assert.ok(tiene(pill, 'position', 'fixed'), 'en scroll la barrita queda clavada a la vista');
   assert.match(valor(pill, 'top') || '', /^var\(--transporte-top/,
-    'el tope lo publica el observador: la píldora se ancla debajo de la banda sticky');
+    'el tope lo publica el observador: la barrita se ancla debajo de la banda sticky');
   assert.match(valor(pill, 'left') || '', /^var\(--transporte-left/,
-    'la píldora arranca donde arrancaba la barrita, alineada con la caja');
+    'la barrita arranca alineada con el contenido de la caja');
   assert.ok(tiene(pill, 'background', 'var\\(--paper-light\\)'), 'su rectángulo es el único con fondo claro');
-  assert.ok(tiene(pill, 'border-radius', '999px'), 'con el borde redondeado de píldora');
   assert.ok(declara(pill, 'box-shadow'), 'y una sombra que la despega del fondo, como las tarjetas');
-  assert.ok(tiene(pill, 'width', 'max-content'), 'se ajusta a su contenido: es una píldora, no una franja');
   assert.ok(tiene(pill, 'z-index', '7'),
     'queda por encima de la banda sticky (6) para que su ayuda no quede tapada');
   assert.match(valor(pill, 'animation') || '', /^transporte-pildora/,
     'entra con la animación simple de la ronda');
 });
 
+test('la píldora minimizada conserva la caja de la ronda 1', () => {
+  // La ronda 2 no descarta la píldora: pasa a ser el segundo valor del mismo
+  // interruptor, así que su caja (ajustada al contenido, radio 999) se queda.
+  const pill = reglaEn(bloque, '.transport-row.is-floating.is-transport-minimized .transport-pill',
+    'el bloque T-56');
+  assert.ok(tiene(pill, 'border-radius', '999px'), 'con el borde redondeado de píldora');
+  assert.ok(tiene(pill, 'width', 'max-content'),
+    'se ajusta a su contenido: es una píldora, no una franja');
+  assert.ok(declara(pill, 'box-shadow'), 'y una sombra que la despega del fondo, como las tarjetas');
+});
+
 test('el estado de scroll compacta la barrita sin perder sus controles', () => {
   const base = reglaEn(bloque, '.transport-pill', 'el bloque T-56');
-  const pill = reglaEn(bloque, '.transport-row.is-floating .transport-pill', 'el bloque T-56');
+  const pill = reglaEn(bloque, '.transport-row.is-floating:not(.is-transport-minimized) .transport-pill',
+    'el bloque T-56');
   const [baseAlto, baseAncho] = valor(base, 'gap').split(/\s+/).map(parseFloat);
   const [pillAlto, pillAncho] = valor(pill, 'gap').split(/\s+/).map(parseFloat);
   assert.ok(pillAncho < baseAncho && pillAlto <= baseAlto,
@@ -174,8 +185,14 @@ test('la animación es sutil y se apaga con movimiento reducido', () => {
   }
   const reduce = medios.find(bloqueMedio => /prefers-reduced-motion\s*:\s*reduce/.test(bloqueMedio.condicion));
   assert.ok(reduce, 'la ronda declara su bloque de movimiento reducido');
-  assert.match(reduce.cuerpo, /\.transport-row\.is-floating\s+\.transport-pill\s*\{[^}]*animation:\s*none/,
-    'con movimiento reducido la píldora aparece sin animación');
+  // La ronda 2 sumó estados con más especificidad, así que el reset puede ser
+  // una lista: lo que importa es que el estado flotante quede nombrado con
+  // `animation: none` en el mismo bloque.
+  const reset = reglas(reduce.cuerpo).find(regla =>
+    regla.selector.split(',').map(s => s.trim())
+      .includes('.transport-row.is-floating .transport-pill') &&
+    tiene(regla.cuerpo, 'animation', 'none'));
+  assert.ok(reset, 'con movimiento reducido la píldora aparece sin animación');
 });
 
 test('el observador es chico, publica el estado y no toca nada más', () => {
@@ -205,7 +222,8 @@ test('en pantallas angostas la píldora pasa a dos líneas sin dejar la ayuda so
   // A 320–414 px los controles no entran en una línea. El observador marca
   // `is-pill-wrapped` y la píldora pasa a rectángulo redondeado, se acota al
   // ancho de sus dos líneas y le da la segunda al Tempo junto a la ayuda.
-  const pildora = reglaEn(bloque, '.transport-row.is-floating .transport-pill.is-pill-wrapped', 'el bloque T-56');
+  const pildora = reglaEn(bloque,
+    '.transport-row.is-floating.is-transport-minimized .transport-pill.is-pill-wrapped', 'el bloque T-56');
   assert.ok(tiene(pildora, 'border-radius', '20px'),
     'con dos líneas los extremos de media luna dejan de tener sentido');
   assert.match(valor(pildora, 'max-width') || '', /^min\(/,
