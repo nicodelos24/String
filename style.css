@@ -3041,13 +3041,16 @@ html:not([data-theme]) .cards-band .progression-card :is(small, .progression-mod
   .transport-minimize-icon { transition: none; }
 }
 
-/* T-56 r5 · A-55: el documento desplaza desde cualquier zona. La franja
-   conserva su geometría de reposo y se fija al alcanzar arriba. El contenido
-   continúa por debajo; no hay ventana interna ni bloqueo global de la rueda.
+/* T-56 r6 · A-57: tarjetas arriba y transporte debajo, sobre el fondo.
+   La sección principal tiene su superficie visible e interactiva debajo del
+   conjunto, sin invadirlo al desplazar el documento. El reposo no se recorta.
    La clase histórica `ventana` limita este armado al escritorio. */
-html.ventana .cards-band { position: static; }
+html.ventana .cards-band { position: sticky; top: 0; }
 .panel-scroll { display: contents; }
 html.ventana .panel-scroll { display: block; }
+html.ventana .panel-scroll.is-panel-recortado {
+  clip-path: inset(var(--panel-recorte, 0px) -40px -40px);
+}
 
 /* La cápsula clavada (A-46 ·1 ·2 ·4): mismo ancho natural de la fila, sólo el
    cuadro fino radio 12 con fondo, sin sombra, menos alta que el compacto
@@ -3122,7 +3125,7 @@ html.ventana .topbar { flex: none; }
    la base. En respaldo se retira del DOM. */
 html.ventana .panel-strip {
   position: sticky;
-  top: 0;
+  top: var(--franja-tope, 0px);
   z-index: 7;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;

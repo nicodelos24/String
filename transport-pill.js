@@ -1,5 +1,6 @@
-// T-56 r5 · A-55: el documento desplaza; la franja del transporte se fija
-// al llegar arriba y vuelve al flujo al subir. El armado de escritorio conserva
+// T-56 r6 · A-57: las tarjetas se fijan arriba y el transporte debajo;
+// el panel sólo se pinta e interactúa bajo ese conjunto, con 8 px de margen.
+// El documento desplaza y vuelve al flujo al subir. El escritorio conserva
 // la geometría y la cápsula de A-46. En móvil sigue el respaldo de la ronda 2.
 // No toca motor, audio, guardado ni atajos.
 (() => {
@@ -25,6 +26,7 @@
     caja.insertBefore(piezas.captura, ancla);
   }
   const HUECO = 6;
+  const MARGEN_PANEL = 8;
   const TOPE_VISTA = 0.5;
   let pendiente = false;
   let minimizada = false;
@@ -115,8 +117,11 @@
 
   function aplicarVentana() {
     pendiente = false;
+    const altoBanda = banda ? banda.getBoundingClientRect().height : 0;
+    const tope = altoBanda + MARGEN_PANEL;
+    if (piezas.strip) piezas.strip.style.setProperty('--franja-tope', tope + 'px');
     const clavada = !!piezas.strip && window.scrollY > 0 &&
-      piezas.strip.getBoundingClientRect().top <= TOPE_VISTA;
+      piezas.strip.getBoundingClientRect().top <= tope + TOPE_VISTA;
     if (piezas.strip && !clavada) {
       piezas.strip.style.setProperty('--franja-alto', piezas.strip.offsetHeight + 'px');
     }
@@ -141,6 +146,15 @@
       pildora.classList.toggle('is-pill-wrapped', envuelta);
     }
     if (clavada) publicarPildora();
+    if (piezas.panel && piezas.strip) {
+      // Recortar también el hit test: un z-index sólo escondería el contenido
+      // bajo el fondo de la banda, pero seguiría pasando por sus márgenes.
+      const desplazando = window.scrollY > 0;
+      const recorte = desplazando ? Math.max(0, piezas.strip.getBoundingClientRect().bottom +
+        MARGEN_PANEL - piezas.panel.getBoundingClientRect().top) : 0;
+      piezas.panel.style.setProperty('--panel-recorte', recorte + 'px');
+      piezas.panel.classList.toggle('is-panel-recortado', desplazando);
+    }
   }
 
   // ---- Respaldo sin ventana (régimen de la ronda 2, intacto) ------------------
@@ -256,6 +270,13 @@
   window.addEventListener('scroll', pedir, {passive: true});
   if (ventana) ventana.addEventListener('scroll', pedir, {passive: true});
   window.addEventListener('resize', () => { regimenes(); aplicar(); });
+  // Más filas, una captura desplegada o las fuentes pueden cambiar la altura
+  // del conjunto sin resize del viewport ni un gesto de rueda adicional.
+  if (window.ResizeObserver) {
+    const medidas = new window.ResizeObserver(pedir);
+    if (banda) medidas.observe(banda);
+    medidas.observe(caja);
+  }
   if (window.matchMedia) {
     try { window.matchMedia('(min-width: 801px)').addEventListener('change', () => { regimenes(); aplicar(); }); } catch (e) {}
   }
