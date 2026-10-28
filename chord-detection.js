@@ -38,6 +38,8 @@ const CHORD_MIN_DB = -80;
 // Resta de armónicos: compartes con cuidado para no borrar cuerdas reales.
 const HARMONIC_SHARE = 0.6;
 const SUBTRACTION_CAP = 0.5;
+// En una tríada medida, las clases presentes solo como armónicos se atenúan más.
+const HARMONIC_ONLY_CAP = 0.75;
 // Compensa el predominio de las cuerdas graves al acumular la croma.
 const CHROMA_TILT = 0.6;
 const CHROMA_TILT_REF = 220;
@@ -82,6 +84,18 @@ function analyzeSpectrum(spectrum, sampleRate, fftSize) {
   if (peaks.length < 2) return null;
   const loudest = Math.max(...peaks.map(peak => peak.amplitude));
   const audible = peaks.filter(peak => peak.amplitude >= loudest * 0.035);
+  const harmonicSources = audible.map((peak, i) => audible.slice(0, i).filter(lower => {
+    const harmonic = Math.round(peak.freq / lower.freq);
+    return harmonic >= 2 && harmonic <= 12 &&
+      Math.abs(1200 * Math.log2(peak.freq / (lower.freq * harmonic))) < 40;
+  }));
+  const hasHarmonic = (peak, harmonic) => audible.some(upper =>
+    Math.abs(1200 * Math.log2(upper.freq / (peak.freq * harmonic))) < 40);
+  // Una nota real puede coincidir con un parcial de otra cuerda. Su propio
+  // tercer armónico la respalda incluso si su fundamental es débil.
+  const fundamentalClasses = new Set(audible.filter((peak, i) =>
+    !harmonicSources[i].length || hasHarmonic(peak, 3)).map(peak => peak.midi % 12));
+  const octaveSources = new Set(audible.filter(peak => hasHarmonic(peak, 2)));
   const chroma = new Float64Array(12);
   for (let i = 0; i < audible.length; i++) {
     const peak = audible[i];
@@ -89,12 +103,14 @@ function analyzeSpectrum(spectrum, sampleRate, fftSize) {
     // Restar la contribución probable de los armónicos de notas inferiores,
     // sin borrar del todo una fundamental real que coincide con un armónico.
     // Una cuerda sola también produce quinta y tercera en sus armónicos.
-    for (let j = 0; j < i; j++) {
-      const lower = audible[j];
+    // Solo reforzar la resta de clases sin respaldo propio dentro de una
+    // tríada medida. La fuente debe tener también su octava: un tono puro no
+    // justifica borrar una séptima/novena real que coincida con su parcial.
+    const harmonicOnly = fundamentalClasses.size >= 3 && !fundamentalClasses.has(peak.midi % 12);
+    for (const lower of harmonicSources[i]) {
       const harmonic = Math.round(peak.freq / lower.freq);
-      if (harmonic < 2 || harmonic > 12) continue;
-      const cents = Math.abs(1200 * Math.log2(peak.freq / (lower.freq * harmonic)));
-      if (cents < 40) residual -= Math.min(lower.amplitude * HARMONIC_SHARE / Math.sqrt(harmonic), residual * SUBTRACTION_CAP);
+      const cap = harmonicOnly && octaveSources.has(lower) ? HARMONIC_ONLY_CAP : SUBTRACTION_CAP;
+      residual -= Math.min(lower.amplitude * HARMONIC_SHARE / Math.sqrt(harmonic), residual * cap);
     }
     // La croma además compensa el rango dinámico: los graves dominan el espectro
     // y el tilt iguala cuerdas bajas y altas al acumular la energía.
