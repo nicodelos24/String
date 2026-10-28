@@ -32,24 +32,35 @@ const { createServer } = require('../../server.cjs');
       });
       assert.ok(expanded.inside && (width < 1366 || expanded.height < 59) && expanded.top >= 0 && expanded.bottom <= height, `cápsula expandida: ${JSON.stringify(expanded)}`);
       }
-      await page.evaluate(() => { document.querySelector('#panel-scroll').scrollTop = 550; });
-      await page.waitForTimeout(100);
       const button = page.locator('#transport-minimize');
-      const rect = await button.boundingBox();
-      await page.mouse.click(rect.x + rect.width / 2, rect.y + rect.height / 2);
-      await page.waitForTimeout(300);
-      const hit = await page.evaluate(() => {
-        const el = document.querySelector('#tempo-tap-mic');
-        const r = el.getBoundingClientRect();
-        const target = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
-        return { pressed: document.querySelector('#transport-minimize').getAttribute('aria-pressed'), accessible: target === el || el.contains(target), target: target && target.id };
-      });
-      assert.ok(hit.pressed === 'true' && hit.accessible, `captura minimizada: ${JSON.stringify(hit)}`);
-      await page.mouse.click(rect.x + rect.width / 2, rect.y + rect.height / 2);
-      await page.waitForTimeout(100);
-      assert.equal(await button.getAttribute('aria-pressed'), 'false');
-      const restored = await page.locator('.transport-pill').boundingBox();
-      assert.ok(restored.y >= 0 && restored.y + restored.height <= height);
+      for (const position of [150, 300, 450, 550, 600]) {
+        await page.evaluate(position => { document.querySelector('#panel-scroll').scrollTop = position; }, position);
+        await page.waitForTimeout(100);
+        let rect = await button.boundingBox();
+        await page.mouse.click(rect.x + rect.width / 2, rect.y + rect.height / 2);
+        await page.waitForTimeout(100);
+        assert.equal(await button.getAttribute('aria-pressed'), 'true');
+        const hits = await page.evaluate(() => [...document.querySelector('.capture-row').querySelectorAll('button,input,summary')].map(el => {
+          const surface = el.matches('input') && el.closest('label') || el;
+          const r = surface.getBoundingClientRect();
+          const hit = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+          return { control: el.id || el.getAttribute('aria-label'), reachable: hit === surface || surface.contains(hit) };
+        }));
+        assert.ok(hits.every(hit => hit.reachable), `captura ${width} ${position}: ${JSON.stringify(hits)}`);
+        for (const selector of ['#enter-on-note', '#follow-midi']) {
+          const before = await page.locator(selector).isChecked();
+          const label = page.locator(selector).locator('..');
+          const bounds = await label.boundingBox();
+          await page.mouse.click(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
+          assert.notEqual(await page.locator(selector).isChecked(), before, `clic ${selector} ${width} ${position}`);
+        }
+        rect = await button.boundingBox();
+        await page.mouse.click(rect.x + rect.width / 2, rect.y + rect.height / 2);
+        await page.waitForTimeout(100);
+        assert.equal(await button.getAttribute('aria-pressed'), 'false');
+        const restored = await page.locator('.transport-pill').boundingBox();
+        assert.ok(restored.y >= 0 && restored.y + restored.height <= height);
+      }
       await page.close();
     }
   } finally { await browser.close(); server.close(); }
