@@ -24,18 +24,44 @@ const CONTEXT = { strings: GUITAR, low: 40, high: 86 };
 
 // Dos fundamentales limpias, sin exigir que haya un tercer pico armónico.
 // El lóbulo parabólico en dB permite interpolar la frecuencia entre bins.
-function isolatedSpectrum(midis, sampleRate, size = 16384) {
+function isolatedSpectrum(midis, sampleRate, size = 16384, { harmonics = 1, detune = 0 } = {}) {
   const spectrum = new Float32Array(size / 2).fill(-120);
   for (const midi of midis) {
-    const bin = 440 * 2 ** ((midi - 69) / 12) * size / sampleRate;
-    for (let i = Math.floor(bin) - 2; i <= Math.ceil(bin) + 2; i++) {
-      spectrum[i] = Math.max(spectrum[i], -25 - 12 * (i - bin) ** 2);
+    for (let h = 1; h <= harmonics; h++) {
+      const bin = 440 * 2 ** ((midi - 69 + detune / 100) / 12) * h * size / sampleRate;
+      if (bin >= spectrum.length - 3) continue;
+      for (let i = Math.floor(bin) - 2; i <= Math.ceil(bin) + 2; i++) {
+        // Perfil 1/h^0,9: más armónicos que la señal FFT de referencia.
+        spectrum[i] = Math.max(spectrum[i], -25 - 18 * Math.log10(h) - 12 * (i - bin) ** 2);
+      }
     }
   }
   return spectrum;
 }
 
 for (const size of [8192, 16384]) for (const sampleRate of [44100, 48000]) {
+  test(`una tríada con armónicos ricos conserva tres notas a ${sampleRate} Hz, FFT ${size}`, () => {
+    const spectrum = isolatedSpectrum([48, 52, 55], sampleRate, size, { harmonics: 5 });
+    const detected = detectSoundingNotes(spectrum, sampleRate);
+    assert.deepEqual(detected?.pitches, [0, 4, 7], 'los parciales no agregan Re ni Si a la tríada');
+    const chord = detectChord(spectrum, sampleRate);
+    assert.equal(chord?.root, 0);
+    assert.equal(chord?.type, 'maj', 'no convierte Do mayor en maj9');
+    assert.equal(chord.bass, 48);
+
+    const { callbacks, live } = setupFretboard();
+    callbacks.onState('ready');
+    let state;
+    for (const now of [0, 350]) {
+      const result = followStableNotes(detected, state, now);
+      state = result.state;
+      if (result.chord !== undefined) callbacks.onNotes(result.chord);
+    }
+    assert.deepEqual(live().map(position => position.midi), [48, 52, 55]);
+    callbacks.onChord(chord);
+    assert.deepEqual(live().map(position => position.midi), [48, 52, 55], 'el nombre tampoco inventa posiciones');
+  });
+
   test(`dos fundamentales sin armónicos llegan al mástil a ${sampleRate} Hz, FFT ${size}`, () => {
     for (const midis of [[48, 52], [48, 55], [52, 55]]) {
       const spectrum = isolatedSpectrum(midis, sampleRate, size);
@@ -64,6 +90,24 @@ for (const size of [8192, 16384]) for (const sampleRate of [44100, 48000]) {
     }
   });
 
+  test(`la resta conserva extensiones y notas coincidentes con armónicos a ${sampleRate} Hz, FFT ${size}`, () => {
+    for (const [midis, type] of [
+      [[48, 52, 55, 62], 'add9'],
+      [[48, 52, 55, 59], 'maj7'],
+      [[48, 52, 55, 59, 62], 'maj9'],
+      [[48, 67], null], // Sol4 coincide con el tercer armónico de Do3.
+      [[48, 76], null], // Mi5, con el quinto.
+    ]) {
+      // Una extensión real no se confunde con un parcial de otra fundamental.
+      const spectrum = isolatedSpectrum(midis, sampleRate, size);
+      const expected = midis.map(midi => midi % 12).sort((a, b) => a - b);
+      assert.deepEqual(detectSoundingNotes(spectrum, sampleRate)?.pitches, expected, String(midis));
+      const chord = detectChord(spectrum, sampleRate);
+      assert.equal(chord?.type ?? null, type, String(midis));
+      if (chord) assert.equal(chord.root, 0);
+    }
+  });
+
   test(`silencio, una fundamental y una octava no inventan simultaneidad a ${sampleRate} Hz, FFT ${size}`, () => {
     for (const midis of [[], [48], [52], [48, 60]]) {
       const spectrum = isolatedSpectrum(midis, sampleRate, size);
@@ -72,6 +116,26 @@ for (const size of [8192, 16384]) for (const sampleRate of [44100, 48000]) {
     }
   });
 }
+
+test('la corrección de armónicos conserva las notas débiles que la base ya dibuja', () => {
+  for (const [midis, amplitudes, harmonics, type] of [
+    [[48, 52, 55], [0.03, 0.1, 0.1], 5, null],
+    [[48, 52, 55, 59], [0.03, 0.1, 0.1, 0.1], 6, null],
+    [[48, 52, 55, 62], [0.1, 0.03, 0.1, 0.1], 5, 'add9'],
+    [[48, 52, 55, 59, 62], [0.1, 0.03, 0.1, 0.1, 0.1], 6, 'maj9'],
+    [[48, 67], [0.1, 0.03], 1, null],
+    [[48, 76], [0.1, 0.03], 5, null],
+    [[48, 52, 55, 71], [0.1, 0.1, 0.1, 0.03], 1, 'maj7'],
+    [[48, 52, 55, 71], [0.1, 0.1, 0.1, 0.03], 5, 'maj7'],
+    [[48, 52, 55, 74], [0.1, 0.1, 0.1, 0.03], 1, 'add9'],
+    [[48, 52, 55, 71, 74], [0.1, 0.1, 0.1, 0.1, 0.03], 5, 'maj9'],
+  ]) {
+    const spectrum = audioSpectrum(midis, { amplitudes, harmonics });
+    assert.deepEqual(detectSoundingNotes(spectrum, 48000)?.pitches,
+      midis.map(midi => midi % 12).sort((a, b) => a - b), String(midis));
+    assert.equal(detectChord(spectrum, 48000)?.type ?? null, type, String(midis));
+  }
+});
 
 test('la detección dice qué notas suenan a la vez también con dos notas', () => {
   // La doble nota es la que el autor nombró primero. Nombrar un acorde exige
