@@ -3188,3 +3188,13 @@ html.ventana .topbar { flex: none; }
     position: static;
   }
 }
+
+/* El transporte conserva el espacio de su marco también en anchos intermedios. */
+html.ventana main.shell > .progression-view-controls {
+  box-sizing: border-box;
+  width: calc(100% - 56px);
+  margin: 3px 0 0 21px;
+}
+html.ventana .transport-row.is-floating.is-transport-minimized .transport-pill {
+  position: static;
+}

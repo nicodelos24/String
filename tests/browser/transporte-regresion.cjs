@@ -7,8 +7,8 @@ const { createServer } = require('../../server.cjs');
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const browser = await chromium.launch({ headless: true });
   try {
-    for (const height of [650, 768]) for (const theme of ['light', 'dark']) {
-      const page = await browser.newPage({ viewport: { width: 1366, height }, reducedMotion: 'reduce' });
+    for (const width of [801, 1024, 1100, 1101, 1280, 1366]) for (const height of [768]) for (const theme of ['light', 'dark']) {
+      const page = await browser.newPage({ viewport: { width, height }, reducedMotion: 'reduce' });
       await page.goto(`http://127.0.0.1:${server.address().port}`);
       await page.evaluate(theme => { document.documentElement.dataset.theme = theme; }, theme);
       await page.waitForTimeout(300);
@@ -17,7 +17,10 @@ const { createServer } = require('../../server.cjs');
         return { intro: rect('.intro'), box: rect('.progression-view-controls') };
       });
       assert.ok(Math.abs(rest.intro.y - 78) < 1, `intro en reposo: ${rest.intro.y}`);
-      assert.ok(Math.abs(rest.box.width - 1241.69) < 2 && Math.abs(rest.box.height - 59) < 1, `caja en reposo: ${JSON.stringify(rest.box)}`);
+      if (width === 1024 || width === 1366) {
+        const expected = width === 1024 ? { x: 46.59, y: 491.06, width: 916.8, height: 112 } : { x: 55.16, y: 505.03, width: 1241.69, height: 59 };
+        for (const key of Object.keys(expected)) assert.ok(Math.abs(rest.box[key] - expected[key]) < 2, `reposo ${width} ${key}: ${JSON.stringify(rest.box)}`);
+      }
       for (const position of [150, 300, 450, 550, 600]) {
       await page.evaluate(position => { document.querySelector('#panel-scroll').scrollTop = position; }, position);
       await page.waitForTimeout(100);
@@ -27,7 +30,7 @@ const { createServer } = require('../../server.cjs');
         const rect = pill.getBoundingClientRect();
         return { height: rect.height, top: rect.top, bottom: rect.bottom, inside: pill.contains(capture) };
       });
-      assert.ok(expanded.inside && expanded.height < 59 && expanded.top >= 0 && expanded.bottom <= height, `cápsula expandida: ${JSON.stringify(expanded)}`);
+      assert.ok(expanded.inside && (width < 1366 || expanded.height < 59) && expanded.top >= 0 && expanded.bottom <= height, `cápsula expandida: ${JSON.stringify(expanded)}`);
       }
       await page.evaluate(() => { document.querySelector('#panel-scroll').scrollTop = 550; });
       await page.waitForTimeout(100);
