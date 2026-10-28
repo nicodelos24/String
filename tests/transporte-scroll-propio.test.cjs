@@ -89,11 +89,18 @@ test('T-56 r4 · clase de arquitectura: el body deja de desplazarse y la ventana
 
 test('T-56 r4 · la banda y la fila del transporte quedan clavadas al marco, fuera del scrolleo', () => {
   // La fila del transporte se clava con sticky debajo de la banda (A-43):
-  // la posición la publica el observador como --banda-franja.
+  // sticky sobre la CAJA (.progression-view-controls) — «Detenido» es hermano
+  // de la caja en .progression-stack y NO viaja con lo fijo (A-46 ·3).
   assert.ok(
-    Hay('.progression-workspace', 'position: sticky'),
+    Hay('.progression-stack > .progression-view-controls', 'position: sticky'),
     'la fila del transporte se clava con sticky dentro de la ventana');
+  assert.ok(!Hay('.workspace > .progression-workspace', 'position: sticky'),
+    'el sticky ya no se aplica al carril entero');
   assert.ok(js.includes('--banda-franja'), 'el observador publica la franja de banda que usa el sticky');
+  // A-46 ·3: el «Detenido» queda fuera de la caja sticky (estructura del HTML).
+  const caja = bloqueDiv(html, '<div class="progression-view-controls">');
+  assert.ok(!caja.includes('progression-playback'),
+    '«Detenido» vive fuera de la caja sticky y no viaja con lo fijo');
 });
 
 test('T-56 r4 · A-46 cápsula-only: fondo y cuadro en la cápsula, transparente por fuera, sin sombra', () => {
@@ -199,7 +206,7 @@ test('T-56 r4 · comportamiento de la fila en el sandbox: clavada, minimizada y 
     querySelector: (sel) => ({
       '.transport-row': fila, '.cards-band': banda }[sel] || null),
     getElementById: (id) => (id === 'scroll-window' ? ventana : null),
-    documentElement: {style: {setProperty() {}}},
+    documentElement: {style: {setProperty() {}}, classList: clase([])},
   };
 
   const marco = {
@@ -207,6 +214,7 @@ test('T-56 r4 · comportamiento de la fila en el sandbox: clavada, minimizada y 
     window: {
       addEventListener() {}, MutationObserver: undefined, requestAnimationFrame(f) { f(); },
       getComputedStyle: () => estilos, scrollY: 0, innerWidth: 1366,
+      matchMedia: (q) => ({matches: /\.matches/i.test(q) ? true : true, addEventListener() {}}),
     },
     requestAnimationFrame(f) { f(); },
     getComputedStyle: () => estilos,
@@ -218,6 +226,10 @@ test('T-56 r4 · comportamiento de la fila en el sandbox: clavada, minimizada y 
   vm.runInNewContext(js, globalStub);
 
   assert.ok(escuchas.scroll.length, 'el observador escucha el scroll de la ventana del panel');
+  // Guarda de ACTIVACIÓN (la ausencia que midió QA): el observador enciende la
+  // clase `ventana` en el documento — sin ella el régimen no funciona.
+  assert.ok(documento.documentElement.classList.contains('ventana'),
+    'la clase de arquitectura `ventana` se activa en el documento al arrancar');
 
   // En reposo (scrollTop 0) la fila natural está (260 - 0) por debajo de la
   // franja de banda (160): no se clava.

@@ -184,8 +184,29 @@
     if (pildora) pildora.classList.toggle('is-pill-wrapped', flotar && lineas(pildora) > 1);
   }
 
+  // La clase `ventana` ENCIENDE la arquitectura de A-43: sin ella, las reglas
+  // de `style.css` quedan dormidas y el documento sigue desplazándose (el
+  // defecto que QA midió en la entrega anterior). Se activa sólo en escritorio:
+  // en ≤800 px rige el respaldo de la ronda 2, ya verificado, para que el
+  // régimen nuevo no invente una ventana.Vertical en el móvil.
+  function claseVentana(activa) {
+    const activada = raiz().classList.toggle('ventana', activa);
+    if (!activada && ventana && typeof window.scrollTo === 'function') {
+      window.scrollTo(0, ventana.scrollTop);
+    }
+    return activada;
+  }
+
+  function enEscritorio() {
+    return window.matchMedia && window.matchMedia('(min-width: 801px)').matches;
+  }
+
+  function regimenes() {
+    if (ventana) claseVentana(enEscritorio());
+  }
+
   function aplicar() {
-    if (ventana) aplicarVentana();
+    if (ventana && raiz().classList.contains('ventana')) aplicarVentana();
     else aplicarLegado();
   }
 
@@ -205,10 +226,14 @@
   }
 
   // En el régimen ventana el scroll del panel es el que desplaza; sin ventana,
-  // el del documento (respaldo). El cambio de tamaño re-mide el tope natural.
+  // el del documento (respaldo). El cambio de tamaño re-mide el tope natural y
+  // reevalúa el régimen (escritorio ⇄ móvil).
+  window.addEventListener('scroll', pedir, {passive: true});
   if (ventana) ventana.addEventListener('scroll', pedir, {passive: true});
-  else window.addEventListener('scroll', pedir, {passive: true});
-  window.addEventListener('resize', () => { topeNatural = 0; aplicar(); });
+  window.addEventListener('resize', () => { topeNatural = 0; regimenes(); aplicar(); });
+  if (window.matchMedia) {
+    try { window.matchMedia('(min-width: 801px)').addEventListener('change', () => { regimenes(); aplicar(); }); } catch (e) {}
+  }
   // En móvil la caja vive en la pestaña «Progresión»: al cambiarla hay que
   // volver a medir (oculta mide 0 y no se clava).
   if (window.MutationObserver) {
@@ -216,5 +241,6 @@
       .observe(document.body, {attributes: true, attributeFilter: ['data-mobile-tab']});
   }
 
+  regimenes();
   aplicar();
 })();

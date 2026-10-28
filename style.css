@@ -3077,19 +3077,23 @@ html.ventana .scroll-window {
 }
 
 /* La fila del transporte vive fuera del scrolleo: sticky al marco, justo
-   debajo de la banda (el hueco de 6 px es el HUECO del observador). El carril
-   primero de la grilla conserva su lugar en el flujo: no hay reserva que
-   calcular, el contenido navega por debajo y nunca la cruza. */
-html.ventana .workspace > .progression-workspace {
+   debajo de la banda (el hueco de 6 px es el HUECO del observador). El sticky
+   se aplica a la CAJA (.progression-view-controls), no a la caja-padre del
+   carril: «Detenido» (.progression-playback, hermano de la caja en el stack)
+   NO viaja con lo fijo (A-46 ·3): queda en la página y se desplaza con ella. */
+html.ventana .progression-stack > .progression-view-controls {
   position: sticky;
   top: calc(var(--banda-franja, 176px) + 6px);
   z-index: 5;
 }
-/* Clavado, el carril muestra el papel de la página (A-46: afuera de la
-   cápsula, transparente — se ve el fondo, como las tarjetas). En reposo
-   conserva el papel de la caja: ni un pixel de cambio (A-30). */
-html.ventana .workspace > .progression-workspace.is-carril-clavado {
-  background: transparent;
+/* Clavado, la caja muestra el PAPEL de la página (A-46: afuera de la cápsula
+   se ve el fondo de la página, como las tarjetas): nada del panel se ve
+   atravesando la franja clavada — el contenido queda tapado por el papel, que
+   se ve exactamente igual que la página. En reposo conserva el papel de la
+   caja: ni un pixel de cambio (A-30). */
+html.ventana .progression-workspace.is-carril-clavado
+  .progression-stack > .progression-view-controls {
+  background: var(--paper);
 }
 
 /* La cápsula clavada (A-46 ·1 ·2 ·4): mismo ancho natural de la fila, sólo el
@@ -3106,6 +3110,11 @@ html.ventana .transport-row.is-floating:not(.is-transport-minimized) .transport-
   box-shadow: none;
   gap: 4px 12px;
 }
+
+/* A-46 ·5 (margen estático de secciones, `18-16-55.png`): un pequeño margen
+   entre la banda de tarjetas y la sección donde empieza el resto de la
+   página. Es estático (spacing del layout del autor), pedido en esta ronda. */
+html.ventana .cards-band { margin-bottom: 8px; }
 
 /* A-46 ·3: la flechita dentro de la cápsula, a la izquierda (Imagen 3,
    `18-14-55.png`). En reposo sigue sin existir; el icono alterna con la clase
