@@ -53,6 +53,14 @@ const { createServer } = require('../../server.cjs');
           return { control: el.id || el.getAttribute('aria-label'), reachable: hit === surface || surface.contains(hit) };
         }));
         assert.ok(hits.every(hit => hit.reachable), `captura ${width} ${position}: ${JSON.stringify(hits)}`);
+        for (const selector of ['#tempo-tap-mic', '.improvisation-control summary', '.mic-follow-control summary']) {
+          const control = page.locator(selector);
+          await control.evaluate(el => { el.dataset.pruebaClic = '0'; el.addEventListener('click', () => { el.dataset.pruebaClic = '1'; }, { once: true }); });
+          const bounds = await control.boundingBox();
+          await page.mouse.click(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
+          assert.equal(await control.getAttribute('data-prueba-clic'), '1', `clic ${selector} ${width} ${position}`);
+          if (selector.endsWith('summary')) await control.evaluate(el => { el.parentElement.open = false; });
+        }
         for (const selector of ['#enter-on-note', '#follow-midi']) {
           const before = await page.locator(selector).isChecked();
           const label = page.locator(selector).locator('..');
