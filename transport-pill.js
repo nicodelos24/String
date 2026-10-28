@@ -145,13 +145,13 @@
   }
 
   // La píldora minimizada (ronda 1) sí vuela: es chiquita y por fuera del
-  // recorrido; sus coordenadas fijas van justo debajo de la banda del marco
-  // (el tope de la ventana es el pie de la barra superior).
+  // recorrido; en el régimen ventana su hueco es el de la propia caja en el
+  // marco (debajo de la banda, junto a donde queda la cápsula clavada).
   function publicarPildora() {
-    const ventanaArriba = ventana.getBoundingClientRect().top;
-    fila.style.setProperty('--transporte-top', (ventanaArriba + bandaAltoPx + HUECO) + 'px');
+    const cajaRect = caja.getBoundingClientRect();
+    fila.style.setProperty('--transporte-top', Math.round(cajaRect.top + 8) + 'px');
     fila.style.setProperty('--transporte-left',
-      Math.max(8, caja.getBoundingClientRect().left + 10) + 'px');
+      Math.round(Math.max(8, cajaRect.left + 10)) + 'px');
   }
 
   function aplicarVentana() {

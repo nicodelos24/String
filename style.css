@@ -3091,6 +3091,7 @@ html.ventana main.shell {
 }
 .panel-scroll { display: contents; }
 html.ventana .panel-scroll {
+  display: block;
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
