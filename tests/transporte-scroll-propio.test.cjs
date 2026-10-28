@@ -1,27 +1,6 @@
-// T-56 ronda 4 · A-43 (la letra (B) de D-10: scroll propio del panel) + A-46
-// (la cápsula de la barra fija) · 27-10, tercera corrección (2ª devolución de
-// QA sobre `b2b8957`).
-//
-// La guarda nace ROJA contra el tip devuelto y queda verde con la corrección
-// (PACTO §4). Fija la CLASE de arquitectura que midió QA como falta:
-//   · la banda de tarjetas y la caja del transporte viven FUERA del recorri-
-//     do, clavadas al marco: el observador saca la caja de .progression-stack
-//     (que no ofrecía recorrido: el sticky moría a 59 px y la barra desapare-
-//     cía a 550), la deja entre la banda y un envoltorio nuevo `.panel-scroll`
-//     que se lleva todo lo que sigue; el scroller empieza DEBAJO de la caja,
-//     así nada cruza jamás por detrás ni la barra sale de pantalla;
-//   · la caja exterior queda TRANSPARENTE sin fondo tapón (A-46) — el papel
-//     de la página llega solo, porque nada pasa detrás;
-//   · A-46 ·2: clavada y expandida, la fila de captura (Improvisar, Tempo con
-//     notas, Entrar al tocar, Seguir acorde MIDI) es la SEGUNDA LÍNEA de la
-//     cápsula (el observador reúne las dos filas al clavarse y las separa al
-//     volver), con la flechita adentro a la izquierda;
-//   · los dos estados (expandida y minimizada) permanecen en el marco todo el
-//     recorrido; en reposo no cambia un pixel (la caja reasume su recuadro);
-//   · movimiento reducido: `animation: none` en los estados volantes.
-// La geometría real (recorrido completo a varias posiciones, recorte,
-// minimizar/desplegar a 550) se mide en Chromium: barrido multi-posición de
-// QA (PACTO §5) — un sandbox con medidas inventadas no la demuestra.
+// T-56 r5 · A-55 reemplaza el scroll interno de A-43 por el documento.
+// Conserva las guardas de cápsula A-46 y respaldo móvil. La geometría real
+// y la rueda se comprueban en tests/browser/transporte-regresion.cjs.
 
 const {test} = require('node:test');
 const assert = require('node:assert/strict');
@@ -88,15 +67,16 @@ test('T-56 r4 · la ventana del panel existe y envuelve main + el pie (el topbar
   assert.ok(antes.includes('<header class="topbar">'), 'la barra superior no entra en el scrolleo');
 });
 
-test('T-56 r4 · clase de arquitectura: el body queda quieto y el PANEL es quien scrollea', () => {
-  assert.ok(Hay('html.ventana body', 'overflow: hidden'), 'el documento deja de desplazarse con la ventana activa');
-  assert.ok(Hay('.panel-scroll', 'overflow-y: auto'), 'el recorrido propio vive en .panel-scroll, debajo de la barra');
-  // la ventana del marco ya no es el scroller (deja de tapar con su overflow ok)
-  assert.ok(!Hay('html.ventana .scroll-window', 'overflow-y: auto'),
-    'la ventana del marco no desplaza: contiene al marco quieto');
+test('T-56 r5 · el documento desplaza y la franja se fija al llegar arriba', () => {
+  assert.ok(!Hay('html.ventana body', 'overflow: hidden'), 'sin bloqueo global del documento');
+  assert.ok(!Hay('html.ventana .scroll-window', 'overflow: hidden'), 'sin recorte del documento');
+  assert.ok(!Hay('.panel-scroll', 'overflow-y: auto'), 'sin scroller interno');
+  assert.ok(Hay('html.ventana .panel-strip', 'position: sticky'), 'franja sticky con recorrido en main');
+  assert.ok(Hay('html.ventana .panel-strip', 'top: 0'), 'se fija arriba');
+  assert.ok(Hay('html.ventana .cards-band', 'position: static'), 'las tarjetas no interceptan la franja');
 });
 
-test('T-56 r4 · la banda y la caja del transporte viven FUERA del recorrido, clavadas al marco (A-43)', () => {
+test('T-56 r5 · la caja vive en una franja con recorrido y conserva su hogar móvil', () => {
   // El armado en vivo del observador (defecto medido por QA: el sticky moría
   // a los 59 px de .progression-stack y la barra desaparecía a 550).
   assert.match(js, /\.cards-band/, 'el observador toma la banda para clavar la caja al marco');
@@ -195,7 +175,7 @@ test('T-56 r4 · el reparto móvil de la ronda 2 no se pierde: sin ventana activ
     'la reserva del hueco de reposo queda publicada');
 });
 
-test('T-56 r4 · comportamiento en el sandbox: armado, clavado con recorrido, captura adentro y estados', () => {
+test('T-56 r5 · el recorrido del documento fija y suelta la barra, conservando captura y estados', () => {
   // ---- Stub mínimo de nodos: reparenteo real en cadenas de children.
   function nodo(cls) {
     const n = {
@@ -289,11 +269,13 @@ test('T-56 r4 · comportamiento en el sandbox: armado, clavado con recorrido, ca
     createElement: () => nodo(''),
     documentElement: {style: {setProperty() {}}, classList: clase([])},
   };
+  const eventos = {};
   const jsWindow = {
-    addEventListener() {}, MutationObserver: undefined,
+    addEventListener(ev, fn) { (eventos[ev] ||= []).push(fn); }, MutationObserver: undefined,
     requestAnimationFrame(f) { f(); },
     getComputedStyle: () => ({borderLeftWidth: '0px', position: 'sticky'}),
-    scrollY: 0, innerWidth: 1366,
+    scrollY: 0, innerWidth: 1366, innerHeight: 768,
+    scrollBy(x, y) { this.scrollY += y; eventos.scroll.forEach(fn => fn()); },
     matchMedia: () => ({matches: true, addEventListener() {}}),
   };
 
@@ -321,17 +303,33 @@ test('T-56 r4 · comportamiento en el sandbox: armado, clavado con recorrido, ca
   assert.ok(caja.children.includes(filaTransporte) && captura.parentNode === caja,
     'en reposo las dos filas viven en su caja como siempre');
 
-  // El observador escucha el scroll del PANEL (recorrido propio).
-  assert.ok((panel.listeners.scroll || []).length > 0,
-    'el observador escucha el recorrido del panel');
-  function escucharPanel() { (panel.listeners.scroll || []).forEach(fn => fn()); }
+  stripArmado.getBoundingClientRect = () => rect(Math.max(0, 120 - jsWindow.scrollY), 0, 40, 40);
+  assert.ok(eventos.scroll.length > 0, 'el observador escucha el documento');
+  function desplazar(y) { jsWindow.scrollY = y; eventos.scroll.forEach(fn => fn()); }
+  assert.ok(!fila.classList.contains('is-floating'), 'reposo sin clavado');
+  const rueda = (opciones = {}) => {
+    const evento = { deltaY: 40, deltaMode: 0, preventDefault() { this.defaultPrevented = true; }, ...opciones };
+    banda.listeners.wheel.forEach(fn => fn(evento));
+    return evento;
+  };
+  assert.ok(rueda().defaultPrevented, 'la rueda vertical de tarjetas se dirige al documento');
+  assert.equal(jsWindow.scrollY, 40);
+  for (const opciones of [{ ctrlKey: true }, { shiftKey: true }, { deltaY: 0 }, { defaultPrevented: true }]) {
+    rueda(opciones);
+    assert.equal(jsWindow.scrollY, 40, 'zoom, Shift y eventos ya atendidos conservan su destino');
+  }
+  rueda({ deltaY: 2, deltaMode: 1 });
+  assert.equal(jsWindow.scrollY, 72, 'la rueda expresada en líneas se convierte a píxeles');
+  rueda({ deltaY: 1, deltaMode: 2 });
+  assert.equal(jsWindow.scrollY, 840, 'la rueda expresada en páginas respeta el alto de pantalla');
+  documento.documentElement.classList.remove('ventana');
+  assert.ok(!rueda().defaultPrevented, 'el respaldo móvil conserva su rueda nativa');
+  assert.equal(jsWindow.scrollY, 840);
+  documento.documentElement.classList.add('ventana');
 
-  // Reposo: sin recorrido, la fila no está clavada y la captura sigue en la caja.
-  assert.ok(!fila.classList.contains('is-floating'), 'en reposo la fila muestra su recuadro');
-
-  // Desplazando el panel: la fila se clava y la captura entra a la cápsula.
-  panel.scrollTop = 300;
-  escucharPanel();
+  desplazar(60);
+  assert.ok(!fila.classList.contains('is-floating'), 'no compacta antes de alcanzar arriba');
+  desplazar(300);
   assert.ok(fila.classList.contains('is-floating'), 'al desplazar el panel la fila se clava');
   assert.ok(caja.classList.contains('is-transport-floating'), 'la caja clavada deja el exterior transparente');
   assert.ok(pildora.children.includes(captura) && captura.parentNode === pildora,
@@ -346,7 +344,8 @@ test('T-56 r4 · comportamiento en el sandbox: armado, clavado con recorrido, ca
 
   // Vuelta al tope: reposo otra vez (la caja reasume su recuadro).
   boton.alClick();
-  panel.scrollTop = 0;
-  escucharPanel();
+  desplazar(60);
+  assert.ok(!fila.classList.contains('is-floating'), 'al volver por el umbral se descuelga');
+  desplazar(0);
   assert.ok(!fila.classList.contains('is-floating'), 'al volver al tope la fila deja de estar clavada');
 });

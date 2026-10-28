@@ -1,29 +1,7 @@
-// T-56 · rondas 1-2 (A-30, A-35 + A-37) y ronda 4 (A-43 + A-46, 27-10).
-// La fila del transporte se queda a la vista al desplazar. Este módulo es
-// sólo el observador: mide y publica las medidas que el CSS necesita, y
-// alterna los estados de la fila (clases en la fila, en su caja y en la banda).
-//
-// DOS REGÍMENES:
-//   · **Ventana del panel (A-43):** con la letra (B) de D-10 el panel de trabajo
-//     scrollea dentro de su propia ventana (`#scroll-window`); la banda de
-//     tarjetas y la fila viven por fuera del scrolleo, clavadas al marco. El
-//     documento deja de desplazarse (`html.ventana body { overflow: hidden }`).
-//     La caja ocupa su franja antes de `.panel-scroll`; al desplazar ese panel
-//     cambia a `is-floating` sin salir del flujo ni cubrir contenido.
-//     A-46: la cápsula con fondo único, cuadro fino
-//     radio 12 sin sombra, ancho natural de la fila, menos alta, flechita
-//     adentro a la izquierda; «Detenido» y el resto del reposo no viajan con lo
-//     fijo.
-//   · **Respaldo sin ventana (móvil sin pasante / sin JS):** el régimen de la
-//     ronda 2 queda intacto —la fila vuela en `position: fixed` debajo de la
-//     banda con su reserva de hueco-- para que la página no quede pelada si la
-//     ventana no se activa.
-//
-// Dos estados del scroll, un solo interruptor: clavada (por defecto) y
-// minimizada (la píldora de la ronda 1). La flechita #transport-minimize
-// alterna; el estado es de la sesión, no se guarda. Además marca `is-stuck`
-// en la banda cuando queda pegada, para que conserve su línea superior (A-37).
-// No toca motor, audio, guardado, atajos ni traste.songs.v1: es forma.
+// T-56 r5 · A-55: el documento desplaza; la franja del transporte se fija
+// al llegar arriba y vuelve al flujo al subir. El armado de escritorio conserva
+// la geometría y la cápsula de A-46. En móvil sigue el respaldo de la ronda 2.
+// No toca motor, audio, guardado ni atajos.
 (() => {
   const fila = document.querySelector('.transport-row');
   const caja = fila && fila.closest('.progression-view-controls');
@@ -32,14 +10,8 @@
   const ventana = document.getElementById('scroll-window');
   if (!fila || !caja) return;
 
-  // Piezas del armado A-43 (sólo régimen ventana, transport-pill.js al
-  // arrancar): la caja del transporte entra a una FRANJA nueva `.panel-strip`
-  // junto a la banda, con la geometría de `.progression-workspace`, y
-  // el envoltorio `.panel-scroll` reúne TODO lo que sigue (workspace, secciones
-  // de la caja grande, pie). La caja vuelve a leerse como la primera fila de la
-  // caja grande (intro/banda/franja quietas), el scroller empieza debajo y nada
-  // cruza nunca por detrás; «Detenido» queda pegado a la caja como en la base.
-  // Sin la ventana el armado se desarma pieza por pieza (móvil/respaldo).
+  // La franja y el contenido comparten main: el sticky tiene todo su recorrido.
+  // En móvil se devuelve la caja a su hogar original.
   const piezas = {
     panel: null, strip: null, armado: false,
     cajaHogar: caja.parentNode, cajaDespues: caja.nextSibling,
@@ -56,7 +28,6 @@
   const TOPE_VISTA = 0.5;
   let pendiente = false;
   let minimizada = false;
-  let bandaAltoPx = 0;
 
   function raiz() {
     return document.documentElement;
@@ -66,24 +37,8 @@
     return fila.getClientRects().length > 0;
   }
 
-  // ---- Régimen ventana (A-43) ------------------------------------------------
-  // La banda es estable en el régimen ventana (sticky, el marco no se mueve):
-  // su alto alimenta a --banda-franja, que el CSS usa como `top` del sticky.
-  function medirBanda() {
-    if (!banda || !visible()) return bandaAltoPx;
-    bandaAltoPx = Math.max(0, banda.getBoundingClientRect().height);
-    raiz().style.setProperty('--banda-franja', bandaAltoPx + 'px');
-    return bandaAltoPx;
-  }
-
-  // La caja vive EN el marco (fuera del scrolleo): su posición no cambia con
-  // el panel. La conmutación reposo→clavada la decide el recorrido del panel:
-  // apenas desplaza, la cápsula se muestra (y con 0 vuelve el recuadro de
-  // reposo). No hay tope que calcular: la fila siempre está debajo de la banda.
-
-  // ---- Armado de la ventana del panel (A-43) ---------------------------------
-  // Reestructura en vivo: caja tras la banda; envoltorio .panel-scroll con todo
-  // lo que le sigue de main más el pie. Sin la clase la estructura se desarma.
+  // Armado de escritorio: conservar el ancho y el marco de reposo al separar
+  // la caja de su pila corta (que no daría recorrido suficiente al sticky).
   function armar() {
     if (piezas.armado) return;
     const bandaMarco = banda || document.querySelector('.cards-band');
@@ -101,7 +56,6 @@
     shell.appendChild(panel);
     const pie = document.querySelector('footer');
     if (pie) panel.appendChild(pie);
-    panel.addEventListener('scroll', pedir, {passive: true});
     piezas.panel = panel;
     piezas.strip = strip;
     piezas.armado = true;
@@ -161,10 +115,11 @@
 
   function aplicarVentana() {
     pendiente = false;
-    medirBanda();
-    const panel = piezas.panel;
-    const recorrido = panel ? panel.scrollTop : ventana.scrollTop;
-    const clavada = recorrido > 0;
+    const clavada = !!piezas.strip && window.scrollY > 0 &&
+      piezas.strip.getBoundingClientRect().top <= TOPE_VISTA;
+    if (piezas.strip && !clavada) {
+      piezas.strip.style.setProperty('--franja-alto', piezas.strip.offsetHeight + 'px');
+    }
     fila.classList.toggle('is-floating', clavada);
     caja.classList.toggle('is-transport-floating', clavada);
     if (piezas.strip) piezas.strip.classList.toggle('is-transport-floating', clavada);
@@ -173,7 +128,7 @@
     if (carril && typeof carril.classList.toggle === 'function') {
       carril.classList.toggle('is-carril-clavado', clavada);
     }
-    if (banda) banda.classList.toggle('is-stuck', recorrido > 0);
+    if (banda) banda.classList.remove('is-stuck');
     const pildora = fila.querySelector('.transport-pill');
     if (pildora) {
       // A-46 ·2: clavada y expandida, la fila de captura es la segunda línea
@@ -246,17 +201,11 @@
     if (pildora) pildora.classList.toggle('is-pill-wrapped', flotar && lineas(pildora) > 1);
   }
 
-  // La clase `ventana` ENCIENDE la arquitectura de A-43: sin ella, las reglas
-  // de `style.css` quedan dormidas y el documento sigue desplazándose (el
-  // defecto que QA midió en la entrega anterior). Se activa sólo en escritorio:
-  // en ≤800 px rige el respaldo de la ronda 2, ya verificado, para que el
-  // régimen nuevo no invente una ventana.Vertical en el móvil.
+  // La clase conserva los estilos de escritorio; ya no bloquea el documento.
   function claseVentana(activa) {
     if (!activa) {
-      // al pasar a respaldo, el recorrido propio vuelve al documento
-      const previo = piezas.panel ? (piezas.panel.scrollTop || 0) : 0;
+      // El documento conserva su recorrido al recuperar el respaldo móvil.
       unarm();
-      if (ventana && typeof window.scrollTo === 'function') window.scrollTo(0, previo);
     } else {
       armar();
     }
@@ -291,9 +240,19 @@
     pintarBoton();
   }
 
-  // En el régimen ventana el scroll del panel es el que desplaza; sin ventana,
-  // el del documento (respaldo). El cambio de tamaño re-mide el tope natural y
-  // reevalúa el régimen (escritorio ⇄ móvil).
+  // A-55: también con varias filas de tarjetas la rueda vertical desplaza
+  // el documento. La lista conserva su scrollbar y el teclado; en móvil
+  // mantiene el comportamiento nativo. Ctrl (zoom) y Shift no se interceptan.
+  if (banda) banda.addEventListener('wheel', evento => {
+    if (!raiz().classList.contains('ventana') || !evento.deltaY ||
+        evento.ctrlKey || evento.shiftKey || evento.defaultPrevented) return;
+    evento.preventDefault();
+    const unidad = evento.deltaMode === 1 ? 16 :
+      (evento.deltaMode === 2 ? window.innerHeight : 1);
+    window.scrollBy(0, evento.deltaY * unidad);
+  }, {passive: false});
+
+  // El documento desplaza en ambos regímenes. El resize rearma escritorio/móvil.
   window.addEventListener('scroll', pedir, {passive: true});
   if (ventana) ventana.addEventListener('scroll', pedir, {passive: true});
   window.addEventListener('resize', () => { regimenes(); aplicar(); });
