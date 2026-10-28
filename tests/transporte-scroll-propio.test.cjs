@@ -67,13 +67,13 @@ test('T-56 r4 · la ventana del panel existe y envuelve main + el pie (el topbar
   assert.ok(antes.includes('<header class="topbar">'), 'la barra superior no entra en el scrolleo');
 });
 
-test('T-56 r5 · el documento desplaza y la franja se fija al llegar arriba', () => {
+test('T-56 r6 · el documento desplaza y el conjunto de tarjetas y barra se fija arriba', () => {
   assert.ok(!Hay('html.ventana body', 'overflow: hidden'), 'sin bloqueo global del documento');
   assert.ok(!Hay('html.ventana .scroll-window', 'overflow: hidden'), 'sin recorte del documento');
   assert.ok(!Hay('.panel-scroll', 'overflow-y: auto'), 'sin scroller interno');
   assert.ok(Hay('html.ventana .panel-strip', 'position: sticky'), 'franja sticky con recorrido en main');
-  assert.ok(Hay('html.ventana .panel-strip', 'top: 0'), 'se fija arriba');
-  assert.ok(Hay('html.ventana .cards-band', 'position: static'), 'las tarjetas no interceptan la franja');
+  assert.ok(Hay('html.ventana .panel-strip', 'top: var(--franja-tope, 0px)'), 'se fija bajo las tarjetas');
+  assert.ok(Hay('html.ventana .cards-band', 'position: sticky'), 'las tarjetas siguen visibles');
 });
 
 test('T-56 r5 · la caja vive en una franja con recorrido y conserva su hogar móvil', () => {
