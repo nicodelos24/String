@@ -1,12 +1,14 @@
 // Ejecutar con PLAYWRIGHT_PATH apuntando al paquete Playwright instalado localmente.
-// Guarda de comportamiento T-56 r4 (quinta corrección): reposo contra una copia
+// Guarda de comportamiento T-56 r5 (A-55): reposo contra una copia
 // de la base 0c199e5 (T56_BASE_ROOT), con las mismas fuentes y viewport,
-// cápsula A-46 siempre a la vista en el recorrido, y clics reales de todos los
+// rueda real desde cuatro zonas, cruce del tope en ambas direcciones y cápsula
+// A-46 a la vista durante el recorrido; clics reales de todos los
 // controles del transporte y la captura en varios estados. No forma parte de
 // `npm test`: exige Chromium y servidor local.
 const assert = require('node:assert/strict');
 const { chromium } = require(process.env.PLAYWRIGHT_PATH || 'playwright');
 const { createServer } = require('../../server.cjs');
+const evidencias = [];
 
 const cercano = (a, esperado, tol) => Math.abs(a - esperado) < tol;
 const medirReposo = page => page.evaluate(() => {
@@ -18,6 +20,8 @@ const medirReposo = page => page.evaluate(() => {
 
 async function abrir(browser, server, width, height, theme) {
   const page = await browser.newPage({ viewport: { width, height }, reducedMotion: 'reduce' });
+  page.errores = [];
+  page.on('pageerror', error => page.errores.push(error.message));
   const url = `http://127.0.0.1:${server.address().port}`;
   await page.route('**/*', route => route.request().url().startsWith(url) ? route.continue() : route.abort());
   await page.goto(url);
@@ -27,20 +31,20 @@ async function abrir(browser, server, width, height, theme) {
 }
 
 async function comprobarRecorte(page, contexto) {
+  // Esperar el fin de la transición del recuadro, independiente del rendimiento.
+  await page.waitForFunction(() => getComputedStyle(document.querySelector('.progression-view-controls')).backgroundColor === 'rgba(0, 0, 0, 0)');
   const medidas = await page.evaluate(() => {
-    const panel = document.querySelector('#panel-scroll');
     const pill = document.querySelector('.transport-pill');
     const box = document.querySelector('.progression-view-controls');
     const strip = document.querySelector('.panel-strip');
-    return { documento: scrollY, recorrido: panel.scrollTop, overflow: getComputedStyle(panel).overflowY,
-      panel: panel.getBoundingClientRect().toJSON(), pill: pill.getBoundingClientRect().toJSON(),
+    return { documento: scrollY, pill: pill.getBoundingClientRect().toJSON(),
+      top: strip.getBoundingClientRect().top,
       caja: getComputedStyle(box).backgroundColor, franja: getComputedStyle(strip).backgroundColor,
       borde: getComputedStyle(strip).borderLeftColor, animacion: getComputedStyle(pill).animationName };
   });
-  assert.equal(medidas.documento, 0, `documento quieto ${contexto}`);
-  assert.ok(medidas.recorrido > 0 && medidas.overflow === 'auto', `panel desplaza ${contexto}`);
-  assert.ok(medidas.panel.top >= medidas.pill.bottom - 1 && medidas.panel.height > 0,
-    `contenido recortado debajo de la barra ${contexto}: ${JSON.stringify(medidas)}`);
+  assert.ok(medidas.documento > 0, `documento desplaza ${contexto}`);
+  assert.ok(Math.abs(medidas.top) < 1 && medidas.pill.top >= 0,
+    `franja fija al llegar arriba ${contexto}: ${JSON.stringify(medidas)}`);
   assert.equal(medidas.caja, 'rgba(0, 0, 0, 0)', `exterior caja ${contexto}`);
   assert.equal(medidas.franja, 'rgba(0, 0, 0, 0)', `exterior franja ${contexto}`);
   assert.equal(medidas.borde, 'rgba(0, 0, 0, 0)', `borde franja ${contexto}`);
@@ -60,6 +64,27 @@ async function comprobarRecorte(page, contexto) {
       const esperado = await medirReposo(basePage);
       await basePage.close();
       const page = await abrir(browser, server, width, height, theme);
+      // A-55: comprobar eventos de rueda reales antes de cualquier scroll programático.
+      for (const selector of ['.intro', '.cards-band', '.panel-strip', '.panel-scroll']) {
+        await page.evaluate(() => window.scrollTo(0, 0));
+        await page.waitForTimeout(100);
+        const point = await page.locator(selector).evaluate(el => {
+          const r = el.getBoundingClientRect();
+          const x = r.left + r.width / 2;
+          const y = Math.min(innerHeight - 12, r.top + 12);
+          const hit = document.elementFromPoint(x, y);
+          return { x, y, hit: hit && (hit.id || hit.className), reachable: el === hit || el.contains(hit) };
+        });
+        assert.ok(point.reachable, `zona de rueda accesible ${selector}: ${JSON.stringify(point)}`);
+        await page.mouse.move(point.x, point.y);
+        await page.mouse.wheel(0, 220);
+        await page.waitForTimeout(150);
+        const despues = await page.evaluate(() => scrollY);
+        evidencias.push({ width, height, theme, selector, point, despues });
+        assert.ok(despues > 0, `rueda desplaza el documento sobre ${selector} ${width} ${theme}`);
+      }
+      await page.evaluate(() => window.scrollTo(0, 0));
+      await page.waitForTimeout(150);
       const rest = await medirReposo(page);
       for (const pieza of ['intro', 'banda', 'box', 'playback', 'status']) {
         for (const clave of ['x', 'y', 'width', 'height']) {
@@ -86,8 +111,21 @@ async function comprobarRecorte(page, contexto) {
         cercano(rest.strip.width, esperado.workspace.width, 1) &&
         cercano(rest.playback.x, rest.box.x, 2),
         `marco y estado en reposo ${width} ${theme}: ${JSON.stringify(rest)}`);
-      for (const position of [150, 300, 450, 550, 600, 100000]) {
-      await page.evaluate(position => { document.querySelector('#panel-scroll').scrollTop = position; }, position);
+      // El cruce se provoca con rueda, no cambiando scrollTop del elemento.
+      await page.evaluate(y => window.scrollTo(0, y - 20), rest.strip.y);
+      await page.waitForTimeout(100);
+      assert.equal(await page.locator('.transport-row').evaluate(el => el.classList.contains('is-floating')), false,
+        'antes del borde sigue en flujo');
+      await page.mouse.move(width / 2, height - 20);
+      await page.mouse.wheel(0, 80);
+      await page.waitForTimeout(150);
+      await comprobarRecorte(page, `${width} ${theme} cruce con rueda`);
+      await page.mouse.wheel(0, -80);
+      await page.waitForTimeout(150);
+      assert.equal(await page.locator('.transport-row').evaluate(el => el.classList.contains('is-floating')), false,
+        'al subir por el borde se descuelga');
+      for (const position of [550, 600, 900, 100000]) {
+      await page.evaluate(position => { window.scrollTo(0, position); }, position);
       await page.waitForTimeout(250);
       const expanded = await page.evaluate(() => {
         const pill = document.querySelector('.transport-pill');
@@ -124,8 +162,8 @@ async function comprobarRecorte(page, contexto) {
       assert.equal(await page.locator('#tempo-tap-bpm').inputValue(), '100', `tempo vuelve ${width} ${position}`);
       }
       const button = page.locator('#transport-minimize');
-      for (const position of [150, 300, 450, 550, 600, 100000]) {
-        await page.evaluate(position => { document.querySelector('#panel-scroll').scrollTop = position; }, position);
+      for (const position of [550, 600, 900, 100000]) {
+        await page.evaluate(position => { window.scrollTo(0, position); }, position);
         await page.waitForTimeout(100);
         let rect = await button.boundingBox();
         await page.mouse.click(rect.x + rect.width / 2, rect.y + rect.height / 2);
@@ -162,13 +200,31 @@ async function comprobarRecorte(page, contexto) {
         assert.ok(restored.y >= 0 && restored.y + restored.height <= height,
           `desplegada ${width}×${height} ${theme} ${position}: ${JSON.stringify(restored)}`);
       }
-      await page.evaluate(() => { document.querySelector('#panel-scroll').scrollTop = 0; });
+      await page.evaluate(() => { window.scrollTo(0, 0); });
       await page.waitForTimeout(100);
       const vuelta = await medirReposo(page);
+      assert.deepEqual(page.errores, [], `sin errores de página ${width} ${theme}`);
+      assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'sin desborde horizontal');
+      evidencias.push({ width, height, theme, reposo: rest, vuelta });
       for (const pieza of ['box', 'strip', 'playback', 'status']) for (const clave of ['x', 'y', 'width', 'height']) {
-        assert.ok(cercano(vuelta[pieza][clave], rest[pieza][clave], 1), `vuelta al reposo ${pieza}.${clave} ${width}×${height} ${theme}`);
+        assert.ok(cercano(vuelta[pieza][clave], rest[pieza][clave], 1), `vuelta al reposo ${pieza}.${clave} ${width}×${height} ${theme}: ${JSON.stringify({ vuelta: vuelta[pieza], rest: rest[pieza] })}`);
       }
-      console.log(`OK ${width}×${height} ${theme}: reposo, recorte, controles y vuelta`);
+      // Con una progresión larga el scrollbar local no debe consumir la rueda.
+      await page.evaluate(() => {
+        const agregar = document.querySelector('#legend-add-chord');
+        while (document.querySelectorAll('.progression-card').length < 24) agregar.click();
+        window.scrollTo(0, 0);
+        document.querySelector('#progression').scrollTop = 0;
+      });
+      await page.waitForTimeout(150);
+      const tarjeta = await page.locator('.progression-card').first().boundingBox();
+      await page.mouse.move(tarjeta.x + tarjeta.width / 2, tarjeta.y + 15);
+      await page.mouse.wheel(0, 220);
+      await page.waitForTimeout(150);
+      const larga = await page.evaluate(() => ({ documento: scrollY, lista: document.querySelector('#progression').scrollTop }));
+      assert.ok(larga.documento > 0 && larga.lista === 0, `rueda sobre 24 tarjetas ${width} ${theme}: ${JSON.stringify(larga)}`);
+      evidencias.push({ width, height, theme, tarjetas: 24, ...larga });
+      console.log(`OK ${width}×${height} ${theme}: reposo, rueda, sticky, controles y vuelta`);
       await page.close();
     }
     // La franja nueva se retira al entrar en el respaldo móvil y se arma una
@@ -176,7 +232,7 @@ async function comprobarRecorte(page, contexto) {
     const page = await abrir(browser, server, 1366, 768, 'light');
     const errores = [];
     page.on('pageerror', error => errores.push(error.message));
-    await page.evaluate(() => { document.querySelector('#panel-scroll').scrollTop = 550; });
+    await page.evaluate(() => { window.scrollTo(0, 550); });
     await page.waitForTimeout(250);
     await page.setViewportSize({ width: 768, height: 1366 });
     await page.waitForTimeout(250);
@@ -189,5 +245,8 @@ async function comprobarRecorte(page, contexto) {
     assert.deepEqual(errores, [], 'sin errores al cambiar de régimen');
     await page.close();
     console.log('OK escritorio → móvil → escritorio: restauración del DOM');
-  } finally { await browser.close(); server.close(); baseServer.close(); }
+  } finally {
+    if (process.env.T56_EVIDENCE_PATH) require('node:fs').writeFileSync(process.env.T56_EVIDENCE_PATH, JSON.stringify(evidencias, null, 2));
+    await browser.close(); server.close(); baseServer.close();
+  }
 })().catch(error => { console.error(error); process.exitCode = 1; });

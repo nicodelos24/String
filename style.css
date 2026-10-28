@@ -3041,73 +3041,17 @@ html:not([data-theme]) .cards-band .progression-card :is(small, .progression-mod
   .transport-minimize-icon { transition: none; }
 }
 
-/* T-56 · ronda 4 · A-43 (2026-10-27, la letra (B) de `D-10`: scroll propio) +
-   A-46 (2026-10-27, La cápsula de la barra fija). Palabra del autor: el panel
-   de trabajo desplaza dentro de su propia ventana (height acotada + overflow
-   en el panel); la banda de tarjetas y la barra fija viven por FUERA del
-   scrolleo, clavadas al marco — nada cruza nunca por detrás de la cápsula. El
-   ascenso por el borde superior (A-37) deja de migrar por diseño: la ventana
-   es la que se mueve, no la página.
-   Cómo funciona: `transport-pill.js` detecta `#scroll-window` y pone `ventana`
-   en el html sin él no hay ventana (el respaldo del régimen de la ronda 2
-   queda intacto). Con la clase, el body deja de desplazarse y `.scroll-window`
-   desplaza su contenido dentro del marco; la banda sigue sticky al tope y la
-   fila del transporte se clava con `position: sticky` debajo de la banda, y el
-   clavado del carril se alterna con `is-carril-clavado`.
-   A-46, la cápsula: la ÚNICA pieza con fondo es la cápsula redondeada de la
-   fila (referencia `18-14-55.png`) — afuera transparente (el papel de la
-   página), sin sombra (A-41), cuadro fino de 1 px radio 12 (el cuadro fino de
-   la ronda vive como la cápsula misma), el ancho natural de la fila (el de
-   debajo de las tarjetas, no un full-width forzado), menos alta que el
-   compacto de A-35 y con la flechita DENTRO, a la izquierda; «Detenido» y todo
-   lo demás fuera de la cápsula no llevan caja fija.
-   Sólo forma: motor, audio, guardado, atajos y `traste.songs.v1` intactos. */
-html.ventana { height: 100%; }
-html.ventana body {
-  height: 100%;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-html.ventana .scroll-window {
-  flex: 1 1 auto;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-/* La ventana ya no scrollea: dentro de ella, intro + banda + caja del
-   transporte son el marco quieto y `.panel-scroll` es quien desplaza (A-43:
-   "el panel de trabajo scrollea dentro de su propia ventana; la banda y la
-   barra viven por FUERA del scrolleo, clavadas al marco"). El observador
-   ararma esa estructura (transport-pill.js: caja tras la banda + envoltorio);
-   el envoltorio es mero acomodo: sin ventana es invisible (display:
-   contents) y el respaldo de la ronda 2 queda intacto. */
-html.ventana main.shell {
-  flex: 1 1 auto;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-}
+/* T-56 r5 · A-55: el documento desplaza desde cualquier zona. La franja
+   conserva su geometría de reposo y se fija al alcanzar arriba. El contenido
+   continúa por debajo; no hay ventana interna ni bloqueo global de la rueda.
+   La clase histórica `ventana` limita este armado al escritorio. */
+html.ventana .cards-band { position: static; }
 .panel-scroll { display: contents; }
-html.ventana .panel-scroll {
-  display: block;
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-}
-
-/* La caja del transporte NO se clava con sticky: vive FUERA del recorrido —
-   el observador la saca de .progression-stack y la deja en el marco, entre la
-   banda y .panel-scroll (A-43). Porque el scroller empieza debajo de ella,
-   el contenido jamás cruza por detrás: clavada, la caja no necesita ni sticky
-   ni fondo tapón — el exterior queda TRANSPARENTE como pide A-46 y detrás
-   solo se ve el papel de la página. En reposo conserva su recuadro propio. */
+html.ventana .panel-scroll { display: block; }
 
 /* La cápsula clavada (A-46 ·1 ·2 ·4): mismo ancho natural de la fila, sólo el
    cuadro fino radio 12 con fondo, sin sombra, menos alta que el compacto
-   ronda 2. position: static — el clavado es del carril sticky, no de la fila. */
+   ronda 2. position: static — el clavado es de la franja sticky. */
 html.ventana .transport-row.is-floating:not(.is-transport-minimized) .transport-pill {
   position: static;
   width: auto;
@@ -3177,7 +3121,9 @@ html.ventana .topbar { flex: none; }
    que la franja ya dibuja—, para que el estado caiga a −4 de la caja como en
    la base. En respaldo se retira del DOM. */
 html.ventana .panel-strip {
-  position: relative;
+  position: sticky;
+  top: 0;
+  z-index: 7;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   column-gap: 14px;
@@ -3188,8 +3134,10 @@ html.ventana .panel-strip {
   padding: 10px 20px 0;
 }
 /* El recuadro grande pertenece al reposo. Durante el recorrido sólo la
-   cápsula lleva fondo y borde; el panel empieza debajo y recorta el resto. */
+   cápsula lleva fondo y borde; el contenido pasa debajo de la franja.
+   La altura de reposo evita saltos del documento al compactar la cápsula. */
 html.ventana .panel-strip.is-transport-floating {
+  min-height: var(--franja-alto, 0px);
   border-color: transparent;
   background: transparent;
 }
