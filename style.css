@@ -3166,3 +3166,25 @@ html.ventana .transport-row.is-floating.is-transport-minimized .transport-minimi
   order: -1;
   margin-right: 2px;
 }
+
+/* T-56: conservar el marco y la distribución original al sacar la caja del panel. */
+html.ventana .topbar { flex: none; }
+@media (min-width: 1101px) {
+  html.ventana main.shell > .progression-view-controls {
+    width: calc(100% - 56px);
+    margin-left: 28px;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 18px;
+  }
+  html.ventana main.shell > .progression-view-controls > .capture-row {
+    border-top: 0; padding-top: 0; align-items: center;
+  }
+  html.ventana .transport-row.is-floating:not(.is-transport-minimized) .capture-row {
+    width: auto; border-top: 0; padding-top: 0; align-items: center;
+  }
+  html.ventana .transport-row.is-floating.is-transport-minimized .transport-pill {
+    position: static;
+  }
+}
