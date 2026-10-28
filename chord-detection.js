@@ -77,7 +77,9 @@ function analyzeSpectrum(spectrum, sampleRate, fftSize) {
     if (midi < 28 || midi > 96 || Math.abs(exactMidi - midi) > 0.38) continue;
     peaks.push({ freq, midi, amplitude: 10 ** (db / 20) });
   }
-  if (peaks.length < 3) return null;
+  // Dos fundamentales bastan para dibujar una doble, aunque no haya armónicos.
+  // detectChord conserva su exigencia de tres clases para nombrar un acorde.
+  if (peaks.length < 2) return null;
   const loudest = Math.max(...peaks.map(peak => peak.amplitude));
   const audible = peaks.filter(peak => peak.amplitude >= loudest * 0.035);
   const chroma = new Float64Array(12);
