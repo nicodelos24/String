@@ -22,6 +22,57 @@ const GUITAR = [40, 45, 50, 55, 59, 64];
 const BOUNDS = { low: 41, high: 86 };
 const CONTEXT = { strings: GUITAR, low: 40, high: 86 };
 
+// Dos fundamentales limpias, sin exigir que haya un tercer pico armónico.
+// El lóbulo parabólico en dB permite interpolar la frecuencia entre bins.
+function isolatedSpectrum(midis, sampleRate, size = 16384) {
+  const spectrum = new Float32Array(size / 2).fill(-120);
+  for (const midi of midis) {
+    const bin = 440 * 2 ** ((midi - 69) / 12) * size / sampleRate;
+    for (let i = Math.floor(bin) - 2; i <= Math.ceil(bin) + 2; i++) {
+      spectrum[i] = Math.max(spectrum[i], -25 - 12 * (i - bin) ** 2);
+    }
+  }
+  return spectrum;
+}
+
+for (const size of [8192, 16384]) for (const sampleRate of [44100, 48000]) {
+  test(`dos fundamentales sin armónicos llegan al mástil a ${sampleRate} Hz, FFT ${size}`, () => {
+    for (const midis of [[48, 52], [48, 55], [52, 55]]) {
+      const spectrum = isolatedSpectrum(midis, sampleRate, size);
+      const detected = detectSoundingNotes(spectrum, sampleRate);
+      assert.ok(detected, `deben llegar las dos notas ${midis}`);
+      assert.deepEqual(detected.pitches, midis.map(midi => midi % 12));
+      assert.equal(detected.bass, midis[0]);
+      assert.equal(detectChord(spectrum, sampleRate), null, 'dos clases no nombran un acorde');
+
+      const { callbacks, live } = setupFretboard();
+      callbacks.onState('ready');
+      let state;
+      const events = [];
+      for (const now of [0, 100, 350, 450, 1000]) {
+        const result = followStableNotes(now < 450 ? detected : null, state, now);
+        state = result.state;
+        if (result.chord !== undefined) {
+          events.push(result.chord);
+          callbacks.onNotes(result.chord);
+          assert.deepEqual(live().map(position => position.midi), now < 450 ? midis : []);
+        } else if (now < 350) {
+          assert.deepEqual(live(), [], 'no dibuja antes de confirmar');
+        }
+      }
+      assert.deepEqual(events, [detected, null], 'confirma la doble y libera en silencio');
+    }
+  });
+
+  test(`silencio, una fundamental y una octava no inventan simultaneidad a ${sampleRate} Hz, FFT ${size}`, () => {
+    for (const midis of [[], [48], [52], [48, 60]]) {
+      const spectrum = isolatedSpectrum(midis, sampleRate, size);
+      assert.equal(detectSoundingNotes(spectrum, sampleRate), null, String(midis));
+      assert.equal(detectChord(spectrum, sampleRate), null, String(midis));
+    }
+  });
+}
+
 test('la detección dice qué notas suenan a la vez también con dos notas', () => {
   // La doble nota es la que el autor nombró primero. Nombrar un acorde exige
   // tres clases (decisión medida de T-21, no se toca); dibujar, no: si suenan
