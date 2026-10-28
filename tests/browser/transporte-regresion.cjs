@@ -14,9 +14,15 @@ const { createServer } = require('../../server.cjs');
       await page.waitForTimeout(300);
       const rest = await page.evaluate(() => {
         const rect = s => document.querySelector(s).getBoundingClientRect().toJSON();
-        return { intro: rect('.intro'), box: rect('.progression-view-controls') };
+        return { intro: rect('.intro'), box: rect('.progression-view-controls'),
+          workspace: rect('.workspace'), playback: rect('.progression-playback') };
       });
       assert.ok(Math.abs(rest.intro.y - 78) < 1, `intro en reposo: ${rest.intro.y}`);
+      assert.ok(rest.workspace.left <= rest.box.left && rest.workspace.right >= rest.box.right &&
+        rest.workspace.top <= rest.box.top && rest.workspace.bottom >= rest.playback.bottom &&
+        Math.abs(rest.playback.top - rest.box.bottom) < 5 &&
+        Math.abs(rest.playback.left - rest.box.left) < 2,
+        `marco y estado en reposo ${width}: ${JSON.stringify(rest)}`);
       if (width === 1024 || width === 1366) {
         const expected = width === 1024 ? { x: 46.59, y: 491.06, width: 916.8, height: 112 } : { x: 55.16, y: 505.03, width: 1241.69, height: 59 };
         for (const key of Object.keys(expected)) assert.ok(Math.abs(rest.box[key] - expected[key]) < 2, `reposo ${width} ${key}: ${JSON.stringify(rest.box)}`);
