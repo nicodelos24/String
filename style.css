@@ -3072,29 +3072,37 @@ html.ventana body {
 html.ventana .scroll-window {
   flex: 1 1 auto;
   min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+/* La ventana ya no scrollea: dentro de ella, intro + banda + caja del
+   transporte son el marco quieto y `.panel-scroll` es quien desplaza (A-43:
+   "el panel de trabajo scrollea dentro de su propia ventana; la banda y la
+   barra viven por FUERA del scrolleo, clavadas al marco"). El observador
+   ararma esa estructura (transport-pill.js: caja tras la banda + envoltorio);
+   el envoltorio es mero acomodo: sin ventana es invisible (display:
+   contents) y el respaldo de la ronda 2 queda intacto. */
+html.ventana main.shell {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.panel-scroll { display: contents; }
+html.ventana .panel-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
 }
 
-/* La fila del transporte vive fuera del scrolleo: sticky al marco, justo
-   debajo de la banda (el hueco de 6 px es el HUECO del observador). El sticky
-   se aplica a la CAJA (.progression-view-controls), no a la caja-padre del
-   carril: «Detenido» (.progression-playback, hermano de la caja en el stack)
-   NO viaja con lo fijo (A-46 ·3): queda en la página y se desplaza con ella. */
-html.ventana .progression-stack > .progression-view-controls {
-  position: sticky;
-  top: calc(var(--banda-franja, 176px) + 6px);
-  z-index: 5;
-}
-/* Clavado, la caja muestra el PAPEL de la página (A-46: afuera de la cápsula
-   se ve el fondo de la página, como las tarjetas): nada del panel se ve
-   atravesando la franja clavada — el contenido queda tapado por el papel, que
-   se ve exactamente igual que la página. En reposo conserva el papel de la
-   caja: ni un pixel de cambio (A-30). */
-html.ventana .progression-workspace.is-carril-clavado
-  .progression-stack > .progression-view-controls {
-  background: var(--paper);
-}
+/* La caja del transporte NO se clava con sticky: vive FUERA del recorrido —
+   el observador la saca de .progression-stack y la deja en el marco, entre la
+   banda y .panel-scroll (A-43). Porque el scroller empieza debajo de ella,
+   el contenido jamás cruza por detrás: clavada, la caja no necesita ni sticky
+   ni fondo tapón — el exterior queda TRANSPARENTE como pide A-46 y detrás
+   solo se ve el papel de la página. En reposo conserva su recuadro propio. */
 
 /* La cápsula clavada (A-46 ·1 ·2 ·4): mismo ancho natural de la fila, sólo el
    cuadro fino radio 12 con fondo, sin sombra, menos alta que el compacto
@@ -3109,6 +3117,16 @@ html.ventana .transport-row.is-floating:not(.is-transport-minimized) .transport-
   background: var(--paper-light);
   box-shadow: none;
   gap: 4px 12px;
+}
+
+/* Adentro de la cápsula, la fila de captura en vivo es su segunda línea
+   (el observador la reúne con la fila de transporte al clavarse: A-46 ·2,
+   referencia 18-14-55). */
+html.ventana .transport-row.is-floating:not(.is-transport-minimized) .capture-row {
+  width: 100%;
+  border-top: 1px solid var(--line);
+  padding-top: 6px;
+  align-items: flex-start;
 }
 
 /* A-46 ·5 (margen estático de secciones, `18-16-55.png`): un pequeño margen

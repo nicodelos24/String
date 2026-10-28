@@ -34,15 +34,30 @@
   const ventana = document.getElementById('scroll-window');
   if (!fila || !caja) return;
 
+  // Piezas del armado A-43 (sólo régimen ventana, transport-pill.js al
+  // arrancar): la caja del transporte sale de .progression-stack y se coloca
+  // en el marco, entre la banda y un envoltorio nuevo `.panel-scroll` que
+  // contamina TODO lo que sigue (workspace, secciones, pie). Así el scroller
+  // empieza DEBAJO de la caja: nada cruza nunca por detrás, la caja siempre
+  // se ve, y la fila de captura puede entrar a la cápsula (A-46 ·2). Sin la
+  // ventana el armado se desarma pieza por pieza (móvil/respaldo intacto).
+  const piezas = {
+    panel: null, armado: false,
+    cajaHogar: caja.parentNode, cajaDespues: caja.nextSibling,
+    captura: (typeof caja.querySelector === 'function') ? caja.querySelector('.capture-row') : null,
+  };
+  // La fila de captura vive SIEMPRE dentro de la caja, como segunda línea;
+  // recuperar el domicilio actual de la caja es lo que hace el resto abajo.
+  function reponerCaptura() {
+    if (!piezas.captura || piezas.captura.parentNode === caja || !caja.insertBefore) return;
+    const ancla = (fila.parentNode === caja) ? fila.nextSibling : null;
+    caja.insertBefore(piezas.captura, ancla);
+  }
   const HUECO = 6;
   const TOPE_VISTA = 0.5;
   let pendiente = false;
   let minimizada = false;
   let bandaAltoPx = 0;
-  // Tope natural de la fila, en coordenadas del contenido de la ventana:
-  // constante en el régimen ventana (el marco no se mueve), se recalcula al
-  // medir (cambio de tamaño o de pestaña móvil).
-  let topeNatural = 0;
 
   function raiz() {
     return document.documentElement;
@@ -62,20 +77,52 @@
     return bandaAltoPx;
   }
 
-  // Tope natural de la fila dentro del contenido de la ventana. Vale-medir
-  // mientras la fila no esté clavada (clavada, el rect ya muestra el offset
-  // sticky); el clavado no cambia el valor cacheado.
-  function medirTopeNatural() {
-    const marco = ventana.getBoundingClientRect().top;
-    const enContenido = fila.getBoundingClientRect().top - marco + ventana.scrollTop;
-    if (!fila.classList.contains('is-floating')) topeNatural = enContenido;
-    return topeNatural;
+  // La caja vive EN el marco (fuera del scrolleo): su posición no cambia con
+  // el panel. La conmutación reposo→clavada la decide el recorrido del panel:
+  // apenas desplaza, la cápsula se muestra (y con 0 vuelve el recuadro de
+  // reposo). No hay tope que calcular: la fila siempre está debajo de la banda.
+
+  // ---- Armado de la ventana del panel (A-43) ---------------------------------
+  // Reestructura en vivo: caja tras la banda; envoltorio .panel-scroll con todo
+  // lo que le sigue de main más el pie. Sin la clase la estructura se desarma.
+  function armar() {
+    if (piezas.armado) return;
+    const bandaMarco = document.querySelector('.cards-band');
+    const shell = document.querySelector('main');
+    if (!bandaMarco || !shell) return;
+    bandaMarco.parentNode.insertBefore(caja, bandaMarco.nextSibling);
+    const panel = document.createElement('div');
+    panel.className = 'panel-scroll';
+    panel.id = 'panel-scroll';
+    let nodo = caja.nextSibling;
+    while (nodo) { const siguiente = nodo.nextSibling; panel.appendChild(nodo); nodo = siguiente; }
+    shell.appendChild(panel);
+    const pie = document.querySelector('footer');
+    if (pie) panel.appendChild(pie);
+    panel.addEventListener('scroll', pedir, {passive: true});
+    piezas.panel = panel;
+    piezas.armado = true;
+  }
+
+  function unarm() {
+    if (!piezas.armado) return;
+    const panel = piezas.panel;
+    const shell = panel.parentNode;
+    while (panel.firstChild) shell.insertBefore(panel.firstChild, panel);
+    shell.removeChild(panel);
+    piezas.panel = null;
+    piezas.armado = false;
+    // la caja vuelve a su nido original para el respaldo (ronda 2) y la fila
+    // de captura vuelve junto a la de transporte
+    if (piezas.cajaHogar) piezas.cajaHogar.insertBefore(caja, piezas.cajaDespues);
+    reponerCaptura();
   }
 
   // En un teléfono la barrita no entra en una línea y envuelve sus controles.
   function lineas(pildora) {
     const cajas = [...pildora.children]
-      .filter(hijo => !hijo.classList.contains('transport-minimize'))
+      .filter(hijo => !hijo.classList.contains('transport-minimize') &&
+        !hijo.classList.contains('capture-row'))
       .map(h => h.getBoundingClientRect());
     if (!cajas.length || cajas.some(c => !c.height)) return 1;
     const alto = Math.max(...cajas.map(c => c.height));
@@ -109,17 +156,26 @@
 
   function aplicarVentana() {
     pendiente = false;
-    const topeClavija = medirBanda() + HUECO;
-    medirTopeNatural();
-    const clavada = topeNatural - ventana.scrollTop <= topeClavija;
+    medirBanda();
+    const panel = piezas.panel;
+    const recorrido = panel ? panel.scrollTop : ventana.scrollTop;
+    const clavada = recorrido > 0;
     fila.classList.toggle('is-floating', clavada);
     caja.classList.toggle('is-transport-floating', clavada);
     fila.classList.toggle('is-transport-minimized', minimizada);
     const carril = caja.closest && caja.closest('.progression-workspace');
-    if (carril) carril.classList.toggle('is-carril-clavado', clavada);
-    if (banda) banda.classList.toggle('is-stuck', ventana.scrollTop > 0);
+    if (carril && typeof carril.classList.toggle === 'function') {
+      carril.classList.toggle('is-carril-clavado', clavada);
+    }
+    if (banda) banda.classList.toggle('is-stuck', recorrido > 0);
     const pildora = fila.querySelector('.transport-pill');
     if (pildora) {
+      // A-46 ·2: clavada y expandida, la fila de captura es la segunda línea
+      // de la cápsula; en reposo, minimizada o respaldo vuelve a su caja.
+      const adentro = clavada && !minimizada;
+      if (adentro && piezas.captura && pildora.appendChild &&
+          piezas.captura.parentNode !== pildora) pildora.appendChild(piezas.captura);
+      if (!adentro) reponerCaptura();
       const envuelta = clavada && !minimizada && lineas(pildora) > 1;
       pildora.classList.toggle('is-pill-wrapped', envuelta);
     }
@@ -190,11 +246,15 @@
   // en ≤800 px rige el respaldo de la ronda 2, ya verificado, para que el
   // régimen nuevo no invente una ventana.Vertical en el móvil.
   function claseVentana(activa) {
-    const activada = raiz().classList.toggle('ventana', activa);
-    if (!activada && ventana && typeof window.scrollTo === 'function') {
-      window.scrollTo(0, ventana.scrollTop);
+    if (!activa) {
+      // al pasar a respaldo, el recorrido propio vuelve al documento
+      const previo = piezas.panel ? (piezas.panel.scrollTop || 0) : 0;
+      unarm();
+      if (ventana && typeof window.scrollTo === 'function') window.scrollTo(0, previo);
+    } else {
+      armar();
     }
-    return activada;
+    return raiz().classList.toggle('ventana', activa);
   }
 
   function enEscritorio() {
@@ -230,14 +290,14 @@
   // reevalúa el régimen (escritorio ⇄ móvil).
   window.addEventListener('scroll', pedir, {passive: true});
   if (ventana) ventana.addEventListener('scroll', pedir, {passive: true});
-  window.addEventListener('resize', () => { topeNatural = 0; regimenes(); aplicar(); });
+  window.addEventListener('resize', () => { regimenes(); aplicar(); });
   if (window.matchMedia) {
     try { window.matchMedia('(min-width: 801px)').addEventListener('change', () => { regimenes(); aplicar(); }); } catch (e) {}
   }
   // En móvil la caja vive en la pestaña «Progresión»: al cambiarla hay que
   // volver a medir (oculta mide 0 y no se clava).
   if (window.MutationObserver) {
-    new MutationObserver(() => { topeNatural = 0; aplicar(); })
+    new MutationObserver(() => { aplicar(); })
       .observe(document.body, {attributes: true, attributeFilter: ['data-mobile-tab']});
   }
 

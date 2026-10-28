@@ -1,19 +1,27 @@
 // T-56 ronda 4 · A-43 (la letra (B) de D-10: scroll propio del panel) + A-46
-// (la cápsula de la barra fija) · 27-10.
+// (la cápsula de la barra fija) · 27-10, tercera corrección (2ª devolución de
+// QA sobre `b2b8957`).
 //
-// La guarda nace ROJA contra la base `0c199e5` y la implementación debe dejarla
-// verde (PACTO §4). Fija la CLASE de arquitectura que pide el pliego:
-//   · el que scrollea es la ventana del panel: el documento (body) deja de
-//     desplazarse y todo viaja dentro de `#scroll-window`;
-//   · la banda de tarjetas y la fila del transporte viven fuera del scrolleo,
-//     clavadas al marco (sticky); nada cruza por detrás de la cápsula;
-//   · A-46: la ÚNICA pieza con fondo es la cápsula redondeada de la fila —
-//     sin sombra, cuadro fino de 1 px radio 12, ancho natural de la fila,
-//     menos alta que el compacto de A-35, flechita adentro a la izquierda, y
-//     «Detenido» (y todo lo demás fuera de la cápsula) sin fondo fijo;
+// La guarda nace ROJA contra el tip devuelto y queda verde con la corrección
+// (PACTO §4). Fija la CLASE de arquitectura que midió QA como falta:
+//   · la banda de tarjetas y la caja del transporte viven FUERA del recorri-
+//     do, clavadas al marco: el observador saca la caja de .progression-stack
+//     (que no ofrecía recorrido: el sticky moría a 59 px y la barra desapare-
+//     cía a 550), la deja entre la banda y un envoltorio nuevo `.panel-scroll`
+//     que se lleva todo lo que sigue; el scroller empieza DEBAJO de la caja,
+//     así nada cruza jamás por detrás ni la barra sale de pantalla;
+//   · la caja exterior queda TRANSPARENTE sin fondo tapón (A-46) — el papel
+//     de la página llega solo, porque nada pasa detrás;
+//   · A-46 ·2: clavada y expandida, la fila de captura (Improvisar, Tempo con
+//     notas, Entrar al tocar, Seguir acorde MIDI) es la SEGUNDA LÍNEA de la
+//     cápsula (el observador reúne las dos filas al clavarse y las separa al
+//     volver), con la flechita adentro a la izquierda;
+//   · los dos estados (expandida y minimizada) permanecen en el marco todo el
+//     recorrido; en reposo no cambia un pixel (la caja reasume su recuadro);
 //   · movimiento reducido: `animation: none` en los estados volantes.
-// La geometría real (superposición a varias posiciones, recorte de controles)
-// se mide en Chromium: barrido multi-posición de QA (PACTO §5).
+// La geometría real (recorrido completo a varias posiciones, recorte,
+// minimizar/desplegar a 550) se mide en Chromium: barrido multi-posición de
+// QA (PACTO §5) — un sandbox con medidas inventadas no la demuestra.
 
 const {test} = require('node:test');
 const assert = require('node:assert/strict');
@@ -26,7 +34,6 @@ const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8').replace(/<!-
 const css = fs.readFileSync(path.join(root, 'style.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
 const js = fs.readFileSync(path.join(root, 'transport-pill.js'), 'utf8');
 
-// Contenido interior del <div> que abre con `apertura`, contando anidamientos.
 function bloqueDiv(fuente, apertura) {
   const inicio = fuente.indexOf(apertura);
   assert.notEqual(inicio, -1, `falta el bloque ${apertura}`);
@@ -41,7 +48,6 @@ function bloqueDiv(fuente, apertura) {
   assert.fail(`el bloque ${apertura} no cierra`);
 }
 
-// Reglas CSS de un bloque @media (o del archivo entero, con condicion null).
 function reglas(condicion) {
   const salida = [];
   let desde = 0;
@@ -76,31 +82,43 @@ function Hay(selector, cuerpo, condicion = null) {
 test('T-56 r4 · la ventana del panel existe y envuelve main + el pie (el topbar queda fuera)', () => {
   assert.match(html, /<div class="scroll-window" id="scroll-window">/);
   const ventana = bloqueDiv(html, 'id="scroll-window"');
-  assert.ok(ventana.includes('<main class="shell">'), 'la caja del shell scrollea dentro de la ventana');
-  assert.ok(ventana.includes('<footer'), 'el pie es parte del recorrido propio');
+  assert.ok(ventana.includes('<main class="shell">'), 'la caja del shell vive dentro de la ventana');
+  assert.ok(ventana.includes('<footer'), 'el pie es parte del contenido que el panel recorre');
   const antes = html.slice(0, html.indexOf('id="scroll-window"'));
   assert.ok(antes.includes('<header class="topbar">'), 'la barra superior no entra en el scrolleo');
 });
 
-test('T-56 r4 · clase de arquitectura: el body deja de desplazarse y la ventana del panel es la que scrollea', () => {
+test('T-56 r4 · clase de arquitectura: el body queda quieto y el PANEL es quien scrollea', () => {
   assert.ok(Hay('html.ventana body', 'overflow: hidden'), 'el documento deja de desplazarse con la ventana activa');
-  assert.ok(Hay('.scroll-window', 'overflow-y: auto'), 'la ventana del panel desplaza su propio contenido');
+  assert.ok(Hay('.panel-scroll', 'overflow-y: auto'), 'el recorrido propio vive en .panel-scroll, debajo de la barra');
+  // la ventana del marco ya no es el scroller (deja de tapar con su overflow ok)
+  assert.ok(!Hay('html.ventana .scroll-window', 'overflow-y: auto'),
+    'la ventana del marco no desplaza: contiene al marco quieto');
 });
 
-test('T-56 r4 · la banda y la fila del transporte quedan clavadas al marco, fuera del scrolleo', () => {
-  // La fila del transporte se clava con sticky debajo de la banda (A-43):
-  // sticky sobre la CAJA (.progression-view-controls) — «Detenido» es hermano
-  // de la caja en .progression-stack y NO viaja con lo fijo (A-46 ·3).
-  assert.ok(
-    Hay('.progression-stack > .progression-view-controls', 'position: sticky'),
-    'la fila del transporte se clava con sticky dentro de la ventana');
-  assert.ok(!Hay('.workspace > .progression-workspace', 'position: sticky'),
-    'el sticky ya no se aplica al carril entero');
-  assert.ok(js.includes('--banda-franja'), 'el observador publica la franja de banda que usa el sticky');
-  // A-46 ·3: el «Detenido» queda fuera de la caja sticky (estructura del HTML).
-  const caja = bloqueDiv(html, '<div class="progression-view-controls">');
-  assert.ok(!caja.includes('progression-playback'),
-    '«Detenido» vive fuera de la caja sticky y no viaja con lo fijo');
+test('T-56 r4 · la banda y la caja del transporte viven FUERA del recorrido, clavadas al marco (A-43)', () => {
+  // El armado en vivo del observador (defecto medido por QA: el sticky moría
+  // a los 59 px de .progression-stack y la barra desaparecía a 550).
+  assert.match(js, /\.cards-band/, 'el observador toma la banda para clavar la caja al marco');
+  assert.match(js, /bandaMarco\.parentNode\.insertBefore\(caja, bandaMarco\.nextSibling\)/,
+    'la caja del transporte se saca del scrolleo y se deja entre la banda y el panel');
+  assert.match(js, /className = 'panel-scroll'/, 'el envoltorio del recorrido propio se crea en vivo');
+  assert.match(js, /querySelector\('footer'\)/, 'el pie entra al recorrido del panel');
+  assert.match(js, /cajaHogar\.insertBefore\(caja, piezas\.cajaDespues\)/,
+    'sin ventana, la caja vuelve a su nido (respaldo ronda 2 intacto)');
+  // ya no hay sticky sobre la caja: el estilazo moría sin recorrido del padre
+  assert.ok(!Hay('.progression-stack > .progression-view-controls', 'position: sticky'),
+    'la caja no se clava con sticky dentro del stack (el defecto medido por QA)');
+  // ni fondo tapón sobre la caja clavada (defecto 3 de la 2ª devolución: el
+  // exterior tiene que quedar TRANSPARENTE, el papel llega por detrás vacío)
+  assert.ok(!Hay('is-carril-clavado', 'background: var(--paper)'),
+    'la caja clavada no tapa con papel: el contenido ya no cruza por detrás');
+  assert.ok(!Hay('progression-stack > .progression-view-controls', 'background'),
+    'ninguna regla pinta el exterior de la caja (A-46: transparente)');
+  // «Detenido» sigue fuera de la caja (A-46 ·3).
+  const cajaHtml = bloqueDiv(html, '<div class="progression-view-controls">');
+  assert.ok(!cajaHtml.includes('progression-playback'),
+    '«Detenido» vive fuera de la caja y no viaja con lo fijo');
 });
 
 test('T-56 r4 · A-46 cápsula-only: fondo y cuadro en la cápsula, transparente por fuera, sin sombra', () => {
@@ -115,7 +133,18 @@ test('T-56 r4 · A-46 cápsula-only: fondo y cuadro en la cápsula, transparente
     assert.ok(!cuerpo.replace(/box-shadow:\s*none/g, '').includes('box-shadow'),
       'sin sombra en la cápsula clavada (A-41: no flotante)');
   }
-  assert.ok(clavadas.length >= 4, 'el bloque clavado de la ronda 4 está');
+});
+
+test('T-56 r4 · A-46 ·2: la fila de captura entra a la cápsula como segunda línea al clavarse', () => {
+  assert.match(js, /querySelector\('\.capture-row'\)/, 'el observador toma la fila de captura en vivo');
+  assert.match(js, /piezas\.captura\.parentNode !== pildora\)\s*pildora\.appendChild\(piezas\.captura\)/,
+    'clavada y expandida, la captura se reúne con la cápsula (Improvisar, Tempo con notas, Entrar al tocar, Seguir acorde MIDI dentro)');
+  assert.match(js, /caja\.insertBefore\(piezas\.captura, ancla\)/,
+    'en reposo, minimizada o respaldo, la captura vuelve a su caja');
+  assert.ok(Hay('html.ventana .transport-row.is-floating:not(.is-transport-minimized) .capture-row', 'width: 100%'),
+    'la captura ocupa la segunda línea de la cápsula');
+  assert.ok(Hay('html.ventana .transport-row.is-floating:not(.is-transport-minimized) .capture-row', 'border-top: 1px solid var(--line)'),
+    'la segunda línea se separa como en el recuadro de reposo');
 });
 
 test('T-56 r4 · A-46 ·3: la flechita del minimizar queda DENTRO de la cápsula, a la izquierda', () => {
@@ -133,8 +162,6 @@ test('T-56 r4 · A-46 ·4: la cápsula clavada queda menos alta que el compacto 
 });
 
 test('T-56 r4 · movimiento reducido: los estados volantes siguen sin animación', () => {
-  // La guarda entra en algún bloque prefers-reduced-motion (el de la ronda 2
-  // quedó al final del archivo y hay otros más arriba).
   let visto = false;
   let desde = 0;
   while (true) {
@@ -159,94 +186,164 @@ test('T-56 r4 · movimiento reducido: los estados volantes siguen sin animación
 });
 
 test('T-56 r4 · el reparto móvil de la ronda 2 no se pierde: sin ventana activa, la fila sigue el régimen fijo', () => {
-  // El fallback (sin JS o sin ventana) conserva la fila clavada de la ronda 2,
-  // con su reserva y su posición fija: móvil sin la ventana no queda pelado.
   assert.ok(Hay('.transport-row.is-floating:not(.is-transport-minimized) .transport-pill', 'position: fixed'),
     'el estado clavado sin ventana conserva su posición fija');
   assert.ok(Hay('.transport-row.is-floating', 'width: var(--transporte-ancho, auto)'),
     'la reserva del hueco de reposo queda publicada');
 });
 
-test('T-56 r4 · el observador vive en la ventana: escucha el scroll del panel, no el del documento', () => {
-  assert.ok(js.includes("getElementById('scroll-window')"),
-    'el módulo toma la ventana del panel');
-  assert.match(js, /ventana\.addEventListener\('scroll'/);
-});
+test('T-56 r4 · comportamiento en el sandbox: armado, clavado con recorrido, captura adentro y estados', () => {
+  // ---- Stub mínimo de nodos: reparenteo real en cadenas de children.
+  function nodo(cls) {
+    const n = {
+      className: cls || '', id: '', children: [], parentNode: null,
+      classList: clase([]), style: {setProperty() {}},
+      appendChild(h) { quitaHijo(h); h.parentNode = n; n.children.push(h); return h; },
+      insertBefore(h, ref) {
+        quitaHijo(h);
+        const i = ref ? n.children.indexOf(ref) : -1;
+        n.children.splice(i < 0 ? n.children.length : i, 0, h);
+        h.parentNode = n;
+        return h;
+      },
+      removeChild(h) { const i = n.children.indexOf(h); if (i >= 0) n.children.splice(i, 1); h.parentNode = null; return h; },
+      get nextSibling() {
+        if (!n.parentNode) return null;
+        return n.parentNode.children[n.parentNode.children.indexOf(n) + 1] || null;
+      },
+      getBoundingClientRect: () => rect(120, 0, 40, 40),
+      listeners: {},
+      addEventListener(ev, fn) { (n.listeners[ev] = n.listeners[ev] || []).push(fn); },
+    };
+    return n;
+  }
+  function quitaHijo(h) {
+    if (h && h.parentNode && h.parentNode.children) {
+      const i = h.parentNode.children.indexOf(h);
+      if (i >= 0) h.parentNode.children.splice(i, 1);
+    } else if (h) { h.parentNode = null; }
+  }
+  function clase(nombres) {
+    return {
+      contiene: new Set(nombres || []),
+      add(...n) { n.forEach(x => this.contiene.add(x)); },
+      remove(...n) { n.forEach(x => this.contiene.delete(x)); },
+      toggle(n, v) { (v === undefined ? !this.contiene.has(n) : v) ? this.add(n) : this.remove(n); },
+      contains(n) { return this.contiene.has(n); },
+    };
+  }
+  function rect(top, left, w, h) {
+    return {top, left, right: left + w, bottom: top + h, width: w, height: h};
+  }
 
-test('T-56 r4 · comportamiento de la fila en el sandbox: clavada, minimizada y variables', () => {
-  // DOM simulado mínimo: la fila, su caja, la banda, la flechita y la ventana.
-  const estilos = {borderLeftWidth: '0px', borderRightWidth: '0px', borderTopWidth: '0px',
-    paddingLeft: '0px', paddingRight: '0px', paddingTop: '0px', position: 'sticky'};
-  const rect = (top, left, w, h) => ({top, left, right: left + w, bottom: top + h, width: w, height: h});
-  const clase = (nombres) => ({
-    contiene: new Set(nombres),
-    add(...n) { n.forEach(x => this.contiene.add(x)); },
-    remove(...n) { n.forEach(x => this.contiene.delete(x)); },
-    toggle(n, v) { (v === undefined ? !this.contiene.has(n) : v) ? this.add(n) : this.remove(n); },
-    contains(n) { return this.contiene.has(n); },
-  });
+  // ---- Árbol inicial igual al index.html (pre-armado):
+  const stackPadre = nodo('progression-workspace');   // hogar original de la caja
+  const banda = nodo('cards-band');
+  const shell = nodo('shell');
+  const banner = nodo('topbar');
+  const intro = nodo('intro');
+  const workspace = nodo('workspace');
+  const pie = nodo('');
+  shell.children = [intro, banda, workspace];
+  intro.parentNode = shell; banda.parentNode = shell; workspace.parentNode = shell;
 
-  const pildora = {classList: clase([]), children: [], getBoundingClientRect: () => rect(0, 0, 40, 24),
-    querySelector: () => null, style: {setProperty() {}}};
-  const boton = {classList: clase([]), setAttribute() {}, addEventListener(ev, fn) { this.alClick = fn; }, style: {setProperty() {}}};
-  const fila = {classList: clase([]), style: {setProperty() {}}, getClientRects: () => [{}],
-    getBoundingClientRect: () => rect(260 - ventana.scrollTop, 0, 40, 40), offsetHeight: 40, offsetWidth: 40,
-    querySelector: (sel) => (sel === '#transport-minimize' ? boton : pildora), children: []};
-  const caja = {classList: clase([]), getBoundingClientRect: () => rect(210, 0, 40, 90), clientWidth: 40,
-    style: {setProperty() {}}};
+  const pildora = nodo('transport-pill');
+  pildora.getBoundingClientRect = () => rect(0, 0, 40, 24);
+  pildora.querySelector = () => null;
+  const boton = nodo('transport-minimize');
+  boton.setAttribute = () => {};
+  boton.addEventListener = (ev, fn) => { if (ev === 'click') boton.alClick = fn; };
+  const fila = nodo('progression-controls-row transport-row');
+  fila.getClientRects = () => [{}];
+  fila.getBoundingClientRect = () => rect(220, 0, 40, 40);
+  fila.offsetHeight = 40; fila.offsetWidth = 40;
   fila.closest = () => caja;
-  const banda = {classList: clase([]), style: {setProperty() {}}, getBoundingClientRect: () => rect(78, 0, 40, 160),
-    getComputedStyle: undefined};
-  const ventana = {scrollTop: 0, addEventListener() {}, getBoundingClientRect: () => rect(78, 0, 40, 650)};
+  fila.querySelector = (sel) => (sel === '#transport-minimize' ? boton : pildora);
+  pildora.children = [boton]; boton.parentNode = pildora;
+  fila.children = [pildora]; pildora.parentNode = fila;
+  const filaTransporte = fila;                       // primera línea de la caja
+  const captura = nodo('progression-controls-row capture-row');   // segunda línea
+  const caja = nodo('progression-view-controls');
+  caja.querySelector = (sel) => (sel === '.capture-row' ? captura : null);
+  caja.closest = () => null;
+  caja.clientWidth = 40;
+  caja.children = [filaTransporte, captura];
+  filaTransporte.parentNode = caja; captura.parentNode = caja;
+  stackPadre.children = [caja]; caja.parentNode = stackPadre;
 
-  const escuchas = {scroll: []};
-  ventana.addEventListener = (ev, fn) => { if (ev === 'scroll') escuchas.scroll.push(fn); };
+  const ventanaEl = nodo('scroll-window');
+  ventanaEl.getBoundingClientRect = () => rect(56, 0, 40, 650);
+  ventanaEl.scrollTop = 0;
+  const escuchasVentana = {scroll: []};
+  ventanaEl.addEventListener = (ev, fn) => { if (ev === 'scroll') escuchasVentana.scroll.push(fn); };
 
   const documento = {
     querySelector: (sel) => ({
-      '.transport-row': fila, '.cards-band': banda }[sel] || null),
-    getElementById: (id) => (id === 'scroll-window' ? ventana : null),
+      '.transport-row': fila, '.cards-band': banda,
+      'main': shell, 'footer': pie,
+    }[sel] || null),
+    getElementById: (id) => (id === 'scroll-window' ? ventanaEl : null),
+    createElement: () => nodo(''),
     documentElement: {style: {setProperty() {}}, classList: clase([])},
   };
-
-  const marco = {
-    document: documento,
-    window: {
-      addEventListener() {}, MutationObserver: undefined, requestAnimationFrame(f) { f(); },
-      getComputedStyle: () => estilos, scrollY: 0, innerWidth: 1366,
-      matchMedia: (q) => ({matches: /\.matches/i.test(q) ? true : true, addEventListener() {}}),
-    },
+  const jsWindow = {
+    addEventListener() {}, MutationObserver: undefined,
     requestAnimationFrame(f) { f(); },
-    getComputedStyle: () => estilos,
+    getComputedStyle: () => ({borderLeftWidth: '0px', position: 'sticky'}),
+    scrollY: 0, innerWidth: 1366,
+    matchMedia: () => ({matches: true, addEventListener() {}}),
   };
-  let raf = marco.requestAnimationFrame;
-  const comunes = {Math, getComputedStyle: marco.getComputedStyle, requestAnimationFrame: raf};
-  const globalStub = new Proxy(comunes, {get: (t, k) => (k in marco ? marco[k] : t[k])});
-  globalStub.requestAnimationFrame = raf;
-  vm.runInNewContext(js, globalStub);
 
-  assert.ok(escuchas.scroll.length, 'el observador escucha el scroll de la ventana del panel');
-  // Guarda de ACTIVACIÓN (la ausencia que midió QA): el observador enciende la
-  // clase `ventana` en el documento — sin ella el régimen no funciona.
+  vm.runInNewContext(js, {
+    Math, document: documento, window: jsWindow,
+    requestAnimationFrame: jsWindow.requestAnimationFrame,
+  });
+
+  // Activación: la clase `ventana` se enciende en el documento al arrancar.
   assert.ok(documento.documentElement.classList.contains('ventana'),
-    'la clase de arquitectura `ventana` se activa en el documento al arrancar');
+    'la clase de arquitectura `ventana` se activa en el documento');
 
-  // En reposo (scrollTop 0) la fila natural está (260 - 0) por debajo de la
-  // franja de banda (160): no se clava.
-  assert.ok(!fila.classList.contains('is-floating'), 'en reposo la fila no muestra la cápsula');
-  // Desplazando a 150 la fila natural (260 - 150 = 110) queda debajo de la
-  // franja (160): se clava.
-  ventana.scrollTop = 150;
-  escuchas.scroll.forEach(fn => fn());
-  assert.ok(fila.classList.contains('is-floating'), 'al cruzar el borde de la banda la fila se clava');
-  assert.ok(caja.classList.contains('is-transport-floating'), 'la caja grande deja ver el fondo de la página');
+  // Armado (A-43): la caja sale del scrolleo; el panel-scroll se lleva lo
+  // demás y el pie entra al recorrido.
+  const indiceBanda = shell.children.indexOf(banda);
+  assert.ok(caja.parentNode === shell && indiceBanda >= 0 &&
+    shell.children.indexOf(caja) === indiceBanda + 1,
+    'la caja queda en el marco, justo después de la banda');
+  const panel = shell.children[shell.children.length - 1];
+  assert.ok(panel.className === 'panel-scroll' && panel.id === 'panel-scroll',
+    'el envoltorio del recorrido propio existe');
+  assert.ok(panel.children.includes(workspace),
+    'el panel de trabajo entra al recorrido propio');
+  assert.ok(panel.children.includes(pie), 'el pie desplaza con el panel');
+  assert.ok(caja.children.includes(filaTransporte) && captura.parentNode === caja,
+    'en reposo las dos filas viven en su caja como siempre');
 
-  // La flechita minimiza a la píldora de la ronda 1 (estado de la sesión).
+  // El observador escucha el scroll del PANEL (recorrido propio).
+  assert.ok((panel.listeners.scroll || []).length > 0,
+    'el observador escucha el recorrido del panel');
+  function escucharPanel() { (panel.listeners.scroll || []).forEach(fn => fn()); }
+
+  // Reposo: sin recorrido, la fila no está clavada y la captura sigue en la caja.
+  assert.ok(!fila.classList.contains('is-floating'), 'en reposo la fila muestra su recuadro');
+
+  // Desplazando el panel: la fila se clava y la captura entra a la cápsula.
+  panel.scrollTop = 300;
+  escucharPanel();
+  assert.ok(fila.classList.contains('is-floating'), 'al desplazar el panel la fila se clava');
+  assert.ok(caja.classList.contains('is-transport-floating'), 'la caja clavada deja el exterior transparente');
+  assert.ok(pildora.children.includes(captura) && captura.parentNode === pildora,
+    'clavada y expandida, la fila de captura vive DENTRO de la cápsula (A-46 ·2)');
+
+  // Minimizada: la captura vuelve y la píldora queda en el marco (el hueco
+  // propio de la barra: nada la cruza por detrás, por arquitectura).
   boton.alClick();
   assert.ok(fila.classList.contains('is-transport-minimized'), 'la flechita alterna el estado minimizado');
+  assert.ok(caja.children.includes(captura) && captura.parentNode === caja,
+    'minimizada, la fila de captura vuelve a su caja');
 
-  // Volviendo arriba la fila retoma su estado de reposo (la.band vuelve clara).
-  ventana.scrollTop = 0;
-  escuchas.scroll.forEach(fn => fn());
+  // Vuelta al tope: reposo otra vez (la caja reasume su recuadro).
+  boton.alClick();
+  panel.scrollTop = 0;
+  escucharPanel();
   assert.ok(!fila.classList.contains('is-floating'), 'al volver al tope la fila deja de estar clavada');
 });
