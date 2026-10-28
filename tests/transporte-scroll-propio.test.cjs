@@ -100,8 +100,11 @@ test('T-56 r4 · la banda y la caja del transporte viven FUERA del recorrido, cl
   // El armado en vivo del observador (defecto medido por QA: el sticky moría
   // a los 59 px de .progression-stack y la barra desaparecía a 550).
   assert.match(js, /\.cards-band/, 'el observador toma la banda para clavar la caja al marco');
-  assert.match(js, /bandaMarco\.parentNode\.insertBefore\(caja, bandaMarco\.nextSibling\)/,
-    'la caja del transporte se saca del scrolleo y se deja entre la banda y el panel');
+  assert.match(js, /className = 'panel-strip'/, 'la franja del marco se crea en vivo');
+  assert.match(js, /bandaMarco\.parentNode\.insertBefore\(strip, bandaMarco\.nextSibling\)/,
+    'la franja se deja entre la banda y el panel');
+  assert.match(js, /strip\.appendChild\(caja\)/,
+    'la caja del transporte entra a la franja (la cabecera de la caja grande)');
   assert.match(js, /className = 'panel-scroll'/, 'el envoltorio del recorrido propio se crea en vivo');
   assert.match(js, /querySelector\('footer'\)/, 'el pie entra al recorrido del panel');
   assert.match(js, /cajaHogar\.insertBefore\(caja, piezas\.cajaDespues\)/,
@@ -303,12 +306,12 @@ test('T-56 r4 · comportamiento en el sandbox: armado, clavado con recorrido, ca
   assert.ok(documento.documentElement.classList.contains('ventana'),
     'la clase de arquitectura `ventana` se activa en el documento');
 
-  // Armado (A-43): la caja sale del scrolleo; el panel-scroll se lleva lo
-  // demás y el pie entra al recorrido.
-  const indiceBanda = shell.children.indexOf(banda);
-  assert.ok(caja.parentNode === shell && indiceBanda >= 0 &&
-    shell.children.indexOf(caja) === indiceBanda + 1,
-    'la caja queda en el marco, justo después de la banda');
+  // Armado (A-43): la caja entra a la franja junto a la banda; el panel-scroll
+  // se lleva lo demás y el pie entra al recorrido.
+  const stripArmado = shell.children[shell.children.indexOf(banda) + 1];
+  assert.ok(stripArmado.className === 'panel-strip' &&
+    stripArmado.parentNode === shell && stripArmado.children.includes(caja),
+    'la caja vive en la franja del marco, justo después de la banda');
   const panel = shell.children[shell.children.length - 1];
   assert.ok(panel.className === 'panel-scroll' && panel.id === 'panel-scroll',
     'el envoltorio del recorrido propio existe');

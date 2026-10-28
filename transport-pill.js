@@ -7,12 +7,10 @@
 //   · **Ventana del panel (A-43):** con la letra (B) de D-10 el panel de trabajo
 //     scrollea dentro de su propia ventana (`#scroll-window`); la banda de
 //     tarjetas y la fila viven por fuera del scrolleo, clavadas al marco. El
-//     documento deja de desplazarse (`html.ventana body { overflow: hidden }`),
-//     así que nada cruza nunca por detrás de la cápsula. El observador mide el
-//     tope natural de la fila dentro del contenido y las alterna a `is-floating`
-//     cuando ese tope cruza el borde de la banda; el clavado lo resuelve el CSS
-//     con `position: sticky` sobre la fila, atado a `--banda-franja` (el alto de
-//     la banda, que aquí es fijo). A-46: la cápsula con fondo único, cuadro fino
+//     documento deja de desplazarse (`html.ventana body { overflow: hidden }`).
+//     La caja ocupa su franja antes de `.panel-scroll`; al desplazar ese panel
+//     cambia a `is-floating` sin salir del flujo ni cubrir contenido.
+//     A-46: la cápsula con fondo único, cuadro fino
 //     radio 12 sin sombra, ancho natural de la fila, menos alta, flechita
 //     adentro a la izquierda; «Detenido» y el resto del reposo no viajan con lo
 //     fijo.
@@ -35,14 +33,15 @@
   if (!fila || !caja) return;
 
   // Piezas del armado A-43 (sólo régimen ventana, transport-pill.js al
-  // arrancar): la caja del transporte sale de .progression-stack y se coloca
-  // en el marco, entre la banda y un envoltorio nuevo `.panel-scroll` que
-  // contamina TODO lo que sigue (workspace, secciones, pie). Así el scroller
-  // empieza DEBAJO de la caja: nada cruza nunca por detrás, la caja siempre
-  // se ve, y la fila de captura puede entrar a la cápsula (A-46 ·2). Sin la
-  // ventana el armado se desarma pieza por pieza (móvil/respaldo intacto).
+  // arrancar): la caja del transporte entra a una FRANJA nueva `.panel-strip`
+  // junto a la banda, con la geometría de `.progression-workspace`, y
+  // el envoltorio `.panel-scroll` reúne TODO lo que sigue (workspace, secciones
+  // de la caja grande, pie). La caja vuelve a leerse como la primera fila de la
+  // caja grande (intro/banda/franja quietas), el scroller empieza debajo y nada
+  // cruza nunca por detrás; «Detenido» queda pegado a la caja como en la base.
+  // Sin la ventana el armado se desarma pieza por pieza (móvil/respaldo).
   const piezas = {
-    panel: null, armado: false,
+    panel: null, strip: null, armado: false,
     cajaHogar: caja.parentNode, cajaDespues: caja.nextSibling,
     captura: (typeof caja.querySelector === 'function') ? caja.querySelector('.capture-row') : null,
   };
@@ -87,20 +86,24 @@
   // lo que le sigue de main más el pie. Sin la clase la estructura se desarma.
   function armar() {
     if (piezas.armado) return;
-    const bandaMarco = document.querySelector('.cards-band');
+    const bandaMarco = banda || document.querySelector('.cards-band');
     const shell = document.querySelector('main');
     if (!bandaMarco || !shell) return;
-    bandaMarco.parentNode.insertBefore(caja, bandaMarco.nextSibling);
+    const strip = document.createElement('div');
+    strip.className = 'panel-strip';
+    bandaMarco.parentNode.insertBefore(strip, bandaMarco.nextSibling);
+    strip.appendChild(caja);
     const panel = document.createElement('div');
     panel.className = 'panel-scroll';
     panel.id = 'panel-scroll';
-    let nodo = caja.nextSibling;
+    let nodo = strip.nextSibling;
     while (nodo) { const siguiente = nodo.nextSibling; panel.appendChild(nodo); nodo = siguiente; }
     shell.appendChild(panel);
     const pie = document.querySelector('footer');
     if (pie) panel.appendChild(pie);
     panel.addEventListener('scroll', pedir, {passive: true});
     piezas.panel = panel;
+    piezas.strip = strip;
     piezas.armado = true;
   }
 
@@ -111,10 +114,13 @@
     while (panel.firstChild) shell.insertBefore(panel.firstChild, panel);
     shell.removeChild(panel);
     piezas.panel = null;
+    const strip = piezas.strip;
+    piezas.strip = null;
     piezas.armado = false;
     // la caja vuelve a su nido original para el respaldo (ronda 2) y la fila
     // de captura vuelve junto a la de transporte
     if (piezas.cajaHogar) piezas.cajaHogar.insertBefore(caja, piezas.cajaDespues);
+    if (strip) strip.remove();
     reponerCaptura();
   }
 
@@ -144,9 +150,8 @@
       (minimizada ? ': la deja clavada con todo el ancho' : ': la deja como píldora'));
   }
 
-  // La píldora minimizada (ronda 1) sí vuela: es chiquita y por fuera del
-  // recorrido; en el régimen ventana su hueco es el de la propia caja en el
-  // marco (debajo de la banda, junto a donde queda la cápsula clavada).
+  // Coordenadas del respaldo fixed; en ventana ambos estados conservan su
+  // espacio en el flujo de la franja.
   function publicarPildora() {
     const cajaRect = caja.getBoundingClientRect();
     fila.style.setProperty('--transporte-top', Math.round(cajaRect.top + 8) + 'px');
@@ -162,6 +167,7 @@
     const clavada = recorrido > 0;
     fila.classList.toggle('is-floating', clavada);
     caja.classList.toggle('is-transport-floating', clavada);
+    if (piezas.strip) piezas.strip.classList.toggle('is-transport-floating', clavada);
     fila.classList.toggle('is-transport-minimized', minimizada);
     const carril = caja.closest && caja.closest('.progression-workspace');
     if (carril && typeof carril.classList.toggle === 'function') {

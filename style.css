@@ -3155,11 +3155,10 @@ html.ventana .transport-row.is-floating .transport-pill .tempo-tap { min-height:
 html.ventana .transport-row.is-floating .transport-pill .mute-toggle { min-height: 22px; }
 html.ventana .transport-row.is-floating .transport-pill .progression-disclosure { width: 26px; height: 26px; }
 
-/* La píldora minimizada (ronda 1) sigue volando en fixed: es la pieza chiquita
-   apropiada para superponerse; sus coords las publica el observador con el
-   tope real de la banda del marco (topbar + banda). */
+/* En ventana la minimizada también reserva espacio: al devolver la captura
+   a su caja no se superpone con ninguno de sus controles (desde 801 px). */
 html.ventana .transport-row.is-floating.is-transport-minimized .transport-pill {
-  position: fixed;
+  position: static;
 }
 html.ventana .transport-row.is-floating.is-transport-minimized .transport-minimize {
   position: static;
@@ -3169,32 +3168,56 @@ html.ventana .transport-row.is-floating.is-transport-minimized .transport-minimi
 
 /* T-56: conservar el marco y la distribución original al sacar la caja del panel. */
 html.ventana .topbar { flex: none; }
+
+/* La franja del transporte conserva la cabecera de la caja grande
+   (`.workspace > .progression-workspace`, con la columna fantasma y el hueco
+   de 14 px que dejan a la caja y al «Detenido» su ancho de base). Vive en el
+   marco, junto a la banda; su borde inferior no existe: la caja continúa justo
+   debajo por el panel, sin borde superior y empezando 10 px antes —el papel
+   que la franja ya dibuja—, para que el estado caiga a −4 de la caja como en
+   la base. En respaldo se retira del DOM. */
+html.ventana .panel-strip {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 14px;
+  box-sizing: border-box;
+  border: 1px solid var(--line);
+  border-bottom: 0;
+  background: var(--paper-light);
+  padding: 10px 20px 0;
+}
+/* El recuadro grande pertenece al reposo. Durante el recorrido sólo la
+   cápsula lleva fondo y borde; el panel empieza debajo y recorta el resto. */
+html.ventana .panel-strip.is-transport-floating {
+  border-color: transparent;
+  background: transparent;
+}
+/* La captura conserva el reset de su pila original también al entrar en la
+   cápsula; el margen genérico de MIDI añadiría 16 px y desplazaría controles. */
+html.ventana .panel-strip .follow-midi { margin: 0; }
 @media (min-width: 1101px) {
-  html.ventana main.shell > .progression-view-controls {
-    width: calc(100% - 56px);
-    margin-left: 28px;
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 6px 18px;
+  /* Compacidad del pliegue real, como en base hace `.progression-workspace
+     .progression-view-controls` (T-47); aquí la atiende la franja. */
+  html.ventana .panel-strip .progression-view-controls {
+    flex-direction: row; flex-wrap: wrap; align-items: center; gap: 6px 18px;
   }
-  html.ventana main.shell > .progression-view-controls > .capture-row {
+  html.ventana .panel-strip .progression-view-controls > .capture-row {
     border-top: 0; padding-top: 0; align-items: center;
   }
   html.ventana .transport-row.is-floating:not(.is-transport-minimized) .capture-row {
     width: auto; border-top: 0; padding-top: 0; align-items: center;
   }
-  html.ventana .transport-row.is-floating.is-transport-minimized .transport-pill {
-    position: static;
-  }
 }
 
-/* El transporte conserva el espacio de su marco también en anchos intermedios. */
-html.ventana main.shell > .progression-view-controls {
-  box-sizing: border-box;
-  width: calc(100% - 56px);
-  margin: 3px 0 0 21px;
-}
-html.ventana .transport-row.is-floating.is-transport-minimized .transport-pill {
-  position: static;
+/* Continuidad del marco: la caja empieza donde terminó la franja, sin su
+   borde superior y 10 px antes —los que quita el padding inferior de la
+   franja—; el estado «Detenido» (margen propio de −4) cae entonces a −4 del
+   borde inferior de la caja, exactamente como en la base (medido en
+   801/1024/1101/1280/1366). Sólo en ventana; el respaldo no cambia. */
+html.ventana .panel-scroll > .workspace {
+  height: auto;
+  min-height: 0;
+  border-top: 0;
+  margin-top: -10px;
 }
