@@ -250,7 +250,7 @@ async function comprobarConvivencia(page, contexto) {
       for (const pieza of ['box', 'strip', 'playback', 'status']) for (const clave of ['x', 'y', 'width', 'height']) {
         assert.ok(cercano(vuelta[pieza][clave], rest[pieza][clave], 1), `vuelta al reposo ${pieza}.${clave} ${width}×${height} ${theme}: ${JSON.stringify({ vuelta: vuelta[pieza], rest: rest[pieza] })}`);
       }
-      // Con una progresión larga el scrollbar local no debe consumir la rueda.
+      // A-63: la rueda sobre tarjetas desplaza la lista.
       await page.evaluate(() => {
         const agregar = document.querySelector('#legend-add-chord');
         while (document.querySelectorAll('.progression-card').length < 24) agregar.click();
@@ -263,8 +263,9 @@ async function comprobarConvivencia(page, contexto) {
       await page.mouse.wheel(0, 220);
       await page.waitForTimeout(150);
       const larga = await page.evaluate(() => ({ documento: scrollY, lista: document.querySelector('#progression').scrollTop }));
-      assert.ok(larga.documento > 0 && larga.lista === 0, `rueda sobre 24 tarjetas ${width} ${theme}: ${JSON.stringify(larga)}`);
+      assert.ok(larga.documento === 0 && larga.lista > 0, `rueda sobre 24 tarjetas ${width} ${theme}: ${JSON.stringify(larga)}`);
       evidencias.push({ width, height, theme, tarjetas: 24, ...larga });
+      await page.locator('#progression').evaluate(el => { el.scrollTop = 0; });
       // A-57: tarjetas reales, una y varias filas, con rueda en todo el
       // recorrido y los dos estados del transporte. No basta la banda vacía.
       for (const cantidad of [24, 1]) {

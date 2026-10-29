@@ -265,18 +265,6 @@
     pintarBoton();
   }
 
-  // A-55: también con varias filas de tarjetas la rueda vertical desplaza
-  // el documento. La lista conserva su scrollbar y el teclado; en móvil
-  // mantiene el comportamiento nativo. Ctrl (zoom) y Shift no se interceptan.
-  if (banda) banda.addEventListener('wheel', evento => {
-    if (!raiz().classList.contains('ventana') || !evento.deltaY ||
-        evento.ctrlKey || evento.shiftKey || evento.defaultPrevented) return;
-    evento.preventDefault();
-    const unidad = evento.deltaMode === 1 ? 16 :
-      (evento.deltaMode === 2 ? window.innerHeight : 1);
-    window.scrollBy(0, evento.deltaY * unidad);
-  }, {passive: false});
-
   // El documento desplaza en ambos regímenes. El resize rearma escritorio/móvil.
   window.addEventListener('scroll', pedir, {passive: true});
   if (ventana) ventana.addEventListener('scroll', pedir, {passive: true});

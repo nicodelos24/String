@@ -307,25 +307,8 @@ test('T-56 r5 · el recorrido del documento fija y suelta la barra, conservando 
   assert.ok(eventos.scroll.length > 0, 'el observador escucha el documento');
   function desplazar(y) { jsWindow.scrollY = y; eventos.scroll.forEach(fn => fn()); }
   assert.ok(!fila.classList.contains('is-floating'), 'reposo sin clavado');
-  const rueda = (opciones = {}) => {
-    const evento = { deltaY: 40, deltaMode: 0, preventDefault() { this.defaultPrevented = true; }, ...opciones };
-    banda.listeners.wheel.forEach(fn => fn(evento));
-    return evento;
-  };
-  assert.ok(rueda().defaultPrevented, 'la rueda vertical de tarjetas se dirige al documento');
-  assert.equal(jsWindow.scrollY, 40);
-  for (const opciones of [{ ctrlKey: true }, { shiftKey: true }, { deltaY: 0 }, { defaultPrevented: true }]) {
-    rueda(opciones);
-    assert.equal(jsWindow.scrollY, 40, 'zoom, Shift y eventos ya atendidos conservan su destino');
-  }
-  rueda({ deltaY: 2, deltaMode: 1 });
-  assert.equal(jsWindow.scrollY, 72, 'la rueda expresada en líneas se convierte a píxeles');
-  rueda({ deltaY: 1, deltaMode: 2 });
-  assert.equal(jsWindow.scrollY, 840, 'la rueda expresada en páginas respeta el alto de pantalla');
-  documento.documentElement.classList.remove('ventana');
-  assert.ok(!rueda().defaultPrevented, 'el respaldo móvil conserva su rueda nativa');
-  assert.equal(jsWindow.scrollY, 840);
-  documento.documentElement.classList.add('ventana');
+  assert.ok(!banda.listeners.wheel || banda.listeners.wheel.length === 0,
+    'la rueda de tarjetas conserva el desplazamiento nativo de la lista');
 
   desplazar(60);
   assert.ok(!fila.classList.contains('is-floating'), 'no compacta antes de alcanzar arriba');
