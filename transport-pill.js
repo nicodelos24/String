@@ -210,9 +210,19 @@
     }
     fila.classList.toggle('is-floating', flotar);
     caja.classList.toggle('is-transport-floating', flotar);
-    fila.style.setProperty('--transporte-top', (tope + HUECO) + 'px');
     const pildora = fila.querySelector('.transport-pill');
     if (pildora) pildora.classList.toggle('is-pill-wrapped', flotar && lineas(pildora) > 1);
+    let arriba = tope + HUECO;
+    // La captura sigue en el flujo móvil. Mientras pasa bajo la barra fija,
+    // desplazar la barra debajo de ella deja accesibles ambos grupos.
+    if (flotar && pildora && piezas.captura) {
+      const captura = piezas.captura.getBoundingClientRect();
+      const alto = pildora.getBoundingClientRect().height;
+      if (captura.bottom > arriba && captura.top < arriba + alto) {
+        arriba = captura.bottom + HUECO;
+      }
+    }
+    fila.style.setProperty('--transporte-top', arriba + 'px');
   }
 
   // La clase conserva los estilos de escritorio; ya no bloquea el documento.
