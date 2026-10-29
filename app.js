@@ -654,6 +654,17 @@ function showProgressionChord(item, index = -1) {
   ghostMode = item.ghostMode || '';
   populateControls();
   updateView();
+  // Desplazar solo la banda, y solo lo necesario: no mover la página ni
+  // interferir con la rueda cuando la tarjeta ya está a la vista.
+  const list = document.querySelector('#progression');
+  const card = index >= 0 && list.querySelector(`.progression-card[data-index="${index}"]`);
+  if (card?.getBoundingClientRect && list.getBoundingClientRect) {
+    const bounds = list.getBoundingClientRect(), rect = card.getBoundingClientRect();
+    if (rect.left < bounds.left || (rect.width > bounds.width && rect.right > bounds.right)) list.scrollLeft += rect.left - bounds.left;
+    else if (rect.right > bounds.right) list.scrollLeft += rect.right - bounds.right;
+    if (rect.top < bounds.top || (rect.height > bounds.height && rect.bottom > bounds.bottom)) list.scrollTop += rect.top - bounds.top;
+    else if (rect.bottom > bounds.bottom) list.scrollTop += rect.bottom - bounds.bottom;
+  }
 }
 
 function selectProgressionChord(index) {
