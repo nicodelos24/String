@@ -152,6 +152,21 @@ async function comprobarConvivencia(page, contexto) {
         cercano(rest.strip.width, esperado.workspace.width, 1) &&
         cercano(rest.playback.x, rest.box.x, 2),
         `marco y estado en reposo ${width} ${theme}: ${JSON.stringify(rest)}`);
+      // El estado debe poder leerse también antes de que la barra se clave.
+      await page.evaluate(() => window.scrollTo(0, 100));
+      await page.waitForTimeout(150);
+      const estado = await page.evaluate(() => {
+        const el = document.querySelector('#player-status');
+        const r = el.getBoundingClientRect();
+        const x = r.left + 2;
+        const puntos = [r.top + 1, r.bottom - 1].map(y => {
+          const hit = document.elementFromPoint(x, y);
+          return hit === el || el.contains(hit);
+        });
+        return { rect: r.toJSON(), puntos };
+      });
+      assert.ok(estado.puntos.every(Boolean),
+        `estado legible antes del enganche ${width}×${height} ${theme}: ${JSON.stringify(estado)}`);
       // El cruce se provoca con rueda, no cambiando scrollTop del elemento.
       await page.evaluate(y => window.scrollTo(0, y - 20), rest.banda.y);
       await page.waitForTimeout(100);
