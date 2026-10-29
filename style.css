@@ -3047,9 +3047,22 @@ html:not([data-theme]) .cards-band .progression-card :is(small, .progression-mod
    La clase histórica `ventana` limita este armado al escritorio. */
 html.ventana .cards-band { position: sticky; top: 0; }
 .panel-scroll { display: contents; }
-html.ventana .panel-scroll { display: block; }
+html.ventana .panel-scroll { display: block; position: relative; }
 html.ventana .panel-scroll.is-panel-recortado {
   clip-path: inset(var(--panel-recorte, 0px) -40px -40px);
+}
+/* El recorte desplaza el borde superior del marco al inicio visible del panel. */
+html.ventana .panel-scroll.is-panel-recortado::before {
+  content: "";
+  position: absolute;
+  top: var(--panel-recorte, 0px);
+  left: 0;
+  right: 0;
+  height: 12px;
+  border: 1px solid var(--line);
+  border-bottom: 0;
+  pointer-events: none;
+  z-index: 1;
 }
 
 /* La cápsula clavada (A-46 ·1 ·2 ·4): mismo ancho natural de la fila, sólo el

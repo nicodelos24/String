@@ -62,6 +62,10 @@ async function comprobarConvivencia(page, contexto) {
     const panel = document.querySelector('.panel-scroll');
     const b = banda.getBoundingClientRect(), s = strip.getBoundingClientRect();
     const r = panel.getBoundingClientRect();
+    const marco = getComputedStyle(panel, '::before');
+    const bordeVisible = { contenido: marco.content, estilo: marco.borderTopStyle, ancho: marco.borderTopWidth,
+      color: marco.borderTopColor, colorOriginal: getComputedStyle(document.querySelector('.workspace')).borderLeftColor,
+      radio: marco.borderTopLeftRadius, top: r.top + parseFloat(marco.top), esperado: Math.max(r.top, s.bottom + 6) };
     const delPanel = el => el && (panel === el || panel.contains(el));
     const puntos = [];
     // Tarjetas, transporte y los dos márgenes quedan fuera de la superficie
@@ -79,9 +83,13 @@ async function comprobarConvivencia(page, contexto) {
     const tarjeta = banda.querySelector('.progression-card');
     const t = tarjeta && tarjeta.getBoundingClientRect();
     const hit = t && document.elementFromPoint(t.left + t.width / 2, t.top + 15);
-    return { scroll: scrollY, banda: b.toJSON(), franja: s.toJSON(), puntos, contenido,
+    return { scroll: scrollY, banda: b.toJSON(), franja: s.toJSON(), puntos, contenido, bordeVisible,
       tarjeta: !tarjeta || tarjeta === hit || tarjeta.contains(hit) };
   });
+  assert.ok(medicion.bordeVisible.contenido !== 'none' && medicion.bordeVisible.estilo === 'solid' &&
+    parseFloat(medicion.bordeVisible.ancho) === 1 && medicion.bordeVisible.color === medicion.bordeVisible.colorOriginal &&
+    parseFloat(medicion.bordeVisible.radio) === 0 && cercano(medicion.bordeVisible.top, medicion.bordeVisible.esperado, 2),
+    `borde superior visible bajo la franja ${contexto}: ${JSON.stringify(medicion.bordeVisible)}`);
   assert.ok(medicion.puntos.every(p => !p.panel),
     `sección principal fuera de tarjetas, barra y márgenes ${contexto}: ${JSON.stringify(medicion)}`);
   assert.ok(medicion.contenido.length && medicion.contenido.every(p => p.accesible),
