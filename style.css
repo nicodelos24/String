@@ -3172,3 +3172,6 @@ html.ventana .panel-scroll > .workspace {
   border-top: 0;
   margin-top: -10px;
 }
+
+/* El estado debe quedar debajo de la franja también al iniciar el scroll. */
+html.ventana .progression-playback { margin-top: 10px; }

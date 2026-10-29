@@ -99,7 +99,8 @@ async function comprobarConvivencia(page, contexto) {
   const browser = await chromium.launch({ headless: true });
   try {
     const anchos = process.env.T56_WIDTHS ? process.env.T56_WIDTHS.split(',').map(Number) : [801, 1024, 1100, 1101, 1280, 1366];
-    for (const width of anchos) for (const height of [650, 768]) for (const theme of ['light', 'dark']) {
+    const alturas = process.env.T56_HEIGHTS ? process.env.T56_HEIGHTS.split(',').map(Number) : [650, 768];
+    for (const width of anchos) for (const height of alturas) for (const theme of ['light', 'dark']) {
       const basePage = await abrir(browser, baseServer, width, height, theme);
       const esperado = await medirReposo(basePage);
       await basePage.close();
@@ -127,9 +128,21 @@ async function comprobarConvivencia(page, contexto) {
       await page.evaluate(() => window.scrollTo(0, 0));
       await page.waitForTimeout(150);
       const rest = await medirReposo(page);
+      if (rest.status.bottom < height) {
+        const estadoReposo = await page.evaluate(() => {
+          const el = document.querySelector('#player-status');
+          const r = el.getBoundingClientRect();
+          return [r.top + 1, r.bottom - 1].map(y => {
+            const hit = document.elementFromPoint(r.left + 2, y);
+            return hit === el || el.contains(hit);
+          });
+        });
+        assert.ok(estadoReposo.every(Boolean),
+          `estado legible en reposo ${width}×${height} ${theme}: ${JSON.stringify(estadoReposo)}`);
+      }
       for (const pieza of ['intro', 'banda', 'box', 'playback', 'status']) {
         for (const clave of ['x', 'y', 'width', 'height']) {
-          const margen = ['box', 'playback', 'status'].includes(pieza) && clave === 'y' ? 8 : 0;
+          const margen = clave === 'y' ? (['playback', 'status'].includes(pieza) ? (width <= 1100 ? 22 : 18) : pieza === 'box' ? 8 : 0) : 0;
           assert.ok(cercano(rest[pieza][clave], esperado[pieza][clave] + margen, 1),
             `reposo ${pieza}.${clave} ${width}×${height} ${theme}: ${JSON.stringify({ actual: rest[pieza], base: esperado[pieza] })}`);
         }
@@ -142,8 +155,8 @@ async function comprobarConvivencia(page, contexto) {
         rest.strip.right >= rest.box.right &&
         rest.strip.bottom >= rest.box.bottom - 1,
         `franja y caja en reposo ${width} ${theme}: ${JSON.stringify({ strip: rest.strip, box: rest.box })}`);
-      // La caja grande continúa bajo la franja. El estado conserva la posición
-      // medida en la base, incluido su margen negativo en anchos intermedios.
+      // La caja grande continúa bajo la franja; el estado gana espacio para
+      // mantenerse legible al comenzar el desplazamiento.
       assert.ok(cercano(rest.workspace.y, rest.box.bottom - 10, 2) &&
         rest.workspace.left <= rest.box.left && rest.workspace.right >= rest.box.right &&
         rest.workspace.bottom >= rest.playback.bottom &&
