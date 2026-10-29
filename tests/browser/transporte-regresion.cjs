@@ -46,8 +46,8 @@ async function comprobarRecorte(page, contexto) {
   assert.ok(medidas.documento > 0, `documento desplaza ${contexto}`);
   assert.ok(Math.abs(medidas.banda.top) < 1 && medidas.pill.top >= 0,
     `tarjetas fijas al llegar arriba ${contexto}: ${JSON.stringify(medidas)}`);
-  assert.ok(cercano(medidas.top - medidas.banda.bottom, 8, 1),
-    `transporte debajo de tarjetas con 8 px ${contexto}: ${JSON.stringify(medidas)}`);
+  assert.ok(cercano(medidas.top - medidas.banda.bottom, 6, 1),
+    `transporte debajo de tarjetas con 6 px ${contexto}: ${JSON.stringify(medidas)}`);
   assert.equal(medidas.caja, 'rgba(0, 0, 0, 0)', `exterior caja ${contexto}`);
   assert.equal(medidas.franja, 'rgba(0, 0, 0, 0)', `exterior franja ${contexto}`);
   assert.equal(medidas.borde, 'rgba(0, 0, 0, 0)', `borde franja ${contexto}`);
@@ -72,7 +72,7 @@ async function comprobarConvivencia(page, contexto) {
         puntos.push({ x, y, panel: hits.some(delPanel) });
       }
     }
-    const borde = s.bottom + 8;
+    const borde = s.bottom + 6;
     const contenido = [borde + 2, (borde + innerHeight) / 2, innerHeight - 8]
       .filter(y => y > r.top && y < r.bottom)
       .map(y => ({ y, accesible: delPanel(document.elementFromPoint(r.left + r.width / 2, y)) }));
@@ -85,7 +85,7 @@ async function comprobarConvivencia(page, contexto) {
   assert.ok(medicion.puntos.every(p => !p.panel),
     `sección principal fuera de tarjetas, barra y márgenes ${contexto}: ${JSON.stringify(medicion)}`);
   assert.ok(medicion.contenido.length && medicion.contenido.every(p => p.accesible),
-    `sección principal accesible debajo de la barra con 8 px ${contexto}: ${JSON.stringify(medicion)}`);
+    `sección principal accesible debajo de la barra con 6 px ${contexto}: ${JSON.stringify(medicion)}`);
   assert.ok(medicion.tarjeta, `tarjeta visible y accesible ${contexto}`);
   evidencias.push({ contexto, convivencia: medicion });
 }
@@ -142,15 +142,15 @@ async function comprobarConvivencia(page, contexto) {
       }
       for (const pieza of ['intro', 'banda', 'box', 'playback', 'status']) {
         for (const clave of ['x', 'y', 'width', 'height']) {
-          const margen = clave === 'y' ? (['playback', 'status'].includes(pieza) ? (width <= 1100 ? 22 : 18) : pieza === 'box' ? 8 : 0) : 0;
+          const margen = clave === 'y' ? (['playback', 'status'].includes(pieza) ? (width <= 1100 ? 20 : 16) : pieza === 'box' ? 6 : 0) : 0;
           assert.ok(cercano(rest[pieza][clave], esperado[pieza][clave] + margen, 1),
             `reposo ${pieza}.${clave} ${width}×${height} ${theme}: ${JSON.stringify({ actual: rest[pieza], base: esperado[pieza] })}`);
         }
       }
       assert.ok(rest.strip, 'la franja del transporte existe (armado del marco)');
-      // La franja lee la cabecera de la caja grande: 8 px (autorizados, A-46 ·5)
+      // La franja lee la cabecera de la caja grande: 6 px (A-63)
       // después de la banda, y la caja a 21 px dentro de ella, como en la base.
-      assert.ok(cercano(rest.strip.y, rest.banda.y + rest.banda.height + 8, 1) &&
+      assert.ok(cercano(rest.strip.y, rest.banda.y + rest.banda.height + 6, 1) &&
         cercano(rest.strip.x, rest.box.x - 21, 2) &&
         rest.strip.right >= rest.box.right &&
         rest.strip.bottom >= rest.box.bottom - 1,
@@ -161,7 +161,7 @@ async function comprobarConvivencia(page, contexto) {
         rest.workspace.left <= rest.box.left && rest.workspace.right >= rest.box.right &&
         rest.workspace.bottom >= rest.playback.bottom &&
         cercano(rest.strip.x, esperado.workspace.x, 1) &&
-        cercano(rest.strip.y, esperado.workspace.y + 8, 1) &&
+        cercano(rest.strip.y, esperado.workspace.y + 6, 1) &&
         cercano(rest.strip.width, esperado.workspace.width, 1) &&
         cercano(rest.playback.x, rest.box.x, 2),
         `marco y estado en reposo ${width} ${theme}: ${JSON.stringify(rest)}`);
