@@ -1,5 +1,5 @@
 // T-56 r6 · A-57: las tarjetas se fijan arriba y el transporte debajo;
-// el panel sólo se pinta e interactúa bajo ese conjunto, con 8 px de margen.
+// el panel sólo se pinta e interactúa bajo ese conjunto, con 6 px de margen.
 // El documento desplaza y vuelve al flujo al subir. El escritorio conserva
 // la geometría y la cápsula de A-46. En móvil sigue el respaldo de la ronda 2.
 // No toca motor, audio, guardado ni atajos.
@@ -26,7 +26,7 @@
     caja.insertBefore(piezas.captura, ancla);
   }
   const HUECO = 6;
-  const MARGEN_PANEL = 8;
+  const MARGEN_PANEL = 6;
   const TOPE_VISTA = 0.5;
   let pendiente = false;
   let minimizada = false;
@@ -264,18 +264,6 @@
     });
     pintarBoton();
   }
-
-  // A-55: también con varias filas de tarjetas la rueda vertical desplaza
-  // el documento. La lista conserva su scrollbar y el teclado; en móvil
-  // mantiene el comportamiento nativo. Ctrl (zoom) y Shift no se interceptan.
-  if (banda) banda.addEventListener('wheel', evento => {
-    if (!raiz().classList.contains('ventana') || !evento.deltaY ||
-        evento.ctrlKey || evento.shiftKey || evento.defaultPrevented) return;
-    evento.preventDefault();
-    const unidad = evento.deltaMode === 1 ? 16 :
-      (evento.deltaMode === 2 ? window.innerHeight : 1);
-    window.scrollBy(0, evento.deltaY * unidad);
-  }, {passive: false});
 
   // El documento desplaza en ambos regímenes. El resize rearma escritorio/móvil.
   window.addEventListener('scroll', pedir, {passive: true});

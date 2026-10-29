@@ -3047,9 +3047,22 @@ html:not([data-theme]) .cards-band .progression-card :is(small, .progression-mod
    La clase histórica `ventana` limita este armado al escritorio. */
 html.ventana .cards-band { position: sticky; top: 0; }
 .panel-scroll { display: contents; }
-html.ventana .panel-scroll { display: block; }
+html.ventana .panel-scroll { display: block; position: relative; }
 html.ventana .panel-scroll.is-panel-recortado {
   clip-path: inset(var(--panel-recorte, 0px) -40px -40px);
+}
+/* El recorte desplaza el borde superior del marco al inicio visible del panel. */
+html.ventana .panel-scroll.is-panel-recortado::before {
+  content: "";
+  position: absolute;
+  top: var(--panel-recorte, 0px);
+  left: 0;
+  right: 0;
+  height: 12px;
+  border: 1px solid var(--line);
+  border-bottom: 0;
+  pointer-events: none;
+  z-index: 1;
 }
 
 /* La cápsula clavada (A-46 ·1 ·2 ·4): mismo ancho natural de la fila, sólo el
@@ -3080,7 +3093,7 @@ html.ventana .transport-row.is-floating:not(.is-transport-minimized) .capture-ro
 /* A-46 ·5 (margen estático de secciones, `18-16-55.png`): un pequeño margen
    entre la banda de tarjetas y la sección donde empieza el resto de la
    página. Es estático (spacing del layout del autor), pedido en esta ronda. */
-html.ventana .cards-band { margin-bottom: 8px; }
+html.ventana .cards-band { margin-bottom: 6px; }
 
 /* A-46 ·3: la flechita dentro de la cápsula, a la izquierda (Imagen 3,
    `18-14-55.png`). En reposo sigue sin existir; el icono alterna con la clase
@@ -3172,3 +3185,6 @@ html.ventana .panel-scroll > .workspace {
   border-top: 0;
   margin-top: -10px;
 }
+
+/* El estado debe quedar debajo de la franja también al iniciar el scroll. */
+html.ventana .progression-playback { margin-top: 10px; }

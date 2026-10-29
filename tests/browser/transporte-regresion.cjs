@@ -46,8 +46,8 @@ async function comprobarRecorte(page, contexto) {
   assert.ok(medidas.documento > 0, `documento desplaza ${contexto}`);
   assert.ok(Math.abs(medidas.banda.top) < 1 && medidas.pill.top >= 0,
     `tarjetas fijas al llegar arriba ${contexto}: ${JSON.stringify(medidas)}`);
-  assert.ok(cercano(medidas.top - medidas.banda.bottom, 8, 1),
-    `transporte debajo de tarjetas con 8 px ${contexto}: ${JSON.stringify(medidas)}`);
+  assert.ok(cercano(medidas.top - medidas.banda.bottom, 6, 1),
+    `transporte debajo de tarjetas con 6 px ${contexto}: ${JSON.stringify(medidas)}`);
   assert.equal(medidas.caja, 'rgba(0, 0, 0, 0)', `exterior caja ${contexto}`);
   assert.equal(medidas.franja, 'rgba(0, 0, 0, 0)', `exterior franja ${contexto}`);
   assert.equal(medidas.borde, 'rgba(0, 0, 0, 0)', `borde franja ${contexto}`);
@@ -62,6 +62,10 @@ async function comprobarConvivencia(page, contexto) {
     const panel = document.querySelector('.panel-scroll');
     const b = banda.getBoundingClientRect(), s = strip.getBoundingClientRect();
     const r = panel.getBoundingClientRect();
+    const marco = getComputedStyle(panel, '::before');
+    const bordeVisible = { contenido: marco.content, estilo: marco.borderTopStyle, ancho: marco.borderTopWidth,
+      color: marco.borderTopColor, colorOriginal: getComputedStyle(document.querySelector('.workspace')).borderLeftColor,
+      radio: marco.borderTopLeftRadius, top: r.top + parseFloat(marco.top), esperado: Math.max(r.top, s.bottom + 6) };
     const delPanel = el => el && (panel === el || panel.contains(el));
     const puntos = [];
     // Tarjetas, transporte y los dos márgenes quedan fuera de la superficie
@@ -72,20 +76,24 @@ async function comprobarConvivencia(page, contexto) {
         puntos.push({ x, y, panel: hits.some(delPanel) });
       }
     }
-    const borde = s.bottom + 8;
+    const borde = s.bottom + 6;
     const contenido = [borde + 2, (borde + innerHeight) / 2, innerHeight - 8]
       .filter(y => y > r.top && y < r.bottom)
       .map(y => ({ y, accesible: delPanel(document.elementFromPoint(r.left + r.width / 2, y)) }));
     const tarjeta = banda.querySelector('.progression-card');
     const t = tarjeta && tarjeta.getBoundingClientRect();
     const hit = t && document.elementFromPoint(t.left + t.width / 2, t.top + 15);
-    return { scroll: scrollY, banda: b.toJSON(), franja: s.toJSON(), puntos, contenido,
+    return { scroll: scrollY, banda: b.toJSON(), franja: s.toJSON(), puntos, contenido, bordeVisible,
       tarjeta: !tarjeta || tarjeta === hit || tarjeta.contains(hit) };
   });
+  assert.ok(medicion.bordeVisible.contenido !== 'none' && medicion.bordeVisible.estilo === 'solid' &&
+    parseFloat(medicion.bordeVisible.ancho) === 1 && medicion.bordeVisible.color === medicion.bordeVisible.colorOriginal &&
+    parseFloat(medicion.bordeVisible.radio) === 0 && cercano(medicion.bordeVisible.top, medicion.bordeVisible.esperado, 2),
+    `borde superior visible bajo la franja ${contexto}: ${JSON.stringify(medicion.bordeVisible)}`);
   assert.ok(medicion.puntos.every(p => !p.panel),
     `sección principal fuera de tarjetas, barra y márgenes ${contexto}: ${JSON.stringify(medicion)}`);
   assert.ok(medicion.contenido.length && medicion.contenido.every(p => p.accesible),
-    `sección principal accesible debajo de la barra con 8 px ${contexto}: ${JSON.stringify(medicion)}`);
+    `sección principal accesible debajo de la barra con 6 px ${contexto}: ${JSON.stringify(medicion)}`);
   assert.ok(medicion.tarjeta, `tarjeta visible y accesible ${contexto}`);
   evidencias.push({ contexto, convivencia: medicion });
 }
@@ -99,7 +107,8 @@ async function comprobarConvivencia(page, contexto) {
   const browser = await chromium.launch({ headless: true });
   try {
     const anchos = process.env.T56_WIDTHS ? process.env.T56_WIDTHS.split(',').map(Number) : [801, 1024, 1100, 1101, 1280, 1366];
-    for (const width of anchos) for (const height of [650, 768]) for (const theme of ['light', 'dark']) {
+    const alturas = process.env.T56_HEIGHTS ? process.env.T56_HEIGHTS.split(',').map(Number) : [650, 768];
+    for (const width of anchos) for (const height of alturas) for (const theme of ['light', 'dark']) {
       const basePage = await abrir(browser, baseServer, width, height, theme);
       const esperado = await medirReposo(basePage);
       await basePage.close();
@@ -127,31 +136,58 @@ async function comprobarConvivencia(page, contexto) {
       await page.evaluate(() => window.scrollTo(0, 0));
       await page.waitForTimeout(150);
       const rest = await medirReposo(page);
+      if (rest.status.bottom < height) {
+        const estadoReposo = await page.evaluate(() => {
+          const el = document.querySelector('#player-status');
+          const r = el.getBoundingClientRect();
+          return [r.top + 1, r.bottom - 1].map(y => {
+            const hit = document.elementFromPoint(r.left + 2, y);
+            return hit === el || el.contains(hit);
+          });
+        });
+        assert.ok(estadoReposo.every(Boolean),
+          `estado legible en reposo ${width}×${height} ${theme}: ${JSON.stringify(estadoReposo)}`);
+      }
       for (const pieza of ['intro', 'banda', 'box', 'playback', 'status']) {
         for (const clave of ['x', 'y', 'width', 'height']) {
-          const margen = ['box', 'playback', 'status'].includes(pieza) && clave === 'y' ? 8 : 0;
+          const margen = clave === 'y' ? (['playback', 'status'].includes(pieza) ? (width <= 1100 ? 20 : 16) : pieza === 'box' ? 6 : 0) : 0;
           assert.ok(cercano(rest[pieza][clave], esperado[pieza][clave] + margen, 1),
             `reposo ${pieza}.${clave} ${width}×${height} ${theme}: ${JSON.stringify({ actual: rest[pieza], base: esperado[pieza] })}`);
         }
       }
       assert.ok(rest.strip, 'la franja del transporte existe (armado del marco)');
-      // La franja lee la cabecera de la caja grande: 8 px (autorizados, A-46 ·5)
+      // La franja lee la cabecera de la caja grande: 6 px (A-63)
       // después de la banda, y la caja a 21 px dentro de ella, como en la base.
-      assert.ok(cercano(rest.strip.y, rest.banda.y + rest.banda.height + 8, 1) &&
+      assert.ok(cercano(rest.strip.y, rest.banda.y + rest.banda.height + 6, 1) &&
         cercano(rest.strip.x, rest.box.x - 21, 2) &&
         rest.strip.right >= rest.box.right &&
         rest.strip.bottom >= rest.box.bottom - 1,
         `franja y caja en reposo ${width} ${theme}: ${JSON.stringify({ strip: rest.strip, box: rest.box })}`);
-      // La caja grande continúa bajo la franja. El estado conserva la posición
-      // medida en la base, incluido su margen negativo en anchos intermedios.
+      // La caja grande continúa bajo la franja; el estado gana espacio para
+      // mantenerse legible al comenzar el desplazamiento.
       assert.ok(cercano(rest.workspace.y, rest.box.bottom - 10, 2) &&
         rest.workspace.left <= rest.box.left && rest.workspace.right >= rest.box.right &&
         rest.workspace.bottom >= rest.playback.bottom &&
         cercano(rest.strip.x, esperado.workspace.x, 1) &&
-        cercano(rest.strip.y, esperado.workspace.y + 8, 1) &&
+        cercano(rest.strip.y, esperado.workspace.y + 6, 1) &&
         cercano(rest.strip.width, esperado.workspace.width, 1) &&
         cercano(rest.playback.x, rest.box.x, 2),
         `marco y estado en reposo ${width} ${theme}: ${JSON.stringify(rest)}`);
+      // El estado debe poder leerse también antes de que la barra se clave.
+      await page.evaluate(() => window.scrollTo(0, 100));
+      await page.waitForTimeout(150);
+      const estado = await page.evaluate(() => {
+        const el = document.querySelector('#player-status');
+        const r = el.getBoundingClientRect();
+        const x = r.left + 2;
+        const puntos = [r.top + 1, r.bottom - 1].map(y => {
+          const hit = document.elementFromPoint(x, y);
+          return hit === el || el.contains(hit);
+        });
+        return { rect: r.toJSON(), puntos };
+      });
+      assert.ok(estado.puntos.every(Boolean),
+        `estado legible antes del enganche ${width}×${height} ${theme}: ${JSON.stringify(estado)}`);
       // El cruce se provoca con rueda, no cambiando scrollTop del elemento.
       await page.evaluate(y => window.scrollTo(0, y - 20), rest.banda.y);
       await page.waitForTimeout(100);
@@ -250,7 +286,7 @@ async function comprobarConvivencia(page, contexto) {
       for (const pieza of ['box', 'strip', 'playback', 'status']) for (const clave of ['x', 'y', 'width', 'height']) {
         assert.ok(cercano(vuelta[pieza][clave], rest[pieza][clave], 1), `vuelta al reposo ${pieza}.${clave} ${width}×${height} ${theme}: ${JSON.stringify({ vuelta: vuelta[pieza], rest: rest[pieza] })}`);
       }
-      // Con una progresión larga el scrollbar local no debe consumir la rueda.
+      // A-63: la rueda sobre tarjetas desplaza la lista.
       await page.evaluate(() => {
         const agregar = document.querySelector('#legend-add-chord');
         while (document.querySelectorAll('.progression-card').length < 24) agregar.click();
@@ -263,8 +299,9 @@ async function comprobarConvivencia(page, contexto) {
       await page.mouse.wheel(0, 220);
       await page.waitForTimeout(150);
       const larga = await page.evaluate(() => ({ documento: scrollY, lista: document.querySelector('#progression').scrollTop }));
-      assert.ok(larga.documento > 0 && larga.lista === 0, `rueda sobre 24 tarjetas ${width} ${theme}: ${JSON.stringify(larga)}`);
+      assert.ok(larga.documento === 0 && larga.lista > 0, `rueda sobre 24 tarjetas ${width} ${theme}: ${JSON.stringify(larga)}`);
       evidencias.push({ width, height, theme, tarjetas: 24, ...larga });
+      await page.locator('#progression').evaluate(el => { el.scrollTop = 0; });
       // A-57: tarjetas reales, una y varias filas, con rueda en todo el
       // recorrido y los dos estados del transporte. No basta la banda vacía.
       for (const cantidad of [24, 1]) {
