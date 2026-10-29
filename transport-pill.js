@@ -219,7 +219,8 @@
       const captura = piezas.captura.getBoundingClientRect();
       const alto = pildora.getBoundingClientRect().height;
       if (captura.bottom > arriba && captura.top < arriba + alto) {
-        arriba = captura.bottom + HUECO;
+        const debajo = captura.bottom + HUECO;
+        arriba = debajo + alto <= window.innerHeight ? debajo : Math.max(0, captura.top - alto - HUECO);
       }
     }
     fila.style.setProperty('--transporte-top', arriba + 'px');
