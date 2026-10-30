@@ -197,6 +197,17 @@
         <div class="chord-readout"><span class="readout-label">ACORDE SELECCIONADO</span><strong id="chord-readout">C</strong><span class="mode-display" id="mode-display"></span><span class="key-signature-chord" id="key-signature-chord"></span></div>
         <div class="key-signature-info"><span class="readout-label">ARMADURA DE CLAVE</span><span id="key-signature-display">--</span></div>
         
+        <div class="song-tonality-control">
+          <span class="readout-label" id="song-tonality-heading">TONALIDAD DEL TEMA</span>
+          <div id="song-tonality-piano" class="root-piano song-tonality-piano" role="group" aria-labelledby="song-tonality-heading"></div>
+          <label class="spelling-switch song-tonality-switch">
+            <span>Mayor</span>
+            <input id="song-tonality-minor" type="checkbox" role="switch" aria-label="Tonalidad menor">
+            <span class="spelling-track" aria-hidden="true"></span>
+            <span>Menor</span>
+          </label>
+          <output id="song-tonality-current" aria-live="polite">Sin tonalidad fija</output>
+        </div>
         <label for="song-tonality">Tonalidad de la canción</label>
         <select id="song-tonality">
           <option value="">Sin tonalidad fija</option>

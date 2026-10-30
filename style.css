@@ -3188,3 +3188,25 @@ html.ventana .panel-scroll > .workspace {
 
 /* El estado debe quedar debajo de la franja también al iniciar el scroll. */
 html.ventana .progression-playback { margin-top: 10px; }
+
+/* T-59: mismo teclado de raíz, reducido para la tonalidad del tema. */
+.song-tonality-control {
+  margin: 14px 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+}
+.song-tonality-piano { max-width: 182px; height: 84px; margin: 10px auto; }
+.song-tonality-switch {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  position: relative;
+  margin: 8px 0;
+  color: var(--ink);
+  font: 12px var(--sans);
+  cursor: pointer;
+}
+#song-tonality-current { display: block; text-align: center; color: var(--ink); font: 12px var(--mono); }
