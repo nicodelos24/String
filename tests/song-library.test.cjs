@@ -315,3 +315,20 @@ sandboxTest('reabrir y editar vuelve a derivar la estructura desde el estado de 
   ],arrangement:[{blockId:'b1',repeat:2},{blockId:'b2',repeat:1},{blockId:'b1',repeat:1}]},'la edición del working state se refleja en la estructura derivada');
   assert.deepEqual(ronda2.structure.arrangement,ronda1.structure.arrangement,'el arreglo queda igual entre guardados');
 });
+
+
+sandboxTest('T-59: guardar y reabrir sincroniza piano, switch y selector por el estado existente',()=>{
+  const {sandbox,element,storage}=setupUi();
+  element('#song-tonality-minor').handlers.change({target:{checked:true}});
+  element('#song-title').value='Pianito menor';
+  element('#song-save').handlers.click();
+  const saved=JSON.parse(storage.get('traste.songs.v1'));
+  assert.equal(saved.songs[0].tonality,'C:minor');
+  vm.runInContext("setSongTonality('G')",sandbox);
+  element('#song-list').value=saved.songs[0].id;
+  element('#song-open').handlers.click();
+  assert.equal(element('#song-tonality').value,'C:minor');
+  assert.equal(element('#song-tonality-minor').checked,true);
+  assert.equal(element('#song-tonality-current').textContent,'C menor');
+  assert.match(element('#song-tonality-piano').innerHTML,/data-song-pitch="0" aria-pressed="true"/);
+});

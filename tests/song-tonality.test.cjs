@@ -21,6 +21,7 @@ function setup() {
       set value(value) { this.currentValue = String(value); const i = this.options.findIndex(o => o.value === String(value)); if (i >= 0) this.selectedIndex = i; },
       get value() { return this.currentValue; },
       addEventListener(name, fn) { this.handlers[name] = fn; },
+      focus() {},
       querySelectorAll() { return []; },
       querySelector(selector) { return element(key + selector); },
       attrs: {},
@@ -216,4 +217,43 @@ test('sin tonalidad fija, el modo mostrado y la escala siguen la tarjeta de siem
     assert(!pos.style.includes('background-color: transparent;'),`Bb pertenece a la escala de Re eólico: ${pos.html}`);
   for(const pos of positions(element('#fretboard'),11))
     assert(pos.style.includes('background-color: transparent;'),`Si natural no está en la escala de Re eólico: ${pos.html}`);
+});
+
+
+test('T-59: piano y switch comparten la tonalidad con selector y mástil', () => {
+  const {element,run,change} = setup();
+  const click = pitch => element('#song-tonality-piano').handlers.click({target:{closest:()=>({dataset:{songPitch:String(pitch)}})}});
+  click(9);
+  assert.equal(run('tonalityId(songTonality)'), 'A');
+  assert.equal(element('#song-tonality').value, 'A');
+  element('#song-tonality-minor').handlers.change({target:{checked:true}});
+  assert.equal(run('tonalityId(songTonality)'), 'A:minor');
+  assert.equal(element('#song-tonality').value, 'A:minor');
+  assert.match(element('#key-signature-display').textContent, /A Menor/);
+  assert.equal(run('root'), 0, 'elegir tonalidad no cambia la raíz de la tarjeta');
+  change('#song-tonality', 'Eb:minor');
+  assert.equal(element('#song-tonality-minor').checked, true);
+  assert.match(element('#song-tonality-piano').innerHTML, /data-song-pitch="3" aria-pressed="true"/);
+  change('#song-tonality', '');
+  assert.equal(element('#song-tonality-minor').checked, false);
+  assert.equal(element('#song-tonality-current').textContent, 'Sin tonalidad fija');
+  assert(!element('#song-tonality-piano').innerHTML.includes('aria-pressed="true"'));
+});
+
+test('T-59: las 30 grafías del selector se reflejan sin perder identidad', () => {
+  const {element,run} = setup();
+  for (const id of JSON.parse(run('JSON.stringify(tonalities.map(tonalityId))'))) {
+    run(`setSongTonality(${JSON.stringify(id)})`);
+    assert.equal(element('#song-tonality').value, id);
+    assert.equal(element('#song-tonality-minor').checked, id.endsWith(':minor'));
+    assert.equal((element('#song-tonality-piano').innerHTML.match(/aria-pressed="true"/g)||[]).length, 1);
+    const label = id.replace(':minor','').replace('#','♯').replace('b','♭');
+    assert(element('#song-tonality-current').textContent.startsWith(label+' '));
+  }
+  run("setSongTonality('Gb')");
+  element('#song-tonality-minor').handlers.change({target:{checked:true}});
+  assert.equal(run('tonalityId(songTonality)'), 'F#:minor', 'usa la enarmónica disponible al cambiar de modo');
+  run("setSongTonality('Db')");
+  element('#song-tonality-minor').handlers.change({target:{checked:true}});
+  assert.equal(run('tonalityId(songTonality)'), 'C#:minor');
 });

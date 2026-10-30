@@ -17,6 +17,7 @@ declareAppState('songTonality', null);
 const songTonalityByKey = id => tonalities.find(item => tonalityId(item) === id || (item.scale === 'major' && item.key === id)) ?? null;
 function setSongTonality(id) {
   songTonality = id ? songTonalityByKey(id) : null;
+  renderSongTonalityPiano();
   updateView();
 }
 // Tónica de la tonalidad fijada, como índice de clase de paso. Sin tonalidad es
@@ -605,6 +606,48 @@ if (songTonalitySelect) {
     setSongTonality(event.target.value);
   });
 }
+
+// T-59: ambos controles usan la tonalidad de canción; no hay estado ni
+// persistencia paralela. Entre enarmónicas se conserva la grafía elegida
+// y, si no existe en el otro modo, se usa la armadura más sencilla.
+function songPianoTonality(pitch, scale) {
+  const candidates = tonalities.filter(item => item.scale === scale && noteToIndex(item.key) === pitch);
+  return candidates.find(item => item.key === songTonality?.key)
+    || candidates.sort((a, b) => (a.sharps + a.flats) - (b.sharps + b.flats))[0];
+}
+
+function renderSongTonalityPiano() {
+  const piano = document.querySelector('#song-tonality-piano');
+  if (!piano) return;
+  const scale = songTonality?.scale || 'major';
+  const key = (pitch, black, position) => {
+    const tonality = songPianoTonality(pitch, scale);
+    const label = tonality.key.replace('#', '♯').replace('b', '♭');
+    return `<button type="button" class="piano-key ${black ? 'piano-black' : 'piano-white'}" data-song-pitch="${pitch}" aria-pressed="${songTonic() === pitch}" aria-label="${label} ${scale === 'minor' ? 'menor' : 'mayor'}" style="--key-position: ${position}"><span>${label}</span></button>`;
+  };
+  piano.innerHTML = [0, 2, 4, 5, 7, 9, 11].map((pitch, i) => key(pitch, false, i)).join('')
+    + [[1, 1], [3, 2], [6, 4], [8, 5], [10, 6]].map(([pitch, position]) => key(pitch, true, position)).join('');
+  document.querySelector('#song-tonality-minor').checked = scale === 'minor';
+  document.querySelector('#song-tonality').value = songTonality ? tonalityId(songTonality) : '';
+  document.querySelector('#song-tonality-current').textContent = songTonality
+    ? `${songTonality.key.replace('#', '♯').replace('b', '♭')} ${scale === 'minor' ? 'menor' : 'mayor'}`
+    : 'Sin tonalidad fija';
+}
+
+document.querySelector('#song-tonality-piano')?.addEventListener('click', event => {
+  const key = event.target.closest('[data-song-pitch]');
+  if (!key) return;
+  const pitch = Number(key.dataset.songPitch);
+  const tonality = songPianoTonality(pitch, songTonality?.scale || 'major');
+  if (!tonality) return;
+  setSongTonality(tonalityId(tonality));
+  document.querySelector(`#song-tonality-piano [data-song-pitch="${pitch}"]`)?.focus();
+});
+document.querySelector('#song-tonality-minor')?.addEventListener('change', event => {
+  const tonality = songPianoTonality(songTonic() ?? 0, event.target.checked ? 'minor' : 'major');
+  setSongTonality(tonalityId(tonality));
+});
+renderSongTonalityPiano();
 
 // Event listener para el botón de ciclo de modo de visualización
 document.querySelector('#toggle-display').addEventListener('click', event => { 
