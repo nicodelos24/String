@@ -28,7 +28,27 @@ const tonalities = [
   { sharps: 0, flats: 5, key: 'Db', scale: 'major', scaleNotes: [1, 3, 5, 6, 8, 10, 0] },
   { sharps: 0, flats: 6, key: 'Gb', scale: 'major', scaleNotes: [6, 8, 10, 11, 1, 3, 5] },
   { sharps: 0, flats: 7, key: 'Cb', scale: 'major', scaleNotes: [11, 1, 3, 4, 6, 8, 10] },
+  // Menores naturales: relativas menores de las armaduras anteriores. El
+  // identificador distingue, por ejemplo, A mayor de A menor sin cambiar la
+  // grafía de tónica que usan el cómputo y la armadura.
+  { sharps: 0, flats: 0, key: 'A', id: 'A:minor', scale: 'minor', scaleNotes: [9, 11, 0, 2, 4, 5, 7] },
+  { sharps: 1, flats: 0, key: 'E', id: 'E:minor', scale: 'minor', scaleNotes: [4, 6, 7, 9, 11, 0, 2] },
+  { sharps: 2, flats: 0, key: 'B', id: 'B:minor', scale: 'minor', scaleNotes: [11, 1, 2, 4, 6, 7, 9] },
+  { sharps: 3, flats: 0, key: 'F#', id: 'F#:minor', scale: 'minor', scaleNotes: [6, 8, 9, 11, 1, 2, 4] },
+  { sharps: 4, flats: 0, key: 'C#', id: 'C#:minor', scale: 'minor', scaleNotes: [1, 3, 4, 6, 8, 9, 11] },
+  { sharps: 5, flats: 0, key: 'G#', id: 'G#:minor', scale: 'minor', scaleNotes: [8, 10, 11, 1, 3, 4, 6] },
+  { sharps: 6, flats: 0, key: 'D#', id: 'D#:minor', scale: 'minor', scaleNotes: [3, 5, 6, 8, 10, 11, 1] },
+  { sharps: 7, flats: 0, key: 'A#', id: 'A#:minor', scale: 'minor', scaleNotes: [10, 0, 1, 3, 5, 6, 8] },
+  { sharps: 0, flats: 1, key: 'D', id: 'D:minor', scale: 'minor', scaleNotes: [2, 4, 5, 7, 9, 10, 0] },
+  { sharps: 0, flats: 2, key: 'G', id: 'G:minor', scale: 'minor', scaleNotes: [7, 9, 10, 0, 2, 3, 5] },
+  { sharps: 0, flats: 3, key: 'C', id: 'C:minor', scale: 'minor', scaleNotes: [0, 2, 3, 5, 7, 8, 10] },
+  { sharps: 0, flats: 4, key: 'F', id: 'F:minor', scale: 'minor', scaleNotes: [5, 7, 8, 10, 0, 1, 3] },
+  { sharps: 0, flats: 5, key: 'Bb', id: 'Bb:minor', scale: 'minor', scaleNotes: [10, 0, 1, 3, 5, 6, 8] },
+  { sharps: 0, flats: 6, key: 'Eb', id: 'Eb:minor', scale: 'minor', scaleNotes: [3, 5, 6, 8, 10, 11, 1] },
+  { sharps: 0, flats: 7, key: 'Ab', id: 'Ab:minor', scale: 'minor', scaleNotes: [8, 10, 11, 1, 3, 4, 6] },
 ];
+
+const tonalityId = tonality => tonality?.scale === 'minor' ? `${tonality.key}:minor` : tonality?.key;
 
 const scales = {
   majorPentatonic: { name: 'Pentatónica mayor', intervals: [0, 2, 4, 7, 9], description: 'Sonido abierto y directo. Un gran punto de partida.' },
@@ -325,13 +345,15 @@ function calculateKeySignature(modeKey, rootNote, rootSpelling = '') {
   const degree = modeKey === 'minorPentatonic' ? 9 : mode.degree;
   const majorRoot = (rootNote - degree + 12) % 12;
 
-  // Buscar la tonalidad correspondiente, pero respetar la grafía pedida (bemoles o sostenidos)
-  const matchingTonality = tonalities.find(ton => noteToIndex(ton.key) === majorRoot);
+  // El modo ya se convirtió a su referencia mayor; una menor con la misma
+  // tónica tiene otra armadura y no participa de la elección enarmónica.
+  const majorTonalities = tonalities.filter(ton => ton.scale === 'major');
+  const matchingTonality = majorTonalities.find(ton => noteToIndex(ton.key) === majorRoot);
 
   if (matchingTonality) {
     // Si el usuario seleccionó una nota con bemol (Db, Eb, etc.), priorizar tonalidades con bemoles
     if (rootSpelling && (rootSpelling.includes('b') || rootSpelling === 'Cb')) {
-      const flatTonality = tonalities.find(ton =>
+      const flatTonality = majorTonalities.find(ton =>
         noteToIndex(ton.key) === majorRoot && ton.flats > 0
       );
       if (flatTonality) {
@@ -344,7 +366,7 @@ function calculateKeySignature(modeKey, rootNote, rootSpelling = '') {
     }
     // Si el usuario seleccionó una nota con sostenido (C#, F#, etc.), priorizar tonalidades con sostenidos
     else if (rootSpelling && (rootSpelling.includes('#') || rootSpelling === 'C#')) {
-      const sharpTonality = tonalities.find(ton =>
+      const sharpTonality = majorTonalities.find(ton =>
         noteToIndex(ton.key) === majorRoot && ton.sharps > 0
       );
       if (sharpTonality) {
@@ -370,7 +392,7 @@ function calculateKeySignature(modeKey, rootNote, rootSpelling = '') {
 // En la página, las declaraciones de arriba ya son visibles para app.js y para
 // los demás scripts clásicos; este objeto no cambia ese contrato.
 const MusicModel = {
-  notes, noteLabels, instruments, tonalities, scales, modes, chordTypes, qualities,
+  notes, noteLabels, instruments, tonalities, tonalityId, scales, modes, chordTypes, qualities,
   intervalColors, alteredIntervalColors, sharpToFlat, flatToSharp,
   noteName, noteToIndex, getModeNotes, getAvailableModes, chordQualityOf, findClosestMode,
   validGhostMode, validVariants, calculateKeySignature,

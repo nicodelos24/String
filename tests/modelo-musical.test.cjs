@@ -53,10 +53,21 @@ test('las tablas musicales conservan la forma que consume la aplicación', () =>
   assert.deepEqual(modelo.instruments.guitar.strings, [40, 45, 50, 55, 59, 64], 'afinación de guitarra intacta');
   assert.deepEqual(modelo.instruments.bass.strings, [28, 33, 38, 43], 'afinación de bajo intacta');
 
-  assert.equal(modelo.tonalities.length, 15, 'las quince tonalidades mayores');
+  assert.equal(modelo.tonalities.length, 30, 'quince tonalidades mayores y sus relativas menores naturales');
   for (const ton of modelo.tonalities) {
-    const esperadas = [0, 2, 4, 5, 7, 9, 11].map(intervalo => (modelo.noteToIndex(ton.key) + intervalo) % 12);
-    assert.deepEqual(ton.scaleNotes, esperadas, `la escala de ${ton.key} sale de su tónica`);
+    const intervals = ton.scale === 'minor' ? [0, 2, 3, 5, 7, 8, 10] : [0, 2, 4, 5, 7, 9, 11];
+    const esperadas = intervals.map(intervalo => (modelo.noteToIndex(ton.key) + intervalo) % 12);
+    assert.deepEqual(ton.scaleNotes, esperadas, `la escala ${ton.scale} de ${ton.key} sale de su tónica`);
+  }
+  const mayores = modelo.tonalities.filter(ton => ton.scale === 'major');
+  const menores = modelo.tonalities.filter(ton => ton.scale === 'minor');
+  assert.equal(mayores.length, 15);
+  assert.equal(menores.length, 15);
+  assert.equal(new Set(modelo.tonalities.map(modelo.tonalityId)).size, 30, 'cada selector/persistencia tiene una identidad única');
+  for (const minor of menores) {
+    const relative = mayores.find(major => major.sharps === minor.sharps && major.flats === minor.flats);
+    assert(relative, `${minor.id} comparte armadura con su relativa mayor`);
+    assert.equal((modelo.noteToIndex(minor.key) + 3) % 12, modelo.noteToIndex(relative.key), `${minor.id} es la relativa menor correcta`);
   }
 
   assert.equal(modelo.chordTypes.length, 23, 'los veintitrés tipos de acorde');
@@ -114,6 +125,24 @@ test('las funciones puras del modelo conservan el contrato que usaba app.js', ()
   assert.equal(modelo.calculateKeySignature('minorPentatonic', 9, 'A').key, 'C', 'la pentatónica menor usa su relativa mayor');
   assert.equal(modelo.calculateKeySignature('minorPentatonic', 0, 'C').key, 'Eb');
   assert.equal(modelo.calculateKeySignature('inventado', 0, 'C').key, 'C', 'un modo desconocido vuelve a Do sin armadura');
+});
+
+test('la armadura modal usa mayores aunque la tabla incluya menores enarmónicas', () => {
+  exigirModelo();
+  const casos = [
+    ['ionian', 3, 'D#', { sharps: 0, flats: 3, key: 'Eb' }],
+    ['ionian', 8, 'G#', { sharps: 0, flats: 4, key: 'Ab' }],
+    ['ionian', 10, 'A#', { sharps: 0, flats: 2, key: 'Bb' }],
+    ['dorian', 10, 'A#', { sharps: 0, flats: 4, key: 'Ab' }],
+    ['minorPentatonic', 8, 'G#', { sharps: 5, flats: 0, key: 'B' }],
+    ['minorPentatonic', 8, 'Ab', { sharps: 0, flats: 7, key: 'Cb' }],
+    ['ionian', 1, 'C#', { sharps: 7, flats: 0, key: 'C#' }],
+    ['ionian', 1, 'Db', { sharps: 0, flats: 5, key: 'Db' }],
+  ];
+  for (const [modo, raiz, grafia, esperada] of casos) {
+    assert.deepEqual(modelo.calculateKeySignature(modo, raiz, grafia), esperada,
+      `${modo} de ${grafia} conserva su armadura mayor de referencia`);
+  }
 });
 
 test('el modelo es una sola fuente: vive en music-model.js y ya no en app.js', () => {

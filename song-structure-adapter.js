@@ -113,7 +113,7 @@ function structureToWorking(doc) {
 // una composición, y exige que cada tarjeta esté dentro de algún bloque (una
 // tarjeta suelta no tiene dónde vivir en la composición — los bloques de
 // relleno, uno solo para la progresión, son ya cosas del compositor de T-41).
-function workingToStructure(chords, sections, tonality) {
+function workingToStructure(chords, sections, tonality, tonalityScale = 'major') {
   if (!Array.isArray(chords) || !Array.isArray(sections)) throw new Error('La inversa del adaptador pide la lista de tarjetas y las secciones.');
   if (!sections.length) throw new Error('No hay secciones que convertir: el estado legado sin secciones no estrena la estructura.');
   const covered = new Set();
@@ -147,7 +147,7 @@ function workingToStructure(chords, sections, tonality) {
   const model = checkStructureModel();
   if (!model) throw new Error('El modelo de bloques no está cargado.');
   const inner = {blocks, arrangement};
-  if (tonality !== undefined) inner.tonality = {key: tonality, scale: 'major'};
+  if (tonality !== undefined) inner.tonality = {key: tonality, scale: tonalityScale};
   const doc = model.createStructure(inner);
   const out = {version: STRUCTURE_VERSION, blocks: doc.blocks, arrangement: doc.arrangement};
   if (doc.tonality !== undefined) out.tonality = doc.tonality;

@@ -1,11 +1,8 @@
 // Contrato puro del contexto tonal (T-44 · QA-TONAL-01): la inferencia es
-// EXACTA por grado, no «más cercana». Para una tonalidad MAYOR, el modo que
-// le corresponde a un acorde lo decide el grado de su raíz respecto de la
-// tónica (I→jónico, ii→dórico, iii→frigio, IV→lidio, V→mixolidio, vi→eólico,
-// vii°→locrio) y solo se infere si el acorde es diatónico — todas sus notas
-// dentro de la escala. Todo lo demás devuelve null: el prestado (D mayor en
-// Do), el cromático (B♭ en Do) y la calidad incompatible conservan su modo
-// explícito, sin conversión silenciosa.
+// exacta por grado, no «más cercana». El mapa depende de la escala (mayor o
+// menor natural) y del grado de la raíz respecto de la tónica. Solo se infiere
+// si el acorde es diatónico —todas sus notas dentro de la escala—; prestados,
+// cromáticos y calidades incompatibles devuelven null, sin conversión silenciosa.
 // Autocontenido y sin DOM. Su única tabla compartida con la app (intervalos
 // por tipo) la vela la guarda de fuente única de su archivo de pruebas, que
 // la coteja contra chordTypes de app.js leído como texto.
@@ -15,6 +12,12 @@ const DIATONIC_DEGREES = [0, 2, 4, 5, 7, 9, 11];
 const MODES_BY_DEGREE = {
   0: 'ionian', 2: 'dorian', 4: 'phrygian',
   5: 'lydian', 7: 'mixolydian', 9: 'aeolian', 11: 'locrian'
+};
+
+const NATURAL_MINOR_DEGREES = [0, 2, 3, 5, 7, 8, 10];
+const MINOR_MODES_BY_DEGREE = {
+  0: 'aeolian', 2: 'locrian', 3: 'ionian', 5: 'dorian',
+  7: 'phrygian', 8: 'lydian', 10: 'mixolydian'
 };
 
 // Intervalos por tipo de acorde, exactamente los del cómputo (chordTypes de
@@ -51,7 +54,7 @@ function parsePitchClass(text) {
 }
 
 // El contrato. Recibe el acorde del dato de la app ({root: entero 0..11,
-// type: uno de chordTypes}) y la tonalidad ({key: 'C'…, scale: 'major'}).
+// type: uno de chordTypes}) y la tonalidad ({key: 'C'…, scale: 'major'|'minor'}).
 // Devuelve el modo exacto del grado, o null. Nunca lanza: datos mal formados
 // no infieren, no explota.
 function inferTonalContext(chord, tonality) {
@@ -61,19 +64,20 @@ function inferTonalContext(chord, tonality) {
   const intervals = CHORD_INTERVALS[chord.type];
   if (!intervals) return null;
   if (!tonality || typeof tonality !== 'object') return null;
-  if (tonality.scale !== 'major') return null;
+  if (tonality.scale !== 'major' && tonality.scale !== 'minor') return null;
   const tonic = parsePitchClass(tonality.key);
   if (tonic === null) return null;
   const grado = (chord.root - tonic + 12) % 12;
-  const modo = MODES_BY_DEGREE[grado];
+  const minor = tonality.scale === 'minor';
+  const modo = (minor ? MINOR_MODES_BY_DEGREE : MODES_BY_DEGREE)[grado];
   if (!modo) return null;
   for (const interval of intervals) {
-    if (!DIATONIC_DEGREES.includes((grado + interval) % 12)) return null;
+    if (!(minor ? NATURAL_MINOR_DEGREES : DIATONIC_DEGREES).includes((grado + interval) % 12)) return null;
   }
   return modo;
 }
 
-const TonalContext = {parsePitchClass, DIATONIC_DEGREES, MODES_BY_DEGREE, CHORD_INTERVALS, inferTonalContext};
+const TonalContext = {parsePitchClass, DIATONIC_DEGREES, MODES_BY_DEGREE, NATURAL_MINOR_DEGREES, MINOR_MODES_BY_DEGREE, CHORD_INTERVALS, inferTonalContext};
 
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = TonalContext;
