@@ -671,11 +671,12 @@ test('límites: 64 bloques y el techo de expansión exacto pasa, de más se rech
   assert.throws(() => createStructure({blocks: [{...grande, name: 'M'}, {id: 'h', name: "H", chords: [1]}], arrangement: [{blockId: 'g', repeat: 1}]}),);
 });
 
-test('tonalidad: la forma del contrato T-44, opcional y sin campos inventados', () => {
+test('tonalidad: la forma del contrato T-44, mayor o menor natural, opcional y sin campos inventados', () => {
   const con = createStructure({...BASE, tonality: {key: 'C', scale: 'major'}});
   assert.deepEqual(con.tonality, {key: 'C', scale: 'major'});
+  assert.deepEqual(createStructure({...BASE, tonality: {key: 'A', scale: 'minor'}}).tonality, {key: 'A', scale: 'minor'});
   assert.throws(() => createStructure({...BASE, tonality: null}), /debe ser la forma del contrato tonal/);
-  for(const malo of ['C', {}, {key: 'C'}, {scale: 'major'}, {key: 'C', scale: 'minor'}, {key: 'C', scale: 'major', vueltas: 1}])
+  for(const malo of ['C', {}, {key: 'C'}, {scale: 'major'}, {key: 'C', scale: 'harmonic-minor'}, {key: 'C', scale: 'major', vueltas: 1}])
     assert.throws(() => createStructure({...BASE, tonality: malo}), /tonalidad/i, `rechaza ${JSON.stringify(malo)}`);
 });
 
@@ -688,6 +689,8 @@ test('cruce de tónicas con el contrato tonal: el modelo acepta exactamente lo q
   const ton = createStructure({blocks: [{id: 'b1', name: 'B', chords: [{root: 2, type: 'm'}]}], arrangement: [], tonality: {key: 'C', scale: 'major'}}).tonality;
   assert.deepEqual(ton, {key: 'C', scale: 'major'});
   assert.equal(TonalContext.inferTonalContext({root: 2, type: 'm'}, ton), 'dorian', 'la forma que sale del modelo alimenta la inferencia de T-44');
+  const menor = createStructure({blocks: [{id: 'b1', name: 'B', chords: [{root: 9, type: 'm'}]}], arrangement: [], tonality: {key: 'A', scale: 'minor'}}).tonality;
+  assert.equal(TonalContext.inferTonalContext({root: 9, type: 'm'}, menor), 'aeolian', 'el sobre conserva y alimenta la tonalidad menor natural');
 });
 
 test('guarda de fuente única: la whitelist del modelo es la lista que el guardado de la app escribe', () => {

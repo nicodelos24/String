@@ -116,16 +116,16 @@ function parseTonic(text) {
 }
 
 // El contexto tonal opcional de canción: la forma (única) del contrato T-44.
-// Sin tonalidad el campo no viaja; con ella, mayor y tónica del cómputo.
+// Sin tonalidad el campo no viaja; con ella, escala y tónica del cómputo.
 // Un campo de más se rechaza en voz alta: por acá no se pierde un dato
 // sin que alguien lo sepa.
 function validateTonality(value) {
   if (value === undefined) return undefined;
   if (!isPlain(value)) throw new Error('La tonalidad de la canción debe ser la forma del contrato tonal (T-44).');
   checkFields(value, ['key', 'scale'], 'Tonalidad de la canción');
-  if (value.scale !== 'major') throw new Error('El contrato tonal (T-44) solo lleva tonalidad mayor: sin conversión silenciosa.');
+  if (value.scale !== 'major' && value.scale !== 'minor') throw new Error('La escala de tonalidad debe ser major o minor.');
   if (parseTonic(value.key) === null) throw new Error('La tónica de la tonalidad de la canción debe ser una nota del cómputo (C, F#, Bb…).');
-  return {key: value.key, scale: 'major'};
+  return {key: value.key, scale: value.scale};
 }
 
 function validateChord(value) {

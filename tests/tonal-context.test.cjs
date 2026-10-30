@@ -11,6 +11,7 @@ const {parsePitchClass, DIATONIC_DEGREES, MODES_BY_DEGREE, CHORD_INTERVALS, infe
 // null: el prestado, el cromático y la calidad incompatible conservan su modo
 // explícito, sin conversión silenciosa.
 const DO = {key: 'C', scale: 'major'};
+const LA_MENOR = {key: 'A', scale: 'minor'};
 
 test('la tonalidad se acepta por su tónica del cómputo de la app: doce grafías con # y b, basura rechazada',()=>{
   assert.equal(parsePitchClass('C'),0);
@@ -85,10 +86,31 @@ test('la tónica no es siempre Do: el grado se mide contra la tónica dada (G, B
   assert.equal(inferTonalContext({root:10,type:'maj'},{key:'G',scale:'major'}),null,'B♭ mayor es cromático en Sol: la escala de Sol no lo contiene');
 });
 
-test('la tonalidad no mayor no tiene tabla en este contrato: null sin inventar',()=>{
-  assert.equal(inferTonalContext({root:0,type:'maj'},{key:'A',scale:'minor'}),null);
+test('una tonalidad sin escala válida no tiene tabla: null sin inventar',()=>{
   assert.equal(inferTonalContext({root:0,type:'maj'},{}),null);
   assert.equal(inferTonalContext({root:0,type:'maj'},null),null);
+});
+
+test('los siete grados de La menor natural infieren el modo exacto por grado',()=>{
+  const tabla = [
+    [{root:9,type:'m'},'aeolian'],       // i, Am
+    [{root:11,type:'dim'},'locrian'],    // ii°, Bdim
+    [{root:0,type:'maj'},'ionian'],      // bIII, C
+    [{root:2,type:'m'},'dorian'],        // iv, Dm
+    [{root:4,type:'m'},'phrygian'],      // v, Em
+    [{root:5,type:'maj'},'lydian'],      // bVI, F
+    [{root:7,type:'maj'},'mixolydian']   // bVII, G
+  ];
+  for(const [chord,mode] of tabla) assert.equal(inferTonalContext(chord,LA_MENOR),mode,`${JSON.stringify(chord)} en La menor`);
+});
+
+test('el contexto menor acepta extensiones diatónicas y no infiere prestados ni cromáticos',()=>{
+  assert.equal(inferTonalContext({root:11,type:'m7b5'},LA_MENOR),'locrian');
+  assert.equal(inferTonalContext({root:9,type:'m7'},LA_MENOR),'aeolian');
+  assert.equal(inferTonalContext({root:7,type:'7'},LA_MENOR),'mixolydian');
+  assert.equal(inferTonalContext({root:4,type:'maj'},LA_MENOR),null,'E mayor introduce G# (menor armónica), no menor natural');
+  assert.equal(inferTonalContext({root:6,type:'maj'},LA_MENOR),null,'F# mayor es cromático en La menor natural');
+  assert.equal(inferTonalContext({root:0,type:'m'},LA_MENOR),null,'Cm prestado no se convierte');
 });
 
 test('datos mal formados devuelven null sin explotar: raíz, tipo y acorde completos',()=>{

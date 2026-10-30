@@ -54,7 +54,7 @@ function setup() {
     `quality=${type==='maj'?"'major'":type==='m'?"'minor'":"'major'"};` +
     `selectedMode='${mode}';displayModeIndex=1;updateView()`);
   return {run,change,element,positions,runCard,
-    setSong:(key)=>run(`songTonality=tonalities.find(t=>t.key===${JSON.stringify(key)})`||'null')};
+    setSong:(id)=>run(`songTonality=tonalities.find(t=>tonalityId(t)===${JSON.stringify(id)} || (t.scale==='major' && t.key===${JSON.stringify(id)}))`||'null')};
 }
 
 test('con tonalidad fija, colores y grados salen de la tonalidad y no cambian al cambiar de tarjeta',()=>{
@@ -87,6 +87,31 @@ test('sin tonalidad fija, el color sale de la tarjeta tal como siempre (regresi�
     assert(pos.style.includes('#E53935'),'sin tonalidad fija, Re de una tarjeta Re es Raíz');
     assert.match(pos.html,/data-interval="Raíz"/);
   }
+});
+
+test('la tonalidad menor fija gobierna grados, escala y armadura sin confundirse con su mayor homónima',()=>{
+  const {run,runCard,element,positions}=setup();
+  run("setSongTonality('A:minor')");
+  assert.equal(String(run('songTonality.scale')),'minor');
+  assert.equal(String(run('tonalityId(songTonality)')),'A:minor');
+  runCard(9,'m','aeolian');
+  assert.match(element('#key-signature-display').textContent,/A Menor/);
+  assert.equal(String(run('songInferredMode()')),'aeolian','Am es la tónica menor, modo eólico');
+  runCard(0,'maj','ionian');
+  assert.equal(String(run('songInferredMode()')),'ionian','C es el bIII de La menor natural');
+  const c=positions(element('#fretboard'),0);
+  assert(c.length>0,'la tercera menor aparece en el mástil');
+  for(const pos of c) assert.match(pos.html,/data-interval="3ª menor/,'C se colorea como bIII de La menor');
+});
+
+test('el selector ofrece 15 identidades menores naturales distintas de las mayores',()=>{
+  const html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
+  const select=html.match(/<select id="song-tonality">([\s\S]*?)<\/select>/)?.[1]||'';
+  const ids=[...select.matchAll(/<option value="([^"]+)"/g)].map(match=>match[1]);
+  const minorIds=ids.filter(id=>id.endsWith(':minor'));
+  assert.equal(minorIds.length,15);
+  assert.equal(new Set(ids).size,ids.length,'la menor y mayor homónimas tienen valores únicos');
+  assert(minorIds.includes('A:minor')&&minorIds.includes('Ab:minor'));
 });
 
 test('diatónico: la escala dibujada es la de la tonalidad (el modo inferido es el mismo)',()=>{

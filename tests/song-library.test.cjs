@@ -156,6 +156,22 @@ sandboxTest('la biblioteca guarda y reabre la tonalidad de canción y rechaza un
   assert.deepEqual(JSON.parse(storage.get('traste.songs.v1')).songs,[],'una tonalidad que la app no conoce no entra al guardado');
 });
 
+sandboxTest('la canción v1 distingue, guarda y reabre una tonalidad menor homónima',()=>{
+  const {sandbox,element,storage}=setupUi();
+  const progression=[{root:9,rootNoteName:'A',type:'m',mode:'aeolian',ghostMode:'',beats:4}];
+  vm.runInContext(`progression=${JSON.stringify(progression)}`,sandbox);
+  vm.runInContext("songTonality=tonalities.find(t=>tonalityId(t)==='A:minor')",sandbox);
+  element('#song-title').value='Canción en La menor';
+  vm.runInContext("document.getElementById('song-save').handlers.click()",sandbox);
+  const saved=JSON.parse(storage.get('traste.songs.v1'));
+  assert.equal(saved.songs[0].tonality,'A:minor','la identidad distingue La menor de La mayor en el mismo campo opcional');
+  element('#song-list').value=saved.songs[0].id;
+  vm.runInContext("document.getElementById('song-open').handlers.click()",sandbox);
+  assert.equal(element('#song-tonality').currentValue,'A:minor');
+  assert.equal(String(vm.runInContext('songTonality.scale',sandbox)),'minor');
+  assert.equal(String(vm.runInContext('songTonality.key',sandbox)),'A');
+});
+
 sandboxTest('canción v1 sin tonalidad: guarda y abre exactamente como antes (byte a byte compatible)',()=>{
   const {sandbox,element,storage}=setupUi();
   const progression=[{root:0,rootNoteName:'G',type:'maj',mode:'ionian',ghostMode:'',beats:4}];
@@ -231,6 +247,19 @@ sandboxTest('abrir una composición toma la tonalidad de la estructura cuando la
   const saved=JSON.parse(storage.get('traste.songs.v1')).songs.find(item=>item.id==='compo1');
   assert.equal(saved.tonality,'G','el selector alimenta el tono de la canción al guardar');
   assert.deepEqual(saved.structure.tonality,{key:'G',scale:'major'},'la estructura conserva la forma del contrato tonal');
+});
+sandboxTest('abrir, actualizar y reabrir conserva La menor en ambos contratos v1',()=>{
+  const {sandbox,element,storage}=setupUi();
+  abrirComposicion(sandbox,element,storage,{version:1,...arregloVersoEstribillo,tonality:{key:'A',scale:'minor'}});
+  assert.equal(element('#song-tonality').currentValue,'A:minor');
+  assert.equal(String(vm.runInContext('songTonality.scale',sandbox)),'minor');
+  vm.runInContext("document.getElementById('song-update').handlers.click()",sandbox);
+  const saved=JSON.parse(storage.get('traste.songs.v1')).songs.find(item=>item.id==='compo1');
+  assert.equal(saved.tonality,'A:minor');
+  assert.deepEqual(saved.structure.tonality,{key:'A',scale:'minor'});
+  vm.runInContext("document.getElementById('song-open').handlers.click()",sandbox);
+  assert.equal(element('#song-tonality').currentValue,'A:minor');
+  assert.equal(String(vm.runInContext('songTonality.scale',sandbox)),'minor');
 });
 sandboxTest('una estructura inválida rechaza la canción completa sin reemplazar nada',()=>{
   const {sandbox,element,storage}=setupUi();

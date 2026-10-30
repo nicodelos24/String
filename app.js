@@ -14,9 +14,9 @@ declareAppState('selectedTonality', tonalities[0]); // Escala global base
 // tarjeta no se toca: posiciones, resaltado y modo explícito siguen midiendo
 // desde la raíz, así que un acorde prestado o cromático no se infla.
 declareAppState('songTonality', null);
-const songTonalityByKey = key => tonalities.find(item => item.key === key) ?? null;
-function setSongTonality(key) {
-  songTonality = key ? songTonalityByKey(key) : null;
+const songTonalityByKey = id => tonalities.find(item => tonalityId(item) === id || (item.scale === 'major' && item.key === id)) ?? null;
+function setSongTonality(id) {
+  songTonality = id ? songTonalityByKey(id) : null;
   updateView();
 }
 // Tónica de la tonalidad fijada, como índice de clase de paso. Sin tonalidad es
@@ -39,7 +39,7 @@ function songInferredMode() {
   const inferred = typeof TonalContext !== 'undefined' && TonalContext?.inferTonalContext
     ? TonalContext.inferTonalContext(
         { root, type: chordType?.value },
-        { key: songTonality.key, scale: 'major' }
+        { key: songTonality.key, scale: songTonality.scale }
       )
     : null;
   return inferred && Object.hasOwn(modes, inferred) ? inferred : null;
@@ -461,7 +461,7 @@ function updateView() {
   }
 
   // Actualizar la tonalidad global basada en el modo seleccionado
-  const matchingTonality = tonalities.find(ton => ton.key === keySignature.key);
+  const matchingTonality = songTonality || tonalities.find(ton => ton.scale === 'major' && ton.key === keySignature.key);
   if (matchingTonality) {
     selectedTonality = matchingTonality;
   }
@@ -473,7 +473,7 @@ function updateView() {
       ? `${keySignature.flats} bemoles` 
       : 'Natural';
 
-  document.querySelector('#key-signature-display').textContent = `${keySignature.key} Mayor · ${keySignatureText}`;
+  document.querySelector('#key-signature-display').textContent = `${keySignature.key} ${songTonality?.scale === 'minor' ? 'Menor' : 'Mayor'} · ${keySignatureText}`;
   document.querySelector('#chord-readout').textContent = `${rootNoteName}${chordSuffix}`;
   document.querySelector('#mode-display').textContent = selectedModeData.name;
   document.querySelector('#key-signature-chord').textContent = `Armadura: ${keySignatureText}`;

@@ -88,7 +88,7 @@ test('el sobre versionado: la forma llega validada y toda otra se rechaza en voz
   assert.throws(() => parseStructure({version: 1, blocks: [{id: 'b', name: 'B', chords: [{root: 0, type: 'no-existe'}]}], arrangement: [{blockId: 'b', repeat: 1}]}), /no-existe|chord/i);
 });
 
-test('la tonalidad del over es la del contrato tonal (T-44), sin conversión silenciosa', () => {
+test('la tonalidad del sobre es la del contrato tonal T-44 extendido, sin conversión silenciosa', () => {
   const {createStructure} = require('../song-structure.js');
   const doc = createStructure({
     blocks: [{id: 'b', name: 'B', chords: [{root: 0, type: 'maj', beats: 4}]}],
@@ -97,7 +97,8 @@ test('la tonalidad del over es la del contrato tonal (T-44), sin conversión sil
   });
   const parsed = parseStructure({version: STRUCTURE_VERSION, blocks: doc.blocks, arrangement: doc.arrangement, tonality: {key: 'C', scale: 'major'}});
   assert.deepEqual(parsed.tonality, {key: 'C', scale: 'major'});
-  assert.throws(() => parseStructure({version: 1, blocks: doc.blocks, arrangement: doc.arrangement, tonality: {key: 'C', scale: 'minor'}}), /mayor/);
+  assert.deepEqual(parseStructure({version: 1, blocks: doc.blocks, arrangement: doc.arrangement, tonality: {key: 'A', scale: 'minor'}}).tonality, {key: 'A', scale: 'minor'});
+  assert.throws(() => parseStructure({version: 1, blocks: doc.blocks, arrangement: doc.arrangement, tonality: {key: 'C', scale: 'harmonic-minor'}}), /scale|major|minor/i);
   assert.throws(() => parseStructure({version: 1, blocks: doc.blocks, arrangement: doc.arrangement, tonality: {key: 'not-a-key', scale: 'major'}}), Error);
   assert.throws(() => parseStructure({version: 1, blocks: doc.blocks, arrangement: doc.arrangement, tonality: 'C'}), Error, 'la forma es la del contrato, no un texto');
 });
@@ -220,14 +221,15 @@ test('la tonalidad viaja de ida y de vuelta con la forma del contrato', () => {
   const sections = [{name: 'Verso', repeat: 1, indices: [0]}];
   const withTonal = workingToStructure(chords, sections, 'C');
   assert.deepEqual(withTonal.tonality, {key: 'C', scale: 'major'});
+  const withMinor = workingToStructure(chords, sections, 'A', 'minor');
+  assert.deepEqual(withMinor.tonality, {key: 'A', scale: 'minor'});
   const withoutTonal = workingToStructure(chords, sections);
   assert.equal(withoutTonal.tonality, undefined);
   assert.throws(() => workingToStructure(chords, sections, 'not-a-key'), Error);
   // Y la tonalidad del documento vuelve al estado de trabajo para el selector.
   const working = structureToWorking(parseStructure(withTonal));
   assert.deepEqual(working.tonality, {key: 'C', scale: 'major'}, 'el contexto tonal migra sin inventarse');
+  assert.deepEqual(structureToWorking(parseStructure(withMinor)).tonality, {key: 'A', scale: 'minor'}, 'La menor también vuelve completa para el selector');
   assert.deepEqual(structureToWorking(parseStructure(withoutTonal)).tonality, undefined);
-  assert.throws(() => structureToWorking(
-    parseStructure({version: 1, blocks: parseStructure(withTonal).blocks, arrangement: parseStructure(withTonal).arrangement, tonality: {key: 'C', scale: 'minor'}}),
-  ), Error);
+  assert.throws(() => workingToStructure(chords, sections, 'C', 'harmonic-minor'), Error);
 });

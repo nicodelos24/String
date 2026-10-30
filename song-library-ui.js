@@ -32,7 +32,7 @@
     // la canción v1, igual que sections: sin el campo, la canción queda como
     // siempre. Una clave que la app no conoce (un respaldo corrido) rechaza la
     // canción completa en vez de colar una tonalidad inventada.
-    if(song.tonality!==undefined && !tonalities.some(item=>item.key===song.tonality)) throw new Error('No es una tonalidad de canción válida.');
+    if(song.tonality!==undefined && !tonalities.some(item=>tonalityId(item)===song.tonality || (item.scale==='major' && item.key===song.tonality))) throw new Error('No es una tonalidad de canción válida.');
     // T-40 · QA-MOD-02: la estructura de bloques es un campo opcional de la
     // canción v1 (el mismo patrón de tonality y sections): sin el campo, la
     // canción valida byte a byte como hoy; con el campo, el sobre versionado
@@ -46,8 +46,9 @@
       // contradicen: iguales o una sola, está bien; distintas, la canción
       // completa se rechaza.
       if(structure.tonality!==undefined){
-        if(!tonalities.some(item=>item.key===structure.tonality.key)) throw new Error('La tonalidad de la estructura no es una tonalidad de canción válida.');
-        if(song.tonality!==undefined && song.tonality!==structure.tonality.key) throw new Error('La canción trae dos tonalidades distintas: la del selector y la de la estructura.');
+        const structureTonalityId=tonalityId(structure.tonality);
+        if(!tonalities.some(item=>tonalityId(item)===structureTonalityId || (item.scale==='major' && item.key===structure.tonality.key && structure.tonality.scale==='major'))) throw new Error('La tonalidad de la estructura no es una tonalidad de canción válida.');
+        if(song.tonality!==undefined && song.tonality!==structureTonalityId) throw new Error('La canción trae dos tonalidades distintas: la del selector y la de la estructura.');
       }
     }
     const settings={};
@@ -74,14 +75,14 @@
     const settings={};
     for(const key of settingIds) {const control=$(key); settings[key]=control.type==='checkbox'?control.checked:control.tagName==='SELECT'?control.value:Number(control.value);}
     const sections=window.StringSections.serialize();
-    const song={id,title:title.value,video:$('youtube-url').value.trim(),videoMarks:window.StringVideoSync.save($('youtube-url').value.trim()),chordUrl:$('song-chord-url').value,chords:progression,settings,sections,tonality:songTonality?.key};
+    const song={id,title:title.value,video:$('youtube-url').value.trim(),videoMarks:window.StringVideoSync.save($('youtube-url').value.trim()),chordUrl:$('song-chord-url').value,chords:progression,settings,sections,tonality:songTonality?tonalityId(songTonality):undefined};
     // T-40 · QA-MOD-02: si el estado abierto viene de una composición de
     // bloques, la estructura se deriva del estado de trabajo al guardar (una
     // sola autoridad): la inversa del adaptador traslada tarjetas y secciones
     // al sobre versionado, y rechaza en voz alta lo que no puede representar
     // sin reemplazar nada. Una canción v1 abierta sin estructura no estrena
     // el campo al guardar.
-    if(openedFromStructure) song.structure=SongStructureAdapter.workingToStructure(progression,sections,songTonality?.key);
+    if(openedFromStructure) song.structure=SongStructureAdapter.workingToStructure(progression,sections,songTonality?.key,songTonality?.scale);
     return validate(song);
   }
   function save(update) {run(()=>{
@@ -105,7 +106,7 @@
       const working=SongStructureAdapter.structureToWorking(song.structure);
       progression=working.chords; playingProgressionItem=null; selectProgressionChord(0);window.StringSections.load(working.sections);
       openedFromStructure=true;
-      if(effectiveTonality===undefined && working.tonality!==undefined) effectiveTonality=working.tonality.key;
+      if(effectiveTonality===undefined && working.tonality!==undefined) effectiveTonality=tonalityId(working.tonality);
     }else{
       progression=song.chords.map(chord=>({...chord})); playingProgressionItem=null; selectProgressionChord(0);window.StringSections.load(song.sections);
       openedFromStructure=false;
