@@ -345,13 +345,15 @@ function calculateKeySignature(modeKey, rootNote, rootSpelling = '') {
   const degree = modeKey === 'minorPentatonic' ? 9 : mode.degree;
   const majorRoot = (rootNote - degree + 12) % 12;
 
-  // Buscar la tonalidad correspondiente, pero respetar la grafía pedida (bemoles o sostenidos)
-  const matchingTonality = tonalities.find(ton => noteToIndex(ton.key) === majorRoot);
+  // El modo ya se convirtió a su referencia mayor; una menor con la misma
+  // tónica tiene otra armadura y no participa de la elección enarmónica.
+  const majorTonalities = tonalities.filter(ton => ton.scale === 'major');
+  const matchingTonality = majorTonalities.find(ton => noteToIndex(ton.key) === majorRoot);
 
   if (matchingTonality) {
     // Si el usuario seleccionó una nota con bemol (Db, Eb, etc.), priorizar tonalidades con bemoles
     if (rootSpelling && (rootSpelling.includes('b') || rootSpelling === 'Cb')) {
-      const flatTonality = tonalities.find(ton =>
+      const flatTonality = majorTonalities.find(ton =>
         noteToIndex(ton.key) === majorRoot && ton.flats > 0
       );
       if (flatTonality) {
@@ -364,7 +366,7 @@ function calculateKeySignature(modeKey, rootNote, rootSpelling = '') {
     }
     // Si el usuario seleccionó una nota con sostenido (C#, F#, etc.), priorizar tonalidades con sostenidos
     else if (rootSpelling && (rootSpelling.includes('#') || rootSpelling === 'C#')) {
-      const sharpTonality = tonalities.find(ton =>
+      const sharpTonality = majorTonalities.find(ton =>
         noteToIndex(ton.key) === majorRoot && ton.sharps > 0
       );
       if (sharpTonality) {

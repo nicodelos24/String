@@ -127,6 +127,24 @@ test('las funciones puras del modelo conservan el contrato que usaba app.js', ()
   assert.equal(modelo.calculateKeySignature('inventado', 0, 'C').key, 'C', 'un modo desconocido vuelve a Do sin armadura');
 });
 
+test('la armadura modal usa mayores aunque la tabla incluya menores enarmónicas', () => {
+  exigirModelo();
+  const casos = [
+    ['ionian', 3, 'D#', { sharps: 0, flats: 3, key: 'Eb' }],
+    ['ionian', 8, 'G#', { sharps: 0, flats: 4, key: 'Ab' }],
+    ['ionian', 10, 'A#', { sharps: 0, flats: 2, key: 'Bb' }],
+    ['dorian', 10, 'A#', { sharps: 0, flats: 4, key: 'Ab' }],
+    ['minorPentatonic', 8, 'G#', { sharps: 5, flats: 0, key: 'B' }],
+    ['minorPentatonic', 8, 'Ab', { sharps: 0, flats: 7, key: 'Cb' }],
+    ['ionian', 1, 'C#', { sharps: 7, flats: 0, key: 'C#' }],
+    ['ionian', 1, 'Db', { sharps: 0, flats: 5, key: 'Db' }],
+  ];
+  for (const [modo, raiz, grafia, esperada] of casos) {
+    assert.deepEqual(modelo.calculateKeySignature(modo, raiz, grafia), esperada,
+      `${modo} de ${grafia} conserva su armadura mayor de referencia`);
+  }
+});
+
 test('el modelo es una sola fuente: vive en music-model.js y ya no en app.js', () => {
   exigirModelo();
   const app = leer('app.js');
