@@ -41,6 +41,7 @@ class MicrophoneReader {
     // tríada que el detector no se anima a bautizar): el mástil las dibuja
     // igual. Va por un aviso propio para no tocar el significado de onChord.
     this.onNotes = options.onNotes || (() => {});
+    this.getTonality = typeof options.getTonality === 'function' ? options.getTonality : () => null;
     this.onState = options.onState || (() => {});
     this.detect = options.detect || (typeof detectPitch === 'function' ? detectPitch : () => null);
     this.detectChord = options.detectChord || (typeof detectChord === 'function' ? detectChord : null);
@@ -145,7 +146,7 @@ class MicrophoneReader {
     if (this.chordAnalyser && this.chordBuffer && now - this.lastChordFrame >= 60) {
       this.lastChordFrame = now;
       this.chordAnalyser.getFloatFrequencyData(this.chordBuffer);
-      const candidate = this.detectChord(this.chordBuffer, this.sampleRate, this.chordAnalyser.fftSize);
+      const candidate = this.detectChord(this.chordBuffer, this.sampleRate, this.chordAnalyser.fftSize, this.getTonality());
       const stable = this.followChord(candidate, this.chordHysteresis, now);
       this.chordHysteresis = stable.state;
       if (stable.chord !== undefined) this.onChord(stable.chord);
