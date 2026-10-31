@@ -343,6 +343,14 @@ if (typeof document !== 'undefined') (() => {
       liveNotes = detection;
       if (!liveChord) drawDetectedChord();
     },
+    // T-60: el contexto cambia junto con el selector/piano. Sin tonalidad fija,
+    // selectedTonality es la armadura vigente de la página; T-44 decide si la
+    // candidata es diatónica y el detector solo la usa como prior, no como nota.
+    getTonality: () => {
+      const current = (typeof songTonality !== 'undefined' && songTonality)
+        || (typeof selectedTonality !== 'undefined' && selectedTonality);
+      return current ? { key: current.key, scale: current.scale } : null;
+    },
     onState: renderState,
   });
 

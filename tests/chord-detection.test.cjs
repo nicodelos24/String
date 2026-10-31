@@ -1,6 +1,6 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { detectChord, followStableChord } = require('../chord-detection.js');
+const { detectChord, followStableChord, preferTonalCandidates } = require('../chord-detection.js');
 const { audioSpectrum } = require('./helpers/audio-spectrum.cjs');
 
 const voicings = [
@@ -66,6 +66,25 @@ test('inversión: nombra el acorde según el bajo real en lugar de descartarlo',
 });
 test('si la raíz apenas suena no se afirma la calidad', () => {
   assert.equal(detectChord(audioSpectrum([48, 52, 55], { amplitudes: [0.06, 0.9, 0.9] }), 48000), null);
+});
+
+test('T-60: la tonalidad prioriza una alternativa diatónica solo si el espectro la respalda y compite', () => {
+  const candidates = [
+    { root: 2, type: 'maj', confidence: 0.86, pitches: [2, 6, 9] }, // Re mayor: prestado en Do
+    { root: 2, type: 'm', confidence: 0.82, pitches: [2, 5, 9] }, // Re menor: ii de Do
+  ];
+  const inDo = preferTonalCandidates(candidates, { key: 'C', scale: 'major' });
+  assert.deepEqual(inDo.map(candidate => candidate.type), ['m']);
+  assert.deepEqual(inDo[0].pitches, [2, 5, 9], 'el prior elige solo notas de la candidata observada');
+
+  const clearChromatic = [
+    { root: 2, type: 'maj', confidence: 0.95, pitches: [2, 6, 9] },
+    { root: 2, type: 'm', confidence: 0.82, pitches: [2, 5, 9] },
+  ];
+  assert.deepEqual(preferTonalCandidates(clearChromatic, { key: 'C', scale: 'major' }), clearChromatic,
+    'una ventaja espectral clara prevalece sobre la tonalidad');
+  assert.deepEqual(preferTonalCandidates(candidates, null), candidates,
+    'sin contexto tonal conserva el ranking anterior');
 });
 test('silencio, ruido, notas solas y quintas no inventan acordes', () => {
   for (const midis of [[], [40], [45], [48], [52], [57], [64], [40, 47], [48, 55], [48, 49, 54, 58]]) {

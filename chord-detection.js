@@ -1,5 +1,9 @@
 // Reconocimiento experimental de acordes simultáneos. No acumula notas de arpegios.
 // Recibe el espectro en dB de un AnalyserNode (ventana Blackman, sin suavizado).
+const ChordTonalContextForPrior = typeof module !== 'undefined' && module.exports
+  ? require('./tonal-context.js')
+  : (typeof window !== 'undefined' ? window.TonalContext : null);
+
 const LIVE_CHORD_TEMPLATES = [
   { type: 'maj', intervals: [0, 4, 7], mode: 'ionian' },
   { type: 'm', intervals: [0, 3, 7], mode: 'aeolian' },
@@ -51,6 +55,25 @@ const ROOT_MIN_SHARE = 0.3;
 // Ventana de empate para acordes enarmónicos o invertidos. Fuera de ella el
 // acorde debe ser claramente mejor; dentro se decide por la nota más grave.
 const TIE_BREAK_WINDOW = 0.05;
+// El prior tonal solo resuelve candidatos cercanos: una evidencia espectral
+// claramente más fuerte sigue ganando aunque el acorde sea cromático/prestado.
+const TONAL_PRIOR_WINDOW = 0.08;
+
+function preferTonalCandidates(candidates, tonality) {
+  const infer = ChordTonalContextForPrior?.inferTonalContext;
+  if (!Array.isArray(candidates) || !candidates.length || !infer
+    || !tonality || (tonality.scale !== 'major' && tonality.scale !== 'minor')) return candidates;
+  const fits = candidate => infer({ root: candidate.root, type: candidate.type }, tonality) !== null;
+  const bestConfidence = Math.max(...candidates.map(candidate => candidate.confidence));
+  const diatonic = candidates.filter(fits);
+  if (!diatonic.length) return candidates;
+  const bestDiatonicConfidence = Math.max(...diatonic.map(candidate => candidate.confidence));
+  if (bestConfidence - bestDiatonicConfidence > TONAL_PRIOR_WINDOW) return candidates;
+  // Entre lecturas espectrales competitivas, preferir el acorde diatónico que
+  // T-44 permite inferir. Las notas que se dibujan siguen viniendo del espectro:
+  // aquí solo se elige una plantilla ya presente, no se completa ninguna nota.
+  return diatonic.filter(candidate => bestDiatonicConfidence - candidate.confidence <= TONAL_PRIOR_WINDOW);
+}
 
 // La medición del espectro, una sola vez para las dos preguntas que la página
 // hace sobre el mismo fotograma: «¿qué acorde es?» (detectChord, que lo nombra)
@@ -126,7 +149,7 @@ function analyzeSpectrum(spectrum, sampleRate, fftSize) {
   return { present, chroma, total, maximum, lowestMidi, audible };
 }
 
-function detectChord(spectrum, sampleRate, fftSize = spectrum.length * 2) {
+function detectChord(spectrum, sampleRate, fftSize = spectrum.length * 2, tonality = null) {
   const analysis = analyzeSpectrum(spectrum, sampleRate, fftSize);
   if (!analysis) return null;
   const { present, chroma, total, maximum, lowestMidi, audible } = analysis;
@@ -148,14 +171,16 @@ function detectChord(spectrum, sampleRate, fftSize = spectrum.length * 2) {
       candidates.push({ root, type: template.type, mode: template.mode, pitches, confidence: coverage - extra * 0.12 });
     }
   }
-  candidates.sort((a, b) => b.confidence - a.confidence);
+  const rankedCandidates = preferTonalCandidates(candidates, tonality);
+  if (!rankedCandidates.length) return null;
+  rankedCandidates.sort((a, b) => b.confidence - a.confidence);
   // Los conjuntos enarmónicos (p. ej. Dm7 = F6, Am6 = F#m7b5) y los acordes
   // simétricos (dim7, aug) empatan en cobertura, y las inversiones se acercan
   // mucho. La raíz la decide la nota más grave que suena de verdad; si ninguna
   // coincide, el peso de las cuerdas graves desempata.
-  if (candidates.length > 1 && candidates[0].confidence - candidates[1].confidence < TIE_BREAK_WINDOW) {
-    if (candidates[0].confidence < 0.82) return null;
-    const tied = candidates.filter(candidate => candidates[0].confidence - candidate.confidence < TIE_BREAK_WINDOW);
+  if (rankedCandidates.length > 1 && rankedCandidates[0].confidence - rankedCandidates[1].confidence < TIE_BREAK_WINDOW) {
+    if (rankedCandidates[0].confidence < 0.82) return null;
+    const tied = rankedCandidates.filter(candidate => rankedCandidates[0].confidence - candidate.confidence < TIE_BREAK_WINDOW);
     const lowestClass = Number.isFinite(lowestMidi) ? lowestMidi % 12 : -1;
     const bassScore = candidate => {
       let score = lowestClass === candidate.root ? 12 : 0;
@@ -166,8 +191,8 @@ function detectChord(spectrum, sampleRate, fftSize = spectrum.length * 2) {
     if (chroma[chosen.root] < maximum * ROOT_MIN_SHARE) return null;
     return Number.isFinite(lowestMidi) ? { ...chosen, bass: lowestMidi } : chosen;
   }
-  const best = candidates[0];
-  if (!best || best.confidence < 0.82 || (candidates[1] && best.confidence - candidates[1].confidence < 0.08)) return null;
+  const best = rankedCandidates[0];
+  if (!best || best.confidence < 0.82 || (rankedCandidates[1] && best.confidence - rankedCandidates[1].confidence < 0.08)) return null;
   if (chroma[best.root] < maximum * ROOT_MIN_SHARE) return null;
   return Number.isFinite(lowestMidi) ? { ...best, bass: lowestMidi } : best;
 }
@@ -218,4 +243,4 @@ function followStableChord(detected, state, now, options) {
   return followStableByKey(chord => chord ? JSON.stringify([chord.root, chord.type, chord.bass ?? null]) : null, detected, state, now, options);
 }
 
-if (typeof module !== 'undefined' && module.exports) module.exports = { detectChord, followStableChord, detectSoundingNotes, followStableNotes, analyzeSpectrum, LIVE_CHORD_TEMPLATES };
+if (typeof module !== 'undefined' && module.exports) module.exports = { detectChord, followStableChord, detectSoundingNotes, followStableNotes, analyzeSpectrum, preferTonalCandidates, LIVE_CHORD_TEMPLATES };

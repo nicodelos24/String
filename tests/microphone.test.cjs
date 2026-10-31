@@ -146,6 +146,35 @@ test('micrófono con ambos analizadores inicia, confirma acordes y libera el aud
   assert.equal(closed, 1); assert.equal(stopped, 1);
 });
 
+test('MicrophoneReader consulta la tonalidad actual en cada fotograma del detector', async () => {
+  let frame, now = 0, tonality = { key: 'C', scale: 'major' };
+  const received = [];
+  const spectrum = audioSpectrum([48, 52, 55], { size: 8192 });
+  const reader = new MicrophoneReader({
+    getUserMedia: async () => ({ getTracks: () => [{ stop() {} }] }),
+    createContext: () => ({ sampleRate: 48000, resume: async () => {},
+      createMediaStreamSource: () => ({ connect() {} }), close() {} }),
+    createAnalyser(context, size) {
+      return size === 8192
+        ? { fftSize: size, frequencyBinCount: size / 2, getFloatFrequencyData(buffer) { buffer.set(spectrum); } }
+        : { fftSize: size, getFloatTimeDomainData(buffer) { buffer.fill(0); } };
+    },
+    detect: () => null,
+    detectChord: (buffer, sampleRate, fftSize, currentTonality) => { received.push(currentTonality); return null; },
+    followChord: (detected, state) => ({ state, chord: detected }),
+    getTonality: () => tonality,
+    now: () => now,
+    requestFrame(fn) { frame = fn; return 1; }, cancelFrame() {},
+  });
+  await reader.start();
+  frame();
+  tonality = { key: 'A', scale: 'minor' };
+  now += 60;
+  frame();
+  assert.deepEqual(received, [{ key: 'C', scale: 'major' }, { key: 'A', scale: 'minor' }]);
+  reader.stop();
+});
+
 test('si falla el analizador de acordes se cierran el contexto y el micrófono', async () => {
   let closed = 0, stopped = 0;
   const states = [];

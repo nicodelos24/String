@@ -318,6 +318,7 @@ function setupLabels() {
     window: { addEventListener() {}, dispatchEvent(event) { context.events.push(event.type); } }, MutationObserver: class { observe() {} },
     MicrophoneReader: class { constructor(options) { callbacks = options; } },
     setTimeout, root: 0, selectedMode: 'ionian', quality: 'major', activeProgression: 0,
+    songTonality: null, selectedTonality: { key: 'C', scale: 'major' },
     rootNoteName: 'C', chordType: { value: 'maj' }, ghostMode: '',
     progression: [], progressionEdited: false, draggingProgressionItem: null,
     chordTypes: [{ value: 'maj', suffix: '' }],
@@ -347,6 +348,17 @@ test('el rótulo del micrófono aparece con el micrófono encendido y arranca en
   assert.equal(pressedMode(), 'degree');
   callbacks.onState('stopped');
   assert.equal(element('mic-note-label').hidden, true, 'al detenerlo se esconde otra vez');
+});
+
+test('el detector del micrófono lee dinámicamente la tonalidad fija o el contexto actual', () => {
+  const { context, callbacks } = setupLabels();
+  let actual = callbacks.getTonality();
+  assert.equal(actual.key, 'C');
+  assert.equal(actual.scale, 'major', 'sin fija usa el contexto de la página');
+  context.songTonality = { key: 'A', scale: 'minor' };
+  actual = callbacks.getTonality();
+  assert.equal(actual.key, 'A');
+  assert.equal(actual.scale, 'minor', 'la tonalidad fija manda y se lee en vivo');
 });
 
 test('el micrófono escribe el grado en la nota que suena y devuelve el rótulo de la página al soltarla', () => {

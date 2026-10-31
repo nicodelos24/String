@@ -159,6 +159,16 @@ test('la detección dice qué notas suenan a la vez también con dos notas', () 
   assert.equal(detectSoundingNotes(new Float32Array(16), 48000), null, 'medidas inválidas no dibujan nada');
 });
 
+test('T-60: un acorde cromático real no se borra y el prior no añade clases ausentes', () => {
+  const spectrum = audioSpectrum([50, 54, 57], { harmonics: 6, noise: 0.002 }); // Re mayor, prestado en Do
+  const sounding = detectSoundingNotes(spectrum, 48000);
+  const chord = detectChord(spectrum, 48000, undefined, { key: 'C', scale: 'major' });
+  assert.equal(chord?.root, 2);
+  assert.equal(chord?.type, 'maj', 'el prior tonal no prohíbe el acorde prestado que sí se oyó');
+  assert.ok(chord.pitches.every(pitch => sounding.pitches.includes(pitch)), 'el candidato dibujado proviene del set medido');
+  assert.deepEqual(sounding.pitches, [2, 6, 9], 'el set real se mantiene como evidencia del micrófono');
+});
+
 test('el conjunto de notas se confirma y se suelta con la misma paciencia que el acorde', () => {
   const c = { pitches: [0, 4], bass: 48 };
   const am = { pitches: [0, 4, 9], bass: 45 };
