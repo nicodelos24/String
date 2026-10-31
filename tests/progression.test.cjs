@@ -363,6 +363,21 @@ test('pentatonic view follows each chord quality across the progression and upda
   assert.equal(run('viewMode()'),'aeolian');
 });
 
+test('seleccionar un acorde actualiza vista y selección sin reconstruir todas las tarjetas', () => {
+  const {run} = setup();
+  run(`
+    progression=[{root:0,type:'maj',mode:'ionian'},{root:2,type:'m',mode:'dorian'}];
+    let listRebuilds=0;
+    renderProgression=()=>{listRebuilds++;};
+    showProgressionChord(progression[1],1);
+  `);
+  assert.equal(run('activeProgression'),1);
+  assert.equal(run('root'),2);
+  assert.equal(run('listRebuilds'),0,'el contenido de las tarjetas no cambió al seleccionar otra');
+  run('renderProgression()');
+  assert.equal(run('listRebuilds'),1,'los flujos que reconstruyen la lista mantienen su puerta explícita');
+});
+
 test('triad highlighting excludes extensions and keeps altered fifths', () => {
   const {run} = setup();
   for (const [type, triad, excluded] of [['maj7',[0,4,7],[11]],['m7',[0,3,7],[10]],['7',[0,4,7],[10]],['maj9',[0,4,7],[11,2]],['dim7',[0,3,6],[9]],['aug',[0,4,8],[]]]) {

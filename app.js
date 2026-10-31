@@ -439,7 +439,11 @@ function viewMode(){
   return songInferredMode() ?? selectedMode;
 }
 document.querySelector('#pentatonic-view').addEventListener('change',event=>{pentatonicView=event.target.checked;updateView();});
-function updateView() {
+let updateViewDepth = 0;
+function updateView({ renderCards = true } = {}) {
+  const outermost = updateViewDepth === 0;
+  updateViewDepth++;
+  try {
   const mode = viewMode();
   modeSelector.querySelectorAll('input[name="mode"]').forEach(radio=>{radio.checked=radio.value===mode;});
   if(displayModeIndex>=3 && !pentatonicView && modes[mode].intervals.length!==7)displayModeIndex=1;
@@ -483,7 +487,11 @@ function updateView() {
   document.querySelector('.board-eyebrow').textContent = `MÁSTIL / ${instruments[instrument].name.toUpperCase()}`;
 
   updateModeLegend();
-  renderFretboard(); renderProgression();
+  renderFretboard();
+  if (renderCards && outermost) renderProgression();
+  } finally {
+    updateViewDepth--;
+  }
 }
 
 function updateModeLegend() {
@@ -547,6 +555,35 @@ function renderProgression() {
     return `<div class="progression-card ${index === activeProgression ? 'active' : ''} ${item === playingProgressionItem ? 'playing' : ''}" data-index="${index}" tabindex="0" role="group" aria-label="Acorde ${index + 1}, compás ${barNumber}, ${beatsLabel(beats)} de compás. Arrastrar o usar Alt y flechas para mover. Flechas arriba y abajo para recorrer. Supr para borrar.">><button type="button" data-remove="${index}" aria-label="Quitar acorde ${index + 1}">×</button>${badgeVariantes}<small>${index + 1}${item === playingProgressionItem ? ' · sonando' : ''}</small><span class="progression-mode">${modes[item.mode || defaultChordMode(item)]?.name || ''}</span>${filaBeats}<span class="drag-grip" aria-hidden="true">⠿</span><strong>${item.rootNoteName || noteName(item.root)}${type ? type.suffix : ''}</strong></div>`;
   }).join('');
 }
+
+// Seleccionar una tarjeta cambia su estado activo/sonando, no el contenido de
+// las demás. No reconstruir miles de nodos en cada cambio de acorde: los flujos
+// que sí cambian la lista siguen llamando a renderProgression() explícitamente.
+function updateProgressionSelection() {
+  const list = document.querySelector('#progression');
+  if (!list) return;
+  const active = list.querySelector('.progression-card.active');
+  active?.classList?.remove('active');
+  const playing = list.querySelector('.progression-card.playing');
+  if (playing) {
+    playing.classList?.remove('playing');
+    const index = Number(playing.dataset?.index);
+    const label = playing.querySelector?.('small');
+    if (label && Number.isInteger(index)) label.textContent = String(index + 1);
+  }
+  const activeIndex = Number.isInteger(activeProgression) ? activeProgression : -1;
+  const activeCard = activeIndex >= 0 ? list.querySelector(`[data-index="${activeIndex}"]`) : null;
+  activeCard?.classList?.add('active');
+  const playingIndex = progression.indexOf(playingProgressionItem);
+  if (playingIndex >= 0) {
+    const playingCard = list.querySelector(`[data-index="${playingIndex}"]`);
+    playingCard?.classList?.add('playing');
+    const label = playingCard?.querySelector?.('small');
+    if (label) label.textContent = `${playingIndex + 1} · sonando`;
+  }
+  updateVariantsEditor();
+}
+
 instrumentSelect.addEventListener('change', event => { instrument = event.target.value; updateView(); });
 rootSelect.addEventListener('change', event => {
   activeProgression = -1;
@@ -696,7 +733,8 @@ function showProgressionChord(item, index = -1) {
   selectedMode = item.mode || defaultChordMode(item);
   ghostMode = item.ghostMode || '';
   populateControls();
-  updateView();
+  updateView({ renderCards: false });
+  updateProgressionSelection();
   // Desplazar solo la banda, y solo lo necesario: no mover la página ni
   // interferir con la rueda cuando la tarjeta ya está a la vista.
   const list = document.querySelector('#progression');
@@ -754,6 +792,7 @@ function duplicateProgressionChord(index, deferSave=false) {
   progressionEdited=true;
   if(!deferSave)saveCustomProgression();
   selectProgressionChord(index + 1);
+  renderProgression();
 }
 
 // La tarjeta que se añade. Sin `item` es la de siempre: lo que está elegido a la
@@ -798,6 +837,7 @@ function removeProgressionChord(index) {
     renderProgression();
   } else if (activeProgression === index) {
     selectProgressionChord(Math.min(index, progression.length - 1));
+    renderProgression();
   } else {
     if (activeProgression > index) activeProgression--;
     renderProgression();
