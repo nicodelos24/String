@@ -96,7 +96,7 @@ if(typeof document!=='undefined')document.querySelector('#apply-preset').addEven
     // Con las tarjetas vacías no hay acorde que seleccionar, y updateView no
     // llega a pintarse: hay que repintar la lista a mano o se quedarían las
     // tarjetas viejas en pantalla.
-    if(progression.length)selectProgressionChord(0);
+    if(progression.length){selectProgressionChord(0);renderProgression();}
     else{activeProgression=-1;renderProgression();}
     window.dispatchEvent(new Event('traste:preset-applied'));
     const compases=Math.round(chords.reduce((sum,chord)=>sum+(Math.abs(Number(chord.beats))||4),0)/4);
@@ -110,6 +110,7 @@ if(typeof document!=='undefined')document.querySelector('#apply-preset').addEven
   window.dispatchEvent(new Event('traste:load-song'));
   progression=preset.chords.map(chord=>({...chord}));progressionEdited=true;playingProgressionItem=null;
   selectProgressionChord(0);
+  renderProgression();
   document.querySelector('#player-bpm').value=preset.bpm;
   window.dispatchEvent(new Event('traste:preset-applied'));
   document.querySelector('#player-style').value=preset.style;
