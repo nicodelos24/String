@@ -8,7 +8,7 @@ const {createServer} = require('../../server.cjs');
   let browser;
   try {
     browser = await chromium.launch({headless:true});
-    for (const width of [320, 1366]) for (const theme of ['light', 'dark']) {
+    for (const width of [320, 390, 768, 1366]) for (const theme of ['light', 'dark']) {
       const page = await browser.newPage({viewport:{width,height:740},reducedMotion:'reduce'});
       const errors=[];
       page.on('pageerror', error=>errors.push(error.message));
@@ -43,16 +43,41 @@ const {createServer} = require('../../server.cjs');
       await page.locator('#song-tonality').selectOption('');
       assert.equal(await piano.locator('[aria-pressed="true"]').count(),0);
       assert.equal(await page.locator('#song-tonality-current').textContent(),'Sin tonalidad fija');
+      const spelling=page.locator('#song-tonality-spelling');
+      await page.locator('#song-tonality').selectOption('C#');
+      await spelling.check();
+      assert.equal(await page.locator('#song-tonality').inputValue(),'Db');
+      assert.equal(await piano.locator('[data-song-pitch="1"]').getAttribute('aria-label'),'D♭ mayor');
+      assert.equal(await page.locator('#song-tonality-current').textContent(),'D♭ mayor');
+      assert.match(await page.locator('#key-signature-display').textContent(),/Db Mayor · 5 bemoles/);
+      assert.equal(await page.locator('#song-tonality-minor').isChecked(),false);
+      await spelling.uncheck();
+      assert.equal(await page.locator('#song-tonality').inputValue(),'C#');
+      assert.equal(await piano.locator('[data-song-pitch="1"]').getAttribute('aria-label'),'C♯ mayor');
+      await page.evaluate(()=>{document.querySelector('#song-title').value='Pianito T-64';document.querySelector('#song-save').click();});
+      const savedTonality=await page.evaluate(()=>JSON.parse(localStorage.getItem('traste.songs.v1')).songs.find(song=>song.title==='Pianito T-64'));
+      assert.equal(savedTonality.tonality,'C#','la grafía elegida queda en la canción guardada');
+      await page.evaluate(id=>{const select=document.querySelector('#song-list');select.value=id;document.querySelector('#song-open').click();},savedTonality.id);
+      assert.equal(await page.locator('#song-tonality').inputValue(),'C#');
+      assert.equal(await spelling.isChecked(),false);
+      await page.waitForTimeout(10);
+      const savedPreference=await page.evaluate(()=>JSON.parse(localStorage.getItem('traste.preferences.v1')));
+      assert.equal(savedPreference.songTonalityUseFlats,false);
       const geometry=await page.evaluate(()=>{
         const p=document.querySelector('#song-tonality-piano').getBoundingClientRect();
         const r=document.querySelector('#root-piano').getBoundingClientRect();
-        return {width:p.width,height:p.height,rootWidth:r.width,overflow:document.documentElement.scrollWidth>innerWidth};
+        const box=document.querySelector('.song-tonality-control').getBoundingClientRect();
+        const controls=[...document.querySelectorAll('.song-tonality-control label')].map(el=>{
+          const b=el.getBoundingClientRect(); return {left:b.left,right:b.right,top:b.top,bottom:b.bottom,scrollWidth:el.scrollWidth,clientWidth:el.clientWidth};
+        });
+        return {width:p.width,height:p.height,rootWidth:r.width,box:{left:box.left,right:box.right},controls,overflow:document.documentElement.scrollWidth>innerWidth};
       });
-      assert.ok(geometry.width<=182 && geometry.height===84,JSON.stringify(geometry));
+      assert.ok(geometry.width<=182 && geometry.height<=80,JSON.stringify(geometry));
+      assert.ok(geometry.controls.every(c=>c.right<=geometry.box.right+0.5 && c.left>=geometry.box.left-0.5 && c.scrollWidth<=c.clientWidth+1),JSON.stringify(geometry));
       if(width>800) assert.ok(geometry.width<geometry.rootWidth,'piano más reducido');
       assert.equal(geometry.overflow,false,`${width} ${theme}: sin desborde`);
       assert.deepEqual(errors,[]);
-      console.log(`T-59: ${width}×740 ${theme}, clic, teclado, selector, mástil y guardar/reabrir OK`);
+      console.log(`T-64: ${width}×740 ${theme}, piano/switches sin clip, sin desborde; grafía, modo, armadura y preferencia OK`);
       await page.close();
     }
   } finally { if(browser) await browser.close(); await new Promise(resolve=>server.close(resolve)); }

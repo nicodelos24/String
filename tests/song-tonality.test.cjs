@@ -257,3 +257,28 @@ test('T-59: las 30 grafías del selector se reflejan sin perder identidad', () =
   element('#song-tonality-minor').handlers.change({target:{checked:true}});
   assert.equal(run('tonalityId(songTonality)'), 'C#:minor');
 });
+
+test('T-64: el switch de escritura cambia grafía enarmónica sin alterar tónica ni modo', () => {
+  const {element,run} = setup();
+  run("setSongTonality('C#')");
+  const spelling = element('#song-tonality-spelling');
+  assert.equal(element('#song-tonality').value, 'C#');
+  spelling.checked = true;
+  spelling.handlers.change({target:spelling});
+  assert.equal(run('tonalityId(songTonality)'), 'Db');
+  assert.equal(run('songTonic()'), 1, 'misma altura sonora');
+  assert.equal(element('#song-tonality').value, 'Db');
+  assert.equal(element('#song-tonality-minor').checked, false, 'conserva el modo mayor');
+  assert.match(element('#song-tonality-current').textContent, /D♭ mayor/);
+  assert.match(element('#key-signature-display').textContent, /Db Mayor · 5 bemoles/);
+  spelling.checked = false;
+  spelling.handlers.change({target:spelling});
+  assert.equal(run('tonalityId(songTonality)'), 'C#');
+  assert.equal(run('songTonic()'), 1);
+
+  run("setSongTonality('C#:minor')");
+  spelling.checked = true;
+  spelling.handlers.change({target:spelling});
+  assert.equal(run('tonalityId(songTonality)'), 'C#:minor', 'si no hay enarmónica menor soportada, conserva armadura válida');
+  assert.equal(element('#song-tonality-minor').checked, true);
+});
