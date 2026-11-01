@@ -276,9 +276,31 @@ test('T-64: el switch de escritura cambia grafía enarmónica sin alterar tónic
   assert.equal(run('tonalityId(songTonality)'), 'C#');
   assert.equal(run('songTonic()'), 1);
 
+  run("setSongTonality('D#:minor')");
+  spelling.checked = true;
+  spelling.handlers.change({target:spelling});
+  assert.equal(run('tonalityId(songTonality)'), 'Eb:minor', 'una enarmónica menor soportada actualiza selector y armadura');
+  assert.equal(element('#song-tonality-minor').checked, true);
+  assert.match(element('#song-tonality-current').textContent, /E♭ menor/);
+  assert.match(element('#key-signature-display').textContent, /Eb Menor · 6 bemoles/);
+
   run("setSongTonality('C#:minor')");
   spelling.checked = true;
   spelling.handlers.change({target:spelling});
   assert.equal(run('tonalityId(songTonality)'), 'C#:minor', 'si no hay enarmónica menor soportada, conserva armadura válida');
+  assert.equal(run('songTonic()'), 1, 'Bemoles no cambia la altura de la tónica');
+  assert.equal(spelling.checked, true, 'la preferencia de bemoles no se deriva de la armadura');
+  assert.equal(element('#song-tonality').value, 'C#:minor');
   assert.equal(element('#song-tonality-minor').checked, true);
+  assert.match(element('#song-tonality-piano').innerHTML, /aria-label="D♭ menor"/, 'el pianito sigue la preferencia aunque la armadura canónica sea C#');
+  assert.match(element('#song-tonality-spelling-status').textContent, /no tiene armadura enarmónica disponible/);
+  assert.match(element('#key-signature-display').textContent, /C# Menor/);
+
+  run("setSongTonality('F#:minor')");
+  spelling.checked = true;
+  spelling.handlers.change({target:spelling});
+  assert.equal(run('tonalityId(songTonality)'), 'F#:minor', 'Fa# menor tampoco cambia a una armadura no soportada');
+  assert.equal(spelling.checked, true);
+  assert.match(element('#song-tonality-piano').innerHTML, /aria-label="G♭ menor"/);
+  assert.match(element('#song-tonality-spelling-status').textContent, /Bemoles activados.*F♯ menor no tiene armadura enarmónica disponible/);
 });

@@ -644,9 +644,9 @@ if (songTonalitySelect) {
   });
 }
 
-// T-59: ambos controles usan la tonalidad de canción; no hay estado ni
-// persistencia paralela. Entre enarmónicas se conserva la grafía elegida
-// y, si no existe en el otro modo, se usa la armadura más sencilla.
+// T-59/T-64: ambos controles comparten la tonalidad de canción. La preferencia
+// ♯/♭ es independiente y persistente; si la armadura enarmónica no existe, la
+// tonalidad válida se conserva y el pianito aún respeta esa preferencia.
 function songPianoTonality(pitch, scale, useFlats = document.querySelector('#song-tonality-spelling')?.checked || false) {
   const candidates = tonalities.filter(item => item.scale === scale && noteToIndex(item.key) === pitch);
   return candidates.find(item => item.key === songTonality?.key && item.key.includes('b') === useFlats)
@@ -659,14 +659,13 @@ function renderSongTonalityPiano() {
   const piano = document.querySelector('#song-tonality-piano');
   if (!piano) return;
   const scale = songTonality?.scale || 'major';
-  // La grafía de la armadura cargada es autoridad sobre el switch. En C/A
-  // naturales no hay preferencia deducible, por lo que se conserva la elegida.
-  if (songTonality && songTonality.flats > 0) document.querySelector('#song-tonality-spelling').checked = true;
-  else if (songTonality && songTonality.sharps > 0) document.querySelector('#song-tonality-spelling').checked = false;
+  // La preferencia de escritura es estado independiente: la armadura canónica
+  // no la pisa, incluso cuando esta no tiene una enarmónica equivalente.
   const useFlats = document.querySelector('#song-tonality-spelling').checked;
   const key = (pitch, black, position) => {
     const tonality = songPianoTonality(pitch, scale, useFlats);
-    const label = tonality.key.replace('#', '♯').replace('b', '♭');
+    const canonicalName = notes[pitch];
+    const label = (useFlats ? noteLabels[canonicalName] || canonicalName : canonicalName).replace('#', '♯').replace('b', '♭');
     return `<button type="button" class="piano-key ${black ? 'piano-black' : 'piano-white'}" data-song-pitch="${pitch}" aria-pressed="${songTonic() === pitch}" aria-label="${label} ${scale === 'minor' ? 'menor' : 'mayor'}" style="--key-position: ${position}"><span>${label}</span></button>`;
   };
   piano.innerHTML = [0, 2, 4, 5, 7, 9, 11].map((pitch, i) => key(pitch, false, i)).join('')
@@ -674,6 +673,12 @@ function renderSongTonalityPiano() {
   document.querySelector('#song-tonality-minor').checked = scale === 'minor';
   const spelling = document.querySelector('#song-tonality-spelling').checked;
   document.querySelector('#song-tonality-spelling').setAttribute('aria-label', `Usar ${spelling ? 'bemoles' : 'sostenidos'} en la tonalidad del tema`);
+  const hasAccidental = songTonality && /[#b]/.test(songTonality.key);
+  const hasRequestedSpelling = songTonality && tonalities.some(item => item.scale === scale
+    && noteToIndex(item.key) === songTonic() && item.key.includes('b') === spelling);
+  document.querySelector('#song-tonality-spelling-status').textContent = hasAccidental && !hasRequestedSpelling
+    ? `${spelling ? 'Bemoles' : 'Sostenidos'} activados en el pianito; ${songTonality.key.replace('#', '♯').replace('b', '♭')} ${scale === 'minor' ? 'menor' : 'mayor'} no tiene armadura enarmónica disponible. Se conserva su tonalidad y armadura.`
+    : '';
   document.querySelector('#song-tonality').value = songTonality ? tonalityId(songTonality) : '';
   document.querySelector('#song-tonality-current').textContent = songTonality
     ? `${songTonality.key.replace('#', '♯').replace('b', '♭')} ${scale === 'minor' ? 'menor' : 'mayor'}`

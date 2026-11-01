@@ -3222,6 +3222,8 @@ html.ventana .progression-playback { margin-top: 10px; }
 #song-tonality-spelling:checked + .spelling-track { background: var(--rust); }
 #song-tonality-spelling:checked + .spelling-track::after { transform: translateX(16px); }
 #song-tonality-current { display: block; text-align: center; color: var(--ink); font: 12px var(--mono); }
+.song-tonality-limit:empty { display: none; }
+.song-tonality-limit { display: block; margin-top: 6px; color: var(--muted); font: 10px/1.4 var(--sans); overflow-wrap: anywhere; }
 @media (max-width: 430px) {
   .song-tonality-control { padding: 10px 8px; }
   .song-tonality-piano { height: 68px; }
