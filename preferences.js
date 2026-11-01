@@ -69,6 +69,7 @@
       rootPitch: all('#root-piano .piano-key').find(k => k.getAttribute('aria-pressed') === 'true')?.dataset?.pitch || 0,
       rootNoteName: selectedOptionValue('#root-select') || 'C',
       useFlats: $('#root-spelling')?.checked || false,
+      songTonalityUseFlats: $('#song-tonality-spelling')?.checked || false,
       quality: all('#quality-select input[name="quality"]').find(r => r.checked)?.value || '',
       mode: all('#mode-selector input[name="mode"]').find(r => r.checked)?.value || '',
       ghostMode: $('#ghost-mode-select')?.value || '',
@@ -165,6 +166,10 @@
     setSelectIfOption('#ghost-mode-select', saved.ghostMode || '');
     setChecked($('#root-spelling'), saved.useFlats);
     fire($('#root-spelling'), 'change');
+    if (saved.songTonalityUseFlats !== undefined) {
+      setChecked($('#song-tonality-spelling'), saved.songTonalityUseFlats);
+      fire($('#song-tonality-spelling'), 'change');
+    }
     if (saved.rootPitch !== undefined) {
       clickPressedTarget('#root-piano .piano-key', 'data-pitch', String(saved.rootPitch));
     }
