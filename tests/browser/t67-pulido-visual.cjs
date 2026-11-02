@@ -22,6 +22,8 @@ const { createServer } = require('../../server.cjs');
         { width: 1366, height: 650, mobile: false },
       ]) {
         const page = await browser.newPage({ viewport: size, reducedMotion: 'reduce' });
+        const pageErrors = [];
+        page.on('pageerror', error => pageErrors.push(error.message));
         await page.route('**/*', route => route.request().url().startsWith(origin) ? route.continue() : route.abort());
         await page.goto(origin);
         await page.evaluate(theme => { document.documentElement.dataset.theme = theme; }, theme);
@@ -74,6 +76,7 @@ const { createServer } = require('../../server.cjs');
           }));
         }
         assert.ok(layout.document.width <= size.width, `${theme} ${size.width}: desborde horizontal ${JSON.stringify(layout.document)}`);
+        assert.deepEqual(pageErrors, [], `${theme} ${size.width}: errores JavaScript de página`);
         assert.ok(layout.shell.x >= 0 && layout.shell.right <= size.width + 1, 'shell dentro del viewport');
         if (size.mobile) {
           assert.equal(layout.borderWidth, '0px', 'móvil sin marco');
@@ -90,7 +93,7 @@ const { createServer } = require('../../server.cjs');
         }
         assert.ok(controls.blackKeys.length > 0, 'hay teclas negras etiquetadas');
         for (const key of controls.blackKeys) {
-          assert.ok(key.width >= 10 && key.height > 20 && parseFloat(key.fontSize) >= 8, `tecla negra legible ${JSON.stringify(key)}`);
+          assert.ok(key.width >= 10 && key.height > 20 && parseFloat(key.fontSize) >= 9, `tecla negra legible ${JSON.stringify(key)}`);
           assert.equal(key.color, 'rgb(255, 255, 255)');
         }
 

@@ -2317,6 +2317,7 @@ footer {
 @media(max-width: 600px) { .player-topline { flex-wrap: wrap; } .float-option { flex-basis: 100%; } .intro { padding-top: 20px; padding-bottom: 20px; } }
 
 @media(max-width: 1100px) {
+  .scale-summary > .song-tonality-control { grid-column: 1 / -1; }
   .scale-summary { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; margin: 16px 0; }
   .scale-summary > .legend-heading { grid-column: 1 / -1; margin: 0; }
   .scale-summary .chord-readout, .scale-summary .key-signature-info { margin: 0; height: 150px; padding: 10px; }
@@ -3303,7 +3304,7 @@ html.ventana .progression-playback { margin-top: 10px; }
 
 .song-tonality-piano .piano-black {
   padding: 8px 0 4px;
-  font: 600 8px/1 var(--mono);
+  font: 600 9px/1 var(--mono);
   color: #fff;
   text-shadow: 0 1px 1px #000;
   white-space: nowrap;
@@ -3343,8 +3344,8 @@ html.ventana .progression-playback { margin-top: 10px; }
   .song-tonality-control .song-tonality-spelling {
     justify-content: space-between;
     gap: 0;
-    font-size: 8px;
-    letter-spacing: 0;
+    font-size: 9px;
+    letter-spacing: -.02em;
   }
   .song-tonality-control .song-tonality-spelling > span:not(.spelling-track) { white-space: nowrap; }
   .song-tonality-control .song-tonality-spelling .spelling-track {
