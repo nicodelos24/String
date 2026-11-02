@@ -3269,7 +3269,7 @@ html.ventana .progression-playback { margin-top: 10px; }
   .control-panel { padding-inline: 8px; }
   .cards-band { padding: 7px 16px 5px; }
   .cards-band .progression-stack { row-gap: 3px; }
-  .workspace { box-shadow: 10px 10px 0 rgba(44, 50, 40, .08); }
+  :is(.workspace) { box-shadow: 10px 10px 0 rgba(44, 50, 40, .08); }
   .panel-strip { overflow: visible; }
   .transport-row, .transport-pill { min-width: 0; }
   .mic-control .mic-readout {
@@ -3313,7 +3313,7 @@ html.ventana .progression-playback { margin-top: 10px; }
 
 @media (max-width: 800px) {
   .shell { width: 100%; }
-  .workspace {
+  :is(.workspace) {
     border: 0;
     border-radius: 0;
     box-shadow: none;
