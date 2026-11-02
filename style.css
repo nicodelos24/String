@@ -2317,6 +2317,7 @@ footer {
 @media(max-width: 600px) { .player-topline { flex-wrap: wrap; } .float-option { flex-basis: 100%; } .intro { padding-top: 20px; padding-bottom: 20px; } }
 
 @media(max-width: 1100px) {
+  .scale-summary > .song-tonality-control { grid-column: 1 / -1; }
   .scale-summary { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; margin: 16px 0; }
   .scale-summary > .legend-heading { grid-column: 1 / -1; margin: 0; }
   .scale-summary .chord-readout, .scale-summary .key-signature-info { margin: 0; height: 150px; padding: 10px; }
@@ -3257,4 +3258,102 @@ html.ventana .progression-playback { margin-top: 10px; }
   .song-tonality-control .song-tonality-switch > span:first-child { grid-column: 1; grid-row: 1; text-align: center; }
   .song-tonality-control .song-tonality-switch > .spelling-track { grid-column: 1; grid-row: 2; justify-self: center; }
   .song-tonality-control .song-tonality-switch > span:last-child { grid-column: 1; grid-row: 3; text-align: center; }
+}
+
+/* T-67 · A-74: ajuste visual del panel, sin tocar el orden ni el comportamiento
+   de sus controles. El bloque de tarjetas ocupa menos alto; la superficie del
+   mástil conserva aire y sombra en escritorio, pero en móvil se funde con la
+   página en lugar de parecer una tarjeta dentro de otra. */
+@media (min-width: 801px) {
+  .shell { width: min(1480px, calc(100% - 64px)); }
+  .control-panel { padding-inline: 8px; }
+  .cards-band { padding: 7px 16px 5px; }
+  .cards-band .progression-stack { row-gap: 3px; }
+  .workspace { box-shadow: 10px 10px 0 rgba(44, 50, 40, .08); }
+  .panel-strip { overflow: visible; }
+  .transport-row, .transport-pill { min-width: 0; }
+  .mic-control .mic-readout {
+    flex: 0 0 108px;
+    width: 108px;
+    min-width: 108px;
+    max-width: 108px;
+    padding-inline: 8px;
+  }
+  .song-tonality-control .song-tonality-switch {
+    display: flex !important;
+    grid-template: none;
+    width: calc(100% + 4px);
+    margin-inline: -2px;
+    flex-direction: row;
+    gap: 0;
+    font-size: 9px;
+    letter-spacing: -.02em;
+  }
+  .song-tonality-control { padding-inline: 4px; }
+  .song-tonality-control .spelling-track { flex: 0 0 22px; width: 22px; }
+  .song-tonality-control .spelling-track::after { width: 12px; height: 12px; }
+  .song-tonality-control #song-tonality-spelling:checked + .spelling-track::after,
+  .song-tonality-control #song-tonality-minor:checked + .spelling-track::after { transform: translateX(6px); }
+  .song-tonality-control .song-tonality-switch > span:first-child,
+  .song-tonality-control .song-tonality-switch > span:last-child,
+  .song-tonality-control .song-tonality-switch > .spelling-track {
+    grid-column: auto;
+    grid-row: auto;
+  }
+}
+
+.song-tonality-piano .piano-black {
+  padding: 8px 0 4px;
+  font: 600 9px/1 var(--mono);
+  color: #fff;
+  text-shadow: 0 1px 1px #000;
+  white-space: nowrap;
+  overflow: visible;
+}
+
+@media (max-width: 800px) {
+  .shell { width: 100%; }
+  .workspace {
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    gap: 0;
+  }
+  .cards-band { padding: 7px 12px 5px; }
+  .cards-band .progression-stack { row-gap: 3px; }
+  .workspace > .progression-workspace { padding: 7px 12px; }
+  .panel-strip { overflow: visible; }
+  .transport-row, .transport-pill { min-width: 0; }
+  .mic-control .mic-readout {
+    flex: 0 0 108px;
+    width: 108px;
+    min-width: 108px;
+    max-width: 108px;
+    padding-inline: 8px;
+  }
+  .song-tonality-control .song-tonality-switch {
+    display: flex;
+    width: 100%;
+    flex-direction: row;
+    gap: clamp(3px, 1vw, 8px);
+    font-size: 10px;
+  }
+}
+
+@media (max-width: 360px) {
+  .song-tonality-control .song-tonality-spelling {
+    justify-content: space-between;
+    gap: 0;
+    font-size: 9px;
+    letter-spacing: -.02em;
+  }
+  .song-tonality-control .song-tonality-spelling > span:not(.spelling-track) { white-space: nowrap; }
+  .song-tonality-control .song-tonality-spelling .spelling-track {
+    flex: 0 0 24px;
+    width: 24px;
+    height: 18px;
+    padding: 2px;
+  }
+  .song-tonality-control .song-tonality-spelling .spelling-track::after { width: 12px; height: 12px; }
+  .song-tonality-control #song-tonality-spelling:checked + .spelling-track::after { transform: translateX(6px); }
 }
