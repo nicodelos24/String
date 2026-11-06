@@ -3158,13 +3158,14 @@ html.ventana .panel-strip.is-transport-floating {
   border-color: transparent;
   background: transparent;
 }
-/* T-69 · sólo la cápsula compacta de escritorio: pasar los 10 px de relleno
-   de arriba a abajo acerca la píldora a las tarjetas (26 → 16 px) sin alterar
-   la altura de la franja ni su reserva en el documento, incluso si la captura
-   ocupa dos líneas. Reposo, minimizada y respaldo móvil conservan su CSS. */
+/* T-69 · sólo la cápsula compacta de escritorio: quitar el relleno superior de
+   10 px acerca la píldora a las tarjetas (aire arriba 26 → 18 px) y dejar el
+   relleno inferior en 0 deja poquito aire abajo (11 px, base 9 con reserva),
+   con el aire total menor que la base (35 → 29 px) sin tocar la reserva de la
+   franja, que vive en min-height: var(--franja-alto, 70px). Reposo, minimizada
+   y respaldo móvil conservan su CSS. */
 html.ventana .panel-strip.is-transport-floating:not(:has(.is-transport-minimized)) {
   padding-top: 0;
-  padding-bottom: 10px;
 }
 /* La captura conserva el reset de su pila original también al entrar en la
    cápsula; el margen genérico de MIDI añadiría 16 px y desplazaría controles. */

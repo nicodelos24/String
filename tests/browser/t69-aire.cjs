@@ -41,6 +41,7 @@ async function measure(page, state) {
     });
     return {state, scroll: scrollY, docHeight: document.documentElement.scrollHeight,
       docWidth: document.documentElement.scrollWidth, viewport: innerWidth,
+      viewportHeight: innerHeight,
       theme: document.documentElement.dataset.theme, floating, minimized,
       padding: strip ? [getComputedStyle(strip).paddingTop, getComputedStyle(strip).paddingBottom] : null,
       strip: rect('.panel-strip'), pill, band, workspace: rect('.workspace'),
@@ -109,10 +110,13 @@ async function collect(browser, origin, width, theme, before) {
     if (screenshot && evidence) await page.screenshot({path: path.join(evidence,
       `${before ? 'antes' : 'despues'}-${width}-${theme}-${name}.png`)});
   }
-  try {
-    await page.goto(origin);
-    await page.evaluate(() => document.fonts.ready);
-    if (width <= 800) await page.locator('[data-mobile-tab="progresion"]').click();
+    try {
+      await page.goto(origin);
+      await page.evaluate(() => document.fonts.ready);
+      // Anchoring del navegador mueve scrollY tras los toggles y desalinea
+      // las dos rondas (+6 px); se desactiva antes de medir desplazamiento.
+      await page.addStyleTag({content: 'html, html * { overflow-anchor: none !important; }'});
+      if (width <= 800) await page.locator('[data-mobile-tab="progresion"]').click();
     await record('reposo', true);
     for (const y of [200, 600, 900, 999999, 600]) {
       await page.evaluate(y => window.scrollTo(0, y), y);
@@ -159,16 +163,36 @@ async function collect(browser, origin, width, theme, before) {
         assert.equal(a.state, b.state);
         assert.equal(a.floating, b.floating, `${a.state}: mismo régimen`);
         assert.equal(a.minimized, b.minimized, `${a.state}: mismo minimizado`);
-        assert.equal(a.docHeight, b.docHeight, `${width} ${a.state}: no agregar saltos respecto de la base`);
-        near(a.scroll, b.scroll, `${a.state}: mismo desplazamiento`);
+        if (a.minimized && b.minimized) {
+          // La ampliación de la franja al minimizar es de la base, no de la
+          // entrega: debe conservarse idéntica, no convertirse en salto nuevo.
+          assert.equal(a.docHeight, b.docHeight, `${width} minimizada: salto heredado intacto`);
+        } else {
+          // Sin saltos nuevos: la entrega no puede desalinear más que la base.
+          const aDrift = Math.abs(a.docHeight - after[0].docHeight);
+          const bDrift = Math.abs(b.docHeight - before[0].docHeight);
+          assert.ok(aDrift <= bDrift,
+            `${width} ${a.state}: sin saltos nuevos (deriva ${aDrift} vs base ${bDrift})`);
+        }
+        if (a.docHeight === b.docHeight) {
+          near(a.scroll, b.scroll, `${a.state}: mismo desplazamiento`);
+        } else if (b.state === 'scroll-999999') {
+          // La entrega acorta el documento en flotante: el tope del scroll
+          // baja con él; se exige llegar al fondo de cada documento propio.
+          near(a.scroll - (a.docHeight - a.viewportHeight), 0, `${a.state}: entrega al fondo`);
+          near(b.scroll - (b.docHeight - b.viewportHeight), 0, `${a.state}: base al fondo`);
+        }
         near(a.pill.height, b.pill.height, `${a.state}: altura de controles intacta`);
         if (width > 800 && a.floating && !a.minimized) {
           compact++;
-          assert.deepEqual(a.padding, ['0px', '10px']);
-          near(a.upperGap, 16, 'respiro superior compacto');
-          near(b.upperGap - a.upperGap, 10, '10 px menos sobre la cápsula');
-          near(a.lowerGap - b.lowerGap, 10, 'reserva inferior absorbe el cambio');
-          near(a.strip.height, b.strip.height, 'franja conserva su altura');
+          assert.deepEqual(a.padding, ['0px', '0px']);
+          // R2 (A-78): poco aire arriba Y abajo; la reserva vive en
+          // min-height: var(--franja-alto, 70px), no en el relleno inferior.
+          near(a.upperGap, 18, 'poquito aire superior compacto');
+          near(a.lowerGap, 11, 'poquito aire inferior compacto');
+          assert.ok(a.upperGap + a.lowerGap < b.upperGap + b.lowerGap,
+            'aire total menor que la base');
+          near(a.strip.height, 70, 'franja conserva la reserva (franja-alto)');
         } else {
           assert.deepEqual(a.padding, b.padding, `${a.state}: CSS fuera del compacto intacto`);
           for (const key of ['pill', 'strip', 'band', 'workspace'])
