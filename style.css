@@ -3177,8 +3177,20 @@ html.ventana .panel-strip.is-transport-floating:not(:has(.is-transport-minimized
      candidato previo (18/11); en 1280 la mejora 8/1 se conserva. */
   top: calc(var(--franja-tope, 0px) - 6px);
 }
+/* T-69 (7-nov 19:45, captura de Nico): el aire restante no era relleno de la
+   franja sino la holgura de la reserva alrededor de la cápsula centrada: con
+   fuentes reales a 1366 la píldora de una línea mide ~47 px dentro de la
+   reserva de 70 y quedan ~23 px repartidos arriba/abajo (15/8). Subir el
+   relleno vertical de la propia píldora —sólo la de una línea; la píldora de
+   dos líneas (is-pill-wrapped) casi llena la reserva— ocupa esa holgura por
+   ambos lados a la vez: arriba ~15->6 / abajo ~8->3. Los controles conservan
+   sus alturas, el anclaje y la reserva de la franja no cambian. */
+html.ventana .panel-strip.is-transport-floating:not(:has(.is-transport-minimized)) .transport-row.is-floating .transport-pill:not(.is-pill-wrapped) {
+  padding-top: 9px;
+  padding-bottom: 9px;
+}
 html.ventana .panel-strip.is-transport-floating:not(:has(.is-transport-minimized)) .progression-view-controls {
-  padding-top: 6px;
+  padding-top: 2px;
   padding-bottom: 0;
   /* La reserva de la franja (franja-alto) debe repartirse: centrada, el aire
      que sobra en pantallas con fuentes más bajas se reparte arriba y abajo en

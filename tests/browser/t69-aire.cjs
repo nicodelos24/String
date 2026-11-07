@@ -38,9 +38,18 @@ async function measure(page, state) {
     const selectors = ['#progression-view', '#accompaniment-mute', '#tempo-play', '#tempo-tap',
       '#tempo-tap-bpm', '#transport-minimize', '#improvisation-toggle', '#tempo-tap-mic',
       '#enter-on-note', '#follow-midi'];
+    const surfaceOf = node => node.matches('input[type=checkbox]') ? node.closest('label') : node;
+    const ctlHeights = ['#tempo-play', '#tempo-stop', '#accompaniment-mute', '#tempo-tap',
+      '#improvisation-toggle', '#enter-on-note', '#follow-midi', '#transport-minimize'].map(sel => {
+      const node = document.querySelector(sel);
+      if (!node) return {selector: sel, hidden: true};
+      const r = surfaceOf(node).getBoundingClientRect();
+      return {selector: sel, hidden: !r.height, h: +r.height.toFixed(2), t: +r.top.toFixed(2)};
+    });
     const hits = selectors.map(selector => {
       const control = document.querySelector(selector);
-      const surface = control.matches('input[type=checkbox]') ? control.closest('label') : control;
+      if (!control) return {selector, hidden: true};
+      const surface = surfaceOf(control);
       const r = surface.getBoundingClientRect();
       if (!r.width || !r.height) return {selector, hidden: true};
       const hit = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
@@ -59,7 +68,7 @@ async function measure(page, state) {
           return [cs.paddingTop, cs.paddingBottom, cs.borderTopWidth, cs.borderBottomWidth];})(),
       fontsLoaded: document.fonts.status,
       strip: rect('.panel-strip'), pill, band, workspace: rect('.workspace'),
-      upperGap: pill.top - band.bottom,
+      ctlHeights, upperGap: pill.top - band.bottom,
       lowerGap: strip ? strip.getBoundingClientRect().bottom - pill.bottom : null,
       innerGap: strip && innerBottom ? strip.getBoundingClientRect().bottom - innerBottom.bottom : null, hits};
   }, state);
@@ -203,7 +212,11 @@ async function collect(browser, origin, width, theme, before) {
           near(a.scroll - (a.docHeight - a.viewportHeight), 0, `${a.state}: entrega al fondo`);
           near(b.scroll - (b.docHeight - b.viewportHeight), 0, `${a.state}: base al fondo`);
         }
-        near(a.pill.height, b.pill.height, `${a.state}: altura de controles intacta`);
+        if (!(a.floating && !a.minimized)) {
+          // Fuera del compacto desplegado la píldora es la de la base: ni
+          // reposo, ni minimizada, ni respaldo móvil cambian con la entrega.
+          near(a.pill.height, b.pill.height, `${a.state}: píldora intacta fuera del compacto`);
+        }
         if (width > 800 && a.floating && !a.minimized) {
           compact++;
           assert.deepEqual(a.padding, ['0px', '0px']);
@@ -223,10 +236,27 @@ async function collect(browser, origin, width, theme, before) {
               `${width} ${theme} ${a.state}: aire menor que el candidato previo (arriba ${a.upperGap} / abajo ${a.lowerGap})`);
           }
           assert.ok(a.strip.height >= 70, 'franja conserva la reserva (franja-alto)');
+          // La reserva la marca --franja-alto; la franja debe medir exacto lo
+          // reservado cuando el contenido no lo desborda (o más si desborda,
+          // como en la base, nunca menos).
+          assert.ok(a.strip.height <= b.strip.height + 0.6, `franja: no reserva más que la base (${a.strip.height} > ${b.strip.height})`);
+          // La cápsula no invade la banda ni se sale de la franja.
+          assert.ok(a.pill.top >= a.band.bottom, 'cápsula pegada bajo la banda');
+          assert.ok(a.pill.bottom <= a.strip.bottom, 'cápsula dentro de la franja');
         } else {
           assert.deepEqual(a.padding, b.padding, `${a.state}: CSS fuera del compacto intacto`);
           for (const key of ['pill', 'strip', 'band', 'workspace'])
             assert.deepEqual(a[key], b[key], `${width} ${a.state}: geometría intacta (${key})`);
+        }
+        if (a.floating && !a.minimized) {
+          // T-69 (19:45): los CONTROLES conservan su tamaño aunque la cápsula
+          // ocupe su holgura; la reserva de la franja no cambia tampoco.
+          for (const c of a.ctlHeights) {
+            const d = b.ctlHeights.find(x => x.selector === c.selector);
+            assert.ok(d, `${a.state}: control ${c.selector} medido en ambas rondas`);
+            if (c.hidden || d.hidden) assert.equal(!!c.hidden, !!d.hidden, `${a.state}: ${c.selector}: visibilidad igual en ambas`);
+            else assert.ok(Math.abs(c.h - d.h) < 0.6, `${a.state}: control ${c.selector}: altura intacta (${c.h} vs ${d.h})`);
+          }
         }
       }
       if (width > 800) assert.ok(compact >= 4, 'scroll y desplegado compacto cubiertos');
