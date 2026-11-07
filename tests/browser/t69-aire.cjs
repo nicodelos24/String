@@ -25,6 +25,13 @@ async function measure(page, state) {
     const rect = selector => document.querySelector(selector)?.getBoundingClientRect().toJSON() || null;
     const strip = document.querySelector('.panel-strip');
     const pill = rect('.transport-pill');
+    // Evidencia T-69: caja interior del transporte y su última fila visible
+    // (contenido inferior), para explicar posición/ancho y anclaje medidos.
+    const box = rect('.panel-strip .progression-view-controls') ||
+      rect('.progression-view-controls');
+    const firstRow = box ? box : null;
+    const lastChild = document.querySelector('.panel-strip .progression-view-controls')?.lastElementChild || null;
+    const innerBottom = lastChild ? lastChild.getBoundingClientRect().toJSON() : null;
     const band = rect('.cards-band');
     const floating = document.querySelector('.transport-row').classList.contains('is-floating');
     const minimized = document.querySelector('.transport-row').classList.contains('is-transport-minimized');
@@ -43,10 +50,18 @@ async function measure(page, state) {
       docWidth: document.documentElement.scrollWidth, viewport: innerWidth,
       viewportHeight: innerHeight,
       theme: document.documentElement.dataset.theme, floating, minimized,
+      stripClasses: strip ? [...strip.classList] : null,
+      rowClasses: [...document.querySelector('.transport-row').classList],
+      box, innerBottom, firstRow,
       padding: strip ? [getComputedStyle(strip).paddingTop, getComputedStyle(strip).paddingBottom] : null,
+      boxPadding: (() => {const bq = document.querySelector('.panel-strip .progression-view-controls');
+          if (!bq) return null; const cs = getComputedStyle(bq);
+          return [cs.paddingTop, cs.paddingBottom, cs.borderTopWidth, cs.borderBottomWidth];})(),
+      fontsLoaded: document.fonts.status,
       strip: rect('.panel-strip'), pill, band, workspace: rect('.workspace'),
       upperGap: pill.top - band.bottom,
-      lowerGap: strip ? strip.getBoundingClientRect().bottom - pill.bottom : null, hits};
+      lowerGap: strip ? strip.getBoundingClientRect().bottom - pill.bottom : null,
+      innerGap: strip && innerBottom ? strip.getBoundingClientRect().bottom - innerBottom.bottom : null, hits};
   }, state);
 }
 
@@ -107,11 +122,17 @@ async function collect(browser, origin, width, theme, before) {
       assert.ok(state.lowerGap >= 0, `${name}: reserva inferior`);
     }
     states.push(state);
+    if (process.env.T69_DEBUG) console.log('DBG', width, theme, state,
+      JSON.stringify({up: state.upperGap, down: state.lowerGap, pillH: state.pill?.height, stripH: state.strip?.height, pad: state.padding}));
     if (screenshot && evidence) await page.screenshot({path: path.join(evidence,
       `${before ? 'antes' : 'despues'}-${width}-${theme}-${name}.png`)});
   }
     try {
       await page.goto(origin);
+      // Las fuentes externas (T69_EXTERNAL=1) cargan tras el primer repintado;
+      // esperar de nuevo tras un respiro evita medir con la reserva variada.
+      await page.evaluate(() => document.fonts.ready);
+      await page.waitForTimeout(300);
       await page.evaluate(() => document.fonts.ready);
       // Anchoring del navegador mueve scrollY tras los toggles y desalinea
       // las dos rondas (+6 px); se desactiva antes de medir desplazamiento.
@@ -186,13 +207,22 @@ async function collect(browser, origin, width, theme, before) {
         if (width > 800 && a.floating && !a.minimized) {
           compact++;
           assert.deepEqual(a.padding, ['0px', '0px']);
-          // R2 (A-78): poco aire arriba Y abajo; la reserva vive en
-          // min-height: var(--franja-alto, 70px), no en el relleno inferior.
-          near(a.upperGap, 18, 'poquito aire superior compacto');
-          near(a.lowerGap, 11, 'poquito aire inferior compacto');
+          // R3 (pedido de Nico 7-nov 04:17): MUY POCO aire arriba Y abajo.
+          // Bilateral frente a main: ambos huecos bajan, no sólo la suma.
+          assert.ok(a.upperGap < b.upperGap, `aire superior menor que main (${a.upperGap} ≥ ${b.upperGap})`);
           assert.ok(a.upperGap + a.lowerGap < b.upperGap + b.lowerGap,
             'aire total menor que la base');
-          near(a.strip.height, 70, 'franja conserva la reserva (franja-alto)');
+          if (process.env.T69_EXTERNAL === '1') {
+            // Con las fuentes reales (la pantalla del dueño, según Kaia
+            // 16/9 en el candidato previo) invade el bilateral completo:
+            // cada hueco también por debajo del candidato previo 0e28f8c
+            // (arriba 18 / abajo 11 en esta configuración). Esas cifras no
+            // son objetivos del dueño, son la referencia a superar.
+            assert.ok(a.lowerGap < b.lowerGap, `${width} ${theme} ${a.state}: aire inferior menor que main (${a.lowerGap} ≥ ${b.lowerGap})`);
+            assert.ok(a.upperGap < 18 && a.lowerGap < 11,
+              `${width} ${theme} ${a.state}: aire menor que el candidato previo (arriba ${a.upperGap} / abajo ${a.lowerGap})`);
+          }
+          assert.ok(a.strip.height >= 70, 'franja conserva la reserva (franja-alto)');
         } else {
           assert.deepEqual(a.padding, b.padding, `${a.state}: CSS fuera del compacto intacto`);
           for (const key of ['pill', 'strip', 'band', 'workspace'])

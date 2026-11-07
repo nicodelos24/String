@@ -3158,14 +3158,27 @@ html.ventana .panel-strip.is-transport-floating {
   border-color: transparent;
   background: transparent;
 }
-/* T-69 · sólo la cápsula compacta de escritorio: quitar el relleno superior de
-   10 px acerca la píldora a las tarjetas (aire arriba 26 → 18 px) y dejar el
-   relleno inferior en 0 deja poquito aire abajo (11 px, base 9 con reserva),
-   con el aire total menor que la base (35 → 29 px) sin tocar la reserva de la
-   franja, que vive en min-height: var(--franja-alto, 70px). Reposo, minimizada
-   y respaldo móvil conservan su CSS. */
+/* T-69 · sólo la cápsula compacta de escritorio: el hueco medido por Kaia era
+   arriba 16 / abajo 9, y venía del relleno de la caja del transporte (8+8) más
+   sus bordes y el de la franja, no sólo del padding-top de la franja. En
+   compacto se retira ese relleno: arriba queda el margen de la banda (6) y los
+   dos bordes finos (1+1), abajo alrededor de 1 px. Así AMBOS huecos bajan
+   respecto de main (26/9) y del candidato previo (18/11), conservando la
+   posición/anclaje de la cápsula y la reserva de la franja en
+   min-height: var(--franja-alto, 70px). Reposo, minimizada y respaldo móvil
+   conservan su CSS. */
 html.ventana .panel-strip.is-transport-floating:not(:has(.is-transport-minimized)) {
   padding-top: 0;
+}
+html.ventana .panel-strip.is-transport-floating:not(:has(.is-transport-minimized)) .progression-view-controls {
+  padding-top: 0;
+  padding-bottom: 0;
+  /* La reserva de la franja (franja-alto) debe repartirse: centrada, el aire
+     que sobra en pantallas con fuentes más bajas se reparte arriba y abajo en
+     vez de concentrarse todo debajo de la píldora. */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 /* La captura conserva el reset de su pila original también al entrar en la
    cápsula; el margen genérico de MIDI añadiría 16 px y desplazaría controles. */
