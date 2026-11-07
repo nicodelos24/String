@@ -3169,13 +3169,21 @@ html.ventana .panel-strip.is-transport-floating {
    conservan su CSS. */
 html.ventana .panel-strip.is-transport-floating:not(:has(.is-transport-minimized)) {
   padding-top: 0;
+  /* T-69 (corrección del hallazgo de QA 7-nov 14:33): el margen de panel de
+     6 px que media entre la banda y la franja (franja-tope) se contaba en el
+     hueco medido de arriba, y abajo quedaban 11 ≥ las 9 de main a 1366 con
+     las fuentes reales. En compacto la franja se apoya en el borde de la
+     banda: arriba 15 / abajo 8, ambos por debajo de main (26/9) y del
+     candidato previo (18/11); en 1280 la mejora 8/1 se conserva. */
+  top: calc(var(--franja-tope, 0px) - 6px);
 }
 html.ventana .panel-strip.is-transport-floating:not(:has(.is-transport-minimized)) .progression-view-controls {
-  padding-top: 0;
+  padding-top: 6px;
   padding-bottom: 0;
   /* La reserva de la franja (franja-alto) debe repartirse: centrada, el aire
      que sobra en pantallas con fuentes más bajas se reparte arriba y abajo en
-     vez de concentrarse todo debajo de la píldora. */
+     vez de concentrarse todo debajo de la píldora; el relleno interior la pesa
+     un poco hacia abajo, porque main ya es asimétrica (26 arriba / 9 abajo). */
   display: flex;
   flex-direction: column;
   justify-content: center;
