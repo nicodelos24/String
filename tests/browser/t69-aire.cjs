@@ -33,6 +33,14 @@ async function measure(page, state) {
     const lastChild = document.querySelector('.panel-strip .progression-view-controls')?.lastElementChild || null;
     const innerBottom = lastChild ? lastChild.getBoundingClientRect().toJSON() : null;
     const band = rect('.cards-band');
+    const workspace = rect('.workspace');
+    const panelNode = document.querySelector('.panel-scroll');
+    const panelClip = panelNode && panelNode.classList.contains('is-panel-recortado')
+      ? parseFloat(getComputedStyle(panelNode).getPropertyValue('--panel-recorte')) || 0 : 0;
+    const statusNode = document.querySelector('.player-compact-status');
+    const playbackNode = document.querySelector('.progression-playback');
+    const statusRect = statusNode?.getBoundingClientRect().toJSON() || null;
+    const playbackRect = playbackNode?.getBoundingClientRect().toJSON() || null;
     const floating = document.querySelector('.transport-row').classList.contains('is-floating');
     const minimized = document.querySelector('.transport-row').classList.contains('is-transport-minimized');
     const pillWrapped = !!document.querySelector('.transport-pill')?.classList.contains('is-pill-wrapped');
@@ -63,6 +71,10 @@ async function measure(page, state) {
       stripClasses: strip ? [...strip.classList] : null,
       rowClasses: [...document.querySelector('.transport-row').classList],
       box, innerBottom, firstRow,
+      panelVisibleTop: workspace ? workspace.top + panelClip : null,
+      panelPillGap: workspace && box ? +(workspace.top + panelClip - box.bottom).toFixed(2) : null,
+      statusRect, playbackRect,
+      statusStyle: statusNode ? [getComputedStyle(statusNode).visibility, getComputedStyle(statusNode).display] : null,
       padding: strip ? [getComputedStyle(strip).paddingTop, getComputedStyle(strip).paddingBottom] : null,
       // T-69 (reposo sin recuadro 8-nov): color de borde y fondo del strip.
       stripVisual: strip ? [getComputedStyle(strip).borderTopColor, getComputedStyle(strip).backgroundColor] : null,
@@ -128,6 +140,12 @@ async function collect(browser, origin, width, theme, before) {
     const state = await measure(page, name);
     assert.equal(state.theme, theme, 'tema real de la app, no sólo prefers-color-scheme');
     assert.ok(state.docWidth <= width, `${name}: sin overflow horizontal`);
+    if (width > 800 && !before && ['reposo', 'scroll-40'].includes(name)) {
+      near(state.panelPillGap, 6, `${name}: panel visible a 6 px de la cápsula`);
+      assert.ok(state.statusRect && state.statusRect.width <= 1 && state.statusRect.height <= 1,
+        `${name}: texto «Detenido» sin rectángulo visible (${JSON.stringify(state.statusRect)})`);
+      near(state.playbackRect?.height || 0, 0, `${name}: sin caja vacía del estado`);
+    }
     if (width > 800 && state.floating) {
       assert.ok(state.pill.top >= state.band.bottom && state.pill.bottom <= 740, `${name}: cápsula dentro de página`);
       assert.ok(state.hits.every(hit => hit.hidden || hit.reachable), `${name}: controles sin recorte: ${JSON.stringify(state.hits)}`);
@@ -151,7 +169,7 @@ async function collect(browser, origin, width, theme, before) {
       await page.addStyleTag({content: 'html, html * { overflow-anchor: none !important; }'});
       if (width <= 800) await page.locator('[data-mobile-tab="progresion"]').click();
     await record('reposo', true);
-    for (const y of [200, 600, 900, 999999, 600]) {
+    for (const y of [40, 200, 600, 900, 999999, 600]) {
       await page.evaluate(y => window.scrollTo(0, y), y);
       await record(`scroll-${y}`, y === 900);
     }
@@ -196,17 +214,13 @@ async function collect(browser, origin, width, theme, before) {
         assert.equal(a.state, b.state);
         assert.equal(a.floating, b.floating, `${a.state}: mismo régimen`);
         assert.equal(a.minimized, b.minimized, `${a.state}: mismo minimizado`);
-        if (a.minimized && b.minimized) {
-          // La ampliación de la franja al minimizar es de la base, no de la
-          // entrega: debe conservarse idéntica, no convertirse en salto nuevo.
-          assert.equal(a.docHeight, b.docHeight, `${width} minimizada: salto heredado intacto`);
-        } else {
-          // Sin saltos nuevos: la entrega no puede desalinear más que la base.
-          const aDrift = Math.abs(a.docHeight - after[0].docHeight);
-          const bDrift = Math.abs(b.docHeight - before[0].docHeight);
-          assert.ok(aDrift <= bDrift,
-            `${width} ${a.state}: sin saltos nuevos (deriva ${aDrift} vs base ${bDrift})`);
-        }
+        // Sin saltos nuevos: la entrega no puede desalinear más que la base.
+        // Se compara la deriva propia del estado: el documento es más bajo por
+        // retirar la fila «Detenido», también estando minimizada.
+        const aDrift = Math.abs(a.docHeight - after[0].docHeight);
+        const bDrift = Math.abs(b.docHeight - before[0].docHeight);
+        assert.ok(aDrift <= bDrift,
+          `${width} ${a.state}: sin saltos nuevos (deriva ${aDrift} vs base ${bDrift})`);
         if (a.docHeight === b.docHeight) {
           near(a.scroll, b.scroll, `${a.state}: mismo desplazamiento`);
         } else if (b.state === 'scroll-999999') {
@@ -262,8 +276,10 @@ async function collect(browser, origin, width, theme, before) {
             // Costura: el marco del panel se dibuja en strip.bottom + 6; el
             // aire píldora→marco debe seguir siendo 9 como en el esquema F′.
             near((a.strip.bottom + 6) - a.pill.bottom, 9, 'aire píldora→marco del panel');
-            assert.ok(Math.abs(a.docHeight - b.docHeight) <= 6,
-              `${width} ${theme} ${a.state}: documento sin salto frente a la base (${a.docHeight} vs ${b.docHeight})`);
+            // El renglón de estado «Detenido» se elimina integralmente en esta
+            // corrección; la altura total baja por ese contenido retirado. La
+            // guarda de deriva reposo→scroll anterior comprueba que no haya
+            // un salto nuevo al fijar la franja, sin exigir conservar el renglón.
           }
           // Con fuentes externas la píldora puede desbordar la caja (a 1280
           // el contenido real mide más que 56): el salto frente a la base
@@ -284,7 +300,7 @@ async function collect(browser, origin, width, theme, before) {
           assert.ok(a.pill.bottom <= a.strip.bottom, 'cápsula dentro de la franja');
         } else {
           assert.deepEqual(a.padding, b.padding, `${a.state}: CSS fuera del compacto intacto`);
-          for (const key of ['pill', 'strip', 'band', 'workspace'])
+          for (const key of ['pill', 'strip', 'band'])
             assert.deepEqual(a[key], b[key], `${width} ${a.state}: geometría intacta (${key})`);
         }
         // T-69 (reposo sin recuadro, orden del dueño 8-nov): en reposo la

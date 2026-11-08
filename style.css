@@ -3262,11 +3262,30 @@ html.ventana .panel-scroll > .workspace {
   height: auto;
   min-height: 0;
   border-top: 0;
-  margin-top: -10px;
+  /* En reposo el borde del panel arranca 6 px después de la cápsula, igual
+     que el recorte visible tras scroll leve. El clip dinámico restaura la
+     misma coordenada al fijarse la franja; no se reduce ni mueve la cápsula. */
+  margin-top: 6px;
 }
 
-/* El estado debe quedar debajo de la franja también al iniciar el scroll. */
-html.ventana .progression-playback { margin-top: 10px; }
+/* T-69: retirar la línea «Detenido» y su caja visual sin borrar el live status.
+   El párrafo sigue expuesto a tecnologías de asistencia, pero no reserva alto,
+   margen ni un rectángulo visible dentro del panel. */
+html.ventana .progression-playback {
+  min-height: 0;
+  margin: 0;
+}
+html.ventana .player-compact-status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
 
 /* T-59: mismo teclado de raíz, reducido para la tonalidad del tema. */
 .song-tonality-control {
