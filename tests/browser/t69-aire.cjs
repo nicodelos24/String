@@ -64,6 +64,8 @@ async function measure(page, state) {
       rowClasses: [...document.querySelector('.transport-row').classList],
       box, innerBottom, firstRow,
       padding: strip ? [getComputedStyle(strip).paddingTop, getComputedStyle(strip).paddingBottom] : null,
+      // T-69 (reposo sin recuadro 8-nov): color de borde y fondo del strip.
+      stripVisual: strip ? [getComputedStyle(strip).borderTopColor, getComputedStyle(strip).backgroundColor] : null,
       boxPadding: (() => {const bq = document.querySelector('.panel-strip .progression-view-controls');
           if (!bq) return null; const cs = getComputedStyle(bq);
           return [cs.paddingTop, cs.paddingBottom, cs.borderTopWidth, cs.borderBottomWidth];})(),
@@ -284,6 +286,16 @@ async function collect(browser, origin, width, theme, before) {
           assert.deepEqual(a.padding, b.padding, `${a.state}: CSS fuera del compacto intacto`);
           for (const key of ['pill', 'strip', 'band', 'workspace'])
             assert.deepEqual(a[key], b[key], `${width} ${a.state}: geometría intacta (${key})`);
+        }
+        // T-69 (reposo sin recuadro, orden del dueño 8-nov): en reposo la
+        // franja no dibuja recuadro exterior — sólo la cápsula, sin achicarse.
+        // Guarda focal: borde y fondo transparentados, padding y geometría
+        // intactos. La base (before) conserva su recuadro; minimizada no entra.
+        if (width > 800 && a.state === 'reposo' && a.strip && !a.minimized) {
+          assert.ok(a.stripVisual[0] === 'transparent' || a.stripVisual[0] === 'rgba(0, 0, 0, 0)',
+            `${width} reposo: borde del recuadro vigente (${a.stripVisual[0]})`);
+          assert.ok(a.stripVisual[1] === 'transparent' || a.stripVisual[1] === 'rgba(0, 0, 0, 0)',
+            `${width} reposo: fondo del recuadro vigente (${a.stripVisual[1]})`);
         }
         if (a.floating && !a.minimized) {
           // T-69 (19:45): los CONTROLES conservan su tamaño aunque la cápsula

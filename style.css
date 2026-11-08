@@ -3150,6 +3150,19 @@ html.ventana .panel-strip {
   background: var(--paper-light);
   padding: 10px 20px 0;
 }
+/* T-69 (pedido del dueño 8-nov, reposo sin recuadro): en reposo debe verse
+   sólo la cápsula, igual que en compacto pero sin achicarse. Se retira el
+   recuadro exterior de la franja transparentando su borde y su fondo SIN
+   quitar el trazo de 1 px ni el padding: el offsetHeight de reposo (del que
+   JS fija --franja-alto), el ancho del inner y el alto del documento quedan
+   idénticos, así que la reserva, el anclaje y la ausencia de saltos se
+   conservan. La cápsula sigue con su propia caja fina y fondo. Minimizada,
+   compacto, envuelta (móvil) y respaldo sin ventana no cambian. */
+html.ventana .panel-strip:not(.is-transport-floating):not(:has(.is-transport-minimized)) {
+  border-color: transparent;
+  background: transparent;
+}
+
 /* El recuadro grande pertenece al reposo. Durante el recorrido sólo la
    cápsula lleva fondo y borde; el contenido pasa debajo de la franja.
    La altura de reposo evita saltos del documento al compactar la cápsula. */
