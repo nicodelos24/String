@@ -39,6 +39,7 @@ async function measure(page, state) {
       ? parseFloat(getComputedStyle(panelNode).getPropertyValue('--panel-recorte')) || 0 : 0;
     const statusNode = document.querySelector('.player-compact-status');
     const playbackNode = document.querySelector('.progression-playback');
+    const parentRect = rect('.workspace > .progression-workspace');
     const statusRect = statusNode?.getBoundingClientRect().toJSON() || null;
     const playbackRect = playbackNode?.getBoundingClientRect().toJSON() || null;
     const floating = document.querySelector('.transport-row').classList.contains('is-floating');
@@ -73,7 +74,7 @@ async function measure(page, state) {
       box, innerBottom, firstRow,
       panelVisibleTop: workspace ? workspace.top + panelClip : null,
       panelPillGap: workspace && box ? +(workspace.top + panelClip - box.bottom).toFixed(2) : null,
-      statusRect, playbackRect,
+      statusRect, playbackRect, parentRect,
       statusStyle: statusNode ? [getComputedStyle(statusNode).visibility, getComputedStyle(statusNode).display] : null,
       padding: strip ? [getComputedStyle(strip).paddingTop, getComputedStyle(strip).paddingBottom] : null,
       // T-69 (reposo sin recuadro 8-nov): color de borde y fondo del strip.
@@ -145,6 +146,7 @@ async function collect(browser, origin, width, theme, before) {
       assert.ok(state.statusRect && state.statusRect.width <= 1 && state.statusRect.height <= 1,
         `${name}: texto «Detenido» sin rectángulo visible (${JSON.stringify(state.statusRect)})`);
       near(state.playbackRect?.height || 0, 0, `${name}: sin caja vacía del estado`);
+      near(state.parentRect?.height || 0, 0, `${name}: sin fila padre vacía`);
     }
     if (width > 800 && state.floating) {
       assert.ok(state.pill.top >= state.band.bottom && state.pill.bottom <= 740, `${name}: cápsula dentro de página`);

@@ -3163,6 +3163,16 @@ html.ventana .panel-strip:not(.is-transport-floating):not(:has(.is-transport-min
   background: transparent;
 }
 
+/* T-69 · La caja de transporte se reubica en la franja; el carril original
+   queda sólo con el status accesible de 1×1. Sin stack visual que alojar,
+   quitar también su relleno, papel y borde: colapsar el padre evita la fila
+   vacía de 21 px, sin alterar el estado no transportado. */
+html.ventana .workspace > .progression-workspace {
+  padding: 0;
+  background: transparent;
+  border: 0;
+}
+
 /* El recuadro grande pertenece al reposo. Durante el recorrido sólo la
    cápsula lleva fondo y borde; el contenido pasa debajo de la franja.
    La altura de reposo evita saltos del documento al compactar la cápsula. */
