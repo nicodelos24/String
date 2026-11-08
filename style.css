@@ -3188,10 +3188,26 @@ html.ventana .panel-strip.is-transport-floating:not(:has(.is-transport-minimized
 html.ventana .panel-strip.is-transport-floating:not(:has(.is-transport-minimized)) .transport-row.is-floating .transport-pill:not(.is-pill-wrapped) {
   padding-top: 9px;
   padding-bottom: 9px;
+  /* T-69 (pedido posterior 20:22): el compacto conserva el ancho exterior que
+     el recuadro muestra en reposo (caja + sus 2 finos). La fila se estira al
+     inner del recuadro y la píldora toma 100% + los 2 bordes; el margen
+     lateral izquierdo apoya su borde donde empieza la línea de 1 px del
+     reposo. La píldora envuelta (móvil) y la minimizada conservan su ancho. */
+  width: calc(100% + 2px);
+  margin-left: -1px;
+}
+html.ventana .panel-strip.is-transport-floating:not(:has(.is-transport-minimized)) .transport-row.is-floating {
+  width: 100%;
 }
 html.ventana .panel-strip.is-transport-floating:not(:has(.is-transport-minimized)) .progression-view-controls {
   padding-top: 2px;
   padding-bottom: 0;
+  /* T-69 (pedido posterior 20:22): mismo ancho que el recuadro de reposo. Sin
+     su relleno lateral, el inner del recuadro ya es su anchura completa y la
+     píldora de la regla siguiente lo cubre borde a borde con la línea de
+     1 px igual a la del reposo. El relleno vertical (2/0) no cambia. */
+  padding-left: 0;
+  padding-right: 0;
   /* La reserva de la franja (franja-alto) debe repartirse: centrada, el aire
      que sobra en pantallas con fuentes más bajas se reparte arriba y abajo en
      vez de concentrarse todo debajo de la píldora; el relleno interior la pesa

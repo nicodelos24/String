@@ -35,6 +35,7 @@ async function measure(page, state) {
     const band = rect('.cards-band');
     const floating = document.querySelector('.transport-row').classList.contains('is-floating');
     const minimized = document.querySelector('.transport-row').classList.contains('is-transport-minimized');
+    const pillWrapped = !!document.querySelector('.transport-pill')?.classList.contains('is-pill-wrapped');
     const selectors = ['#progression-view', '#accompaniment-mute', '#tempo-play', '#tempo-tap',
       '#tempo-tap-bpm', '#transport-minimize', '#improvisation-toggle', '#tempo-tap-mic',
       '#enter-on-note', '#follow-midi'];
@@ -58,7 +59,7 @@ async function measure(page, state) {
     return {state, scroll: scrollY, docHeight: document.documentElement.scrollHeight,
       docWidth: document.documentElement.scrollWidth, viewport: innerWidth,
       viewportHeight: innerHeight,
-      theme: document.documentElement.dataset.theme, floating, minimized,
+      theme: document.documentElement.dataset.theme, floating, minimized, pillWrapped,
       stripClasses: strip ? [...strip.classList] : null,
       rowClasses: [...document.querySelector('.transport-row').classList],
       box, innerBottom, firstRow,
@@ -236,6 +237,10 @@ async function collect(browser, origin, width, theme, before) {
               `${width} ${theme} ${a.state}: aire menor que el candidato previo (arriba ${a.upperGap} / abajo ${a.lowerGap})`);
           }
           assert.ok(a.strip.height >= 70, 'franja conserva la reserva (franja-alto)');
+          // T-69 (pedido 20:22): el compacto conserva el ancho del recuadro de
+          // reposo (caja del transporte con sus 2 finos), borde a borde.
+          if (!a.pillWrapped) assert.ok(Math.abs(a.pill.width - a.box.width) < 0.6,
+            `${width} ${theme} ${a.state}: ancho compacto distinto del recuadro de reposo (${a.pill.width} vs ${a.box.width})`);
           // La reserva la marca --franja-alto; la franja debe medir exacto lo
           // reservado cuando el contenido no lo desborda (o más si desborda,
           // como en la base, nunca menos).
