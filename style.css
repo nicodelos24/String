@@ -3047,6 +3047,18 @@ html:not([data-theme]) .cards-band .progression-card :is(small, .progression-mod
   .transport-minimize-icon { transition: none; }
 }
 
+/* T-69 (forma única 03:46): ninguna transformación animada por scroll. En el
+   régimen de ventana la composición es la misma en reposo y anclada, así que
+   la animación de entrada ya no puede dispararse al cruzar el umbral: su
+   gatillo (`is-floating`) cambia exactamente durante el cruce. El restablecido
+   con preferencia de movimiento reducido queda cubierto arriba; aquí se
+   elimina para las fuentes reales y ambos estados también. */
+html.ventana .transport-row.is-floating .transport-pill,
+html.ventana .transport-row.is-floating:not(.is-transport-minimized) .transport-pill,
+html.ventana .transport-row.is-floating.is-transport-minimized .transport-pill {
+  animation: none;
+}
+
 /* T-56 r6 · A-57: tarjetas arriba y transporte debajo, sobre el fondo.
    La sección principal tiene su superficie visible e interactiva debajo del
    conjunto, sin invadirlo al desplazar el documento. El reposo no se recorta.
@@ -3158,7 +3170,12 @@ html.ventana .panel-strip {
   border: 1px solid var(--line);
   border-bottom: 0;
   background: var(--paper-light);
-  padding: 10px 20px 0;
+  /* T-69 (forma única 03:46): relleno superior de 4 px — casi el aire mínimo
+     que pide la segunda referencia — en TODOS los estados compuestos. Con 10
+     con fuentes reales el hueco sobre la cápsula anclada medía 20, por encima
+     de la referencia 18 que el flujo mantiene vigente; 4 px lo bajan sin
+     desalinear: reposo y anclada comparten la misma caja. */
+  padding: 4px 20px 0;
 }
 /* T-69 (pedido del dueño 8-nov, reposo sin recuadro): en reposo debe verse
    sólo la cápsula, igual que en compacto pero sin achicarse. Se retira el
@@ -3183,6 +3200,13 @@ html.ventana .workspace > .progression-workspace {
   border: 0;
 }
 
+/* T-69 (forma única 03:46): el minimizado conserva el régimen previo — con su
+   relleno superior de 10 px, la altura de reposo del pliego viejo —, porque la
+   píldora reducida no participa de la composición compacta permanente. */
+html.ventana .panel-strip:has(.is-transport-minimized) {
+  padding-top: 10px;
+}
+
 /* El recuadro grande pertenece al reposo. Durante el recorrido sólo la
    cápsula lleva fondo y borde; el contenido pasa debajo de la franja.
    La altura de reposo evita saltos del documento al compactar la cápsula. */
@@ -3194,14 +3218,16 @@ html.ventana .panel-strip.is-transport-floating {
 /* T-69 · cápsula compacta de escritorio. En el estado anclado la franja
    mantiene la reserva que JS midió desde la composición compacta de reposo;
    su altura es dinámica según fuentes y controles, no un 70 px universal. */
+/* T-69 (forma única, pedido del dueño 8-nov 03:46): la franja anclada también
+   conserva el relleno superior de 10 px del reposo. Sin él la cápsula
+   cambiaba de posición respecto de la franja al cruzar el umbral (el salto
+   de 5 px medido por Kaia a 331/332); una misma forma exige la misma caja
+   antes y después del cruce: el scroll sólo cambia el anclaje. */
 html.ventana .panel-strip.is-transport-floating:not(:has(.is-transport-minimized)) {
-  padding-top: 0;
   /* T-69 (corrección del hallazgo de QA 7-nov 14:33): el margen de panel de
      6 px que media entre la banda y la franja (franja-tope) se contaba en el
-     hueco medido de arriba, y abajo quedaban 11 ≥ las 9 de main a 1366 con
-     las fuentes reales. En compacto la franja se apoya en el borde de la
-     banda: arriba 15 / abajo 8, ambos por debajo de main (26/9) y del
-     candidato previo (18/11); en 1280 la mejora 8/1 se conserva. */
+     hueco medido de arriba. En compacto la franja completa se apoya en el
+     borde de la banda: la cápsula queda a la misma distancia que en reposo. */
   top: calc(var(--franja-tope, 0px) - 6px);
 }
 /* T-69 compacto permanente: la composición compacta ocupa su altura natural.
@@ -3234,15 +3260,12 @@ html.ventana .panel-strip.is-transport-floating:not(:has(.is-transport-minimized
      su relleno lateral, el inner del recuadro ya es su anchura completa y la
      píldora de la regla siguiente lo cubre borde a borde con la línea de
      1 px igual a la del reposo. El relleno vertical (2/0) no cambia. */
-  padding-left: 0;
-  padding-right: 0;
-  /* La reserva de la franja (franja-alto) debe repartirse: centrada, el aire
-     que sobra en pantallas con fuentes más bajas se reparte arriba y abajo en
-     vez de concentrarse todo debajo de la píldora; el relleno interior la pesa
-     un poco hacia abajo, porque main ya es asimétrica (26 arriba / 9 abajo). */
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+   padding-left: 0;
+   padding-right: 0;
+   /* T-69 (forma única 03:46): el contenido se queda donde está en el flujo,
+      como en reposo: se quita el centrado vertical de la reserva, que bajaba
+      la cápsula 5 px al cruzar el umbral. La posición y el offset
+      cápsula/franja son ahora los mismos a ambos lados del cruce. */
 }
 /* La captura conserva el reset de su pila original también al entrar en la
    cápsula; el margen genérico de MIDI añadiría 16 px y desplazaría controles. */

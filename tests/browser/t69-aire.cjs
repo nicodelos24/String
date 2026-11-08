@@ -87,6 +87,10 @@ async function measure(page, state) {
           if (!bq) return null; const cs = getComputedStyle(bq);
           return [cs.paddingTop, cs.paddingBottom, cs.borderTopWidth, cs.borderBottomWidth];})(),
       fontsLoaded: document.fonts.status,
+      // T-69 (pedido del dueño 8-nov 03:46): sin morph de scroll — la
+      // animación de entrada de la píldora no puede dispararse al cruzar el
+      // umbral en el régimen de ventana.
+      pillAnimation: getComputedStyle(document.querySelector('.transport-pill')).animationName,
       strip: rect('.panel-strip'), pill, band, workspace: rect('.workspace'),
       ctlHeights, upperGap: pill.top - band.bottom,
       lowerGap: strip ? strip.getBoundingClientRect().bottom - pill.bottom : null,
@@ -124,6 +128,24 @@ async function controls(page) {
   await follow.click();
   assert.equal(await follow.isChecked(), !checked, 'captura accesible');
   await follow.click();
+}
+
+// Umbral REAL de esta escena: busco el mínimo scrollY con píldora anclada.
+// El par del defecto de Kaia (331/332) era su medición; este umbral no se
+// fija como constante universal, se encuentra por escena antes de medir.
+async function encontrarUmbral(page) {
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await settle(page);
+  let lo = 1, hi = 900;
+  while (lo < hi) {
+    const medio = Math.floor((lo + hi) / 2);
+    await page.evaluate(y => window.scrollTo(0, y), medio);
+    await page.waitForTimeout(80);
+    const flotando = await page.evaluate(() =>
+      document.querySelector('.transport-row').classList.contains('is-floating'));
+    if (flotando) hi = medio; else lo = medio + 1;
+  }
+  return lo;
 }
 
 async function collect(browser, origin, width, theme, before) {
@@ -182,6 +204,16 @@ async function collect(browser, origin, width, theme, before) {
     for (const y of [40, 200, 600, 900, 999999, 600]) {
       await page.evaluate(y => window.scrollTo(0, y), y);
       await record(`scroll-${y}`, y === 900);
+    }
+    if (width > 800) {
+      // T-69 (orden 03:14/03:46): guarda de POSICIÓN a ambos lados del umbral
+      // real, asentando cada desplazamiento, en ambas direcciones se cubre
+      // con regreso-umbral y vuelta al fondo del bucle exterior.
+      const umbral = await encontrarUmbral(page);
+      await page.evaluate(y => window.scrollTo(0, y), umbral - 1);
+      await record('umbral-antes');
+      await page.evaluate(y => window.scrollTo(0, y), umbral);
+      await record('umbral-despues');
     }
     if (width > 800) {
       await controls(page);
@@ -253,7 +285,9 @@ async function collect(browser, origin, width, theme, before) {
         }
         if (width > 800 && a.floating && !a.minimized) {
           compact++;
-          assert.deepEqual(a.padding, ['0px', '0px']);
+          // T-69 (forma única 03:46): la franja anclada conserva el relleno
+          // superior de 4 px del reposo; el aire inferior no se recorta.
+          assert.deepEqual(a.padding, ['4px', '0px']);
           // R3 (pedido de Nico 7-nov 04:17): MUY POCO aire arriba Y abajo.
           // Bilateral frente a main: ambos huecos bajan, no sólo la suma.
           assert.ok(a.upperGap < b.upperGap, `aire superior menor que main (${a.upperGap} ≥ ${b.upperGap})`);
@@ -285,10 +319,34 @@ async function collect(browser, origin, width, theme, before) {
           // La cápsula no invade la banda ni se sale de la franja.
           assert.ok(a.pill.top >= a.band.bottom, 'cápsula pegada bajo la banda');
           assert.ok(a.pill.bottom <= a.strip.bottom, 'cápsula dentro de la franja');
-        } else if (width <= 800 || a.minimized) {
+          // T-69 (pedido del dueño 8-nov 03:46): sin morph de scroll.
+          assert.equal(a.pillAnimation, 'none',
+            `${width} ${theme} ${a.state}: sin animación de entrada al anclar (morph prohibido)`);
+        }
+        if (width <= 800 || a.minimized) {
           assert.deepEqual(a.padding, b.padding, `${a.state}: CSS del respaldo/minimizada intacto`);
           for (const key of ['pill', 'strip', 'band'])
             assert.deepEqual(a[key], b[key], `${width} ${a.state}: geometría respaldo/minimizada (${key})`);
+        }
+        // T-69 (ordenes 03:14/03:46): continuidad de posición del par
+        // cápsula/franja a ambos lados del umbral real del candidato. La base
+        // NO se exige (su composición no es la del encargo); se muestra como
+        // evidencia de que la guarda distingue.
+        if (width > 800) {
+          const aA = after.find(x => x.state === 'umbral-antes');
+          const aD = after.find(x => x.state === 'umbral-despues');
+          const bA = before.find(x => x.state === 'umbral-antes');
+          const bD = before.find(x => x.state === 'umbral-despues');
+          assert.ok(aA && aD, 'par del umbral medido en el candidato');
+          assert.equal(aA.floating, false, 'umbral-antes sin anclar');
+          assert.equal(aD.floating, true, 'umbral-despues anclado');
+          const desvioA = Math.abs((aA.pill.top - aA.strip.top) - (aD.pill.top - aD.strip.top));
+          assert.ok(desvioA < 0.6, `${width} ${theme} umbral: offset cápsula/franja continuo (deriva ${desvioA})`);
+          assert.ok(Math.abs((aD.pill.top - aA.pill.top) - (aD.strip.top - aA.strip.top)) < 0.6,
+            `${width} ${theme} umbral: el desplazamiento se explica por la franja, no por un salto propio`);
+          assert.equal(aA.docHeight, aD.docHeight, 'umbral: documento sin salto');
+          const desvioB = Math.abs((bA.pill.top - bA.strip.top) - (bD.pill.top - bD.strip.top));
+          console.log(`  cruce umbral ${width} ${theme}: deriva candidato=${desvioA.toFixed(2)} px, base=${desvioB.toFixed(2)} px, animación=${aD.pillAnimation}`);
         }
         // T-69 (reposo sin recuadro, orden del dueño 8-nov): en reposo la
         // franja no dibuja recuadro exterior — sólo la cápsula, sin achicarse.
