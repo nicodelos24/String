@@ -229,6 +229,7 @@ async function collect(browser, origin, width, theme, before) {
           assert.equal(a.captureInPill, true, `${width} ${a.state}: captura dentro de la cápsula`);
           near(a.pill.width, after[0].pill.width, `${width} ${a.state}: ancho estable al anclar`);
           near(a.pill.height, after[0].pill.height, `${width} ${a.state}: alto estable al anclar`);
+          near(a.docHeight, after[0].docHeight, `${width} ${a.state}: reserva sin salto al compactar`);
         }
         // Sin saltos nuevos: la entrega no puede desalinear más que la base.
         // Se compara la deriva propia del estado: el documento es más bajo por
@@ -278,10 +279,9 @@ async function collect(browser, origin, width, theme, before) {
           // reposo (caja del transporte con sus 2 finos), borde a borde.
           if (!a.pillWrapped) assert.ok(Math.abs(a.pill.width - a.box.width) < 0.6,
             `${width} ${theme} ${a.state}: ancho compacto distinto del recuadro de reposo (${a.pill.width} vs ${a.box.width})`);
-          // T-69 (alto previo F′): la reserva ya no vive en el min-height sino
-          // en strip 56 + margin-bottom calc(franja-alto − 56); el documento
-          // no cambiar de altura frente a la base sustituye a “no reservar
-          // más que la base” (incluye el margen, es más fuerte).
+          // La reserva se mide desde la composición real en reposo y su resto
+          // compensa exactamente el alto natural del strip al anclar; no se
+          // heredan constantes geométricas de la composición anterior.
           // La cápsula no invade la banda ni se sale de la franja.
           assert.ok(a.pill.top >= a.band.bottom, 'cápsula pegada bajo la banda');
           assert.ok(a.pill.bottom <= a.strip.bottom, 'cápsula dentro de la franja');

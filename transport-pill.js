@@ -145,8 +145,17 @@
           piezas.captura.parentNode !== pildora) pildora.appendChild(piezas.captura);
       if (!compuesta) reponerCaptura();
       fila.classList.toggle('is-pill-composed', compuesta);
-      const envuelta = clavada && !minimizada && lineas(pildora) > 1;
+      const envuelta = !minimizada && lineas(pildora) > 1;
       pildora.classList.toggle('is-pill-wrapped', envuelta);
+    }
+    if (clavada && piezas.strip && !minimizada) {
+      // La reserva se toma de la composición real en reposo. Compensar sólo
+      // el alto efectivo del strip tras aplicar el estado compacto; no asumir
+      // 56/70 px ni trasladar aire cuando las fuentes hacen crecer la cápsula.
+      const reserva = parseFloat(piezas.strip.style.getPropertyValue('--franja-alto')) ||
+        piezas.strip.offsetHeight;
+      piezas.strip.style.setProperty('--franja-restante',
+        (reserva - piezas.strip.offsetHeight) + 'px');
     }
     if (clavada) publicarPildora();
     if (piezas.panel && piezas.strip) {

@@ -3071,9 +3071,9 @@ html.ventana .panel-scroll.is-panel-recortado::before {
   z-index: 1;
 }
 
-/* La cápsula clavada (A-46 ·1 ·2 ·4): mismo ancho natural de la fila, sólo el
-   cuadro fino radio 12 con fondo, sin sombra, menos alta que el compacto
-   ronda 2. position: static — el clavado es de la franja sticky. */
+/* Cápsula compacta de escritorio, compuesta desde reposo y durante el anclaje:
+   cuadro fino radio 12 con fondo, sin sombra. En ventana el clavado lo aplica
+   la franja sticky; la cápsula permanece en flujo dentro de ella. */
 html.ventana .transport-row.is-pill-composed:not(.is-transport-minimized) .transport-pill,
 html.ventana .transport-row.is-floating:not(.is-transport-minimized) .transport-pill {
   position: static;
@@ -3087,9 +3087,8 @@ html.ventana .transport-row.is-floating:not(.is-transport-minimized) .transport-
   gap: 4px 12px;
 }
 
-/* Adentro de la cápsula, la fila de captura en vivo es su segunda línea
-   (el observador la reúne con la fila de transporte al clavarse: A-46 ·2,
-   referencia 18-14-55). */
+/* La captura en vivo integra la composición compacta como segunda fila; el
+   layout de escritorio puede alinearla junto al transporte si cabe. */
 html.ventana .transport-row.is-pill-composed:not(.is-transport-minimized) .capture-row,
 html.ventana .transport-row.is-floating:not(.is-transport-minimized) .capture-row {
   width: 100%;
@@ -3192,15 +3191,9 @@ html.ventana .panel-strip.is-transport-floating {
   border-color: transparent;
   background: transparent;
 }
-/* T-69 · sólo la cápsula compacta de escritorio: el hueco medido por Kaia era
-   arriba 16 / abajo 9, y venía del relleno de la caja del transporte (8+8) más
-   sus bordes y el de la franja, no sólo del padding-top de la franja. En
-   compacto se retira ese relleno: arriba queda el margen de la banda (6) y los
-   dos bordes finos (1+1), abajo alrededor de 1 px. Así AMBOS huecos bajan
-   respecto de main (26/9) y del candidato previo (18/11), conservando la
-   posición/anclaje de la cápsula y la reserva de la franja en
-   min-height: var(--franja-alto, 70px). Reposo, minimizada y respaldo móvil
-   conservan su CSS. */
+/* T-69 · cápsula compacta de escritorio. En el estado anclado la franja
+   mantiene la reserva que JS midió desde la composición compacta de reposo;
+   su altura es dinámica según fuentes y controles, no un 70 px universal. */
 html.ventana .panel-strip.is-transport-floating:not(:has(.is-transport-minimized)) {
   padding-top: 0;
   /* T-69 (corrección del hallazgo de QA 7-nov 14:33): el margen de panel de
@@ -3211,23 +3204,17 @@ html.ventana .panel-strip.is-transport-floating:not(:has(.is-transport-minimized
      candidato previo (18/11); en 1280 la mejora 8/1 se conserva. */
   top: calc(var(--franja-tope, 0px) - 6px);
 }
-/* T-69 (alto previo, orden de Nico 23:5x vía estudio v2 F′ conciliado): la
-   barra compacta vuelve al alto anterior (píldora ~47) conservando ancho y
-   márgenes 6/3. La caja compacta se achica a 56 y los 14 px de la reserva
-   (--franja-alto, fijada JS desde reposo) pasan a un margin-bottom propio
-   (calc(franja-alto − 56px)): fuera del border-box, transparente, no pinta
-   ni tapa contenido, y el documento mantiene su alto (56 + 14 = 70) así que
-   no hay salto al compactar. El recorte del panel se recalcula de todos modos
-   desde el rect real del strip. La envuelta (mobile) y la minimizada quedan
-   excluidas: siguen usando la reserva completa. */
-html.ventana .panel-strip.is-transport-floating:not(:has(.is-transport-minimized)):not(:has(.is-pill-wrapped)) {
-  min-height: 56px;
-  margin-bottom: calc(var(--franja-alto, 70px) - 56px);
+/* T-69 compacto permanente: la composición compacta ocupa su altura natural.
+   JS mide el strip ya compuesto y traslada a este margen transparente sólo la
+   diferencia respecto de la reserva de reposo; no se fija una altura universal.
+   Minimizar conserva el régimen anterior y recompone la caja original. */
+html.ventana .panel-strip.is-transport-floating:not(:has(.is-transport-minimized)) {
+  margin-bottom: var(--franja-restante, 0px);
 }
-/* T-69 (alto previo, estudio v2 F′): se retira el relleno vertical 9/9 de la
-   píldora de una línea añadido el 19:45 —con caja 56 deja de hacer falta:
-   la píldora vuelve a ~47 y sus holguras salen del centrado de la caja.
-   El ancho 100% + 2 finos y el margen lateral del pedido 20:22 no cambian. */
+/* T-69: caja y cápsula conservan su ancho visual borde a borde con la
+   geometría compacta permanente; el alto resulta del contenido real.
+   El borde de 1 px y el margen lateral de −1 px mantienen la alineación con
+   el recuadro de reposo. */
 html.ventana .panel-strip.is-transport-floating:not(:has(.is-transport-minimized)) .transport-row.is-floating .transport-pill:not(.is-pill-wrapped) {
   /* T-69 (pedido posterior 20:22): el compacto conserva el ancho exterior que
      el recuadro muestra en reposo (caja + sus 2 finos). La fila se estira al

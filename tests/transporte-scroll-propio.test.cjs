@@ -180,7 +180,12 @@ test('T-56 r5 · el recorrido del documento fija y suelta la barra, conservando 
   function nodo(cls) {
     const n = {
       className: cls || '', id: '', children: [], parentNode: null,
-      classList: clase([]), style: {setProperty() {}},
+      classList: clase([]), style: {
+        values: {},
+        setProperty(key, value) { this.values[key] = String(value); },
+        getPropertyValue(key) { return this.values[key] || ''; },
+      },
+      offsetHeight: 40,
       appendChild(h) { quitaHijo(h); h.parentNode = n; n.children.push(h); return h; },
       insertBefore(h, ref) {
         quitaHijo(h);
