@@ -2943,10 +2943,15 @@ html:not([data-theme]) .cards-band .progression-card :is(small, .progression-mod
 /* La compactación: el aire entre controles y las alturas que sobran. El botón
    del Tempo baja de los 40 px del reposo y la cápsula del Play recorta su
    relleno; la legibilidad y los blancos de clic se conservan. */
+.transport-row.is-pill-composed .transport-pill .tempo-tap,
 .transport-row.is-floating .transport-pill .tempo-tap { min-height: 30px; font-size: 12px; }
+.transport-row.is-pill-composed .transport-pill .source-switch,
 .transport-row.is-floating .transport-pill .source-switch { padding: 1px; }
+.transport-row.is-pill-composed .transport-pill .progression-tempo,
 .transport-row.is-floating .transport-pill .progression-tempo { gap: 6px; }
+.transport-row.is-pill-composed .transport-pill .mute-toggle,
 .transport-row.is-floating .transport-pill .mute-toggle { min-height: 24px; }
+.transport-row.is-pill-composed .transport-pill .progression-disclosure,
 .transport-row.is-floating .transport-pill .progression-disclosure { width: 28px; height: 28px; }
 /* La ayuda es del transporte, no del extremo: en la barrita clavada se queda
    junto al Tempo, y el extremo derecho es sólo de la flechita. */
@@ -3069,6 +3074,7 @@ html.ventana .panel-scroll.is-panel-recortado::before {
 /* La cápsula clavada (A-46 ·1 ·2 ·4): mismo ancho natural de la fila, sólo el
    cuadro fino radio 12 con fondo, sin sombra, menos alta que el compacto
    ronda 2. position: static — el clavado es de la franja sticky. */
+html.ventana .transport-row.is-pill-composed:not(.is-transport-minimized) .transport-pill,
 html.ventana .transport-row.is-floating:not(.is-transport-minimized) .transport-pill {
   position: static;
   width: auto;
@@ -3084,6 +3090,7 @@ html.ventana .transport-row.is-floating:not(.is-transport-minimized) .transport-
 /* Adentro de la cápsula, la fila de captura en vivo es su segunda línea
    (el observador la reúne con la fila de transporte al clavarse: A-46 ·2,
    referencia 18-14-55). */
+html.ventana .transport-row.is-pill-composed:not(.is-transport-minimized) .capture-row,
 html.ventana .transport-row.is-floating:not(.is-transport-minimized) .capture-row {
   width: 100%;
   border-top: 1px solid var(--line);
@@ -3112,9 +3119,13 @@ html.ventana .transport-row.is-floating .transport-minimize {
 
 /* A-46 ·4: menos alta que el compacto de la ronda 2 (Tempo 30, Silencio 24,
    vista 28). Sólo clavada: el reposo no se toca. */
+html.ventana .transport-row.is-pill-composed .transport-pill .tempo-tap,
 html.ventana .transport-row.is-floating .transport-pill .tempo-tap { min-height: 26px; }
+html.ventana .transport-row.is-pill-composed .transport-pill .mute-toggle,
 html.ventana .transport-row.is-floating .transport-pill .mute-toggle { min-height: 22px; }
+html.ventana .transport-row.is-pill-composed .transport-pill .progression-disclosure,
 html.ventana .transport-row.is-floating .transport-pill .progression-disclosure { width: 26px; height: 26px; }
+
 
 /* En ventana la minimizada también reserva espacio: al devolver la captura
    a su caja no se superpone con ninguno de sus controles (desde 801 px). */
@@ -3260,6 +3271,45 @@ html.ventana .panel-strip .follow-midi { margin: 0; }
   }
   html.ventana .transport-row.is-floating:not(.is-transport-minimized) .capture-row {
     width: auto; border-top: 0; padding-top: 0; align-items: center;
+  }
+}
+/* T-69 compacto permanente: la caja, fila y cápsula usan la misma geometría
+   antes y después del umbral. La composición conserva el tamaño natural real;
+   JS publica esa reserva al anclar y no se fija en el alto histórico. */
+html.ventana .panel-strip:has(.transport-row.is-pill-composed) .progression-view-controls {
+  padding: 2px 0 0;
+  border-color: transparent;
+  background: transparent;
+}
+html.ventana .panel-strip .transport-row.is-pill-composed:not(.is-transport-minimized) {
+  width: 100%;
+}
+html.ventana .panel-strip .transport-row.is-pill-composed:not(.is-transport-minimized) .transport-pill {
+  width: calc(100% + 2px);
+  margin-left: -1px;
+  box-sizing: border-box;
+}
+html.ventana .transport-row.is-pill-composed .transport-pill .inline-help { margin-left: 0; }
+html.ventana .transport-row.is-pill-composed .transport-minimize {
+  display: inline-grid;
+  position: static;
+  order: -1;
+  margin-right: 2px;
+  width: 22px;
+  height: 22px;
+}
+@media (min-width: 1101px) {
+  html.ventana .panel-strip:has(.transport-row.is-pill-composed) .progression-view-controls {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 18px;
+  }
+  html.ventana .panel-strip .transport-row.is-pill-composed:not(.is-transport-minimized) .capture-row {
+    width: auto;
+    border-top: 0;
+    padding-top: 0;
+    align-items: center;
   }
 }
 

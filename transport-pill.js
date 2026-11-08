@@ -70,6 +70,7 @@
     while (panel.firstChild) shell.insertBefore(panel.firstChild, panel);
     shell.removeChild(panel);
     piezas.panel = null;
+    fila.classList.remove('is-pill-composed');
     const strip = piezas.strip;
     piezas.strip = null;
     piezas.armado = false;
@@ -136,12 +137,14 @@
     if (banda) banda.classList.remove('is-stuck');
     const pildora = fila.querySelector('.transport-pill');
     if (pildora) {
-      // A-46 ·2: clavada y expandida, la fila de captura es la segunda línea
-      // de la cápsula; en reposo, minimizada o respaldo vuelve a su caja.
-      const adentro = clavada && !minimizada;
-      if (adentro && piezas.captura && pildora.appendChild &&
+      // T-69: en escritorio la composición compacta no depende del anclaje.
+      // La captura acompaña a la cápsula desde reposo; minimizar o salir del
+      // régimen de ventana la devuelve a la caja original sin duplicar nodos.
+      const compuesta = !minimizada;
+      if (compuesta && piezas.captura && pildora.appendChild &&
           piezas.captura.parentNode !== pildora) pildora.appendChild(piezas.captura);
-      if (!adentro) reponerCaptura();
+      if (!compuesta) reponerCaptura();
+      fila.classList.toggle('is-pill-composed', compuesta);
       const envuelta = clavada && !minimizada && lineas(pildora) > 1;
       pildora.classList.toggle('is-pill-wrapped', envuelta);
     }

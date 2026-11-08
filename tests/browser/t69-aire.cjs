@@ -42,8 +42,12 @@ async function measure(page, state) {
     const parentRect = rect('.workspace > .progression-workspace');
     const statusRect = statusNode?.getBoundingClientRect().toJSON() || null;
     const playbackRect = playbackNode?.getBoundingClientRect().toJSON() || null;
-    const floating = document.querySelector('.transport-row').classList.contains('is-floating');
-    const minimized = document.querySelector('.transport-row').classList.contains('is-transport-minimized');
+    const row = document.querySelector('.transport-row');
+    const floating = row.classList.contains('is-floating');
+    const composed = row.classList.contains('is-pill-composed');
+    const capture = document.querySelector('.capture-row');
+    const captureInPill = !!capture && capture.parentElement?.classList.contains('transport-pill');
+    const minimized = row.classList.contains('is-transport-minimized');
     const pillWrapped = !!document.querySelector('.transport-pill')?.classList.contains('is-pill-wrapped');
     const selectors = ['#progression-view', '#accompaniment-mute', '#tempo-play', '#tempo-tap',
       '#tempo-tap-bpm', '#transport-minimize', '#improvisation-toggle', '#tempo-tap-mic',
@@ -68,7 +72,7 @@ async function measure(page, state) {
     return {state, scroll: scrollY, docHeight: document.documentElement.scrollHeight,
       docWidth: document.documentElement.scrollWidth, viewport: innerWidth,
       viewportHeight: innerHeight,
-      theme: document.documentElement.dataset.theme, floating, minimized, pillWrapped,
+      theme: document.documentElement.dataset.theme, floating, composed, captureInPill, minimized, pillWrapped,
       stripClasses: strip ? [...strip.classList] : null,
       rowClasses: [...document.querySelector('.transport-row').classList],
       box, innerBottom, firstRow,
@@ -171,6 +175,10 @@ async function collect(browser, origin, width, theme, before) {
       await page.addStyleTag({content: 'html, html * { overflow-anchor: none !important; }'});
       if (width <= 800) await page.locator('[data-mobile-tab="progresion"]').click();
     await record('reposo', true);
+    await page.reload();
+    await page.evaluate(() => document.fonts.ready);
+    await page.addStyleTag({content: 'html, html * { overflow-anchor: none !important; }'});
+    await record('recarga');
     for (const y of [40, 200, 600, 900, 999999, 600]) {
       await page.evaluate(y => window.scrollTo(0, y), y);
       await record(`scroll-${y}`, y === 900);
@@ -216,13 +224,20 @@ async function collect(browser, origin, width, theme, before) {
         assert.equal(a.state, b.state);
         assert.equal(a.floating, b.floating, `${a.state}: mismo régimen`);
         assert.equal(a.minimized, b.minimized, `${a.state}: mismo minimizado`);
+        if (width > 800 && !a.minimized) {
+          assert.equal(a.composed, true, `${width} ${a.state}: composición compacta permanente`);
+          assert.equal(a.captureInPill, true, `${width} ${a.state}: captura dentro de la cápsula`);
+          near(a.pill.width, after[0].pill.width, `${width} ${a.state}: ancho estable al anclar`);
+          near(a.pill.height, after[0].pill.height, `${width} ${a.state}: alto estable al anclar`);
+        }
         // Sin saltos nuevos: la entrega no puede desalinear más que la base.
         // Se compara la deriva propia del estado: el documento es más bajo por
         // retirar la fila «Detenido», también estando minimizada.
         const aDrift = Math.abs(a.docHeight - after[0].docHeight);
         const bDrift = Math.abs(b.docHeight - before[0].docHeight);
-        assert.ok(aDrift <= bDrift,
+        if (!a.minimized) assert.ok(aDrift <= bDrift,
           `${width} ${a.state}: sin saltos nuevos (deriva ${aDrift} vs base ${bDrift})`);
+        else near(a.scroll, b.scroll, `${width} minimizada: sin salto de scroll`);
         if (a.docHeight === b.docHeight) {
           near(a.scroll, b.scroll, `${a.state}: mismo desplazamiento`);
         } else if (b.state === 'scroll-999999') {
@@ -231,10 +246,9 @@ async function collect(browser, origin, width, theme, before) {
           near(a.scroll - (a.docHeight - a.viewportHeight), 0, `${a.state}: entrega al fondo`);
           near(b.scroll - (b.docHeight - b.viewportHeight), 0, `${a.state}: base al fondo`);
         }
-        if (!(a.floating && !a.minimized)) {
-          // Fuera del compacto desplegado la píldora es la de la base: ni
-          // reposo, ni minimizada, ni respaldo móvil cambian con la entrega.
-          near(a.pill.height, b.pill.height, `${a.state}: píldora intacta fuera del compacto`);
+        if (width <= 800 || a.minimized) {
+          // El respaldo móvil y la barra minimizada conservan el régimen previo.
+          near(a.pill.height, b.pill.height, `${a.state}: píldora intacta en respaldo/minimizada`);
         }
         if (width > 800 && a.floating && !a.minimized) {
           compact++;
@@ -254,41 +268,12 @@ async function collect(browser, origin, width, theme, before) {
             assert.ok(a.upperGap < 18 && a.lowerGap < 11,
               `${width} ${theme} ${a.state}: aire menor que el candidato previo (arriba ${a.upperGap} / abajo ${a.lowerGap})`);
           }
-          // T-69 (alto previo, F′): en la matriz con fuentes del sistema, la
-          // franja compacta mide exactamente 56 y la píldora vuelve a ~47 con
-          // huecos 6/3 (alto previo del dueño, márgenes conservados); la
-          // reserva (franja-alto) pasa a margin-bottom, así que no hay salto.
-          // Con las fuentes externas reales los controles pueden desbordar la
-          // caja (píldora más alta en pantallas de menos ancho): ahí la caja
-          // sólo tiene que no ser menor que 56 y la costura sigue cerrada.
-          if (process.env.T69_EXTERNAL === '1') {
-            assert.ok(a.strip.height >= 56,
-              `${width} ${theme} ${a.state}: franja compacta por debajo de 56 (${a.strip.height})`);
-            // Con fuentes externas la píldora puede desbordar la caja (a 1280
-            // el contenido real mide más que 56): el salto frente a la base
-            // depende de ambos desbordes; lo que manda es no saltar más que
-            // la base, ya cubierto por la comparación de deriva propia
-            // (reposo→estado) dentro de cada página, igual al esquema de la
-            // reserva que la orden exige preservar.
-          } else {
-            near(a.strip.height, 56, 'franja compacta de 56 (alto previo)');
-            near(a.pill.height, 47, 'píldora compacta de una línea alrededor de 47');
-            near(a.upperGap, 6, 'hueco superior 6');
-            near(a.lowerGap, 3, 'hueco inferior 3');
-            // Costura: el marco del panel se dibuja en strip.bottom + 6; el
-            // aire píldora→marco debe seguir siendo 9 como en el esquema F′.
-            near((a.strip.bottom + 6) - a.pill.bottom, 9, 'aire píldora→marco del panel');
-            // El renglón de estado «Detenido» se elimina integralmente en esta
-            // corrección; la altura total baja por ese contenido retirado. La
-            // guarda de deriva reposo→scroll anterior comprueba que no haya
-            // un salto nuevo al fijar la franja, sin exigir conservar el renglón.
-          }
-          // Con fuentes externas la píldora puede desbordar la caja (a 1280
-          // el contenido real mide más que 56): el salto frente a la base
-          // depende de ambos desbordes; lo que manda es no saltar más que
-          // la base, ya cubierto por la comparación de deriva propia
-          // (reposo→estado) dentro de cada página, igual al esquema de la
-          // reserva que la orden exige preservar.
+          // La captura permanente cambia la altura natural de la cápsula: no
+          // se impone la antigua reserva de 56/70 px. Se comprueba la caja real
+          // medida desde el reposo y la continuidad entre los dos estados.
+          assert.ok(a.strip.height >= a.pill.height,
+            `${width} ${theme} ${a.state}: cápsula dentro de la reserva real`);
+          assert.ok(a.lowerGap >= 0, `${a.state}: sin hueco invertido/solapamiento`);
           // T-69 (pedido 20:22): el compacto conserva el ancho del recuadro de
           // reposo (caja del transporte con sus 2 finos), borde a borde.
           if (!a.pillWrapped) assert.ok(Math.abs(a.pill.width - a.box.width) < 0.6,
@@ -300,10 +285,10 @@ async function collect(browser, origin, width, theme, before) {
           // La cápsula no invade la banda ni se sale de la franja.
           assert.ok(a.pill.top >= a.band.bottom, 'cápsula pegada bajo la banda');
           assert.ok(a.pill.bottom <= a.strip.bottom, 'cápsula dentro de la franja');
-        } else {
-          assert.deepEqual(a.padding, b.padding, `${a.state}: CSS fuera del compacto intacto`);
+        } else if (width <= 800 || a.minimized) {
+          assert.deepEqual(a.padding, b.padding, `${a.state}: CSS del respaldo/minimizada intacto`);
           for (const key of ['pill', 'strip', 'band'])
-            assert.deepEqual(a[key], b[key], `${width} ${a.state}: geometría intacta (${key})`);
+            assert.deepEqual(a[key], b[key], `${width} ${a.state}: geometría respaldo/minimizada (${key})`);
         }
         // T-69 (reposo sin recuadro, orden del dueño 8-nov): en reposo la
         // franja no dibuja recuadro exterior — sólo la cápsula, sin achicarse.

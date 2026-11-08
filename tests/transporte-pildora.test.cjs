@@ -35,7 +35,8 @@ function reglas(fuente) {
 }
 
 function reglaEn(fuente, selectorExacto, donde) {
-  const encontrada = reglas(fuente).find(regla => regla.selector === selectorExacto);
+  const encontrada = reglas(fuente).find(regla => regla.selector === selectorExacto ||
+    regla.selector.split(',').map(parte => parte.trim()).includes(selectorExacto));
   assert.ok(encontrada, `falta la regla ${selectorExacto} en ${donde}`);
   return encontrada.cuerpo;
 }

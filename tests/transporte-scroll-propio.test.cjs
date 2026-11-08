@@ -300,8 +300,9 @@ test('T-56 r5 · el recorrido del documento fija y suelta la barra, conservando 
   assert.ok(panel.children.includes(workspace),
     'el panel de trabajo entra al recorrido propio');
   assert.ok(panel.children.includes(pie), 'el pie desplaza con el panel');
-  assert.ok(caja.children.includes(filaTransporte) && captura.parentNode === caja,
-    'en reposo las dos filas viven en su caja como siempre');
+  assert.ok(caja.children.includes(filaTransporte) && captura.parentNode === pildora &&
+    fila.classList.contains('is-pill-composed'),
+    'en escritorio la captura acompaña a la cápsula compacta desde el reposo');
 
   stripArmado.getBoundingClientRect = () => rect(Math.max(0, 120 - jsWindow.scrollY), 0, 40, 40);
   assert.ok(eventos.scroll.length > 0, 'el observador escucha el documento');
