@@ -245,6 +245,55 @@ async function collect(browser, origin, width, theme, before) {
     await page.evaluate(() => window.scrollTo(0, 0));
     await record('vuelta');
     if (width > 800) {
+      // T-69 (orden 18:00): tras minimizar en reposo debe quedar un
+      // restaurador visible, habilitado y operable allí mismo, sin scroll ni
+      // recarga. Ciclo reversible dos veces; el segundo despliegue por teclado.
+      for (let ciclo = 1; ciclo <= 2; ciclo++) {
+        // Ronda base (077eeb3): el control no existe visible y el clic real
+        // abortaría la comparación; ahí se dispara el handler por JS. En el
+        // candidato (después) el clic es real y la guarda exige visibilidad.
+        const minimizar = () => before
+          ? page.locator('#transport-minimize').evaluate(b => b.click())
+          : page.locator('#transport-minimize').click();
+        await minimizar();
+        await record(`minimizada-reposo-${ciclo}`);
+        assert.equal(await page.locator('#transport-minimize').getAttribute('aria-pressed'), 'true',
+          `ciclo ${ciclo}: estado minimizado registrado`);
+        assert.equal(await page.locator('#transport-minimize').getAttribute('aria-label'),
+          'Desplegar la barra del transporte', `ciclo ${ciclo}: etiqueta de restauración`);
+        if (!before) {
+          const vis = await page.evaluate(() => {
+            const b = document.querySelector('#transport-minimize');
+            const cs = getComputedStyle(b);
+            const r = b.getBoundingClientRect();
+            const hit = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+            return {display: cs.display, w: r.width, h: r.height,
+              clicable: hit === b || b.contains(hit), disabled: b.disabled};
+          });
+          assert.notEqual(vis.display, 'none', `ciclo ${ciclo}: restaurador visible`);
+          assert.ok(vis.w >= 20 && vis.h >= 20, `ciclo ${ciclo}: caja útil del restaurador (${vis.w}×${vis.h})`);
+          assert.ok(vis.clicable, `ciclo ${ciclo}: restaurador sin tapa/ancestro oculto`);
+          assert.equal(vis.disabled, false, `ciclo ${ciclo}: restaurador habilitado`);
+        }
+        assert.equal(await page.evaluate(() => scrollY), 0, `ciclo ${ciclo}: minimizar no desplaza la página`);
+        const btn = page.locator('#transport-minimize');
+        if (!before) {
+          await btn.focus();
+          assert.ok(await btn.evaluate(el => el === document.activeElement), `ciclo ${ciclo}: foco alcanzable`);
+        }
+        if (before) await btn.evaluate(b => b.click());
+        else if (ciclo === 1) await btn.click();
+        else await page.keyboard.press('Space');
+        assert.equal(await page.locator('#transport-minimize').getAttribute('aria-pressed'), 'false',
+          `ciclo ${ciclo}: desplegó`);
+        await record(`restaurada-reposo-${ciclo}`);
+        assert.equal(await page.evaluate(() => scrollY), 0, `ciclo ${ciclo}: restaurar sin scroll`);
+        assert.equal(await page.evaluate(() =>
+          document.querySelector('.transport-row').classList.contains('is-pill-composed')), true,
+          `ciclo ${ciclo}: restaurada vuelve a la composición compacta`);
+      }
+    }
+    if (width > 800) {
       await page.setViewportSize({width: 390, height: 740});
       await settle(page);
       assert.equal(await page.locator('.panel-strip').count(), 0, 'respaldo móvil sin franja');
@@ -296,7 +345,11 @@ async function collect(browser, origin, width, theme, before) {
           near(a.scroll - (a.docHeight - a.viewportHeight), 0, `${a.state}: entrega al fondo`);
           near(b.scroll - (b.docHeight - b.viewportHeight), 0, `${a.state}: base al fondo`);
         }
-        if (width <= 800 || a.minimized) {
+        // T-69 (orden 18:00): estados funcionales nuevos del ciclo en reposo;
+        // no tienen base contra quién comparar su geometría (la base 077eeb3
+        // no ofrece restaurador en reposo), pero aplican sus propias guardas.
+        const funcionalReposo = /minimizada-reposo\-[12]|restaurada-reposo\-[12]/.test(a.state);
+        if ((width <= 800 || a.minimized) && !funcionalReposo) {
           // El respaldo móvil y la barra minimizada conservan el régimen previo.
           near(a.pill.height, b.pill.height, `${a.state}: píldora intacta en respaldo/minimizada`);
         }
@@ -340,10 +393,25 @@ async function collect(browser, origin, width, theme, before) {
           assert.equal(a.pillAnimation, 'none',
             `${width} ${theme} ${a.state}: sin animación de entrada al anclar (morph prohibido)`);
         }
-        if (width <= 800 || a.minimized) {
+        if ((width <= 800 || a.minimized) && !funcionalReposo) {
           assert.deepEqual(a.padding, b.padding, `${a.state}: CSS del respaldo/minimizada intacto`);
           for (const key of ['pill', 'strip', 'band'])
             assert.deepEqual(a[key], b[key], `${width} ${a.state}: geometría respaldo/minimizada (${key})`);
+        }
+        // T-69 (orden 18:00): restaurar en reposo devuelve el documento y la
+        // composición compacta, sin scroll ni recarga.
+        if (a.state.startsWith('restaurada-reposo')) {
+          assert.equal(a.composed, true, `${a.state}: composición compacta recuperada`);
+          assert.equal(a.minimized, false, `${a.state}: desplegada`);
+          assert.ok(!a.floating, `${a.state}: sigue en reposo, sin anclar`);
+          near(a.docHeight, after[0].docHeight, `${a.state}: documento como en reposo`);
+          near(a.pill.width, after[0].pill.width, `${a.state}: cápsula de reposo recuperada`);
+          assert.equal(a.minStyles && a.minStyles.radius, '6px', `${a.state}: botón temático al desplegar`);
+        }
+        if (a.state.startsWith('minimizada-reposo')) {
+          assert.equal(a.minimized, true, `${a.state}: conservada minimizada`);
+          assert.ok(!a.floating && !a.composed, `${a.state}: sin floating ni composición`);
+          assert.ok(!a.captureInPill, `${a.state}: capture devuelta a su caja`);
         }
         // T-69 (ordenes 03:14/03:46): continuidad de posición del par
         // cápsula/franja a ambos lados del umbral real del candidato. La base
@@ -399,7 +467,7 @@ async function collect(browser, origin, width, theme, before) {
           assert.ok(a.stripVisual[1] === 'transparent' || a.stripVisual[1] === 'rgba(0, 0, 0, 0)',
             `${width} reposo: fondo del recuadro vigente (${a.stripVisual[1]})`);
         }
-        if (a.floating && !a.minimized) {
+        if (a.floating && !a.minimized && !funcionalReposo) {
           // T-69 (19:45): los CONTROLES conservan su tamaño aunque la cápsula
           // ocupe su holgura; la reserva de la franja no cambia tampoco.
           for (const c of a.ctlHeights) {
