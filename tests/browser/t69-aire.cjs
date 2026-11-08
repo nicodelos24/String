@@ -91,6 +91,23 @@ async function measure(page, state) {
       // animación de entrada de la píldora no puede dispararse al cruzar el
       // umbral en el régimen de ventana.
       pillAnimation: getComputedStyle(document.querySelector('.transport-pill')).animationName,
+      // T-69 (orden posterior a Bob17:13): una sola apariencia del botón
+      // izquierdo. Estilos calculados y posición del icono RELATIVA al botón.
+      minStyles: (() => {
+        const btn = document.querySelector('#transport-minimize');
+        if (!btn || !btn.getClientRects().length) return null;
+        const icon = btn.querySelector('.transport-minimize-icon');
+        const cs = getComputedStyle(btn);
+        const br = btn.getBoundingClientRect();
+        const ir = icon ? icon.getBoundingClientRect() : null;
+        return {radius: cs.borderRadius, borderStyle: cs.borderLeftStyle,
+          borderWidth: cs.borderLeftWidth,
+          padding: [cs.paddingLeft, cs.paddingTop, cs.paddingRight, cs.paddingBottom],
+          background: cs.backgroundColor, color: cs.color,
+          box: [+br.width.toFixed(2), +br.height.toFixed(2)],
+          icon: ir ? [+(ir.x - br.x).toFixed(2), +(ir.y - br.y).toFixed(2),
+            +ir.width.toFixed(2), +ir.height.toFixed(2)] : null};
+      })(),
       strip: rect('.panel-strip'), pill, band, workspace: rect('.workspace'),
       ctlHeights, upperGap: pill.top - band.bottom,
       lowerGap: strip ? strip.getBoundingClientRect().bottom - pill.bottom : null,
@@ -347,6 +364,30 @@ async function collect(browser, origin, width, theme, before) {
           assert.equal(aA.docHeight, aD.docHeight, 'umbral: documento sin salto');
           const desvioB = Math.abs((bA.pill.top - bA.strip.top) - (bD.pill.top - bD.strip.top));
           console.log(`  cruce umbral ${width} ${theme}: deriva candidato=${desvioA.toFixed(2)} px, base=${desvioB.toFixed(2)} px, animación=${aD.pillAnimation}`);
+          // T-69 (orden posterior a Bob17:13): el botón izquierdo conserva
+          // estilos y posición del icono idénticos desde Reposo/recarga/0
+          // hasta el cruce ida/vuelta del umbral y el regreso a 0, ambos temas.
+          const btnEstados = ['reposo', 'recarga', 'scroll-40', 'umbral-antes', 'umbral-despues', 'vuelta']
+            .map(nombre => after.find(x => x.state === nombre));
+          const btnBase = btnEstados[0] && btnEstados[0].minStyles;
+          assert.ok(btnBase, `${width} ${theme}: botón izquierdo medido`);
+          assert.equal(btnBase.radius, '6px', `${width} ${theme}: radio temático del botón, no nativo`);
+          assert.equal(btnBase.borderStyle, 'solid', `${width} ${theme}: borde temático del botón, no outset nativo`);
+          assert.equal(btnBase.borderWidth, '1px', `${width} ${theme}: grosor de borde temático`);
+          assert.deepEqual(btnBase.padding, ['0px', '0px', '0px', '0px'], `${width} ${theme}: padding temático del botón`);
+          for (const est of btnEstados.slice(1)) {
+            assert.ok(est && est.minStyles, `${est.state}: botón izquierdo medido`);
+            for (const campo of ['radius', 'borderStyle', 'borderWidth', 'padding', 'background', 'color'])
+              assert.deepEqual(est.minStyles[campo], btnBase[campo],
+                `${width} ${theme} ${est.state}: estilo del botón ${campo} igual a reposo`);
+            assert.ok(Math.abs(est.minStyles.box[0] - btnBase.box[0]) < 0.6 &&
+              Math.abs(est.minStyles.box[1] - btnBase.box[1]) < 0.6,
+              `${width} ${theme} ${est.state}: caja del botón igual a reposo`);
+            for (let i = 0; i < 4; i++)
+              assert.ok(Math.abs(est.minStyles.icon[i] - btnBase.icon[i]) < 0.6,
+                `${width} ${theme} ${est.state}: índice ${i} de icono igual a reposo`);
+          }
+          console.log(`  botón izquierdo ${width} ${theme}: estilos e icono invariantes en reposo/cruce/vuelta`);
         }
         // T-69 (reposo sin recuadro, orden del dueño 8-nov): en reposo la
         // franja no dibuja recuadro exterior — sólo la cápsula, sin achicarse.

@@ -2961,6 +2961,11 @@ html:not([data-theme]) .cards-band .progression-card :is(small, .progression-mod
    con la barrita volando aparece en el extremo derecho. El icono apunta arriba
    cuando se puede minimizar y abajo cuando ya está minimizada. */
 .transport-minimize { display: none; }
+/* T-69 (orden posterior a Bob17:13): el botón comparte su estilo temático
+   completo también compuesto en reposo (límites de Kaia17:06 y Bob17:13: en
+   1660453 el estilo completo sólo aplicaba con is-floating). La posición
+   estática, el orden y el tamaño siguen en la regla de composición de abajo,
+   que gana por orden en la cascada. */
 .transport-row.is-floating .transport-minimize {
   display: inline-grid;
   place-items: center;
@@ -2979,6 +2984,23 @@ html:not([data-theme]) .cards-band .progression-card :is(small, .progression-mod
 }
 .transport-row.is-floating .transport-minimize:hover { border-color: var(--rust); color: var(--rust); }
 .transport-row.is-floating .transport-minimize:focus-visible { outline: 2px solid var(--rust); outline-offset: 2px; }
+/* T-69 (orden posterior a Bob17:13): una sola apariencia del botón izquierdo.
+   En 1660453 este estilo temático completo sólo aplicaba con `is-floating`:
+   la composición de reposo (regla más abajo) únicamente daba display/posición,
+   y el control volvía a su apariencia nativa. Ahora el botón compuesto comparte los
+   mismos estilos calculados y el icono queda centrado igual en ambos estados;
+   la posición estática, el orden y el 22×22 siguen en la regla de composición. */
+html.ventana .transport-row.is-pill-composed .transport-minimize {
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--paper);
+  color: var(--muted);
+  cursor: pointer;
+}
+html.ventana .transport-row.is-pill-composed .transport-minimize:hover { border-color: var(--rust); color: var(--rust); }
+html.ventana .transport-row.is-pill-composed .transport-minimize:focus-visible { outline: 2px solid var(--rust); outline-offset: 2px; }
 .transport-minimize-icon {
   width: 7px;
   height: 7px;
@@ -3303,6 +3325,9 @@ html.ventana .transport-row.is-pill-composed .transport-pill .inline-help { marg
 html.ventana .transport-row.is-pill-composed .transport-minimize {
   display: inline-grid;
   position: static;
+  top: auto;
+  right: auto;
+  transform: none;
   order: -1;
   margin-right: 2px;
   width: 22px;
