@@ -3177,17 +3177,24 @@ html.ventana .panel-strip.is-transport-floating:not(:has(.is-transport-minimized
      candidato previo (18/11); en 1280 la mejora 8/1 se conserva. */
   top: calc(var(--franja-tope, 0px) - 6px);
 }
-/* T-69 (7-nov 19:45, captura de Nico): el aire restante no era relleno de la
-   franja sino la holgura de la reserva alrededor de la cápsula centrada: con
-   fuentes reales a 1366 la píldora de una línea mide ~47 px dentro de la
-   reserva de 70 y quedan ~23 px repartidos arriba/abajo (15/8). Subir el
-   relleno vertical de la propia píldora —sólo la de una línea; la píldora de
-   dos líneas (is-pill-wrapped) casi llena la reserva— ocupa esa holgura por
-   ambos lados a la vez: arriba ~15->6 / abajo ~8->3. Los controles conservan
-   sus alturas, el anclaje y la reserva de la franja no cambian. */
+/* T-69 (alto previo, orden de Nico 23:5x vía estudio v2 F′ conciliado): la
+   barra compacta vuelve al alto anterior (píldora ~47) conservando ancho y
+   márgenes 6/3. La caja compacta se achica a 56 y los 14 px de la reserva
+   (--franja-alto, fijada JS desde reposo) pasan a un margin-bottom propio
+   (calc(franja-alto − 56px)): fuera del border-box, transparente, no pinta
+   ni tapa contenido, y el documento mantiene su alto (56 + 14 = 70) así que
+   no hay salto al compactar. El recorte del panel se recalcula de todos modos
+   desde el rect real del strip. La envuelta (mobile) y la minimizada quedan
+   excluidas: siguen usando la reserva completa. */
+html.ventana .panel-strip.is-transport-floating:not(:has(.is-transport-minimized)):not(:has(.is-pill-wrapped)) {
+  min-height: 56px;
+  margin-bottom: calc(var(--franja-alto, 70px) - 56px);
+}
+/* T-69 (alto previo, estudio v2 F′): se retira el relleno vertical 9/9 de la
+   píldora de una línea añadido el 19:45 —con caja 56 deja de hacer falta:
+   la píldora vuelve a ~47 y sus holguras salen del centrado de la caja.
+   El ancho 100% + 2 finos y el margen lateral del pedido 20:22 no cambian. */
 html.ventana .panel-strip.is-transport-floating:not(:has(.is-transport-minimized)) .transport-row.is-floating .transport-pill:not(.is-pill-wrapped) {
-  padding-top: 9px;
-  padding-bottom: 9px;
   /* T-69 (pedido posterior 20:22): el compacto conserva el ancho exterior que
      el recuadro muestra en reposo (caja + sus 2 finos). La fila se estira al
      inner del recuadro y la píldora toma 100% + los 2 bordes; el margen
