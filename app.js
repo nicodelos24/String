@@ -485,6 +485,7 @@ function updateView({ renderCards = true } = {}) {
   document.querySelector('#board-title').textContent = `${rootNoteName}${chordSuffix} · ${selectedModeData.name}`;
   document.querySelector('#board-add-chord').textContent = `${rootNoteName}${chordSuffix}`.replace(/#/g, '♯').replace(/b/g, '♭');
   document.querySelector('.board-eyebrow').textContent = `MÁSTIL / ${instruments[instrument].name.toUpperCase()}`;
+  globalThis.StringMicrophone?.refreshReadout?.();
 
   updateModeLegend();
   renderFretboard();

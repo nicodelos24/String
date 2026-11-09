@@ -20,6 +20,10 @@ const MINOR_MODES_BY_DEGREE = {
   7: 'phrygian', 8: 'lydian', 10: 'mixolydian'
 };
 
+const NATURAL_MAJOR_SCALE = [0, 2, 4, 5, 7, 9, 11];
+const NATURAL_MINOR_SCALE = [0, 2, 3, 5, 7, 8, 10];
+const TRIAD_TYPES = {'0,4,7': 'maj', '0,3,7': 'm', '0,3,6': 'dim'};
+
 // Intervalos por tipo de acorde, exactamente los del cómputo (chordTypes de
 // app.js). La tabla vive acá porque el módulo corre solo en Node; la prueba
 // de fuente única coteja las dos para que no puedan diverjar.
@@ -77,7 +81,24 @@ function inferTonalContext(chord, tonality) {
   return modo;
 }
 
-const TonalContext = {parsePitchClass, DIATONIC_DEGREES, MODES_BY_DEGREE, NATURAL_MINOR_DEGREES, MINOR_MODES_BY_DEGREE, CHORD_INTERVALS, inferTonalContext};
+function diatonicHarmonyForNote(root, tonality) {
+  if (!Number.isInteger(root) || root < 0 || root > 11
+    || !tonality || (tonality.scale !== 'major' && tonality.scale !== 'minor')) return null;
+  const tonic = parsePitchClass(tonality.key);
+  if (tonic === null) return null;
+  const scale = tonality.scale === 'major' ? NATURAL_MAJOR_SCALE : NATURAL_MINOR_SCALE;
+  const degreeIndex = scale.findIndex(interval => (tonic + interval) % 12 === root);
+  if (degreeIndex < 0) return null;
+  const pitches = [0, 2, 4].map(offset =>
+    (tonic + scale[(degreeIndex + offset) % scale.length]) % 12);
+  const intervals = pitches.map(pitch => (pitch - root + 12) % 12);
+  const type = TRIAD_TYPES[intervals.join(',')];
+  const mode = (tonality.scale === 'major' ? MODES_BY_DEGREE : MINOR_MODES_BY_DEGREE)[(root - tonic + 12) % 12];
+  if (!type || !mode) return null;
+  return {root, type, mode, degree: degreeIndex + 1, pitches};
+}
+
+const TonalContext = {parsePitchClass, DIATONIC_DEGREES, MODES_BY_DEGREE, NATURAL_MINOR_DEGREES, MINOR_MODES_BY_DEGREE, CHORD_INTERVALS, inferTonalContext, diatonicHarmonyForNote};
 
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = TonalContext;

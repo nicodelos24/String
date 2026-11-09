@@ -10,6 +10,18 @@ function nextMicLivePhase(phase) {
   return phase === 'note' ? 'chord' : 'note';
 }
 
+const TonalContextForMic = (typeof module !== 'undefined' && module.exports)
+  ? require('./tonal-context.js')
+  : (typeof window !== 'undefined' ? window.TonalContext : undefined);
+
+function micRelativeDegree(midi, tonality) {
+  if (!Number.isInteger(midi) || !TonalContextForMic?.parsePitchClass || !tonality) return '';
+  const tonic = TonalContextForMic.parsePitchClass(tonality.key);
+  if (tonic === null) return '';
+  const interval = (((midi % 12) - tonic) % 12 + 12) % 12;
+  return ['1', '♭2', '2', '♭3', '3', '4', '♭5', '5', '♭6', '6', '♭7', '7'][interval];
+}
+
 // T-36 (línea 2): la tinta del rótulo sobre el relleno la decide una sola
 // autoridad, `note-ink.js`. En la página lo carga index.html antes que este
 // archivo; en Node, el require del mismo módulo. El nombre no puede ser
@@ -47,11 +59,30 @@ function micLiveChord(phase, chord, pitch, ctx) {
   if (!phase || phase === 'off') return null;
   if (chord && typeof chord.root === 'number' && chord.type) {
     const preferred = preferredRootSpelling(chord.root, ctx);
-    if (preferred) return Object.assign({}, chord, { rootNoteName: preferred.rootName, useFlats: preferred.useFlats });
-    return chord;
+    const result = preferred
+      ? Object.assign({}, chord, { rootNoteName: preferred.rootName, useFlats: preferred.useFlats })
+      : Object.assign({}, chord);
+    if (phase === 'degree' && TonalContextForMic?.inferTonalContext) {
+      const mode = TonalContextForMic.inferTonalContext(chord, ctx.tonality);
+      if (mode) result.mode = mode;
+    }
+    return result;
   }
   if (phase === 'chord' || !Number.isInteger(pitch)) return null;
   const pitchClass = ((pitch % 12) + 12) % 12;
+  if (phase === 'degree') {
+    const harmony = TonalContextForMic?.diatonicHarmonyForNote?.(pitchClass, ctx.tonality);
+    if (!harmony) return null;
+    const preferred = preferredRootSpelling(pitchClass, ctx);
+    let spelling = preferred?.rootName || (ctx.notes && ctx.notes[pitchClass]);
+    if (spelling && !preferred && ctx.pianoUseFlats && ctx.noteLabels && ctx.noteLabels[spelling]) {
+      spelling = ctx.noteLabels[spelling];
+    }
+    return Object.assign({}, harmony, {
+      rootNoteName: spelling,
+      useFlats: preferred?.useFlats,
+    });
+  }
   const type = ctx.chordType && ctx.chordType.value ? ctx.chordType.value : 'maj';
   const mode = ctx.selectedMode || (type === 'm' ? 'aeolian' : type === 'dim' ? 'locrian' : 'ionian');
   let spelling = ctx.notes && ctx.notes[pitchClass];
@@ -292,6 +323,7 @@ if (typeof document !== 'undefined') (() => {
   let liveChord = null;   // último acorde estable detectado por el micrófono
   let liveNotes = null;   // notas que suenan a la vez, cuando no hay acorde que nombrar
   let micPitch = null;    // última nota monofónica confirmada (MIDI)
+  let livePitchDetection = null;
   let microLiveKey = '';  // raíz:tipo:modo ya aplicado desde el micrófono
 
   // La detección de duración con el micrófono es imprecisa: al enmudecer, la
@@ -304,6 +336,7 @@ if (typeof document !== 'undefined') (() => {
       const now = Date.now();
       if (detection && Number.isInteger(detection.midi)) {
         micPitch = detection.midi;
+        livePitchDetection = detection;
         // Cada nota confirmada es un golpe, y el micrófono solo avisa cuando la
         // nota cambia (o se calla), no en cada fotograma: por eso esto sirve tanto
         // para marcar el tempo tocando notas como para entrar a la canción al
@@ -316,6 +349,7 @@ if (typeof document !== 'undefined') (() => {
         showReadout(detection);
       } else {
         micPitch = null;
+        livePitchDetection = null;
         const holding = heldMidi !== null && now - heldSince < NOTE_HOLD_MS;
         if (holding) {
           scheduleHoldClear();
@@ -346,13 +380,15 @@ if (typeof document !== 'undefined') (() => {
     // T-60: el contexto cambia junto con el selector/piano. Sin tonalidad fija,
     // selectedTonality es la armadura vigente de la página; T-44 decide si la
     // candidata es diatónica y el detector solo la usa como prior, no como nota.
-    getTonality: () => {
-      const current = (typeof songTonality !== 'undefined' && songTonality)
-        || (typeof selectedTonality !== 'undefined' && selectedTonality);
-      return current ? { key: current.key, scale: current.scale } : null;
-    },
+    getTonality: microphoneTonality,
     onState: renderState,
   });
+
+  function microphoneTonality() {
+    const current = (typeof songTonality !== 'undefined' && songTonality)
+      || (typeof selectedTonality !== 'undefined' && selectedTonality);
+    return current ? { key: current.key, scale: current.scale } : null;
+  }
 
   // La forma que se dibuja: la del acorde si lo hay; si no, la de las notas que
   // suenan a la vez. Una posición por nota, nunca todas sus apariciones.
@@ -375,7 +411,7 @@ if (typeof document !== 'undefined') (() => {
   // escala en vivo, pulsar una nota no cambia la raíz (la lleva el acorde).
   window.__microLiveActive = function () {
     const phase = microPhase();
-    return reader.running && (phase === 'note' || phase === 'chord');
+    return reader.running && (phase === 'note' || phase === 'chord' || phase === 'degree');
   };
 
   // Si el micrófono está encendido. La improvisación lo necesita aparte del
@@ -398,6 +434,7 @@ if (typeof document !== 'undefined') (() => {
       notes: typeof notes !== 'undefined' ? notes : undefined,
       pianoUseFlats: typeof pianoUseFlats !== 'undefined' ? pianoUseFlats : undefined,
       noteLabels: typeof noteLabels !== 'undefined' ? noteLabels : undefined,
+      tonality: microphoneTonality(),
     });
   };
 
@@ -545,6 +582,7 @@ if (typeof document !== 'undefined') (() => {
       notes: typeof notes !== 'undefined' ? notes : undefined,
       pianoUseFlats: typeof pianoUseFlats !== 'undefined' ? pianoUseFlats : undefined,
       noteLabels: typeof noteLabels !== 'undefined' ? noteLabels : undefined,
+      tonality: microphoneTonality(),
     }));
   }
 
@@ -552,6 +590,7 @@ if (typeof document !== 'undefined') (() => {
     button.addEventListener('click', () => {
       setMicroPhase(button.dataset.micLiveMode || 'off');
       recomputeMicroLive();
+      if (livePitchDetection) showReadout(livePitchDetection);
     });
   });
 
@@ -566,7 +605,8 @@ if (typeof document !== 'undefined') (() => {
       const button = microButtons().find(el => el.dataset.micLiveMode === nextMicLivePhase(microPhase()));
       if (button && typeof button.click === 'function') button.click();
       return !!button;
-    }
+    },
+    refreshReadout() { if (livePitchDetection) showReadout(livePitchDetection); }
   };
 
   // Las dos detecciones van por separado: la nota que YIN confirma y las notas
@@ -595,11 +635,15 @@ if (typeof document !== 'undefined') (() => {
     const pitchClass = detection.midi % 12;
     const octave = Math.floor(detection.midi / 12) - 1;
     const name = noteName(pitchClass) + octave;
+    const phase = microPhase();
+    const degree = phase === 'note' || phase === 'degree'
+      ? micRelativeDegree(detection.midi, microphoneTonality()) : '';
+    const degreeText = degree ? ` · grado ${degree}` : '';
     if (!isInTune(detection)) {
       const detune = detection.cents > 0 ? `+${detection.cents}` : String(detection.cents);
-      return `${name} · ${detune} cents (desafinado)`;
+      return `${name}${degreeText} · ${detune} cents (desafinado)`;
     }
-    return `${name} · ${detection.freq} Hz`;
+    return `${name}${degreeText} · ${detection.freq} Hz`;
   }
 
   function showReadout(detection) {
@@ -879,4 +923,4 @@ if (typeof document !== 'undefined') (() => {
   window.addEventListener('pagehide', () => reader.stop());
 })();
 
-if (typeof module !== 'undefined' && module.exports) module.exports = { micLiveChord, preferredRootSpelling, tunerReading, micFretLabel, micFretColor, chordFretMidis, chordFretShape, nextMicLivePhase };
+if (typeof module !== 'undefined' && module.exports) module.exports = { micLiveChord, preferredRootSpelling, tunerReading, micFretLabel, micFretColor, micRelativeDegree, chordFretMidis, chordFretShape, nextMicLivePhase };

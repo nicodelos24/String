@@ -85,7 +85,7 @@ function build(seed, _omitDecorations, omitControls=[]) {
     liveRoot.children.push(make(null,{tag:'button',attrs:{'data-live-mode':m,'aria-pressed':i===0?'true':'false'},dataset:{liveMode:m}}));
   });
   const micRoot=make('mic-live-chord',{tag:'div'});
-  ['off','note','chord'].forEach((m,i)=>{
+  ['off','note','chord','degree'].forEach((m,i)=>{
     micRoot.children.push(make(null,{tag:'button',attrs:{'data-mic-live-mode':m,'aria-pressed':i===1?'true':'false'},dataset:{micLiveMode:m}}));
   });
   const micLabelRoot=make('mic-note-label',{tag:'div'});
@@ -351,6 +351,21 @@ test('preferencias: restaura los valores guardados disparando los eventos',()=>{
   assert.equal(q('#fret-scale-lock').checked,true);
   assert.equal(q('#youtube-float').checked,false);
   assert.ok(q('#youtube-float').events.includes('change'));
+});
+
+test('preferencias: guarda y restaura la nueva fase Grado del micrófono',()=>{
+  const first=build();
+  first.qa('#mic-live-chord [data-mic-live-mode]').forEach(button=>{
+    button.setAttribute('aria-pressed',String(button.dataset.micLiveMode==='degree'));
+  });
+  first.runs('document.dispatchEvent(new Event("click"));');
+  first.flush();
+  const saved=JSON.parse(first.localStorage.getItem('traste.preferences.v1'));
+  assert.equal(saved.micLive,'degree');
+
+  const restored=build(saved);
+  const selected=restored.q('#mic-live-chord [data-mic-live-mode="degree"]');
+  assert.ok(restored.clicked.includes(selected),'la restauración pulsa la opción Grado encontrada por su data-attribute');
 });
 
 test('preferencias: los guardados inválidos se ignoran sin romper la carga',()=>{
