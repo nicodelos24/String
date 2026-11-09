@@ -3095,11 +3095,20 @@ html.ventana .transport-row.is-floating.is-transport-minimized .transport-pill {
 html.ventana .cards-band { position: sticky; top: 0; }
 .panel-scroll { display: contents; }
 html.ventana .panel-scroll { display: block; position: relative; }
+/* FS-PERF: esta coordenada cambia con el scroll. Si se hereda, cada paso
+   recalcula estilos de todo el panel aunque sólo la usan su clip y su borde.
+   Sin soporte de @property se conserva el comportamiento heredado anterior. */
+@property --panel-recorte {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
 html.ventana .panel-scroll.is-panel-recortado {
   clip-path: inset(var(--panel-recorte, 0px) -40px -40px);
 }
 /* El recorte desplaza el borde superior del marco al inicio visible del panel. */
 html.ventana .panel-scroll.is-panel-recortado::before {
+  --panel-recorte: inherit;
   content: "";
   position: absolute;
   top: var(--panel-recorte, 0px);
