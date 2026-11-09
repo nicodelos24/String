@@ -164,6 +164,18 @@ test('fase «Grado»: una nota estable aplica su armonía tonal y el readout ind
   assert.equal(context.chordType.value,'maj','un acorde cromático observado no se fuerza a menor');
 });
 
+test('fase «Grado»: respeta la armadura del tono y la grafía diatónica de la nota', () => {
+  const { micLiveChord } = require('../microphone-ui.js');
+  const tonality = { key: 'E', scale: 'major' };
+  const notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+  const cSharp = micLiveChord('degree', null, 61, { tonality, notes });
+  assert.equal(cSharp.rootNoteName, 'C#', 'E mayor conserva la grafía sostenida de C#');
+  assert.equal(cSharp.mode, 'aeolian', 'C# en E toma el vi de E: C#m eólico');
+  const fSharp = micLiveChord('degree', null, 66, { tonality, notes });
+  assert.equal(fSharp.rootNoteName, 'F#', 'E mayor conserva la grafía sostenida de F#');
+  assert.equal(fSharp.mode, 'dorian', 'F# en E toma el ii de E: F#m dórico');
+});
+
 test('fase «Nota» muestra grado en el readout sin cambiar el rótulo separado del mástil',()=>{
   const {context,callbacks,element}=setup();
   callbacks.onState('ready');
