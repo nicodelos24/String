@@ -53,6 +53,8 @@ function contrastRatio(a, b) {
 // aritmética de medición lo deje en 4,49.
 const AA_MIN_RATIO = 4.5;
 const SOFT_INK_MARGIN = 0.05;
+const NOTE_INK_CACHE_LIMIT = 64;
+const noteInkCache = new Map();
 
 function grayHex(value) {
   const channel = value.toString(16).padStart(2, '0');
@@ -69,12 +71,12 @@ function grayHex(value) {
 // autoridad y la misma medición; solo cambia cuánto se aparta del extremo, y en
 // los rellenos apretados —el rojo de la raíz— el gris honesto queda casi negro
 // porque ahí el AA no deja más aire.
-function inkOverFill(fill, options) {
+function calculateInkOverFill(fill, soft) {
   const dark = contrastRatio(NOTE_INK_DARK, fill);
   const light = contrastRatio(NOTE_INK_LIGHT, fill);
   if (dark === null || light === null) return null;
   const darkSide = dark >= light;
-  if (!options || !options.soft) return darkSide ? NOTE_INK_DARK : NOTE_INK_LIGHT;
+  if (!soft) return darkSide ? NOTE_INK_DARK : NOTE_INK_LIGHT;
 
   const limit = AA_MIN_RATIO + SOFT_INK_MARGIN;
   const reachesAA = value => {
@@ -89,6 +91,24 @@ function inkOverFill(fill, options) {
   }
   // Un relleno tan apretado que solo el extremo lee: se queda el extremo.
   return darkSide ? NOTE_INK_DARK : NOTE_INK_LIGHT;
+}
+
+function inkOverFill(fill, options) {
+  const soft = Boolean(options && options.soft);
+  const cacheable = typeof fill === 'string';
+  const variants = cacheable ? noteInkCache.get(fill) : null;
+  if (variants && variants.has(soft)) return variants.get(soft);
+
+  const ink = calculateInkOverFill(fill, soft);
+  if (!cacheable) return ink;
+
+  const cachedVariants = variants || new Map();
+  cachedVariants.set(soft, ink);
+  if (!variants) noteInkCache.set(fill, cachedVariants);
+  if (noteInkCache.size > NOTE_INK_CACHE_LIMIT) {
+    noteInkCache.delete(noteInkCache.keys().next().value);
+  }
+  return ink;
 }
 
 // Polaridad del halo de `T-36` r2: va al revés de la tinta, y se decide por
