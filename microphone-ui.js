@@ -46,6 +46,14 @@ function preferredRootSpelling(root, ctx) {
   const noteNames = ctx.notes || ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
   const flatLabels = ctx.noteLabels || { 'C#': 'Db', 'D#': 'Eb', 'F#': 'Gb', 'G#': 'Ab', 'A#': 'Bb' };
   const pitch = ((root % 12) + 12) % 12;
+  const tonalityKey = typeof ctx.tonality?.key === 'string' ? ctx.tonality.key.replace(/♯/g, '#').replace(/♭/g, 'b') : null;
+  const sharpKeys = new Set(['G', 'D', 'A', 'E', 'B', 'F#', 'C#', 'G#', 'D#', 'A#', 'E#', 'B#']);
+  const flatKeys = new Set(['F', 'Bb', 'Eb', 'Ab', 'Db', 'Gb', 'Cb', 'Fb']);
+  if (tonalityKey && sharpKeys.has(tonalityKey)) return { rootName: noteNames[pitch], useFlats: false };
+  if (tonalityKey && flatKeys.has(tonalityKey)) {
+    const flatName = flatLabels[noteNames[pitch]] || noteNames[pitch];
+    return { rootName: flatName, useFlats: true };
+  }
   if ([2, 4, 6, 7, 9, 11].indexOf(pitch) >= 0) return { rootName: noteNames[pitch], useFlats: false };
   if ([1, 3, 5, 8, 10].indexOf(pitch) >= 0) return { rootName: flatLabels[noteNames[pitch]] || noteNames[pitch], useFlats: true };
   return null;
