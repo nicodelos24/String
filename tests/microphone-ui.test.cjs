@@ -26,6 +26,15 @@ test('micFretLabel: el micrófono escribe el nombre de la nota o su grado', () =
   assert.equal(micFretLabel({ midi: 60, name: 'C' }, 'degree', {}), '', 'sin getDegreeLabel no hay grado que escribir');
 });
 
+test('micRelativeDegree: el readout usa la tónica de contexto y no el modo de la raíz activa',()=>{
+  const {micRelativeDegree} = require('../microphone-ui.js');
+  assert.equal(micRelativeDegree(62,{key:'C',scale:'major'}),'2','Re sobre Do');
+  assert.equal(micRelativeDegree(61,{key:'C',scale:'major'}),'♭2','cromatismo cercano se etiqueta sin armonizarlo');
+  assert.equal(micRelativeDegree(62,{key:'A',scale:'minor'}),'4','Re sobre La menor natural');
+  assert.equal(micRelativeDegree(62,null),'');
+  assert.equal(micRelativeDegree(62,{key:'H',scale:'major'}),'');
+});
+
 function liveButton(mode, pressed) {
   return {
     dataset: { micLiveMode: mode },
@@ -41,7 +50,7 @@ function liveButton(mode, pressed) {
 
 function setup() {
   const elements = new Map();
-  const micLiveButtons = [liveButton('off', false), liveButton('note', true), liveButton('chord', false)];
+  const micLiveButtons = [liveButton('off', false), liveButton('note', true), liveButton('chord', false), liveButton('degree', false)];
   function element(id) {
     if (!elements.has(id)) elements.set(id, {
       checked: false, hidden: true, handlers: {}, attributes: {}, dataset: {},
@@ -60,18 +69,23 @@ function setup() {
     document: { getElementById: element, querySelectorAll: () => [] },
     window: { addEventListener() {}, dispatchEvent(event) { context.events.push(event.type); } }, MutationObserver: class { observe() {} },
     MicrophoneReader: class { constructor(options) { callbacks = options; } },
-    setTimeout, root: 0, quality: 'major', selectedMode: 'ionian', activeProgression: 2,
+    setTimeout, root: 0, quality: 'major', selectedMode: 'ionian', selectedTonality: {key:'C',scale:'major'}, activeProgression: 2,
     rootNoteName: 'C', chordType: { value: 'maj' }, ghostMode: 'lydian',
     progression: [], progressionEdited: false, draggingProgressionItem: null,
     chordTypes: [{ value: 'm', suffix: 'm' }, { value: '7', suffix: '7' }],
     noteName: root => ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'][root],
     isInTune: detection => Math.abs(detection.cents) <= 40,
     setChordSpelling(useFlats) { context.spelling = useFlats; },
-    renderProgression() {}, showProgressionChord(chord) { context.root = chord.root; context.selectedMode = chord.mode; },
+    renderProgression() {}, showProgressionChord(chord) {
+      context.root = chord.root;
+      context.selectedMode = chord.mode;
+      context.chordType = { value: chord.type };
+    },
   });
   // La página carga note-ink.js antes: el sandbox lo imita para que el tintado
   // del micrófono tenga la misma autoridad de tinta que el mástil (T-36).
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../note-ink.js'), 'utf8'), context);
+  vm.runInContext(fs.readFileSync(path.join(__dirname, '../tonal-context.js'), 'utf8'), context);
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../microphone-ui.js'), 'utf8'), context);
   return { context, callbacks, element, click(id) { element(id).click(); } };
 }
@@ -86,6 +100,7 @@ test('un toque de Shift alterna «Escala en vivo» entre Nota y Acorde, y desde 
   assert.equal(nextMicLivePhase('note'), 'chord');
   assert.equal(nextMicLivePhase('chord'), 'note');
   assert.equal(nextMicLivePhase('off'), 'note', 'con la escala en vivo apagada se va a Nota, no a Acorde');
+  assert.equal(nextMicLivePhase('degree'), 'note', 'el atajo conserva el ciclo Nota/Acorde y sale de Grado');
 });
 
 test('el atajo de Shift cambia la fase del micrófono pulsando su botón, para que se guarde', () => {
@@ -134,6 +149,36 @@ test('fase «Nota»: una sola nota usa la calidad y el modo elegidos', () => {
   assert.equal(context.selectedMode, 'ionian', 'Usa el modo elegido a la izquierda');
   callbacks.onChord({ root: 5, type: '7', mode: 'mixolydian', confidence: .95 });
   assert.equal(context.root, 5, 'Al captar un acorde se aplica el acorde real');
+});
+
+test('fase «Grado»: una nota estable aplica su armonía tonal y el readout indica su grado',()=>{
+  const {context,callbacks,element}=setup();
+  callbacks.onState('ready');
+  element('mic-live-chord').buttons[3].click();
+  callbacks.onPitch({midi:62,freq:293.66,cents:0});
+  assert.equal(context.root,2,'Re detectado en Do');
+  assert.equal(context.chordType.value,'m','la armonía del ii es menor');
+  assert.equal(context.selectedMode,'dorian','el ii de Do usa Re dórico');
+  assert.match(element('microphone-readout').textContent,/grado 2/);
+  callbacks.onChord({root:2,type:'maj',mode:'ionian',confidence:.95});
+  assert.equal(context.chordType.value,'maj','un acorde cromático observado no se fuerza a menor');
+});
+
+test('fase «Nota» muestra grado en el readout sin cambiar el rótulo separado del mástil',()=>{
+  const {context,callbacks,element}=setup();
+  callbacks.onState('ready');
+  element('mic-live-chord').buttons[1].click();
+  callbacks.onPitch({midi:62,freq:293.66,cents:0});
+  assert.match(element('microphone-readout').textContent,/grado 2/);
+  assert.equal(phaseOf(element('mic-live-chord')),'note','la lectura del grado no cambia la fase elegida');
+});
+
+test('el selector de escala viva ofrece los cuatro modos solicitados en orden',()=>{
+  const html=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
+  const modes=[...html.matchAll(/data-mic-live-mode="([^"]+)"/g)].map(match=>match[1]);
+  assert.deepEqual(modes,['off','note','chord','degree']);
+  const labelModes=[...html.matchAll(/data-mic-label-mode="([^"]+)"/g)].map(match=>match[1]);
+  assert.deepEqual(labelModes,['note','degree'],'el selector de texto del mástil sigue siendo independiente');
 });
 
 test('fase «Acorde» (por defecto): la nota sola no cambia la escala; el acorde sí', () => {

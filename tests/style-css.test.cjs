@@ -33,6 +33,46 @@ function rules(source) {
   }));
 }
 
+function luminance(hex) {
+  const digits = hex.replace(/^#/, '');
+  assert.ok(/^(?:[0-9a-f]{3}|[0-9a-f]{6})$/i.test(digits),
+    'el color debe ser hexadecimal RGB: ' + hex);
+  const normalized = digits.length === 3 ? [...digits].map(channel => channel + channel).join('') : digits;
+  const channels = normalized.match(/.{2}/g);
+  const linear = channels.map(channel => {
+    const value = parseInt(channel, 16) / 255;
+    return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2];
+}
+
+function contrastRatio(first, second) {
+  const values = [luminance(first), luminance(second)].sort((a, b) => b - a);
+  return (values[0] + 0.05) / (values[1] + 0.05);
+}
+
+test('el modo activo de escala en vivo mantiene contraste AA en todos los temas', () => {
+  const activeDeclarations = declarationsFor(selector =>
+    selector.split(',').map(part => part.trim()).includes('.live-chord-modes button.is-active'));
+  const background = activeDeclarations.findLast(declaration => declaration.property === 'background');
+  const foreground = activeDeclarations.findLast(declaration => declaration.property === 'color');
+  assert.ok(background, 'el estado activo define un fondo');
+  assert.ok(foreground, 'el estado activo define un color de texto');
+
+  const token = background.value.match(/^var\((--[\w-]+)\)$/);
+  assert.ok(token, 'el fondo activo usa un token de color comprobable: ' + background.value);
+  const colors = declarationsFor(() => true)
+    .filter(declaration => declaration.property === token[1])
+    .map(declaration => declaration.value);
+  assert.ok(colors.length, 'el token ' + token[1] + ' está definido');
+
+  for (const color of colors) {
+    const ratio = contrastRatio(foreground.value, color);
+    assert.ok(ratio >= 4.5,
+      `${foreground.value} sobre ${color} tiene contraste ${ratio.toFixed(2)}:1, inferior a 4,5:1`);
+  }
+});
+
 const cssRules = rules(css);
 
 function declarationsFor(match) {

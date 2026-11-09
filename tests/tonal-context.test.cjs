@@ -2,7 +2,7 @@ const {test} = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const {parsePitchClass, DIATONIC_DEGREES, MODES_BY_DEGREE, CHORD_INTERVALS, inferTonalContext} = require('../tonal-context.js');
+const {parsePitchClass, DIATONIC_DEGREES, MODES_BY_DEGREE, CHORD_INTERVALS, inferTonalContext, diatonicHarmonyForNote} = require('../tonal-context.js');
 
 // La ficha de TAREAS.md (T-44, QA-TONAL-01) pide inferencia EXACTA, no «más
 // cercana»: para una tonalidad mayor, el modo lo decide el GRADO por semitonos
@@ -35,6 +35,30 @@ test('los siete grados diatónicos de Do infieren su modo por el grado de la ra�
   for(const [chord,modo] of tabla){
     assert.equal(inferTonalContext(chord,DO),modo,`|| C-${modo} espera ${JSON.stringify(chord)}`);
   }
+});
+
+test('una nota estable en Grado obtiene la triada diatónica y modo exactos, sin completar cromatismos',()=>{
+  const major = [
+    [0,'maj','ionian',[0,4,7]], [2,'m','dorian',[2,5,9]],
+    [4,'m','phrygian',[4,7,11]], [5,'maj','lydian',[5,9,0]],
+    [7,'maj','mixolydian',[7,11,2]], [9,'m','aeolian',[9,0,4]],
+    [11,'dim','locrian',[11,2,5]]
+  ];
+  for(const [root,type,mode,pitches] of major){
+    assert.deepEqual(diatonicHarmonyForNote(root,DO),{root,type,mode,degree:major.indexOf(major.find(item=>item[0]===root))+1,pitches});
+  }
+  const minor = [
+    [9,'m','aeolian',[9,0,4]], [11,'dim','locrian',[11,2,5]],
+    [0,'maj','ionian',[0,4,7]], [2,'m','dorian',[2,5,9]],
+    [4,'m','phrygian',[4,7,11]], [5,'maj','lydian',[5,9,0]],
+    [7,'maj','mixolydian',[7,11,2]]
+  ];
+  for(const [root,type,mode,pitches] of minor){
+    assert.deepEqual(diatonicHarmonyForNote(root,LA_MENOR),{root,type,mode,degree:minor.indexOf(minor.find(item=>item[0]===root))+1,pitches});
+  }
+  assert.equal(diatonicHarmonyForNote(1,DO),null,'C# no pertenece a Do mayor; no se asigna un acorde por proximidad');
+  assert.equal(diatonicHarmonyForNote(60,DO),null,'la entrada es clase de altura, no MIDI absoluto');
+  assert.equal(diatonicHarmonyForNote(2,null),null,'sin tonalidad no se inventa una armonía');
 });
 
 test('las extensiones diatónicas básicas infieren igual: séptimas, novenas, sextas y suspensos del modo natural',()=>{
