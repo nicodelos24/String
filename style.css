@@ -1504,7 +1504,9 @@ footer {
   }
 
   .shell {
-    width: 90vw;
+    /* T-70 (A-75, 8-nov): también acá, sin recuadro exterior. Conserva el
+       reparto flexible de T-49; sólo el ancho cambia a borde a borde. */
+    width: 100%;
     flex: 1 1 auto;
     min-height: 0;
     display: flex;
@@ -1678,7 +1680,12 @@ footer {
 }
 @media(max-width: 800px) {
   .workspace { grid-template-columns: minmax(0,1fr); }
-  .shell { width: calc(100% - 24px); }
+  /* T-70 (A-75, 8-nov): se retira el recuadro exterior móvil. La banda de
+     papel de 12 px por lado (width: calc(100% - 24px)) dejaba la caja
+     flanqueada por fondo; en móvil la sección principal va borde a borde y
+     el documento desplaza igual. El flex del shell retrato (T-49) se
+     conserva: solo cambia el ancho. */
+  .shell { width: 100%; }
   .control-panel, .fretboard-section, .legend-panel { min-width: 0; }
   .board-toolbar { flex-wrap: wrap; }
   .toolbar-buttons { width: 100%; gap: 6px; }
@@ -3491,7 +3498,12 @@ html.ventana .player-compact-status {
    mástil conserva aire y sombra en escritorio, pero en móvil se funde con la
    página en lugar de parecer una tarjeta dentro de otra. */
 @media (min-width: 801px) {
-  .shell { width: min(1480px, calc(100% - 64px)); }
+  /* T-70 (A-75, 8-nov): menos margen lateral en la sección principal sin
+     sacrificar su sombra. La caja crece hasta 13 px por lado (era 32): queda
+     por encima del offset de 10 px de la sombra en escritorio (regla
+     siguiente: 10px 10px), que así conserva su caída completa a cualquier
+     ancho de ventana. */
+  .shell { width: min(1480px, calc(100% - 26px)); }
   .control-panel { padding-inline: 8px; }
   .cards-band { padding: 7px 16px 5px; }
   .cards-band .progression-stack { row-gap: 3px; }
