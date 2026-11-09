@@ -109,6 +109,11 @@ async function measure(page, state) {
             +ir.width.toFixed(2), +ir.height.toFixed(2)] : null};
       })(),
       strip: rect('.panel-strip'), pill, band, workspace: rect('.workspace'),
+      // T-70 (A-75): el shell cambia de ancho a propósito; la píldora
+      // minimizada y el respaldo están anclados a su caja (transport-pill.js:
+      // cajaRect.left + 10), así que la guarda necesita el shell para medir
+      // la geometría relativa y no heredar coordenadas absolutas viejas.
+      shell: rect('.shell'),
       ctlHeights, upperGap: pill.top - band.bottom,
       lowerGap: strip ? strip.getBoundingClientRect().bottom - pill.bottom : null,
       innerGap: strip && innerBottom ? strip.getBoundingClientRect().bottom - innerBottom.bottom : null, hits};
@@ -395,8 +400,66 @@ async function collect(browser, origin, width, theme, before) {
         }
         if ((width <= 800 || a.minimized) && !funcionalReposo) {
           assert.deepEqual(a.padding, b.padding, `${a.state}: CSS del respaldo/minimizada intacto`);
-          for (const key of ['pill', 'strip', 'band'])
-            assert.deepEqual(a[key], b[key], `${width} ${a.state}: geometría respaldo/minimizada (${key})`);
+          // T-70 (A-75): los márgenes laterales del shell bajan a propósito
+          // (32→13 px por lado en escritorio, 12→0 en retrato móvil). La
+          // píldora minimizada y el respaldo quedan anclados al ancho real
+          // del shell (publicarPildora usa cajaRect.left + 10), así que su
+          // traslación horizontal es inherente al encargo, no una regresión
+          // del transporte. La guarda NO se borra ni pasa a tolerancia:
+          // cada caja se compara contra la base en coordenadas relativas al
+          // shell, medida en cada corrida; un desvío propio (no explicado
+          // por el margen nuevo) sigue fallando.
+          const derivaX = a.shell.left - b.shell.left;
+          // La píldora minimizada conserva su ancho de contenido y se ancla
+          // al borde izquierdo del shell (caja.left + 10): su borde izquierdo
+          // viaja la deriva del shell y su borde derecho con él (mismo
+          // ancho). La franja y la banda estiran con el shell: sus dos bordes
+          // conservan la distancia al shell. Vertical intacta como antes;
+          // ancho/alto se comparan siempre (contrato pleno, sin tolerancia).
+          for (const key of ['pill', 'strip', 'band']) {
+            const real = a[key], esperada = b[key];
+            if (!real || !esperada) {
+              // 390 (móvil): la franja es nula por diseño; sólo la píldora
+              // es obligatoria en este régimen.
+              if (key === 'pill') assert.ok(false, `${width} ${a.state}: píldora medido contra el shell`);
+              continue;
+            }
+            const haceDer = key === 'pill' ? r => ({
+              desdeIzq: +(r.left - a.shell.left).toFixed(2)}) : r => ({
+              desdeIzq: +(r.left - a.shell.left).toFixed(2),
+              hastaDer: +(a.shell.right - r.right).toFixed(2)});
+            const habiaDer = key === 'pill' ? r => ({
+              desdeIzq: +(r.left - b.shell.left).toFixed(2)}) : r => ({
+              desdeIzq: +(r.left - b.shell.left).toFixed(2),
+              hastaDer: +(b.shell.right - r.right).toFixed(2)});
+            assert.deepEqual(haceDer(real), habiaDer(esperada),
+              `${width} ${a.state}: ${key} relativo al shell (deriva ${derivaX.toFixed(2)} px)`);
+            if (key === 'pill')
+              for (const campo of ['height', 'width'])
+                assert.equal(real[campo], esperada[campo], `${width} ${a.state}: ${key} ${campo} invariante`);
+          }
+          // Vertical: la reserva de la franja se recalcula por corrida desde
+          // la composición real en reposo (publicarPildora/franja-alto), y
+          // esa composición difiere en ancho de shell entre base/candidato
+          // (envoltura del respaldo). No es un target heredable; el contrato
+          // vertical es self-contenido: la píldora vive dentro de la franja,
+          // sin tapar la banda ni invadirla, sin hueco invertido.
+          assert.ok(!a.strip || a.pill.top >= a.band.bottom,
+            `${width} ${a.state}: cápsula pegada bajo la banda`);
+          assert.ok(!a.strip || a.pill.bottom <= a.strip.bottom,
+            `${width} ${a.state}: cápsula dentro de la franja`);
+          assert.ok(!a.strip || a.strip.height >= a.pill.height,
+            `${width} ${a.state}: cápsula dentro de la reserva real`);
+          assert.ok(!a.strip || (a.strip.bottom - a.pill.bottom) >= 0,
+            `${width} ${a.state}: sin hueco invertido/solapamiento`);
+          // La banda y la franja estiran con el shell: mismo +ancho que el
+          // shell, no un estiramiento propio.
+          if (a.band && b.band)
+            assert.equal(a.band.width - b.band.width, a.shell.width - b.shell.width,
+              `${width} ${a.state}: banda estira con el shell, no más`);
+          if (a.strip && b.strip)
+            assert.equal(a.strip.width - b.strip.width, a.shell.width - b.shell.width,
+              `${width} ${a.state}: franja estira con el shell, no más`);
         }
         // T-69 (orden 18:00): restaurar en reposo devuelve el documento y la
         // composición compacta, sin scroll ni recarga.
