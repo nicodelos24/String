@@ -69,7 +69,7 @@ function setup() {
     document: { getElementById: element, querySelectorAll: () => [] },
     window: { addEventListener() {}, dispatchEvent(event) { context.events.push(event.type); } }, MutationObserver: class { observe() {} },
     MicrophoneReader: class { constructor(options) { callbacks = options; } },
-    setTimeout, root: 0, quality: 'major', selectedMode: 'ionian', selectedTonality: {key:'C',scale:'major'}, activeProgression: 2,
+    setTimeout, root: 0, quality: 'major', selectedMode: 'ionian', selectedTonality: {key:'C',scale:'major'}, songTonality: null, activeProgression: 2,
     rootNoteName: 'C', chordType: { value: 'maj' }, ghostMode: 'lydian',
     progression: [], progressionEdited: false, draggingProgressionItem: null,
     chordTypes: [{ value: 'm', suffix: 'm' }, { value: '7', suffix: '7' }],
@@ -193,6 +193,7 @@ test('fase «Acorde» (por defecto): la nota sola no cambia la escala; el acorde
 
 test('fase «Acorde»: dos notas predicen la armonía por el bajo en la tonalidad', () => {
   const { context, callbacks } = setup();
+  context.songTonality = { key: 'C', scale: 'major' };
   callbacks.onState('ready');
   callbacks.onNotes({ pitches: [2, 5], bass: 50 });
   assert.equal(context.root, 2, 'El bajo Re fija la raíz predicha');
@@ -200,8 +201,17 @@ test('fase «Acorde»: dos notas predicen la armonía por el bajo en la tonalida
   assert.equal(context.selectedMode, 'dorian', 'El ii de Do mayor usa Re dórico');
 });
 
+test('fase «Acorde» sin tonalidad fija conserva la escala hasta clasificar un acorde', () => {
+  const { context, callbacks } = setup();
+  callbacks.onState('ready');
+  callbacks.onNotes({ pitches: [2, 6], bass: 50 });
+  assert.equal(context.root, 0, 'la armadura global no debe predecir el grado');
+  assert.equal(context.chordType.value, 'maj', 'sin tonalidad fija no se inventa una armonía');
+});
+
 test('fase «Acorde»: la actualización más reciente alterna predicción y acorde real', () => {
   const { context, callbacks } = setup();
+  context.songTonality = { key: 'C', scale: 'major' };
   callbacks.onState('ready');
   callbacks.onNotes({ pitches: [2, 6], bass: 50 });
   assert.equal(context.root, 2, 'Con notas contradictorias la predicción usa el bajo Re');
@@ -220,6 +230,7 @@ test('fase «Acorde»: la actualización más reciente alterna predicción y aco
 
 test('fase «Acorde»: un bajo cromático no inventa una predicción diatónica', () => {
   const { context, callbacks } = setup();
+  context.songTonality = { key: 'C', scale: 'major' };
   callbacks.onState('ready');
   callbacks.onNotes({ pitches: [1, 6], bass: 49 });
   assert.equal(context.root, 0, 'Do# no pertenece a la escala de Do mayor');
@@ -229,6 +240,7 @@ test('fase «Acorde»: un bajo cromático no inventa una predicción diatónica'
 test('fase «Acorde»: la predicción se calcula para la tónica mayor seleccionada', () => {
   const { context, callbacks } = setup();
   context.selectedTonality = { key: 'E', scale: 'major' };
+  context.songTonality = { key: 'E', scale: 'major' };
   callbacks.onState('ready');
   callbacks.onNotes({ pitches: [6, 9], bass: 54 });
   assert.equal(context.root, 6, 'El bajo Fa# fija la raíz');
@@ -238,11 +250,31 @@ test('fase «Acorde»: la predicción se calcula para la tónica mayor seleccion
 
 test('fase «Acorde»: el V predice Mayor 7 en modo Mixolidio', () => {
   const { context, callbacks } = setup();
+  context.songTonality = { key: 'C', scale: 'major' };
   callbacks.onState('ready');
   callbacks.onNotes({ pitches: [7, 11], bass: 55 });
   assert.equal(context.root, 7, 'El bajo Sol fija el V de Do mayor');
   assert.equal(context.chordType.value, 'maj7');
   assert.equal(context.selectedMode, 'mixolydian');
+});
+
+test('fase «Acorde»: la tonalidad fija determina los grados del bajo', () => {
+  const { context, callbacks } = setup();
+  context.songTonality = { key: 'E', scale: 'major' };
+  callbacks.onState('ready');
+  callbacks.onNotes({ pitches: [9, 4], bass: 57 });
+  assert.equal(context.root, 9, 'La es el bajo detectado');
+  assert.equal(context.selectedMode, 'lydian', 'La es IV Lidio en Mi mayor');
+
+  context.songTonality = { key: 'D', scale: 'major' };
+  callbacks.onNotes({ pitches: [7, 11], bass: 55 });
+  assert.equal(context.root, 7);
+  assert.equal(context.selectedMode, 'lydian', 'Sol es IV Lidio en Re mayor');
+
+  callbacks.onNotes({ pitches: [9, 2], bass: 57 });
+  assert.equal(context.root, 9);
+  assert.equal(context.chordType.value, 'maj7', 'La es V Mayor 7 en Re mayor');
+  assert.equal(context.selectedMode, 'mixolydian', 'La es V Mixolidio en Re mayor');
 });
 
 test('los acordes en vivo ajustan el switch ♯/♭ a la escritura de su raíz', () => {

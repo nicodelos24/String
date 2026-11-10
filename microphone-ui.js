@@ -416,6 +416,12 @@ if (typeof document !== 'undefined') (() => {
     return current ? { key: current.key, scale: current.scale } : null;
   }
 
+  function microphoneTonalityForPhase(phase) {
+    if (phase !== 'chord') return microphoneTonality();
+    const fixed = typeof songTonality !== 'undefined' ? songTonality : null;
+    return fixed ? { key: fixed.key, scale: fixed.scale } : null;
+  }
+
   // La forma que se dibuja: la del acorde si lo hay; si no, la de las notas que
   // suenan a la vez. Una posición por nota, nunca todas sus apariciones.
   function latestLiveDetection() {
@@ -470,7 +476,7 @@ if (typeof document !== 'undefined') (() => {
       notes: typeof notes !== 'undefined' ? notes : undefined,
       pianoUseFlats: typeof pianoUseFlats !== 'undefined' ? pianoUseFlats : undefined,
       noteLabels: typeof noteLabels !== 'undefined' ? noteLabels : undefined,
-      tonality: microphoneTonality(),
+      tonality: microphoneTonalityForPhase(phase),
     });
   };
 
@@ -619,7 +625,7 @@ if (typeof document !== 'undefined') (() => {
       notes: typeof notes !== 'undefined' ? notes : undefined,
       pianoUseFlats: typeof pianoUseFlats !== 'undefined' ? pianoUseFlats : undefined,
       noteLabels: typeof noteLabels !== 'undefined' ? noteLabels : undefined,
-      tonality: microphoneTonality(),
+      tonality: microphoneTonalityForPhase(phase),
       soundingNotes: latest.soundingNotes,
     }));
   }
