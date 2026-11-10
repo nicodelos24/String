@@ -2762,12 +2762,22 @@ html[data-theme="dark"] {
    presente. Toda la función (selección, duración, chip del video, arrastre,
    doble clic, tinte del micrófono) queda intacta: solo cambia la pintura. */
 .cards-band {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 120px;
+  align-items: start;
+  column-gap: 12px;
   background-color: var(--paper);
   background-image: radial-gradient(rgba(187, 181, 166, .32) .7px, transparent .7px);
   background-size: 7px 7px;
   background-attachment: fixed;
   border-bottom-color: transparent;
   box-shadow: none;
+}
+
+.cards-band > .chord-readout {
+  width: 120px;
+  height: 190px;
+  margin: 0;
 }
 
 .cards-band .progression-card,
@@ -3568,6 +3578,15 @@ html.ventana .player-compact-status {
     gap: 0;
   }
   .cards-band { padding: 7px 12px 5px; }
+  .cards-band { grid-template-columns: minmax(0, 1fr); }
+  .cards-band > .chord-readout {
+    justify-self: end;
+    width: min(100%, 180px);
+    height: auto;
+    min-height: 150px;
+    margin: 8px 0 0;
+    padding: 10px;
+  }
   .cards-band .progression-stack { row-gap: 3px; }
   .workspace > .progression-workspace { padding: 7px 12px; }
   .panel-strip { overflow: visible; }
