@@ -59,3 +59,12 @@ test('el transporte amplio conserva los controles en una franja y deja reflujo e
     /html\.ventana \.panel-strip \.progression-view-controls\s*\{[^}]*flex-direction:\s*row;\s*flex-wrap:\s*wrap/,
     'el diseño permite reflujo en los escritorios intermedios');
 });
+
+test('el panel conserva aire debajo de la tarjeta en escritorio', () => {
+  const panelSpacing = css.match(
+    /@media\s*\(min-width:\s*801px\)\s*\{\s*\.shell > \.panel-scroll\s*\{([^}]*)\}\s*\}/
+  )?.[1] || '';
+
+  assert.match(panelSpacing, /margin-block-start:\s*1rem/,
+    'el panel deja espacio visible debajo de la tarjeta al inicio de la página');
+});

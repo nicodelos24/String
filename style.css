@@ -3639,6 +3639,10 @@ html.ventana .player-compact-status {
   }
 }
 
+@media (min-width: 801px) {
+  .shell > .panel-scroll { margin-block-start: 1rem; }
+}
+
 @media (max-width: 360px) {
   .song-tonality-control .song-tonality-spelling {
     justify-content: space-between;
