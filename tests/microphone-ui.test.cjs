@@ -191,6 +191,51 @@ test('fase «Acorde» (por defecto): la nota sola no cambia la escala; el acorde
   assert.equal(context.root, 9, 'El acorde captado sí cambia la escala');
 });
 
+test('fase «Acorde»: dos notas predicen la armonía por el bajo en la tonalidad', () => {
+  const { context, callbacks } = setup();
+  callbacks.onState('ready');
+  callbacks.onNotes({ pitches: [2, 5], bass: 50 });
+  assert.equal(context.root, 2, 'El bajo Re fija la raíz predicha');
+  assert.equal(context.chordType.value, 'm', 'Re es el ii menor de Do mayor');
+  assert.equal(context.selectedMode, 'dorian', 'El ii de Do mayor usa Re dórico');
+});
+
+test('fase «Acorde»: la actualización más reciente alterna predicción y acorde real', () => {
+  const { context, callbacks } = setup();
+  callbacks.onState('ready');
+  callbacks.onNotes({ pitches: [2, 6], bass: 50 });
+  assert.equal(context.root, 2, 'Con notas contradictorias la predicción usa el bajo Re');
+  assert.equal(context.chordType.value, 'm', 'Las otras notas no desplazan la armonía del bajo');
+
+  callbacks.onChord({ root: 7, type: 'maj', mode: 'ionian', pitches: [7, 11, 2], bass: 43, confidence: .95 });
+  assert.equal(context.root, 7, 'La clasificación real posterior corrige la predicción');
+  assert.equal(context.chordType.value, 'maj');
+
+  callbacks.onNotes({ pitches: [0, 9], bass: 57 });
+  assert.equal(context.root, 9, 'Un conjunto posterior reemplaza el acorde ya obsoleto');
+  assert.equal(context.chordType.value, 'm');
+  callbacks.onChord({ root: 7, type: 'maj', mode: 'ionian', pitches: [7, 11, 2], bass: 43, confidence: .95 });
+  assert.equal(context.root, 7, 'Un acorde real posterior vuelve a tener prioridad');
+});
+
+test('fase «Acorde»: un bajo cromático no inventa una predicción diatónica', () => {
+  const { context, callbacks } = setup();
+  callbacks.onState('ready');
+  callbacks.onNotes({ pitches: [1, 6], bass: 49 });
+  assert.equal(context.root, 0, 'Do# no pertenece a la escala de Do mayor');
+  assert.equal(context.chordType.value, 'maj');
+});
+
+test('fase «Acorde»: la predicción se calcula para la tónica mayor seleccionada', () => {
+  const { context, callbacks } = setup();
+  context.selectedTonality = { key: 'E', scale: 'major' };
+  callbacks.onState('ready');
+  callbacks.onNotes({ pitches: [6, 9], bass: 54 });
+  assert.equal(context.root, 6, 'El bajo Fa# fija la raíz');
+  assert.equal(context.chordType.value, 'm', 'Fa# es el ii menor de Mi mayor');
+  assert.equal(context.selectedMode, 'dorian');
+});
+
 test('los acordes en vivo ajustan el switch ♯/♭ a la escritura de su raíz', () => {
   const { context, callbacks } = setup();
   callbacks.onState('ready');

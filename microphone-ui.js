@@ -68,7 +68,21 @@ function micLiveChord(phase, chord, pitch, ctx) {
     }
     return result;
   }
-  if (phase === 'chord' || !Number.isInteger(pitch)) return null;
+  if (phase === 'chord') {
+    const soundingNotes = ctx.soundingNotes;
+    if (!Array.isArray(soundingNotes?.pitches) || soundingNotes.pitches.length < 2
+      || !Number.isInteger(soundingNotes.bass) || ctx.tonality?.scale !== 'major') return null;
+    // The bass selects the degree; the other notes only become authoritative when classified.
+    const root = ((soundingNotes.bass % 12) + 12) % 12;
+    const harmony = TonalContextForMic?.diatonicHarmonyForNote?.(root, ctx.tonality);
+    if (!harmony) return null;
+    const preferred = preferredRootSpelling(root, ctx);
+    return Object.assign({}, harmony, {
+      rootNoteName: preferred?.rootName,
+      useFlats: preferred?.useFlats,
+    });
+  }
+  if (!Number.isInteger(pitch)) return null;
   const pitchClass = ((pitch % 12) + 12) % 12;
   if (phase === 'degree') {
     const harmony = TonalContextForMic?.diatonicHarmonyForNote?.(pitchClass, ctx.tonality);
@@ -322,6 +336,9 @@ if (typeof document !== 'undefined') (() => {
 
   let liveChord = null;   // último acorde estable detectado por el micrófono
   let liveNotes = null;   // notas que suenan a la vez, cuando no hay acorde que nombrar
+  let microphoneUpdateTimestamp = 0;
+  let liveChordUpdatedAt = 0;
+  let liveNotesUpdatedAt = 0;
   let micPitch = null;    // última nota monofónica confirmada (MIDI)
   let livePitchDetection = null;
   let microLiveKey = '';  // raíz:tipo:modo ya aplicado desde el micrófono
@@ -365,6 +382,7 @@ if (typeof document !== 'undefined') (() => {
     onChord: detection => {
       if (keyboardOwnsChord()) { liveChord = null; liveNotes = null; highlightChord(null); return; }
       liveChord = detection;
+      liveChordUpdatedAt = ++microphoneUpdateTimestamp;
       // Un acorde nombrado trae las mismas notas que el conjunto suelto y además
       // su nombre: manda él. Al soltarse, el conjunto vuelve a hablar si sigue
       // sonando (dos notas no tienen acorde, pero sí dibujo).
@@ -375,7 +393,9 @@ if (typeof document !== 'undefined') (() => {
     onNotes: detection => {
       if (keyboardOwnsChord()) { liveNotes = null; return; }
       liveNotes = detection;
-      if (!liveChord) drawDetectedChord();
+      liveNotesUpdatedAt = ++microphoneUpdateTimestamp;
+      drawDetectedChord();
+      recomputeMicroLive();
     },
     // T-60: el contexto cambia junto con el selector/piano. Sin tonalidad fija,
     // selectedTonality es la armadura vigente de la página; T-44 decide si la
@@ -392,8 +412,18 @@ if (typeof document !== 'undefined') (() => {
 
   // La forma que se dibuja: la del acorde si lo hay; si no, la de las notas que
   // suenan a la vez. Una posición por nota, nunca todas sus apariciones.
+  function latestLiveDetection() {
+    if (liveChord && liveNotes) {
+      return liveChordUpdatedAt > liveNotesUpdatedAt
+        ? { chord: liveChord, soundingNotes: null }
+        : { chord: null, soundingNotes: liveNotes };
+    }
+    return { chord: liveChord, soundingNotes: liveNotes };
+  }
+
   function drawDetectedChord() {
-    const source = liveChord && Array.isArray(liveChord.pitches) ? liveChord : liveNotes;
+    const latest = latestLiveDetection();
+    const source = latest.chord && Array.isArray(latest.chord.pitches) ? latest.chord : latest.soundingNotes;
     const pitches = source && Array.isArray(source.pitches) ? source.pitches : null;
     highlightChord(pitches && pitches.length
       ? chordFretShape(pitches, source.bass, fretboardShapeContext())
@@ -576,13 +606,15 @@ if (typeof document !== 'undefined') (() => {
     if (keyboardOwnsChord()) { microLiveKey = ''; return; }
     const phase = microPhase();
     if (phase === 'off') return;
-    applyMicroChord(micLiveChord(phase, liveChord, micPitch, {
+    const latest = phase === 'chord' ? latestLiveDetection() : { chord: liveChord, soundingNotes: null };
+    applyMicroChord(micLiveChord(phase, latest.chord, micPitch, {
       chordType: typeof chordType !== 'undefined' ? chordType : undefined,
       selectedMode: typeof selectedMode !== 'undefined' ? selectedMode : undefined,
       notes: typeof notes !== 'undefined' ? notes : undefined,
       pianoUseFlats: typeof pianoUseFlats !== 'undefined' ? pianoUseFlats : undefined,
       noteLabels: typeof noteLabels !== 'undefined' ? noteLabels : undefined,
       tonality: microphoneTonality(),
+      soundingNotes: latest.soundingNotes,
     }));
   }
 
