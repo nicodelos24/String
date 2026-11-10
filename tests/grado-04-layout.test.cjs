@@ -5,6 +5,7 @@ const path = require('node:path');
 
 const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
+const transportScript = fs.readFileSync(path.join(__dirname, '..', 'transport-pill.js'), 'utf8');
 
 test('la tarjeta ocupa el lateral compartido por la banda y el transporte', () => {
   const shell = html.match(/<main class="shell">([\s\S]*?)<\/main>/)?.[1];
@@ -13,7 +14,6 @@ test('la tarjeta ocupa el lateral compartido por la banda y el transporte', () =
   const desktopGrid = css.match(/\.shell\s*\{(?=[^}]*grid-template-areas)([^}]*)\}/)?.[1];
   const readoutRule = css.match(/\.shell > \.chord-readout\s*\{([^}]*)\}/)?.[1];
   const transportRule = css.match(/\.shell > \.panel-strip\s*\{([^}]*)\}/)?.[1];
-  const transportScript = fs.readFileSync(path.join(__dirname, '..', 'transport-pill.js'), 'utf8');
 
   assert.ok(shell, 'la app conserva su contenedor principal');
   assert.ok(cardsBand, 'existe la banda superior de tarjetas');
@@ -67,4 +67,16 @@ test('el panel conserva aire debajo de la tarjeta en escritorio', () => {
 
   assert.match(panelSpacing, /margin-block-start:\s*1rem/,
     'el panel deja espacio visible debajo de la tarjeta al inicio de la página');
+});
+
+test('el recorte de scroll no añade margen bajo la franja ni cambia su anclaje', () => {
+  assert.ok(/const MARGEN_BARRA = 6;/.test(transportScript),
+    'el transporte conserva su separación respecto de la banda sticky');
+  assert.ok(/const MARGEN_PANEL_SCROLL = 0;/.test(transportScript),
+    'el panel no agrega otro margen al borde inferior del transporte');
+  assert.ok(/const tope = altoBanda \+ MARGEN_BARRA;/.test(transportScript),
+    'el tope sticky usa el margen original de la barra');
+  assert.ok(
+    /piezas\.strip\.getBoundingClientRect\(\)\.bottom \+\s*MARGEN_PANEL_SCROLL\s*-\s*piezas\.panel\.getBoundingClientRect\(\)\.top/.test(transportScript),
+    'el recorte aplica solo el margen del panel durante el scroll');
 });
