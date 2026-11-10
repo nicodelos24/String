@@ -76,8 +76,14 @@ function micLiveChord(phase, chord, pitch, ctx) {
     const root = ((soundingNotes.bass % 12) + 12) % 12;
     const harmony = TonalContextForMic?.diatonicHarmonyForNote?.(root, ctx.tonality);
     if (!harmony) return null;
+    const prediction = harmony.degree === 5
+      ? Object.assign({}, harmony, {
+        type: 'maj7',
+        pitches: [0, 4, 7, 11].map(interval => (root + interval) % 12),
+      })
+      : harmony;
     const preferred = preferredRootSpelling(root, ctx);
-    return Object.assign({}, harmony, {
+    return Object.assign({}, prediction, {
       rootNoteName: preferred?.rootName,
       useFlats: preferred?.useFlats,
     });

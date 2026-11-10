@@ -236,6 +236,15 @@ test('fase «Acorde»: la predicción se calcula para la tónica mayor seleccion
   assert.equal(context.selectedMode, 'dorian');
 });
 
+test('fase «Acorde»: el V predice Mayor 7 en modo Mixolidio', () => {
+  const { context, callbacks } = setup();
+  callbacks.onState('ready');
+  callbacks.onNotes({ pitches: [7, 11], bass: 55 });
+  assert.equal(context.root, 7, 'El bajo Sol fija el V de Do mayor');
+  assert.equal(context.chordType.value, 'maj7');
+  assert.equal(context.selectedMode, 'mixolydian');
+});
+
 test('los acordes en vivo ajustan el switch ♯/♭ a la escritura de su raíz', () => {
   const { context, callbacks } = setup();
   callbacks.onState('ready');
