@@ -2763,21 +2763,14 @@ html[data-theme="dark"] {
    doble clic, tinte del micrófono) queda intacta: solo cambia la pintura. */
 .cards-band {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 120px;
+  grid-template-columns: minmax(0, 1fr);
   align-items: start;
-  column-gap: 12px;
   background-color: var(--paper);
   background-image: radial-gradient(rgba(187, 181, 166, .32) .7px, transparent .7px);
   background-size: 7px 7px;
   background-attachment: fixed;
   border-bottom-color: transparent;
   box-shadow: none;
-}
-
-.cards-band > .chord-readout {
-  width: 120px;
-  height: 190px;
-  margin: 0;
 }
 
 .cards-band .progression-card,
@@ -3523,7 +3516,34 @@ html.ventana .player-compact-status {
      por encima del offset de 10 px de la sombra en escritorio (regla
      siguiente: 10px 10px), que así conserva su caída completa a cualquier
      ancho de ventana. */
-  .shell { width: min(1480px, calc(100% - 26px)); }
+  .shell {
+    display: grid;
+    width: min(1480px, calc(100% - 26px));
+    grid-template-columns: minmax(0, 1fr) minmax(140px, 160px);
+    grid-template-areas:
+      "intro intro"
+      "cards readout"
+      "transport readout"
+      "workspace workspace";
+    column-gap: 12px;
+    align-items: start;
+  }
+  .shell > .intro { grid-area: intro; }
+  .shell > .cards-band { grid-area: cards; }
+  .shell > .chord-readout {
+    grid-column: 2;
+    grid-row: 2 / -1;
+    align-self: start;
+    justify-self: center;
+    position: sticky;
+    top: 10px;
+    z-index: 6;
+    width: 120px;
+    height: 190px;
+    margin: 10px 0 0;
+  }
+  .shell > .panel-strip { grid-area: transport; min-width: 0; }
+  .shell > :is(.workspace, .panel-scroll) { grid-area: workspace; min-width: 0; }
   .control-panel { padding-inline: 8px; }
   .cards-band { padding: 7px 16px 5px; }
   .cards-band .progression-stack { row-gap: 3px; }
@@ -3570,7 +3590,20 @@ html.ventana .player-compact-status {
 }
 
 @media (max-width: 800px) {
-  .shell { width: 100%; }
+  .shell {
+    display: grid;
+    width: 100%;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "intro"
+      "cards"
+      "readout"
+      "workspace";
+    align-items: start;
+  }
+  .shell > .intro { grid-area: intro; }
+  .shell > .cards-band { grid-area: cards; }
+  .shell > :is(.workspace) { grid-area: workspace; }
   :is(.workspace) {
     border: 0;
     border-radius: 0;

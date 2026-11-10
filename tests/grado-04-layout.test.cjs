@@ -4,17 +4,32 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
 
-test('el acorde seleccionado vive en la banda superior, no en el panel inferior', () => {
-  const cardsBand = html.match(/<div class="cards-band">([\s\S]*?)<section class="workspace"/)?.[1];
-  const legendPanel = html.match(/<aside class="legend-panel">([\s\S]*?)<\/aside>/)?.[1];
+test('la tarjeta ocupa el lateral compartido por la banda y el transporte', () => {
+  const shell = html.match(/<main class="shell">([\s\S]*?)<\/main>/)?.[1];
+  const cardsBand = shell?.match(/<div class="cards-band">([\s\S]*?)<\/div>/)?.[1];
   const readouts = [...html.matchAll(/<div class="chord-readout">/g)];
+  const desktopGrid = css.match(/\.shell\s*\{(?=[^}]*grid-template-areas)([^}]*)\}/)?.[1];
+  const readoutRule = css.match(/\.shell > \.chord-readout\s*\{([^}]*)\}/)?.[1];
+  const transportRule = css.match(/\.shell > \.panel-strip\s*\{([^}]*)\}/)?.[1];
+  const transportScript = fs.readFileSync(path.join(__dirname, '..', 'transport-pill.js'), 'utf8');
 
+  assert.ok(shell, 'la app conserva su contenedor principal');
   assert.ok(cardsBand, 'existe la banda superior de tarjetas');
-  assert.ok(legendPanel, 'existe el panel lateral de la leyenda');
   assert.equal(readouts.length, 1, 'el acorde seleccionado tiene una única tarjeta');
-  assert.match(cardsBand, /class="chord-readout"/,
-    'la tarjeta está junto a las tarjetas de progresión, arriba de los controles');
-  assert.doesNotMatch(legendPanel, /class="chord-readout"/,
-    'el panel inferior no conserva un duplicado de la tarjeta');
+  assert.doesNotMatch(cardsBand, /class="chord-readout"/,
+    'la tarjeta no fuerza una fila exclusiva encima del transporte');
+  assert.ok(shell.indexOf('class="cards-band"') < shell.indexOf('class="chord-readout"'),
+    'la tarjeta conserva el orden de lectura después de las tarjetas de progresión');
+  assert.match(desktopGrid || '', /"cards readout"\s*"transport readout"/,
+    'la banda y el transporte comparten la columna principal y liberan el lateral');
+  assert.match(readoutRule || '', /grid-row:\s*2\s*\/\s*-1/,
+    'la tarjeta abarca la fila de tarjetas y la fila real del transporte');
+  assert.match(transportRule || '', /grid-area:\s*transport/,
+    'la caja completa del transporte ocupa la columna acortada');
+  assert.match(transportScript, /function ubicarLectura\(escritorio\)/,
+    'el mismo nodo vuelve a la banda sticky en móvil');
+  assert.match(transportScript, /banda\.appendChild\(lectura\)/,
+    'la tarjeta conserva el sticky móvil sin duplicar ids');
 });

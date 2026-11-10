@@ -81,8 +81,8 @@ test('T-56 r5 · la caja vive en una franja con recorrido y conserva su hogar m�
   // a los 59 px de .progression-stack y la barra desaparecía a 550).
   assert.match(js, /\.cards-band/, 'el observador toma la banda para clavar la caja al marco');
   assert.match(js, /className = 'panel-strip'/, 'la franja del marco se crea en vivo');
-  assert.match(js, /bandaMarco\.parentNode\.insertBefore\(strip, bandaMarco\.nextSibling\)/,
-    'la franja se deja entre la banda y el panel');
+  assert.match(js, /const ancla = lectura && lectura\.parentNode === shell\s*\? lectura\.nextSibling : bandaMarco\.nextSibling;\s*shell\.insertBefore\(strip, ancla\)/,
+    'la franja queda entre el readout y el panel para preservar el orden de lectura');
   assert.match(js, /strip\.appendChild\(caja\)/,
     'la caja del transporte entra a la franja (la cabecera de la caja grande)');
   assert.match(js, /className = 'panel-scroll'/, 'el envoltorio del recorrido propio se crea en vivo');

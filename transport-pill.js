@@ -7,6 +7,8 @@
   const fila = document.querySelector('.transport-row');
   const caja = fila && fila.closest('.progression-view-controls');
   const banda = document.querySelector('.cards-band');
+  const lectura = document.querySelector('.chord-readout');
+  const shell = document.querySelector('main');
   const boton = fila && fila.querySelector('#transport-minimize');
   const ventana = document.getElementById('scroll-window');
   if (!fila || !caja) return;
@@ -44,11 +46,12 @@
   function armar() {
     if (piezas.armado) return;
     const bandaMarco = banda || document.querySelector('.cards-band');
-    const shell = document.querySelector('main');
     if (!bandaMarco || !shell) return;
     const strip = document.createElement('div');
     strip.className = 'panel-strip';
-    bandaMarco.parentNode.insertBefore(strip, bandaMarco.nextSibling);
+    const ancla = lectura && lectura.parentNode === shell
+      ? lectura.nextSibling : bandaMarco.nextSibling;
+    shell.insertBefore(strip, ancla);
     strip.appendChild(caja);
     const panel = document.createElement('div');
     panel.className = 'panel-scroll';
@@ -79,6 +82,15 @@
     if (piezas.cajaHogar) piezas.cajaHogar.insertBefore(caja, piezas.cajaDespues);
     if (strip) strip.remove();
     reponerCaptura();
+  }
+
+  function ubicarLectura(escritorio) {
+    if (!lectura || !banda || !shell) return;
+    if (escritorio) {
+      if (lectura.parentNode !== shell) shell.insertBefore(lectura, banda.nextSibling);
+    } else if (lectura.parentNode !== banda) {
+      banda.appendChild(lectura);
+    }
   }
 
   // En un teléfono la barrita no entra en una línea y envuelve sus controles.
@@ -243,7 +255,9 @@
     if (!activa) {
       // El documento conserva su recorrido al recuperar el respaldo móvil.
       unarm();
+      ubicarLectura(false);
     } else {
+      ubicarLectura(true);
       armar();
     }
     return raiz().classList.toggle('ventana', activa);
