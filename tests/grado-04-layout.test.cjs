@@ -26,6 +26,10 @@ test('la tarjeta ocupa el lateral compartido por la banda y el transporte', () =
     'la banda y el transporte comparten la columna principal y liberan el lateral');
   assert.match(readoutRule || '', /grid-row:\s*2\s*\/\s*-1/,
     'la tarjeta abarca la fila de tarjetas y la fila real del transporte');
+  assert.match(readoutRule || '', /top:\s*6px/,
+    'el readout queda más cerca de la barra en la vista inicial con dos acordes');
+  assert.match(readoutRule || '', /margin:\s*4px\s*0\s*0/,
+    'la separación vertical del readout se reduce sin cambiar el ancho ni el cierre');
   assert.match(transportRule || '', /grid-area:\s*transport/,
     'la caja completa del transporte ocupa la columna acortada');
   assert.match(transportScript, /function ubicarLectura\(escritorio\)/,

@@ -3536,11 +3536,11 @@ html.ventana .player-compact-status {
     align-self: start;
     justify-self: center;
     position: sticky;
-    top: 10px;
+    top: 6px;
     z-index: 6;
     width: 120px;
     height: 190px;
-    margin: 10px 0 0;
+    margin: 4px 0 0;
   }
   .shell > .panel-strip { grid-area: transport; min-width: 0; }
   .shell > :is(.workspace, .panel-scroll) { grid-area: workspace; min-width: 0; }
