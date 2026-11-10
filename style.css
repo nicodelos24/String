@@ -1243,10 +1243,9 @@ html[data-theme="dark"] .board-add-button {
 .inline-help.contextual-help > p { position: static; width: auto; max-width: 100%; box-sizing: border-box; margin-top: 8px; font: 11px/1.6 var(--sans); }
 /* T-47 (A-11): los controles del plano central dejan la columna que colgaba a
    la derecha de las tarjetas (169,8 × 380 px a 1366×650, en cascada diagonal) y
-   pasan a una banda debajo, con caja común y dos filas por función: transporte
-   (plegar, Silencio, Play, Tempo) y captura en vivo (Improvisar, Tempo con
-   notas, Entrar al tocar, Seguir acorde MIDI). Solo forma: los ids y los
-   manejadores que ya existían no cambian, tampoco el orden de tabulación. */
+   pasan a una banda debajo, con grupos de transporte y captura en vivo que
+   refluyen cuando el ancho no alcanza. Solo forma: los ids y los manejadores
+   que ya existían no cambian, tampoco el orden de tabulación. */
 .progression-view-controls { display: flex; flex-direction: column; align-items: stretch; gap: 6px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--paper-light); font: 11px var(--mono); color: var(--muted); }
 .progression-controls-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; }
 .progression-controls-row + .progression-controls-row { border-top: 1px solid var(--line); padding-top: 6px; }
@@ -3532,8 +3531,8 @@ html.ventana .player-compact-status {
   .shell > .cards-band { grid-area: cards; }
   .shell > .chord-readout {
     grid-column: 2;
-    grid-row: 2 / -1;
-    align-self: start;
+    grid-row: 2 / 4;
+    align-self: end;
     justify-self: center;
     position: sticky;
     top: 6px;
@@ -3656,4 +3655,21 @@ html.ventana .player-compact-status {
   }
   .song-tonality-control .song-tonality-spelling .spelling-track::after { width: 12px; height: 12px; }
   .song-tonality-control #song-tonality-spelling:checked + .spelling-track::after { transform: translateX(6px); }
+}
+
+@media (min-width: 1280px) {
+  html.ventana .panel-strip:has(.transport-row.is-pill-composed) .progression-view-controls {
+    flex-wrap: nowrap;
+    gap: 4px 8px;
+    padding: 2px 8px;
+  }
+  html.ventana .panel-strip .transport-row.is-pill-composed:not(.is-transport-minimized) .transport-pill {
+    flex-wrap: nowrap;
+    gap: 4px 8px;
+  }
+  html.ventana .panel-strip .transport-row.is-pill-composed:not(.is-transport-minimized) .capture-row {
+    flex-wrap: nowrap;
+    gap: 4px 8px;
+    min-width: 0;
+  }
 }
