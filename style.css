@@ -331,7 +331,7 @@ footer {
 .chord-readout {
   box-sizing: border-box;
   width: 100%;
-  height: 152px;
+  height: 190px;
   overflow-wrap: anywhere;
   margin-top: 25px;
   padding: 16px;
@@ -2776,7 +2776,7 @@ html[data-theme="dark"] {
 
 .cards-band > .chord-readout {
   width: 120px;
-  height: 190px;
+  height: 152px;
   margin: 0;
 }
 
