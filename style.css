@@ -2917,6 +2917,28 @@ html:not([data-theme]) .cards-band .progression-card :is(small, .progression-mod
 .progression-view-controls.is-transport-floating { border-color: transparent; background: transparent; }
 .transport-row.is-floating { width: var(--transporte-ancho, auto); height: var(--transporte-alto, auto); }
 
+/* H-02b: en el tramo no-flotante (scroll ~20-79 a 390x600) la píldora vive en
+   el flujo dentro de `main.shell` (z-index 1), así que no puede subir por
+   encima de `.mobile-tabs` (fixed, z-index 40) con un z-index interno: la
+   barra le roba el hit-test al Tempo. Cuando `transport-pill.js` detecta ese
+   cruce pone `is-tempo-sobre-barra` y la píldora pasa a `fixed` en el tope
+   limitado por encima de la barra —el mismo escapatorio que ya usa el estado
+   flotante—, con `z-index: 7` (sigue por debajo de la barra). La fila conserva
+   su alto para que el contenido no dé un salto al entrar y salir del estado. */
+@media (max-width: 800px) {
+  .transport-row.is-tempo-sobre-barra:not(.is-floating):not(.is-transport-minimized) {
+    height: 80px;
+  }
+  .transport-row.is-tempo-sobre-barra:not(.is-floating):not(.is-transport-minimized) .transport-pill {
+    position: fixed;
+    top: var(--transporte-top, 8px);
+    left: var(--transporte-left, 8px);
+    z-index: 7;
+    width: var(--transporte-franja, calc(100vw - 16px));
+    box-sizing: border-box;
+  }
+}
+
 /* El estado clavado (A-35), por defecto al desplazarse: todo el ancho útil de
    la caja, más baja que la fila de reposo y sólo su cuadro fino alrededor. El
    botón de minimizar se lleva el extremo derecho con `margin-left: auto`. */

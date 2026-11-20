@@ -97,3 +97,43 @@ test('el HTML conserva el Tempo dentro de la píldora y la barra de pestañas', 
   assert.equal((html.match(/class="mobile-tabs"/g) || []).length, 1, 'una sola barra de pestañas');
   assert.ok(html.includes('data-mobile-tab="mastil"'), 'la pestaña Mástil existe');
 });
+
+test('H-02b: el tramo no-flotante saca el Tempo de debajo de la barra sin tocar el anclaje', () => {
+  const fn = js.slice(js.indexOf('function aplicarLegado'), js.indexOf('function claseVentana'));
+
+  // El clamping ya no queda encerrado en `if (flotar)`: se aplica también al
+  // reposo (scroll ~20-79), donde el control caía bajo la barra fija.
+  assert.match(fn, /if \(barra && barra\.getClientRects\(\)\.length > 0\)/,
+    'el límite por la barra corre en ambos regímenes, no sólo al flotar');
+  assert.ok(!/if \(flotar && barra/.test(fn), 'el tope ya no está dentro de if(flotar)');
+
+  // Estado acotado al cruce: se mide la fila (sitios de flujo estables) y se
+  // excluye el minimizado, para no mover el respaldo de la ronda 2.
+  assert.match(fn, /!flotar && !minimizada && pildora/,
+    'el estado de cruce excluye el régimen flotante y el minimizado');
+  assert.match(fn, /filaRect\.bottom > barraTop/,
+    'se mide la fila, que no se desplaza al pasar la píldora a fixed');
+  assert.match(fn, /classList\.toggle\(\s*['"]is-tempo-sobre-barra['"]/,
+    'publica el estado de cruce para la CSS');
+  assert.match(fn, /classList\.remove\(\s*['"]is-floating['"]\s*,\s*['"]is-tempo-sobre-barra['"]/,
+    'limpia el estado cuando el control deja de verse');
+
+  // La CSS del estado de cruce: píldora fixed (sale del contexto z-index 1 de
+  // main.shell), con el tope limitado, por debajo de la barra (z-index 7 < 40)
+  // y con la fila reservando su alto para que el contenido no dé un salto.
+  const reglaFila = reglaEn(css,
+    '.transport-row.is-tempo-sobre-barra:not(.is-floating):not(.is-transport-minimized)');
+  assert.ok(tiene(reglaFila, 'height', '80px'), 'la fila conserva su alto de reposo');
+
+  const reglaPill = reglaEn(css,
+    '.transport-row.is-tempo-sobre-barra:not(.is-floating):not(.is-transport-minimized) .transport-pill');
+  assert.ok(tiene(reglaPill, 'position', 'fixed'), 'la píldora sale del contexto que la clavaba bajo la barra');
+  assert.ok(tiene(reglaPill, 'top', 'var\\(--transporte-top, 8px\\)'), 'usa el tope limitado por la barra');
+  assert.ok(tiene(reglaPill, 'left', 'var\\(--transporte-left, 8px\\)'), 'conserva su izquierda de reposo, sin salto horizontal');
+  assert.ok(/width:\s*var\(--transporte-franja/.test(reglaPill), 'conserva su ancho de reposo');
+  assert.ok(tiene(reglaPill, 'z-index', '7'), 'sigue por debajo de la barra de pestañas (40)');
+
+  // Y el estado vive sólo en móvil: el escritorio (html.ventana) no lo consume.
+  const media = css.slice(css.indexOf('@media (max-width: 800px)'));
+  assert.ok(media.includes('.transport-row.is-tempo-sobre-barra'), 'el estado queda dentro del bloque móvil');
+});
