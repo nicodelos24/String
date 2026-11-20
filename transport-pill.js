@@ -235,6 +235,18 @@
         arriba = debajo + alto <= window.innerHeight ? debajo : Math.max(0, captura.top - alto - HUECO);
       }
     }
+    // H-02: la barra de pestañas es fija abajo (`.mobile-tabs`, z-index 40) y
+    // tapa cualquier control que caiga en su franja. El tope de la banda puede
+    // bajar hasta esa franja al desplazarse, así que se limita el alto de la
+    // píldora a quedar por encima de la barra. Es un máximo: cuando la banda
+    // está más arriba, el transporte conserva su posición de siempre; el
+    // escritorio (régimen de ventana) no pasa por aquí.
+    const barra = document.querySelector('.mobile-tabs');
+    if (flotar && barra && barra.getClientRects().length > 0) {
+      const alto = pildora ? pildora.getBoundingClientRect().height : 0;
+      const techo = barra.getBoundingClientRect().top - HUECO - alto;
+      arriba = Math.min(arriba, Math.max(0, techo));
+    }
     fila.style.setProperty('--transporte-top', arriba + 'px');
   }
 
