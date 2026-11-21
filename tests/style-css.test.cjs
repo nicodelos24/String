@@ -328,3 +328,26 @@ test('los controles del compositor de secciones se reparten media tarjeta', () =
     '.section-composer debe declarar grid-column: span 3 para que «Repetir» (34px) y «Duplicar» (38px) quepan en su caja: declaraciones: ' +
     decls.map(d => d.property + ': ' + d.value).join('; '));
 });
+
+test('H-02c · en móvil el pie queda por debajo de main para no robarle el clic al Tempo', () => {
+  // Rotura real: `main` y `footer` son hermanos `position: relative; z-index: 1`.
+  // El pie va después en el DOM y gana el hit-test; al final del scroll (390x600,
+  // scroll ~370-426) tapa la píldora del transporte, cuyo `z-index: 7` vive dentro
+  // del contexto de `main` y no puede subir por encima del pie. El pie es texto
+  // sin controles: bajarlo por debajo de `main` en móvil devuelve el clic al Tempo.
+  const pie = declarationsFor(selector => selector.split(',').map(s => s.trim()).includes('footer'));
+  const zIndexes = pie.filter(d => d.property === 'z-index').map(d => d.value);
+  assert.ok(
+    zIndexes.some(v => /^0+$/.test(v)),
+    'el pie debe bajar a z-index: 0 en móvil (declarado junto a main/footer z-index: 1) para no interceptar el Tempo al final del scroll; z-index hallados: ' +
+    (zIndexes.join(', ') || 'ninguno')
+  );
+  // El pie debe seguir en el flujo (relative), no convertirse en una capa fija
+  // que tape el transporte ni salir del documento. La regla base lo deja
+  // `position: relative`; no puede aparecer una anulación móvil fixed/sticky.
+  const posiciones = pie.filter(d => d.property === 'position').map(d => d.value);
+  assert.ok(
+    !posiciones.some(v => /^(fixed|sticky)$/.test(v)),
+    'el pie no puede hacerse fixed/sticky: seguiría tapando el Tempo; posiciones halladas: ' + posiciones.join(', ')
+  );
+});

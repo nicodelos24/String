@@ -1588,6 +1588,15 @@ footer {
     line-height: 2;
     padding: 20px 5vw;
   }
+
+  /* H-02c: `main` y `footer` son hermanos con `position: relative; z-index: 1`;
+     el pie, posterior en el DOM, se pinta y recibe el hit-test por encima de
+     `main`. Al final del scroll la píldora del transporte (fija, `z-index: 7`
+     pero dentro del contexto de `main`) cae bajo el pie y el Tempo deja de
+     responder. El pie es texto sin controles: bajarlo a `z-index: 0` en móvil
+     lo deja visible pero por debajo de `main`, así la píldora vuelve a ser
+     ella misma bajo el cursor. Sin tocar escritorio, audio, teclado ni HTML. */
+  footer { z-index: 0; }
 }
 
 .string-row {
