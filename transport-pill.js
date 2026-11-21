@@ -280,6 +280,9 @@
   }
 
   function enEscritorio() {
+    // Escritorio = NO compacto. En horizontal bajo se usa el respaldo móvil
+    // para no duplicar la lógica del Tempo/pie (tips H-02/H-02c intactos).
+    if (window.pStringCompact) return !window.pStringCompact.matches();
     return window.matchMedia && window.matchMedia('(min-width: 801px)').matches;
   }
 
@@ -319,7 +322,9 @@
     medidas.observe(caja);
   }
   if (window.matchMedia) {
-    try { window.matchMedia('(min-width: 801px)').addEventListener('change', () => { regimenes(); aplicar(); }); } catch (e) {}
+    const regimenQuery = (window.pStringCompact && window.pStringCompact.query)
+      || '(min-width: 801px)';
+    try { window.matchMedia(regimenQuery).addEventListener('change', () => { regimenes(); aplicar(); }); } catch (e) {}
   }
   // En móvil la caja vive en la pestaña «Progresión»: al cambiarla hay que
   // volver a medir (oculta mide 0 y no se clava).

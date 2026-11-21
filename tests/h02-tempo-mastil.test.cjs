@@ -30,9 +30,13 @@ function reglas(fuente) {
 function reglaEnMedia(condicion, selectorExacto) {
   // Puede haber varios @media con la misma condición; recorrerlos todos.
   const buscado = condicion.replace('@media ', '').replace(/\s+/g, '');
+  // El bloque compacto puede llevar además la cláusula de horizontal bajo
+  // (landscape). Aceptar esa extensión sin soltar la guarda de la regla.
+  const CLAUSULA_LANDSCAPE = ', (orientation: landscape) and (max-height: 500px)'.replace(/\s+/g, '');
   const aperturas = [...css.matchAll(/@media([^{]+)\{/g)];
   for (const m of aperturas) {
-    if (m[1].replace(/\s+/g, '') !== buscado) continue;
+    const cond = m[1].replace(/\s+/g, '');
+    if (cond !== buscado && cond !== buscado + CLAUSULA_LANDSCAPE) continue;
     let profundidad = 1;
     let cursor = m.index + m[0].length;
     while (cursor < css.length && profundidad) {

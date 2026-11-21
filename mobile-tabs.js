@@ -5,7 +5,10 @@
   const bar = document.querySelector('.mobile-tabs');
   if (!bar) return;
   const buttons = Array.prototype.slice.call(bar.querySelectorAll('[data-mobile-tab]'));
-  const mobile = window.matchMedia('(max-width: 800px)');
+  // El régimen compacto (retrato angosto O horizontal bajo) lo define
+  // compact-mode.js: una sola condición compartida con CSS y transporte.
+  const mobile = (window.pStringCompact && window.pStringCompact.media())
+    || window.matchMedia('(max-width: 800px), (orientation: landscape) and (max-height: 500px)');
   let current = 'mastil';
   const choose = tab => {
     current = tab;
