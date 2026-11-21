@@ -200,7 +200,7 @@
     marcarBanda();
     fila.classList.toggle('is-transport-minimized', minimizada);
     if (!visible()) {
-      fila.classList.remove('is-floating');
+      fila.classList.remove('is-floating', 'is-tempo-sobre-barra');
       caja.classList.remove('is-transport-floating');
       const p = fila.querySelector('.transport-pill');
       if (p) p.classList.remove('is-pill-wrapped');
@@ -211,15 +211,16 @@
       parseFloat(estilo.borderTopWidth || 0) + parseFloat(estilo.paddingTop || 0);
     const tope = topeBanda();
     const flotar = reposo < tope;
-    if (flotar) {
-      if (!fila.classList.contains('is-floating')) medirReposo();
-      const ancho = caja.clientWidth - parseFloat(estilo.paddingLeft || 0) -
-        parseFloat(estilo.paddingRight || 0);
-      fila.style.setProperty('--transporte-franja', ancho + 'px');
-      fila.style.setProperty('--transporte-left',
-        (caja.getBoundingClientRect().left + parseFloat(estilo.borderLeftWidth || 0) +
-          parseFloat(estilo.paddingLeft || 0)) + 'px');
-    }
+    // El ancho y la izquierda útiles se publican en ambos regímenes: el estado
+    // flotante los consume y H-02b los usa para que la píldora, al pasar a
+    // `fixed`, conserve su sitio horizontal y no dé un salto al entrar/salir.
+    if (flotar && !fila.classList.contains('is-floating')) medirReposo();
+    const ancho = caja.clientWidth - parseFloat(estilo.paddingLeft || 0) -
+      parseFloat(estilo.paddingRight || 0);
+    fila.style.setProperty('--transporte-franja', ancho + 'px');
+    fila.style.setProperty('--transporte-left',
+      (caja.getBoundingClientRect().left + parseFloat(estilo.borderLeftWidth || 0) +
+        parseFloat(estilo.paddingLeft || 0)) + 'px');
     fila.classList.toggle('is-floating', flotar);
     caja.classList.toggle('is-transport-floating', flotar);
     const pildora = fila.querySelector('.transport-pill');
@@ -234,6 +235,35 @@
         const debajo = captura.bottom + HUECO;
         arriba = debajo + alto <= window.innerHeight ? debajo : Math.max(0, captura.top - alto - HUECO);
       }
+    }
+    // H-02 / H-02b: la barra de pestañas es fija abajo (`.mobile-tabs`,
+    // z-index 40) y tapa cualquier control que caiga en su franja. El límite
+    // se aplica en ambos regímenes: al desplazarse, el tope de la banda (con
+    // `flotar`) y el reposo de la caja (sin `flotar`, scroll ~20-79) pueden caer
+    // en esa franja. Es un máximo: cuando sobra espacio el transporte conserva
+    // su posición de siempre. El escritorio (régimen de ventana) no pasa por
+    // aquí.
+    const barra = document.querySelector('.mobile-tabs');
+    const alto = pildora ? pildora.getBoundingClientRect().height : 0;
+    if (barra && barra.getClientRects().length > 0) {
+      const barraTop = barra.getBoundingClientRect().top;
+      const techo = barraTop - HUECO - alto;
+      arriba = Math.min(arriba, Math.max(0, techo));
+      // H-02b: sin `flotar` la píldora está en el flujo dentro de `main.shell`
+      // (z-index 1), así que ningún z-index interno puede subirla por encima de
+      // la barra. Sólo `position: fixed` la saca de ese contexto. Avisamos a la
+      // CSS con un estado acotado al cruce: cuando el control en su sitio de
+      // flujo cae en la franja de la barra. Se mide la fila —que reserva sitio
+      // y no se mueve cuando la píldora pasa a `fixed`—, no la píldora (cuyo
+      // rect ya estaría levantado y haría oscilar el estado). Se excluye el
+      // minimizado, cuyo respaldo queda intacto.
+      const filaRect = fila.getBoundingClientRect();
+      const enFranja = !flotar && !minimizada && pildora &&
+        filaRect.bottom > barraTop - HUECO &&
+        reposo < barraTop && barraTop < window.innerHeight;
+      fila.classList.toggle('is-tempo-sobre-barra', !!enFranja);
+    } else {
+      fila.classList.remove('is-tempo-sobre-barra');
     }
     fila.style.setProperty('--transporte-top', arriba + 'px');
   }
