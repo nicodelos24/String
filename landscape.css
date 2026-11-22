@@ -1,0 +1,132 @@
+/* landscape.css · versión horizontal de pString para teléfonos acostados.
+ *
+ * Hoja propia y aislada: nada acá reescribe el Tempo ni el pie. Los tips
+ * H-02 (Tempo sobre la barra) y H-02c (el pie no roba el clic) viven en
+ * style.css y se aplican igual en horizontal porque los bloques compactos
+ * comparten la condición `(orientation: landscape) and (max-height: 500px)`.
+ *
+ * Esta hoja solo aporta los tokens y el acomode propio del horizontal.
+ * Condición única, declarada también en compact-mode.js (JS) y en los media
+ * compactos de style.css (CSS). Si se cambia, cambiar en los tres lugares.
+ */
+
+@media (orientation: landscape) and (max-height: 500px) {
+  :root {
+    /* Tokens propios del horizontal: no pisan los de :root, solo los
+       especializan mientras dura la condición. */
+    --ls-topbar-h: 44px;
+    --ls-tap: 44px;              /* objetivo táctil mínimo */
+    --ls-tabs-h: 50px;           /* alto de la barra inferior de pestañas */
+    --ls-mas-max: 60dvh;         /* tope del panel «Más» (Julia/Greta) */
+  }
+
+  /* El encabezado se compacta: el título ya está en el logo y el hero se
+     oculta, así el primer renglón útil queda apenas debajo de la topbar. */
+  .topbar { height: var(--ls-topbar-h); padding: 0 4vw; }
+  .brand-word { font-size: 18px; }
+  .topbar #theme-toggle { min-height: var(--ls-tap); padding: 6px 14px; }
+  .intro { display: none; }
+
+  /* El documento usa todo el alto disponible menos la barra de pestañas. */
+  body { padding-bottom: var(--ls-tabs-h); }
+  .mobile-tabs button { min-height: var(--ls-tabs-h); }
+
+  /* Objetivos táctiles de 44 px en los controles que se tocan en horizontal. */
+  .mobile-tabs button,
+  .transport-pill button,
+  .progression-quick-player button,
+  .source-switch button,
+  .board-add-button,
+  #theme-toggle,
+  .mic-button,
+  #tuner-toggle { min-height: var(--ls-tap); }
+  .mobile-tabs button { padding: 4px 2px; }
+
+  /* En la pestaña «Mástil» el diapasón es el contenido principal: va justo
+     después de una cabecera compacta, no al final de todas las filas de chips.
+     Solo reordena (no oculta ni duplica): el resto sigue accesible al desplazar.
+     El selector cubre las tres variantes de clase del section que ya usa
+     style.css, para no depender de cuál gane en cada ancho. */
+  body[data-mobile-tab="mastil"] .fretboard-section:is(.keyboard-split, .keyboard-band, .fretboard-section) .board-toolbar { order: 1; }
+  body[data-mobile-tab="mastil"] .fretboard-section:is(.keyboard-split, .keyboard-band, .fretboard-section) .fretboard-wrap { order: 2; }
+  body[data-mobile-tab="mastil"] .fretboard-section:is(.keyboard-split, .keyboard-band, .fretboard-section) .board-view-row { order: 3; }
+  body[data-mobile-tab="mastil"] .fretboard-section:is(.keyboard-split, .keyboard-band, .fretboard-section) .board-footer { order: 4; }
+  body[data-mobile-tab="mastil"] .fretboard-section:is(.keyboard-split, .keyboard-band, .fretboard-section) .board-add-row { order: 5; }
+  body[data-mobile-tab="mastil"] .fretboard-section:is(.keyboard-split, .keyboard-band, .fretboard-section) .scale-summary { order: 6; }
+  body[data-mobile-tab="mastil"] .fretboard-section:is(.keyboard-split, .keyboard-band, .fretboard-section) .keyboard-panel { order: 7; }
+
+  /* La barra de pestañas es fija abajo: el último renglón del mástil (chip del
+     acorde + «añadir acorde», y el transporte rápido) llegaba a quedar a mitad
+     tapado por ella. Se deja aire al final del section para que ese contenido
+     se pueda desplazar por encima de la barra sin quedar pegado al borde. */
+  body[data-mobile-tab="mastil"] .fretboard-section { padding-bottom: calc(var(--ls-tabs-h) + 12px); }
+  /* En los modos keyboard-band/split el .board-add-row es display:contents y
+     sus hijos son flex items directos: el margen se aplica a ellos para que el
+     aire llegue también al renglón del chip + botón. */
+  body[data-mobile-tab="mastil"] .fretboard-section:is(.keyboard-split, .keyboard-band)
+    .board-add-row > :is(.board-add-chord, .board-add-button) { margin-bottom: 12px; }
+
+  /* El diapasón y el teclado caben de lado: se recorta su alto para que el
+     tramo «Mástil» quepa sin empujar el pie fuera de la pantalla baja. */
+  .fretboard-wrap { max-height: 46dvh; }
+  .keyboard-keys { height: min(104px, 28dvh); }
+  .kp-black small { display: none; }
+
+  /* B1: el bloque compacto de style.css pone .fretboard-section en
+     overflow:hidden y flex:1 1 auto. Dentro del panel flotante de «Más»
+     (max-height:60dvh, overflow-y:auto) eso recortaba el
+     details.library-panel abierto (~586px) a la altura de la caja (~73-87px):
+     la rueda no movía nada y «Guardar nueva»/«Actualizar» quedaban fuera de
+     alcance, con dos barras de scroll superpuestas. En «Más» los tres hijos
+     visibles del workspace crecen a su altura natural y no recortan: el
+     workspace es el único contenedor que desplaza, así el recetario se ve
+     completo, scrollea con rueda/dedo y sus botones quedan alcanzables. */
+  body[data-mobile-tab="mas"] .workspace > :is(.fretboard-section, .control-panel, .legend-panel) {
+    flex: 0 0 auto;
+    overflow: visible;
+  }
+
+  /* En horizontal la banda de tarjetas se mantiene arriba, pero más baja de
+     lo que el respaldo de retrato la dejaría, para no comer la poca altura.
+     El bloque compacto de style.css fuerza 1 columna también acá (media query
+     compartida); en horizontal ancho se restaura la rejilla de dos columnas
+     para que la readout vuelva a la derecha y no quede un hueco vacío. */
+  .cards-band { padding: 8px 12px 6px; }
+  .cards-band { grid-template-columns: minmax(0, 1fr) 120px; }
+  .cards-band > .chord-readout {
+    width: 120px;
+    height: 152px;
+    margin: 0;
+  }
+  .cards-band .progression { max-height: 128px; }
+
+  /* «Más»: el contenido de ajustes, leyenda y biblioteca se recoge en un panel
+     scrollable anclado abajo a la derecha, con tope de 60dvh. Así no se pierde
+     nada del contenido y el mástil/las tarjetas siguen a la vista a la izquierda. */
+  /* Con el workspace fuera de flujo, el pie quedaría flotando arriba. En esta
+     pestaña el pie es texto decorativo: se oculta para que el panel se lea
+     limpio. El z-index del pie (H-02c) no se toca: solo se oculta aquí. */
+  body[data-mobile-tab="mas"] footer { display: none; }
+
+  body[data-mobile-tab="mas"] .workspace {
+    position: fixed;
+    inset: auto var(--ls-tabs-h) calc(var(--ls-tabs-h) + 6px) auto;
+    width: min(420px, 52vw);
+    max-height: var(--ls-mas-max);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    z-index: 30;
+    padding: 10px 14px;
+    background: var(--paper-light);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(44, 50, 40, .18);
+  }
+  /* El pie queda por debajo del contenido (H-02c): no se toca su z-index acá. */
+
+  /* «Video flotante al minimizar» heredaba del label global 10px, uppercase y
+     letter-spacing .08em, ilegible en la pantalla baja. Se normaliza acá:
+     selector más específico que `label`, cargado después de style.css. */
+  .float-option { font-size: 11px; letter-spacing: .3px; text-transform: none; }
+}

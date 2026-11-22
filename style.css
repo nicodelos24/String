@@ -1485,7 +1485,7 @@ footer {
   }
 }
 
-@media (max-width: 800px) {
+@media (max-width: 800px), (orientation: landscape) and (max-height: 500px) {
   /* T-49: en retrato el contenido puede ser más bajo que el viewport. Sin un
      shell flexible, tras el pie quedaban ~400px de fondo antes de la barra
      fija; la pestaña visible ahora ocupa ese alto disponible. */
@@ -1588,6 +1588,15 @@ footer {
     line-height: 2;
     padding: 20px 5vw;
   }
+
+  /* H-02c: `main` y `footer` son hermanos con `position: relative; z-index: 1`;
+     el pie, posterior en el DOM, se pinta y recibe el hit-test por encima de
+     `main`. Al final del scroll la píldora del transporte (fija, `z-index: 7`
+     pero dentro del contexto de `main`) cae bajo el pie y el Tempo deja de
+     responder. El pie es texto sin controles: bajarlo a `z-index: 0` en móvil
+     lo deja visible pero por debajo de `main`, así la píldora vuelve a ser
+     ella misma bajo el cursor. Sin tocar escritorio, audio, teclado ni HTML. */
+  footer { z-index: 0; }
 }
 
 .string-row {
@@ -1679,7 +1688,7 @@ footer {
   .workspace { grid-template-columns: 190px minmax(0,1fr); }
   .legend-panel { grid-column: 1 / -1; }
 }
-@media(max-width: 800px) {
+@media(max-width: 800px), (orientation: landscape) and (max-height: 500px) {
   .workspace { grid-template-columns: minmax(0,1fr); }
   /* T-70 (A-75, 8-nov): se retira el recuadro exterior móvil. La banda de
      papel de 12 px por lado (width: calc(100% - 24px)) dejaba la caja
@@ -2143,7 +2152,7 @@ footer {
    YouTube queda anclado al contenedor en vez del viewport durante esa
    animación, que es justo lo que venía a arreglar la rama muerta. Ver T-02. */
 @media (prefers-reduced-motion: reduce) { .workspace { animation: none; } }
-@media (max-width: 800px) {
+@media (max-width: 800px), (orientation: landscape) and (max-height: 500px) {
   .keyboard-keys { height: 130px; }
   .kp-black small { display: none; }
   .keyboard-panel-head { flex-wrap: wrap; }
@@ -2333,7 +2342,7 @@ footer {
   .scale-summary > label { font: 9px var(--mono); color: var(--muted); }
   .scale-summary > select { width: 100%; padding: 8px; border: 1px solid var(--line); background: var(--paper-light); color: var(--ink); }
 }
-@media(max-width: 800px) {
+@media(max-width: 800px), (orientation: landscape) and (max-height: 500px) {
   .root-piano { margin-left: auto; margin-right: auto; }
   .control-panel { padding: 16px; }
   .legend-colors { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
@@ -2487,7 +2496,7 @@ html[data-theme="dark"] .fret-numbers, html[data-theme="dark"] .open-strings-hea
 
 .mobile-tabs { display: none; }
 
-@media (max-width: 800px) {
+@media (max-width: 800px), (orientation: landscape) and (max-height: 500px) {
   body { padding-bottom: 62px; }   /* hueco para la barra fija */
 
   .mobile-tabs {
@@ -2599,7 +2608,7 @@ html[data-theme="dark"] .fret-numbers, html[data-theme="dark"] .open-strings-hea
   border-bottom: 1px solid var(--line);
 }
 
-@media (min-width: 801px) {
+@media (min-width: 801px) and (min-height: 501px) {
   .cards-band {
     position: sticky; top: 0; z-index: 6;
     padding: 10px 20px 8px;
@@ -2627,7 +2636,7 @@ html[data-theme="dark"] .fret-numbers, html[data-theme="dark"] .open-strings-hea
   .progression-workspace .capture-row { align-items: center; }
 }
 
-@media (max-width: 800px) {
+@media (max-width: 800px), (orientation: landscape) and (max-height: 500px) {
   .cards-band { padding: 12px 14px 8px; }
   /* La cabecera del transporte es la primera fila de la caja: en móvil toma el
      relleno de la casa y no deja un borde doble con la banda de arriba. */
@@ -2917,6 +2926,28 @@ html:not([data-theme]) .cards-band .progression-card :is(small, .progression-mod
 .progression-view-controls.is-transport-floating { border-color: transparent; background: transparent; }
 .transport-row.is-floating { width: var(--transporte-ancho, auto); height: var(--transporte-alto, auto); }
 
+/* H-02b: en el tramo no-flotante (scroll ~20-79 a 390x600) la píldora vive en
+   el flujo dentro de `main.shell` (z-index 1), así que no puede subir por
+   encima de `.mobile-tabs` (fixed, z-index 40) con un z-index interno: la
+   barra le roba el hit-test al Tempo. Cuando `transport-pill.js` detecta ese
+   cruce pone `is-tempo-sobre-barra` y la píldora pasa a `fixed` en el tope
+   limitado por encima de la barra —el mismo escapatorio que ya usa el estado
+   flotante—, con `z-index: 7` (sigue por debajo de la barra). La fila conserva
+   su alto para que el contenido no dé un salto al entrar y salir del estado. */
+@media (max-width: 800px), (orientation: landscape) and (max-height: 500px) {
+  .transport-row.is-tempo-sobre-barra:not(.is-floating):not(.is-transport-minimized) {
+    height: 80px;
+  }
+  .transport-row.is-tempo-sobre-barra:not(.is-floating):not(.is-transport-minimized) .transport-pill {
+    position: fixed;
+    top: var(--transporte-top, 8px);
+    left: var(--transporte-left, 8px);
+    z-index: 7;
+    width: var(--transporte-franja, calc(100vw - 16px));
+    box-sizing: border-box;
+  }
+}
+
 /* El estado clavado (A-35), por defecto al desplazarse: todo el ancho útil de
    la caja, más baja que la fila de reposo y sólo su cuadro fino alrededor. El
    botón de minimizar se lleva el extremo derecho con `margin-left: auto`. */
@@ -3035,7 +3066,7 @@ html.ventana .transport-row.is-pill-composed .transport-minimize:focus-visible {
    que le reserva sitio a la flechita en una sola línea le robaría el ancho a la
    segunda: con la barrita envuelta, la flechita se apoya en el hueco que deja
    la primera línea y la ayuda vuelve junto al Tempo. */
-@media (max-width: 800px) {
+@media (max-width: 800px), (orientation: landscape) and (max-height: 500px) {
   .transport-row.is-floating:not(.is-transport-minimized) .transport-pill.is-pill-wrapped {
     padding-right: 10px;
     gap: 4px 8px;
@@ -3517,7 +3548,7 @@ html.ventana .player-compact-status {
    de sus controles. El bloque de tarjetas ocupa menos alto; la superficie del
    mástil conserva aire y sombra en escritorio, pero en móvil se funde con la
    página en lugar de parecer una tarjeta dentro de otra. */
-@media (min-width: 801px) {
+@media (min-width: 801px) and (min-height: 501px) {
   /* T-70 (A-75, 8-nov): menos margen lateral en la sección principal sin
      sacrificar su sombra. La caja crece hasta 13 px por lado (era 32): queda
      por encima del offset de 10 px de la sombra en escritorio (regla
@@ -3569,7 +3600,7 @@ html.ventana .player-compact-status {
   overflow: visible;
 }
 
-@media (max-width: 800px) {
+@media (max-width: 800px), (orientation: landscape) and (max-height: 500px) {
   .shell { width: 100%; }
   :is(.workspace) {
     border: 0;
