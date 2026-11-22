@@ -1096,7 +1096,25 @@ html[data-theme="dark"] .board-add-button {
 }
 .follow-midi { display: flex; gap: 6px; align-items: center; margin: 8px 0; font: 11px var(--mono); color: var(--muted); }
 .follow-midi input { accent-color: var(--rust); }
-.progression-empty { grid-column: 1 / -1; margin: 0; min-height: 143px; display: flex; align-items: center; justify-content: center; padding: 14px 12px; color: var(--muted); font: 12px var(--sans); text-align: center; border: 1px dashed var(--line); border-radius: 8px; }
+/* Estado vacío de la progresión: la invitación tiene que leerse. --muted no
+   llega a AA sobre las superficies claras (ver docs/AUDITORIA-CONTRASTE.md),
+   así que este texto usa su propia tinta por tema en vez de seguir a --muted.
+   El recuadro se achata para que el mensaje no quede perdido en tanto aire. */
+.progression-empty {
+  grid-column: 1 / -1;
+  margin: 0;
+  min-height: 96px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px 16px;
+  color: #5d6560;
+  font: 500 14px/1.45 var(--sans);
+  text-align: center;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+}
+html[data-theme="dark"] .progression-empty { color: #d7dcd2; border-color: #566158; }
 .progression-playback { min-height: 26px; margin: -4px 0 12px; color: var(--rust); font: 11px var(--mono); }
 .section-view-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 10px 0; font: 11px var(--mono); color: var(--muted); }
 .sections-panel #section-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-content: start; gap: 6px; max-height: 250px; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; scrollbar-gutter: stable; margin: 8px 0; padding: 2px; }
@@ -2623,7 +2641,7 @@ html[data-theme="dark"] .fret-numbers, html[data-theme="dark"] .open-strings-hea
      el autor veía como «pading vacío» al desplazarse—; la franja conserva su
      relleno para que la sombra de la tarjeta respire. */
   .cards-band .progression { max-height: 158px; min-height: 0; margin-bottom: 0; padding-bottom: 0; }
-  .cards-band .progression-empty { min-height: 143px; }
+  .cards-band .progression-empty { min-height: 96px; }
 }
 
 @media (min-width: 1101px) {
