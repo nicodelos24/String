@@ -37,7 +37,9 @@
   .progression-quick-player button,
   .source-switch button,
   .board-add-button,
-  #theme-toggle { min-height: var(--ls-tap); }
+  #theme-toggle,
+  .mic-button,
+  #tuner-toggle { min-height: var(--ls-tap); }
   .mobile-tabs button { padding: 4px 2px; }
 
   /* En la pestaña «Mástil» el diapasón es el contenido principal: va justo
@@ -53,6 +55,17 @@
   body[data-mobile-tab="mastil"] .fretboard-section:is(.keyboard-split, .keyboard-band, .fretboard-section) .scale-summary { order: 6; }
   body[data-mobile-tab="mastil"] .fretboard-section:is(.keyboard-split, .keyboard-band, .fretboard-section) .keyboard-panel { order: 7; }
 
+  /* La barra de pestañas es fija abajo: el último renglón del mástil (chip del
+     acorde + «añadir acorde», y el transporte rápido) llegaba a quedar a mitad
+     tapado por ella. Se deja aire al final del section para que ese contenido
+     se pueda desplazar por encima de la barra sin quedar pegado al borde. */
+  body[data-mobile-tab="mastil"] .fretboard-section { padding-bottom: calc(var(--ls-tabs-h) + 12px); }
+  /* En los modos keyboard-band/split el .board-add-row es display:contents y
+     sus hijos son flex items directos: el margen se aplica a ellos para que el
+     aire llegue también al renglón del chip + botón. */
+  body[data-mobile-tab="mastil"] .fretboard-section:is(.keyboard-split, .keyboard-band)
+    .board-add-row > :is(.board-add-chord, .board-add-button) { margin-bottom: 12px; }
+
   /* El diapasón y el teclado caben de lado: se recorta su alto para que el
      tramo «Mástil» quepa sin empujar el pie fuera de la pantalla baja. */
   .fretboard-wrap { max-height: 46dvh; }
@@ -60,8 +73,17 @@
   .kp-black small { display: none; }
 
   /* En horizontal la banda de tarjetas se mantiene arriba, pero más baja de
-     lo que el respaldo de retrato la dejaría, para no comer la poca altura. */
+     lo que el respaldo de retrato la dejaría, para no comer la poca altura.
+     El bloque compacto de style.css fuerza 1 columna también acá (media query
+     compartida); en horizontal ancho se restaura la rejilla de dos columnas
+     para que la readout vuelva a la derecha y no quede un hueco vacío. */
   .cards-band { padding: 8px 12px 6px; }
+  .cards-band { grid-template-columns: minmax(0, 1fr) 120px; }
+  .cards-band > .chord-readout {
+    width: 120px;
+    height: 152px;
+    margin: 0;
+  }
   .cards-band .progression { max-height: 128px; }
 
   /* «Más»: el contenido de ajustes, leyenda y biblioteca se recoge en un panel
@@ -88,4 +110,9 @@
     box-shadow: 0 10px 30px rgba(44, 50, 40, .18);
   }
   /* El pie queda por debajo del contenido (H-02c): no se toca su z-index acá. */
+
+  /* «Video flotante al minimizar» heredaba del label global 10px, uppercase y
+     letter-spacing .08em, ilegible en la pantalla baja. Se normaliza acá:
+     selector más específico que `label`, cargado después de style.css. */
+  .float-option { font-size: 11px; letter-spacing: .3px; text-transform: none; }
 }
