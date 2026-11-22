@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="String">
+  <rect width="64" height="64" rx="12" fill="#c95735"/>
+  <g fill="none" stroke="#f3f0e8" stroke-width="3" stroke-linecap="square">
+    <path d="M13 19h-4v-4M51 19h4v-4M13 45h-4v4M51 45h4v4"/>
+  </g>
+  <text x="32" y="43" fill="#f3f0e8" text-anchor="middle"
+        font-family="Georgia, serif" font-size="34" font-style="italic"
+        font-weight="bold">T</text>
+</svg>
