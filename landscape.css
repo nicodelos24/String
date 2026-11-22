@@ -72,6 +72,20 @@
   .keyboard-keys { height: min(104px, 28dvh); }
   .kp-black small { display: none; }
 
+  /* B1: el bloque compacto de style.css pone .fretboard-section en
+     overflow:hidden y flex:1 1 auto. Dentro del panel flotante de «Más»
+     (max-height:60dvh, overflow-y:auto) eso recortaba el
+     details.library-panel abierto (~586px) a la altura de la caja (~73-87px):
+     la rueda no movía nada y «Guardar nueva»/«Actualizar» quedaban fuera de
+     alcance, con dos barras de scroll superpuestas. En «Más» los tres hijos
+     visibles del workspace crecen a su altura natural y no recortan: el
+     workspace es el único contenedor que desplaza, así el recetario se ve
+     completo, scrollea con rueda/dedo y sus botones quedan alcanzables. */
+  body[data-mobile-tab="mas"] .workspace > :is(.fretboard-section, .control-panel, .legend-panel) {
+    flex: 0 0 auto;
+    overflow: visible;
+  }
+
   /* En horizontal la banda de tarjetas se mantiene arriba, pero más baja de
      lo que el respaldo de retrato la dejaría, para no comer la poca altura.
      El bloque compacto de style.css fuerza 1 columna también acá (media query
