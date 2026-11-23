@@ -1258,7 +1258,15 @@ html[data-theme="dark"] .progression-empty { color: #d7dcd2; border-color: #5661
 #section-list li { display: flex; align-items: center; gap: 6px; padding: 6px 0; border-bottom: 1px solid var(--line); }
 #section-list li span { flex: 1; overflow-wrap: anywhere; min-width: 0; }
 .contextual-help { margin: 8px 0; }
-.inline-help.contextual-help > p { position: static; width: auto; max-width: 100%; box-sizing: border-box; margin-top: 8px; font: 11px/1.6 var(--sans); }
+/* T-78: el globo contextual del «?» de pentatónicas va en línea (debajo del
+   «?», abre el bloque en lugar de taparlo), pero `width: auto` lo dejaba
+   estirar al ancho de todo su texto: el `details` es un ítem flex de
+   `.pentatonic-control` y su ancho máximo lo daba la línea más larga del
+   párrafo. Medido el 23-nov, 1391 px de ancho con viewport 768 (de x=14 a
+   x=1405) y lo mismo a 390. Con el ancho acotado como el resto de los globos
+   (min(260px, 65vw)) el texto baja en varias líneas y el bloque entra en
+   pantalla sin tapar el «?» ni el interruptor de al lado. */
+.inline-help.contextual-help > p { position: static; width: min(260px, 65vw); max-width: 100%; box-sizing: border-box; margin-top: 8px; font: 11px/1.6 var(--sans); }
 /* T-47 (A-11): los controles del plano central dejan la columna que colgaba a
    la derecha de las tarjetas (169,8 × 380 px a 1366×650, en cascada diagonal) y
    pasan a una banda debajo, con caja común y dos filas por función: transporte

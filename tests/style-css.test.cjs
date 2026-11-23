@@ -398,3 +398,28 @@ test('el globo del candado cabe a 320 px: no fija un ancho mayor que el 65vw pre
     }
   }
 });
+
+test('el globo contextual de pentatónicas lleva su ancho acotado, no `auto`', () => {
+  // Rotura medida el 23-nov (T-78): `.inline-help.contextual-help > p` tenía
+  // `width: auto` y el párrafo se estiraba al ancho de su línea más larga
+  // dentro del `details`, que es un ítem flex de `.pentatonic-control`. Con
+  // viewport 768 el globo medía 1391 px (de x=14 a x=1405) y se salía 637 px;
+  // a 390, 1015 px. La regla general del globo (`.inline-help p`) ya usa
+  // `min(260px, 65vw)`: lo que falla es esta anulación en línea.
+  //
+  // Lo que la prueba afirma es solo el texto del CSS: que el ancho no queda
+  // en `auto` ni en un px fijo. Que caiga dentro de la pantalla se midió en el
+  // navegador (PACTO §5: npm test no mide píxeles).
+  const declaraciones = declarationsFor(selector =>
+    selector.split(',').map(s => s.trim()).includes('.inline-help.contextual-help > p'));
+  const anchos = declaraciones.filter(d => d.property === 'width').map(d => d.value);
+  assert.ok(anchos.length >= 1, 'la regla .inline-help.contextual-help > p debe declarar width');
+  for (const ancho of anchos) {
+    assert.notEqual(ancho, 'auto',
+      'el globo contextual no puede quedar en width: auto: se estira al ancho del texto y se sale de pantalla');
+    assert.doesNotMatch(ancho, /^\d+px$/,
+      'el globo contextual no puede llevar un ancho fijo en px: a 390 y 320 no se angostaría (' + ancho + ')');
+  }
+  assert.ok(anchos.some(v => /\bmin\s*\(/.test(v) && /vw/.test(v)),
+    'el globo contextual debe acotar su ancho como el resto: min(…px, …vw); anchos hallados: ' + anchos.join(', '));
+});
