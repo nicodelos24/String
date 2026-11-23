@@ -121,5 +121,19 @@ if(typeof document!=='undefined') (()=>{
     const midi=note?Number(note.dataset.midi):(instrument==='bass'?36:60)+Number(key.dataset.pitch);
     preview.play(midi,Number(document.querySelector('#player-volume').value)/100,note?instrument:'piano').catch(()=>{console.warn('No se pudo escuchar la nota.');});
   });
-  window.addEventListener('pagehide',()=>{preview.stop();preview.context?.close();});
+  // Al salir de la página (recargar, cerrar la pestaña) Firefox ya invalida el
+  // audio: `close()` devuelve una promesa que RECHAZA con «InvalidStateError:
+  // Navigated away from page». No es un error sincrónico —un try/catch no lo
+  // agarra— sino un rechazo sin dueño que la consola muestra en cada recarga.
+  // Se cierra igual (en Chromium hace falta) y se atiende la promesa: si el
+  // cierre no puede ocurrir, la página ya lo iba a soltar de todos modos.
+  window.addEventListener('pagehide',()=>{
+    try { preview.stop(); } catch (error) { /* no queda voz que parar */ }
+    const context=preview.context;
+    if(!context || typeof context.close!=='function') return;
+    try {
+      const cerrando=context.close();
+      if(cerrando && typeof cerrando.catch==='function') cerrando.catch(()=>{});
+    } catch (error) { /* el contexto ya no existe */ }
+  });
 })();

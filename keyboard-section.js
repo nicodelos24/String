@@ -500,7 +500,15 @@ KeySynth.prototype.setVolume = function (volume) {
 KeySynth.prototype.close = function () {
   this.allOff();
   if (this.context && this.context.close) {
-    try { this.context.close(); } catch (error) { /* el contexto ya no existe */ }
+    // Firefox no lanza el error al cerrar una página que se va: close()
+    // devuelve una promesa que RECHAZA con «InvalidStateError: Navigated away
+    // from page», así que un try/catch no la agarra y el rechazo queda sin
+    // dueño (la consola lo muestra aunque el audio ya no importe). Se atiende
+    // la promesa.
+    try {
+      const cerrando = this.context.close();
+      if (cerrando && typeof cerrando.catch === 'function') cerrando.catch(() => {});
+    } catch (error) { /* el contexto ya no existe */ }
   }
   this.context = null;
   this.master = null;
@@ -1051,5 +1059,11 @@ if (typeof document !== 'undefined') (function () {
     shiftHeld = false;
     if (wasShifted && !panel.hidden) render();
   });
-  window.addEventListener('pagehide', function () { synth.close(); });
+  // Al recargar, Firefox ya invalidó el audio y `context.close()` lanza
+  // «InvalidStateError: Navigated away from page». KeySynth.close() ya protege
+  // el cierre de su contexto; esto cubre que el resto se caiga por el mismo
+  // motivo y no ensucie la consola con un error que no se puede evitar.
+  window.addEventListener('pagehide', function () {
+    try { synth.close(); } catch (error) { /* la página ya se estaba yendo */ }
+  });
 })();
