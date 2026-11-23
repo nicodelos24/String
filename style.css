@@ -1312,7 +1312,23 @@ html[data-theme="dark"] .progression-empty { color: #d7dcd2; border-color: #5661
 .inline-help summary::-webkit-details-marker { display: none; }
 .inline-help summary:focus-visible { outline: 2px solid var(--rust); outline-offset: 3px; }
 .inline-help p { position: absolute; z-index: 20; top: 28px; right: 0; width: min(260px, 65vw); padding: 12px; margin: 0; background: var(--paper-light); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 6px 20px #0002; text-transform: none; letter-spacing: normal; }
-.fret-lock .inline-help p { top: auto; bottom: calc(100% + 8px); left: auto; right: 0; }
+/* El «?» del candado de escala vive contra el borde izquierdo de la pantalla en
+   móvil (el .fret-lock arranca en x=14), y el globo —260 px, anclado al borde
+   derecho del «?» con right: 0— crecía hacia la izquierda: se salía 152 px por
+   la izquierda a 768 px, 146 px a 390. Del otro lado (left: 0) el globo a
+   1366 px tapaba el candado y su interruptor, que es otra forma de romperlo.
+   Se centra sobre el «?» y se corre lo justo para que el recorte del
+   .fretboard-section (overflow: hidden) no se lo coma por ningún lado: desde
+   móvil hasta escritorio queda dentro de la pantalla y no tapa el propio «?».
+   `overflow-wrap` cubre palabras largas sin ensanchar la caja. */
+.fret-lock .inline-help p { left: 50%; right: auto; transform: translateX(-50%); overflow-wrap: anywhere; }
+/* Con el «?» casi pegado al borde izquierdo, la mitad del globo se iría fuera:
+   en ese caso arranca en el borde del «?» y crece hacia la derecha, donde hay
+   sitio. Mantiene el ancho de la regla general —min(260px, 65vw)—, que es el
+   que la hace caber también a 320 px. */
+@media (max-width: 900px) {
+  .fret-lock .inline-help p { left: 0; transform: none; }
+}
 .fret-lock .spelling-switch { display: inline-flex; align-items: center; position: relative; flex-shrink: 0; margin: 0; padding: 4px 0; gap: 8px; cursor: pointer; }
 .fret-lock .spelling-track { display: block; flex: 0 0 38px; }
 .fret-lock .spelling-switch input { margin: 0; }

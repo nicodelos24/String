@@ -351,3 +351,50 @@ test('H-02c · en móvil el pie queda por debajo de main para no robarle el clic
     'el pie no puede hacerse fixed/sticky: seguiría tapando el Tempo; posiciones halladas: ' + posiciones.join(', ')
   );
 });
+
+test('el globo del candado de escala no se sale de pantalla y no tapa el «?»', () => {
+  // Rotura real (chequeo Firefox 23-nov, a 768 px y también en Chromium): el
+  // «?» del candado vive contra el borde izquierdo (el .fret-lock arranca en
+  // x=14; el «?» queda en x=84) y el globo, con `right: 0` y 260 px, crecía
+  // hacia la izquierda: medido, quedaba de x=−152 a x=108, 152 px fuera de la
+  // pantalla. Del otro lado del «?» (left: 0) tapaba el candado y su
+  // interruptor, que es la pieza que el globo explica.
+  //
+  // Lo que esta prueba sí puede afirmar leyendo el CSS (PACTO §5: npm test no
+  // mide estilos ni píxeles): la regla base del globo del candado ya no se
+  // ancla solo a la derecha, y en los anchos donde el «?» está pegado al borde
+  // el globo se apoya en su borde izquierdo y crece hacia la derecha. Que el
+  // resultado caiga dentro de la pantalla se midió en el navegador.
+  const globo = rules(css).filter(rule =>
+    /\.fret-lock\s+\.inline-help\s+p/.test(rule.selector));
+  assert.ok(globo.length >= 1, 'la regla .fret-lock .inline-help p debe existir');
+
+  // La anulación base ya no deja `right: 0` como único anclaje horizontal.
+  const base = declarationsFor(selector => selector.split(',').map(s => s.trim()).includes('.fret-lock .inline-help p'));
+  const anchos = base.filter(d => d.property === 'width').map(d => d.value);
+  assert.ok(!anchos.some(v => /^\d+px$/.test(v)),
+    'el globo no puede tener un ancho fijo en px: con 260 px fijos se salía a 320 y no se angostaba a 390; anchos hallados: ' + (anchos.join(', ') || 'ninguno'));
+  const derechas = base.filter(d => d.property === 'right').map(d => d.value);
+  assert.ok(!derechas.includes('0'),
+    'la regla base no puede seguir anclada solo a la derecha: es lo que lo empujaba fuera por la izquierda');
+
+  // El globo de los demás «?» (contextuales) mantiene su anclaje de siempre.
+  const generales = declarationsFor(selector => selector.split(',').map(s => s.trim()).includes('.inline-help p'));
+  assert.ok(generales.some(d => d.property === 'right' && d.value === '0'),
+    'el globo general del «?» conserva right: 0: solo el del candado necesitaba moverse');
+});
+
+test('el globo del candado cabe a 320 px: no fija un ancho mayor que el 65vw previsto', () => {
+  // El ancho del globo sale de `min(260px, 65vw)` en `.inline-help p`. Si una
+  // regla lo pisara con px fijos, a 320 px (65vw = 208) el globo se saldría por
+  // la derecha. Se comprueba que ninguna regla del candado declara width en px
+  // puros: solo min()/max()/calc() o el 65vw de la general.
+  const globo = rules(css).filter(rule => /\.fret-lock\s+\.inline-help\s+p/.test(rule.selector));
+  for (const rule of globo) {
+    for (const [, , value] of rule.body.matchAll(/(^|;)\s*([a-z-]+)\s*:\s*([^;]+)/g).map(m => [m[0], m[2], m[3]])) {
+      if (!/^\s*width\s*:/.test(value)) continue;
+      assert.doesNotMatch(value, /^\s*width\s*:\s*\d+px\s*$/,
+        'el globo del candado no puede llevar un ancho fijo en px: ' + rule.selector + ' → ' + value);
+    }
+  }
+});
