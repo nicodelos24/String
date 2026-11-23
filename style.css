@@ -3673,3 +3673,44 @@ html.ventana .player-compact-status {
   .song-tonality-control .song-tonality-spelling .spelling-track::after { width: 12px; height: 12px; }
   .song-tonality-control #song-tonality-spelling:checked + .spelling-track::after { transform: translateX(6px); }
 }
+
+/* ===== [mejora3] Jerarquía de la barra de transporte ==========================
+   La fila del transporte se leía plana: Silencio, Play, Tempo y ayuda tenían el
+   mismo cuerpo y el usuario no distinguía cuál servía para tocar/escuchar.
+   Sin tocar el DOM ni el comportamiento (ids, aria, labels, foco y clic siguen
+   intactos), el Play del acompañamiento pasa a ser el control principal y los
+   ajustes quedan como soporte. Solo se usa la paleta y los radios ya definidos
+   en :root (y sus redefiniciones de tema oscuro): no hay colores ni fuentes
+   nuevas. Las medidas (alto, padding, gap y radio) no cambian: la barrita
+   compacta y flotante conserva su geometría y sus puntos de clic. */
+
+/* Principal: el soporte del Play se rellena con el acento y el icono con el
+   papel, para que se lea primero de un vistazo. Mismo radio de 8px y mismos
+   3px/1px de relleno que ya tenía el .source-switch en cada estado. */
+#tempo-play-stand {
+  background: var(--rust);
+  border-color: var(--rust);
+}
+#tempo-play-stand #tempo-play {
+  color: var(--paper-light);
+  border-radius: 5px;
+}
+#tempo-play-stand #tempo-play:hover { background: rgba(255, 255, 255, .16); }
+
+/* El acento se refuerza mientras suena, igual que el play del mástil: el halo
+   comunica el estado de reproducción sin depender del cambio de icono. */
+#tempo-play-stand:has(#tempo-play[aria-pressed="true"]) {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--rust) 22%, transparent);
+}
+
+/* La cápsula compacta y flotante reduce el relleno del switch a 1px (regla
+   existente más arriba). Se repite con el ID para conservar esa medida exacta
+   ahora que el mismo elemento lleva fondo de acento. */
+.transport-row.is-pill-composed .transport-pill #tempo-play-stand,
+.transport-row.is-floating .transport-pill #tempo-play-stand { padding: 1px; }
+
+/* Secundarios: Silencio, Tempo y la ayuda quedan un paso por detrás del Play.
+   Se baja el contraste de su borde y se deja el texto en --muted (que ya era
+   su color); el hover sigue marcando en rust como hasta ahora. */
+.transport-pill .mute-toggle,
+.transport-pill .tempo-tap { border-color: color-mix(in srgb, var(--line) 82%, var(--muted)); }
